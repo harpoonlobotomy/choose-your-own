@@ -224,3 +224,7 @@ Okay so I broke the inventory, now I can't leave because it doesn't recognise pl
 5.31 so I didn't just break it, the version I committed a couple of hours ago also had this issue, I just hadn't noticed yet. Damn.
 
 5:41 okay, it was changing the ifs to elifs in user_input. Fixed now. Still means I might have the issue of bleedthrough, but at least it basically functions again. A better midpoint.
+
+7.56pm I need a day counter. Certain plot events happen at certain points, maybe it runs over the course of a week? So to solve the mystery or w/e, you need to do everything in enough time. Which also means I need activities/etc that can kill time and make that harder, because right now all there is is looking at things.
+
+Still kinda like the idea of giving the locations map coords and calculating distance for approximated travel times (per time_of_day segment).

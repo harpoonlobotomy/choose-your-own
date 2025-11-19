@@ -106,7 +106,7 @@ def set_text_speed():
     while True:
         text=input()
         if text=="":
-            print("Keeping default value; returning.")
+            print("Keeping current text speed.")
             return
         try:
             new_text_speed=float(text)
@@ -114,7 +114,6 @@ def set_text_speed():
             print("Please enter a number between 0.1 and 2, or hit 'enter' to keep default.")
         if new_text_speed:
             if 0.1<=new_text_speed<=2:
-                print(f"Text speed set to {new_text_speed}. Returning.")
                 return new_text_speed
             else:
                 print("Please enter a text speed between 0.1 and 2.0")
@@ -125,7 +124,7 @@ def set_luck():
     while True:
         text=input()
         if text=="":
-            print("Keeping default value; returning.")
+            print("Keeping current luck value.")
             return
         try:
             new_luck=float(text)
@@ -133,38 +132,43 @@ def set_luck():
             print("Please enter a number between 0.1 and 2, or hit 'enter' to keep default.")
         if new_luck:
             if 0.1<=new_luck<=2:
-                print(f"Luck set to {new_luck}. Returning.")
                 return new_luck
             else:
                 print("Please enter a luck value between 0.1 and 2.0")
 
-def init_settings():
+def init_settings(manual=False):
     need_update=False
     import json
     with open("settings.json") as f:
         data = json.load(f)
 
-    if data["initialised"]:
+    if data["initialised"] and not manual:
         game.text_speed = data["text_speed"]
         game.luck=data["luck"]
+        game.loop=data["loop"]
     else:
-        print("First time setup:")
-        print("To change text speed, enter a number (0.1 to 2), or hit enter to continue with default (1)")
+        if not manual:
+            print("First time setup:")
+        print(f"To change text speed, enter a number (0.1 to 2), or hit enter to continue with current speed ({game.text_speed}). Default is (1)")
         new_speed=set_text_speed()
         if new_speed != None and new_speed != game.text_speed:
             game.text_speed=new_speed
             data["text_speed"]=new_speed # note: don't forget to write to the json again.
-            #need_update=True
-        print(f"Text speed set to {game.text_speed}. To change luck value, enter a number (0.1 to 2), or hit enter to continue with default (1).")
+            need_update=True
+        print(f"Text speed set to {game.text_speed}. To change luck value, enter a number (0.1 to 2), or hit enter to continue with current luck value ({game.luck}). Default is (1).")
         new_luck=set_luck()
         if new_luck != None and new_luck != game.luck: ## need a version of this that works for in-game setings update too.
             game.luck=new_luck
             data["luck"]=new_luck
-            #need_update=True # not needed here as we have to update the initialised setting regardless, else it'll run this every time..
-        print(f"Luck value set to {game.luck}. These settings can be changed later by typing 'settings' in-game.")
+            need_update=True # not needed here as we have to update the initialised setting regardless, else it'll run this every time..
+        print(f"Luck value set to {game.luck}.")
+        if not manual:
+            print("These settings can be changed later by typing 'settings' in-game.")
         data["initialised"] = True
-        with open("settings.json", "w+") as f:
-            json.dump(data, f)
+        if (manual and need_update) or not manual: #not sure if this is right.
+            with open("settings.json", "w+") as f:
+                json.dump(data, f)
+            print("Settings updated. Returning.")
 
 
 
@@ -205,6 +209,7 @@ class game:
     w_value = 0
     text_speed=1
     luck=1
+    loop=True
 
     checks = {
         "inventory_on": False,

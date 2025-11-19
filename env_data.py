@@ -98,7 +98,7 @@ dataset = {
     "a graveyard": {
         "descrip": "You see a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences",
         "inside": False, "electricity": False, "nature": True, # realised I didn't include this here.
-        "n_desc": "The entrace gates are",
+        "n_desc": "The entrance gates are",
         "e_desc": "a variety of headstones",
         "s_desc": "a mausoleum",
         "w_desc": "what looks like a work shed of some kind",
