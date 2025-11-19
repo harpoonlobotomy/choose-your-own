@@ -151,9 +151,76 @@ New todos:
         - I'm not sure how I'd even want to separate them. Right now, 'choices' is some initial setup (carrier options etc), language variation (emphasis, choose variants (y, yes etc), lists like times of day, but then also all the loot tables + the loot class.) env_data is the weatherdict, detailed location data and weirdly the paintings list ( - have just moved paintings to choices.) locations.py is the place class, theoretically the nested locations (currently disabled) and the basic tree of locations. But there's no data there that isn't in the primary (detailed) location dict in env_data. I mean, I have class place_data in env_data and class places in locations.
         Going to smuch locations into env_data I think. For now I'll leave the nesting out and just implement it properly once I'm ready to actually use it. My main concern is that there's some interplay between places and place_data that I've forgotten about. (All I remember currently is that places_data gets the keys from places, but it can just get its own keys ffs.).
     - stop it displaying all items in a location without regard for cardinals. They can be described, but if I'm standing in the middle of a graveyard, I shouldn't have the option to examine a glass jar on the far wall. Currently cardinals aren't implemented in item locs at all.
+    - let it find user_input with leading "a " removed. 'graveyard' should find 'a graveyard'. In fact why aren't we using the a-less version anyway? Maybe I only implemented that for items, not locations. Probably so.
+    -- fix this issue in user_input:
+     Updated values: [['north', 'east', 'west'], 'leave', ['carved stick']], type: <class 'list'>
+        5
+        5 is not a valid option, please try again.
+    only works with a unified list of options. Will be fixed once I've cleaned the input options. Okay, will do that now.
+    - set starting orientation to 'facing away from entrance wall' in relocate.
+
 
 Things done:
     - Added an automatic space to switch_the.
     - hopefully allowed for non-case-sensitive item lookup
     - added some more attr for items, started item location tracking
     - worked on some copy
+    - probably a bunch of other small things I've already forgotten.
+
+
+2.55pm okay so fixed the digit input options, the values are a clean list after printing but before evaluation now.
+
+3.16pm
+Why does this fail sometimes.
+
+
+You can look around more, leave, or try to interact with the environment:
+    (north, south, west), (leave) or (TV set, window)
+--------------------
+ Original values: [['north', 'south', 'west'], 'leave', ['TV set', 'window']], type: <class 'list'>
+tv set
+Chosen: (TV set)
+Unfortunately I haven't written anything here yet. Maybe just... go somewhere else?
+
+ vs
+
+  Original values: [['north', 'south', 'west'], 'leave', ['TV set', 'window']], type: <class 'list'>
+TV set
+Chosen: (TV set)
+A decent looking TV set, probably a few years old but appears to be well kept. Currently turned off. This model has a built-in DVD.
+What do you want to do - investigate it, take it, or leave it alone?
+    (investigate), (take) or (leave)
+--------------------
+ Original values: ['investigate', 'take', 'leave'], type: <class 'list'>
+
+ did I just fail to implement the lower()? Probably.
+
+Okay that's fixed now, I'd missed swapping out a test for v.
+
+Now back to this:
+
+  File "d:\Git_Repos\choose-your-own\choose_a_path.py", line 360, in get_loot
+    slowWriting(f"[[ `{item}` added to inventory. ]]")
+                       ^^^^
+in get_loot: value: None, random: True, named: TV set, message: None = fine.
+
+Oh I didn't allow for it to fail the pick up test, that's why.
+
+3:29pm
+Okay that's fixed now.
+Do I need to set 'inventory' as a location to simplify the item location tracking? Might be more straightforward tbh.
+
+
+
+4.49pm
+So now I can tell it an item is on my person and/or in another location. But currently I don't think it actually updates the location with that data. Also my location descriptions aren't modular enough for this really.
+
+4:53
+okay, so now it adds the child obj of an item. Currently it just does it without any additional checks, I need to check if the child is still in parent. But it's progress.
+
+5.15pm
+Okay so I broke the inventory, now I can't leave because it doesn't recognise plain enter. Will have to fix this, kinda major bug.
+
+5.31 so I didn't just break it, the version I committed a couple of hours ago also had this issue, I just hadn't noticed yet. Damn.
+
+5:41 okay, it was changing the ifs to elifs in user_input. Fixed now. Still means I might have the issue of bleedthrough, but at least it basically functions again. A better midpoint.

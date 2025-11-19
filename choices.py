@@ -44,7 +44,7 @@ May be getting out of hand. Might need to be dealt with better than this.
 "name": "a glass jar",
 "description": f"a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.",
 "description_no_children": "a glass jar, now empty aside from some bits of debris.",
-"children": "dried_flowers",
+"children": "dried flowers",
 "can_pick_up": True},
 
 In addition, added within the class:
@@ -57,14 +57,15 @@ current_location (far more useful - just tracks where the item is now, either 'i
                     """
 
 location_loot = {
+    "inventory": {"inventory":[]},
     "a graveyard": {"glass jar": {"name": "a glass jar", "description": f"a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.",
-                    "description_no_children": "a glass jar, now empty aside from some bits of debris.", "children": "dried_flowers", "can_pick_up": True},
-                  "dried flowers": {"name": "some dried flowers", "description": "a bunch of old flowers, brittle and pale; certainly not as vibrant as you imagine they once were.", "contained_in": "glass jar", "can_pick_up": True},
-                  "moss": {"name": "a few moss clumps", "description": "a few clumps of mostly green moss.", "can_pick_up": True},
-                  "headstone": {"name":"a carved headstone", "description": "a simple stone headstone, engraved with the name `J.W. Harstott`.", "can_pick_up":False}}, # not separated by facing_direction. Should it be?
+                "description_no_children": "a glass jar, now empty aside from some bits of debris.", "children": "dried flowers", "can_pick_up": True},
+                "dried flowers": {"name": "some dried flowers", "description": "a bunch of old flowers, brittle and pale; certainly not as vibrant as you imagine they once were.", "contained_in": "glass jar", "can_pick_up": True},
+                "moss": {"name": "a few moss clumps", "description": "a few clumps of mostly green moss.", "can_pick_up": True},
+                "headstone": {"name":"a carved headstone", "description": "a simple stone headstone, engraved with the name `J.W. Harstott`.", "can_pick_up":False}}, # not separated by facing_direction. Should it be?
     "a city hotel room": {"TV set": {"name": "a television set", "description": "A decent looking TV set, probably a few years old but appears to be well kept. Currently turned off. This model has a built-in DVD.", "can_pick_up": False}, # need to be able to add a DVD to this maybe.
-                          "window": {"name":"a window", "description":"a window, facing out of the hotel room and down over the street below. Currently closed.", "can_pick_up":False, "can_open":True}}, # need to add an open/closed attrib for this...
-                          # do I want the curtains to be separate? We open the curtains, can look, and can open the window separately? Or maybe the window doesn't open, and we can only open the curtains. The latter I think.
+                "window": {"name":"a window", "description":"a window, facing out of the hotel room and down over the street below. Currently closed.", "can_pick_up":False, "can_open":True}}, # need to add an open/closed attrib for this...
+                # do I want the curtains to be separate? We open the curtains, can look, and can open the window separately? Or maybe the window doesn't open, and we can only open the curtains. The latter I think.
     "a forked tree branch": {"carved stick": {"name": "a spiral-carved stick", "description": "a stick, around 3 feet long, with tight spirals carved around the length except for a 'handle' at the thicker end.", "can_pick_up": True}}
     }
 
@@ -164,17 +165,17 @@ class LootTable:
                 entry = dict(data)
                 entry["category"] = category
                 self.by_name[item_name] = entry
-                self.by_name[item_name].update({"open":False}) # add this for everything, then update if needed.
+                self.by_name[item_name].update({"open":False, "current_location": {"location": "cardinal"}, "start_location": {None: None}}) # add this for everything, then update if needed.
+                # need to update cardinal, so we have 'found this jar in the east of the graveyard'. I like that better than just 'in the graveyard. May walk it back later.
 
                 ## only for those in location table.
                     # actually no - should use it for documenting the location where random loot was found, too.
-                if self.name == "location_loot":
-                    start_loc = category
-                else:
-                    start_loc=None
+                #if self.name == "location_loot":
+                #    start_loc = category
+                #else:
+                #    start_loc=None
                 #print(f"add location parent as start_location: item_name: {item_name}, location: {start_loc}")
                 # current_location:
-                self.by_name[item_name].update({"current_location": {"location": "cardinal"}, "start_location": {start_loc: "cardinal"}}) # need to update cardinal, so we have 'found this jar in the east of the graveyard'. I like that better than just 'in the graveyard. May walk it back later.
                 #Should add the ability to search a location for something (eg 'I dropped item at the graveyard, will spend time searching specifically. Also general 'looking for clues', related.)
 
     def get_full_category(self, selection):
@@ -237,14 +238,47 @@ class LootTable:
     #    "medium": [{"cargo pants": 8}, {"satchel": 8}],
     #    "small": [{"pockets": 6}]
     #    }
-    def pick_up_test(self, name:str):
-        item = self.get_item(name) ## fails to find 'glass jar'
+    def pick_up_test(self, name:str): ## everything in the regular loot table is pick-up-able. This is just for location items currently.
+        item = self.get_item(name)
+        if not item:
+            print("No such item.")
+            return "No such item."
         try:
             if item["can_pick_up"]:
-                return True
+                return "Can pick up"
+            return "Cannot pick up"
         except Exception as e:
             print(f"Exception in pick_up_test: {e}")
         return False
+
+    def set_location(self, name:str, location:str, cardinal:str, picked_up=False):
+
+        item = self.get_item(name)
+        to_set = [name]
+
+        has_children = item.get("children")
+        if has_children: # assumes only one child. Fix this later.
+            to_set.append(has_children)
+
+        print(f"to set: {to_set}")
+        for loot_here in to_set:
+            print(f"item: {item}")
+            print(f"loot_here: {loot_here}, type: {type(loot_here)}")
+            print()
+            print(f"loot_here get_item: {self.get_item(loot_here)}")
+
+            if item["start_location"] == {None:None}:
+                print("Start location is none: ")
+                item["start_location"]={location: cardinal}
+                print(f"{item['start_location']}")
+            if picked_up:
+                item["current_location"]=({"inventory": "inventory"})
+            else:
+                item["current_location"]=({location: cardinal})
+            print(f"item: {item}")
+            print(f"item start location: {item["start_location"]}")
+        return to_set
+        #exit()
 
 
 def set_choices():

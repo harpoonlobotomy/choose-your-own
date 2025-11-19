@@ -81,10 +81,10 @@ def calc_emotions():
 def load_world(relocate=False, rigged=False):
 
     from env_data import weatherdict
-    rigged = False
+    rigged = True
     rig_place = "a graveyard"
     rig_weather = "raining"
-    rig_time = "late evening"
+    rig_time = "midday"
     if rigged:
         game.time=rig_time
         game.place=rig_place

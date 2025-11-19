@@ -37,10 +37,12 @@ def do_inventory():
     while done == False:
         slowWriting("To examine an item more closely, type it here, otherwise hit 'enter' to continue.")
         slowWriting(f"    {game.inventory}")
+        #test=option(game.inventory, print_all=True, none_possible=True, preamble="To examine an item more closely, type it here, otherwise hit 'enter' to continue.")
         test = user_input()
+        print(f"Test: {test}")
         if test=="" or test==None:
             done=True
-            break
+            return
         while True:
             if test in game.inventory:
                     #places[game.place].first_weather = game.weather
@@ -48,14 +50,19 @@ def do_inventory():
                 desc = loot.describe(test, caps=True)
                 if desc and desc != "" and desc != f"No such item: {test}":
                     slowWriting((f"Description: {desc}"))
-                    break
                 else:
                     desc = choices.loc_loot.describe(test, caps=True)
                     if desc and desc != "":
                         slowWriting((f"Description: {desc}"))
-                        break
                     else:
                         slowWriting(f"Not much to say about the {test}.")
+
+                print()
+                text=user_input()
+                text=option("drop", "separate", none_possible=True, preamble="You can drop this item or try to separate it into parts, or hit enter to continue.")
+                if text in ("drop", "separate"):
+                    print("Nothing happens here yet. Later maybe.")
+                    break
                 print()
             else:
                 break
@@ -113,33 +120,33 @@ def user_input():
         print("Allowing input to set parameters. Please type 'done' or hit enter on a blank line when you're finished.") #this is just so I can test specific locations without having to amend the scripts manually tbh.
         god_mode()
         print()
-    elif text.lower() == "help":
+    if text.lower() == "help":
         print()
         slowWriting(f"  Type the (highlighted) words to progress, 'i' for 'inventory', 'd' to describe the environment, 'settings' to set some settings - that's about it.")
         print()
-    elif text.lower()== "settings":
+    if text.lower()== "settings":
         print()
         print("Settings:")
         print("  Not currently functioning, but options should include text speed and a luck modifier (ie chance to succeed at rolls)")
         print()
-    elif text.lower() == "stats":
+    if text.lower() == "stats":
         print()
         print(f"    weird: {game.weirdness}. location: {game.place}. time: {game.time}. weather: {game.weather}. checks: {game.checks}")
         print(f"    inventory: {game.inventory}, carryweight: {game.volume}")
         pprint(f"    {game.player}")
         print()
-    elif text.lower() == "i":
+    if text.lower() == "i":
         print()
         do_inventory()
         print()
-    elif text.lower() == "d":
+    if text.lower() == "d":
         loc_data = p_data[game.place]
         print(f"{text}: Describe location.")
         slowWriting(f"[{smart_capitalise(game.place)}]  {loc_data.overview}")
         print()
 #        print(f"{[game.place]}:{places[game.place].description}")#{descriptions[game.place].get('description')}")
         print()
-    elif text.lower() in ("exit", "quit", "stop"):
+    if text.lower() in ("exit", "quit", "stop"):
         # Should add the option of saving and returning later.
         print("Okay, bye now!")
         exit()
@@ -147,20 +154,12 @@ def user_input():
         return text
     return None
 
-def option(*values, no_lookup=None, print_all=False, preamble=None):
+def option(*values, no_lookup=None, print_all=False, none_possible=True, preamble=None):
 
-## I need to pre-clean `values` here to make it easier later.
-# non-exclusive sample of values inputs:
-#       Values: (['north', 'south', 'east', 'west'], 'go'), type: <class 'tuple'>
-#       Values: (['south', 'east', 'west'], 'leave', ['glass jar', 'dried flowers', 'moss', 'headstone']), type: <class 'tuple'>
-#       Values: ('investigate', 'take', 'leave'), type: <class 'tuple'>
-#       Values: (['a graveyard', 'a forked tree branch', 'a city hotel room'],), type: <class 'tuple'>
-# or if 'options' is a set instead of a list:
-#       Values: [{'a city hotel room', 'a forked tree branch', 'a graveyard'}], type: <class 'list'>
-
+    # none_possible=True == "if blank input, consider it a viable return". I didn't need this before but I'm going to see if it fixes it.
     option_chosen = False
     values = [v for v in values if v is not None]
-    #print(f"Values: {values}m len(values): {len(values)}")
+    print(f"Values: {values}m len(values): {len(values)}")
     formatted = []
     for v in values:
         if isinstance(v, (list, tuple)):
@@ -170,7 +169,7 @@ def option(*values, no_lookup=None, print_all=False, preamble=None):
                 formatted.append(f"({v[0]})") # add the first one as the 'label', use the rest as list later.
         else:
             formatted.append(f"({v})")
-    #print(f"--" * 10, f"\nformatted: {formatted}, formatted_type: {type(formatted)}\n")
+    print(f"--" * 10, f"\nformatted: {formatted}, formatted_type: {type(formatted)}\n")
     while option_chosen != True:
         if preamble:
             slowWriting(preamble)
@@ -179,13 +178,22 @@ def option(*values, no_lookup=None, print_all=False, preamble=None):
         else:
             slowWriting(f"    {formatted[0]}")
 
-### So fix the tuple/list/etc shit here.
-# get rid of all nesting, just have one list of strings, all inclusively.
-
-        print("--" * 10, f"\nValues: {values}, type: {type(values)}")
         if no_lookup:
             return
+
+        clean_values=[]
+        if type(values) in (list, tuple, set):
+            for value in values:
+                if type(value) == str:
+                    clean_values.append(value)
+                else:
+                    for value_deeper in value:
+                        if type(value_deeper) == str:
+                            clean_values.append(value_deeper) # I cannot imagine another layer of nesting here.
+
         test=user_input()
+        if none_possible and test=="":
+            return None
         #print(f"Test: {test}")
         while not test:
             test=user_input()
@@ -193,48 +201,26 @@ def option(*values, no_lookup=None, print_all=False, preamble=None):
         if test.isdigit(): # if you type 1, it returns the first option, etc
             while test.isdigit():
                 index = int(test)
-                #print(f"Values: {values}. type: {type(values)}")
-                if isinstance(values[0], (list, tuple)):
-                    if 1 <= index <= len(values[0]):
-                    #print(f"Values [0]: {values[0]}")
-                        test=(values[0])[index - 1]
-                        print(f"Chosen: ({test})")
-                        return test
-                if 1 <= index <= len(values):
-                    test = values[index - 1]
+                if 1 <= index <= len(clean_values):
+                    test = clean_values[index - 1]
                     print(f"Chosen: ({test})")
                     return test
                 print(f"{test} is not a valid option, please try again.")
                 test=user_input()
 
-        for v in values:
+        for v in clean_values:
             if len(test) == 1:
-                if test == v[0].strip():
+                if test.lower() == v[0].strip().lower():
                     print(f"Chosen: ({v})")
                     return v
-            if v == test:
+            if v.lower() == test.lower():
                 print(f"Chosen: ({v})")
-                return test
-
-        for an_option in values: # neaten all of this. This whole func really.
-            if test == an_option:
-                return an_option
-            if isinstance(an_option, (list, tuple)): # manually listed in the call signature
-                for sub in an_option:
-                    #print(f"Sub: {sub} in an_option: {an_option}")
-                    if len(test) == 1:
-                        if test == sub[0].strip():
-                            return sub
-                    if print_all:
-                        if test.lower() == sub.lower():
-                            return sub
-                    elif test.lower() == sub.lower():
-                        return sub
-                    elif test in choose.get(sub):
-                        return sub
+                return v
             else:
-                if len(test) > 2 and test == choose.get(an_option):
-                    return an_option
+                if len(test) > 2 and test == choose.get(v):
+                    print(f"Chosen: ({v})")
+                    return v
+
         if test in no:
             return no
         if test in yes:
@@ -299,12 +285,12 @@ def drop_loot(forced_drop=False):
 
     if len(game.inventory) < 1:
         slowWriting("You don't have anything to drop!")
-    slowWriting("[[ Type the name of the object you want to leave behind ]]")
+    #slowWriting("[[ Type the name of the object you want to leave behind ]]")
     print(game.inventory)
-    test = user_input()
-    while test not in game.inventory and test not in ("done", "exit", "quit"):
-        slowWriting("Type the name of the object you want to leave behind.")
-        test = user_input()
+    test = option(game.inventory, preamble="[Type the name of the object you want to leave behind]")
+    #while test not in game.inventory and test not in ("done", "exit", "quit"):
+    #    slowWriting("Type the name of the object you want to leave behind.")
+    #    test = user_input()
     if test in game.inventory:
         newlist = [x for x in game.inventory if x is not test]
         slowWriting(f"Dropped {test}. If you want to drop anything else, type 'drop', otherwise we'll carry on.")
@@ -348,12 +334,30 @@ def switch_the(text, replace_with=""): # remember: if specifying the replace_wit
             text = text.replace(article, replace_with) # added 'replace with' so I can specify 'the' if needed. Testing.
     return text
 
-def get_loot(value=None, random=True, named="", message=None):
-
+def get_loot(value=None, random=True, named="", message:str=None):
+    item=None
     carryweight = game.volume
-    if named != "":
-        if choices.loc_loot.pick_up_test(named): # should this be negative or positive? More things to look at but not pick up, or the inverse?
-            item = named
+    #print(f"in get_loot: value: {value}, random: {random}, named: {named}, message: {message}")
+    if named != "" and value == None: # don't add value for location items.
+        pickup_test=choices.loc_loot.pick_up_test(named) #should I test for get_item first? Probably no point. No.
+        if pickup_test == "No such item.":
+            print("Not a location object.")
+        elif pickup_test == "Can pick up":
+            #print("Can be picked up. Will let it continue, obj should get picked up.")
+            item=named
+        elif pickup_test == "Cannot pick up": # is a positive failure - it was found, so is a loc item.
+            print("Cannot be picked up. Print a message about how it can't be picked up. Maybe one per item for variation.")
+            return None
+        else:
+            print("Failed to check pickupability. Letting it run to see what happens.")
+        if not item:
+            test_item = loot.get_item(named)
+            if test_item:
+                print("Item found in regular loot tables. Continuing.")
+                item=test_item
+        #if choices.loc_loot.pick_up_test(named): # should this be negative or positive? More things to look at but not pick up, or the inverse?
+        #    item = named
+
     elif random:
         #print(f"value: {value}")
         item = loot.random_from(value)
@@ -369,6 +373,8 @@ def get_loot(value=None, random=True, named="", message=None):
     #item = loot.get_item(item)
     slowWriting(f"[[ `{item}` added to inventory. ]]")
     game.inventory.append(item)
+
+### drop random item if inventory full // not sure if I hate this. ###
     if len(game.inventory) > carryweight:
         print()
         test = option(f"drop", "ignore", preamble=f"It looks like you're already carrying too much. If you want to pick up {switch_the(item, 'the ')}, you might need to drop something - or you can try to carry it all.")
@@ -384,8 +390,6 @@ def get_loot(value=None, random=True, named="", message=None):
         else:
             slowWriting("You decide to look in your inventory and figure out what you don't need.")
             drop_loot()
-    print()
-    #slowWriting(f"Inventory items: {len(game.inventory)}") # prints after the forced drop, so it's not really that secret.
     print()
     return item
 
@@ -425,7 +429,7 @@ def get_hazard():
     return hazard
 
 def relocate(need_sleep=None):
-    options = set()
+    options = []
     current_loc = game.place
     current_weather = game.weather
     #load_world() # this is silly. Rebuilding the full world load just for this? No. Changing this.
@@ -469,10 +473,9 @@ def relocate(need_sleep=None):
     while len(options) < 3:
         new_place = random.choice((game.loc_list))
         if new_place not in options: # and new_place != current_loc <- turn on when I don't want current loc as an option anymore.
-            options.add(new_place)
+            options.append(new_place)
 
-    slowWriting("Please pick your destination:")
-    game.place = option(options, print_all=True)
+    game.place = option(options, print_all=True, preamble="Please pick your destination:")
     load_world(relocate=True)
     if game.place==current_loc:
         print(f"You decided to stay at {switch_the(game.place, 'the')} a while longer.")
@@ -633,12 +636,20 @@ def look_around(status=None):
                     print(f"{loc_loot.describe(text, caps=True)}")
                     #print("What do you want to do? [Investigate] item, [take] item, [leave] it alone.") # Do I want to list the options like this, or just try to make a megalist of what options may be chosen and work from that?
                     decision=option("investigate", "take", "leave", preamble="What do you want to do - investigate it, take it, or leave it alone?")
+                    #print(f"text after decision: {text}")
                     #decision=user_input()
                     if decision.lower()=="investigate":
                         print("Nothing here yet.")
                     elif decision.lower()=="take":
-                        get_loot(value=None, random=True, named=text, message=None)
-                        print("[Find the loot taking function that already exists, make sure the item is removed from the list here.]") # does the current loot table allow for 'already picked up'? I don't think it does. Need to do that.
+                        #print(f"text in decision lower == take: {text}")
+                        picked_up = get_loot(value=None, random=True, named=text, message=None)
+                        if picked_up:
+                            print(f"To set location: {picked_up}, {game.place}, {game.facing_direction}")
+                            set_items:list = loc_loot.set_location(picked_up, game.place, game.facing_direction, picked_up=True)
+                            for item_name in set_items:
+                                if item_name not in game.inventory:
+                                    game.inventory.append(item_name)
+                            print("[Find the loot taking function that already exists, make sure the item is removed from the list here.]") # does the current loot table allow for 'already picked up'? I don't think it does. Need to do that.
                     elif decision.lower()=="leave":
                         print(f"You decide to leave the {text} where you found it.")
                     # this should loop, not just kick you out and relocate you immediately.
@@ -685,7 +696,7 @@ def new_day():
     decision = option("yes", "no", preamble="Keep looping?")
     if decision in yes:
         game.checks["play_again"]
-        game.time = "morning"
+        game.time = random.choice(["pre-dawn", "early morning", "mid-morning"]) # sometime in the morning, we awaken.
         inner_loop()
     else:
         slowWriting("Hope you had fun? Not sure really what this is, but thank you.")
