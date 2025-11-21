@@ -283,3 +283,14 @@ Is it good or bad that I'm not facing any direction yet? Maybe it'd good. My gut
 
 6:25pm 21/11/25
 Going to commit this evening's changes; have not yet updated this setup's python version I just realised, so hopefully that didn't break anything. I don't think so. Mostly I just want a firm copy of what I've done so far so I can delineate with whatever happens next. Probably want to try to get rid of locations.py entirely, really.
+
+7:50 commit done, couple more little things sorted.
+
+Next task:
+
+    #TODO: Need to remove the item from the location. Currently it just 'duplicates' whatever is picked up because it's never removed from its origin.
+    
+I need to work on this.
+
+Well until then, have just done the auto-formatting on the script parts. It's okay. Needs some tweaking but I can see the value in it. 
+

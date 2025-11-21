@@ -27,12 +27,6 @@ carrier_options = {
     "small": [{"pockets": 6}]
 }
 
-# volume = {
-#    "large": 10,
-#    "medium": 8,
-#    "small": 6
-# }
-
 items_template = {
     "category": {"item": {"name": "", "description": ""}}
 }
@@ -44,11 +38,6 @@ paintings = ["a ship in rough seas", "a small farmstead", "a businessman in fron
 """
 LOOT ATTRIBUTES:
 May be getting out of hand. Might need to be dealt with better than this.
-"name": "a glass jar",
-"description": f"a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.",
-"description_no_children": "a glass jar, now empty aside from some bits of debris.",
-"children": "dried flowers",
-"can_pick_up": True},
 
 In addition, added within the class:
 "open" (if status is open or not, default=False)
@@ -81,10 +70,9 @@ location_loot = {
                     "south": {
                         "south_object": {"name": None, "description": None, "children": None, "contained_in": None,
                                          "can_open": False, "can_pick_up": True}}},
-    # not separated by facing_direction. Should it be?
     "a city hotel room": {"east": {"TV set": {"name": "a television set",
                                               "description": "A decent looking TV set, probably a few years old but appears to be well kept. Currently turned off. This model has a built-in DVD.",
-                                              "can_pick_up": False, },  # need to be able to add a DVD to this maybe.
+                                              "can_pick_up": False, },
                                    "window": {"name": "a window",
                                               "description": "a window, facing out of the hotel room and down over the street below. Currently closed.",
                                               "can_pick_up": False, "can_open": True}},
@@ -97,8 +85,6 @@ location_loot = {
                           "south": {"south_object": {"name": None, "description": None, "children": None,
                                                      "contained_in": None, "can_open": False,
                                                      "can_pick_up": True}}},
-    # need to add an open/closed attrib for this...
-    # do I want the curtains to be separate? We open the curtains, can look, and can open the window separately? Or maybe the window doesn't open, and we can only open the curtains. The latter I think.
     "a forked tree branch": {"east": {"carved stick": {"name": "a spiral-carved stick",
                                                        "description": "a stick, around 3 feet long, with tight spirals carved around the length except for a 'handle' at the thicker end.",
                                                        "can_pick_up": True}},
@@ -108,7 +94,7 @@ location_loot = {
                                                       "contained_in": None, "can_open": False, "can_pick_up": True}},
                              "south": {"south_object": {"name": None, "description": None, "children": None,
                                                         "contained_in": None, "can_open": False, "can_pick_up": True}}}
-}  # heap of placeholders, one per cardinal per location, just for testing. Will add actual data later. Note: location loot doesn't only include objects to collect, also includes specific decor/environmental
+}
 
 standard_loot = {
     "guaranteed": {"paperclip": {"name": "a paperclip", "description": "a humble paperclip."}},
@@ -183,10 +169,6 @@ emotion_table = {
     "encumbered": {"weight": 1}  # -1/0 = fine, +1 = encumbered
 }
 
-# git log
-# git shortlog --author="Bastien Montagne" --pretty=format:'%ci | %H' --no-merges -e -n
-
-
 loot_table = {
     1: "minor_loot",
     2: "medium_loot",
@@ -224,10 +206,7 @@ class LootTable:
                         self.by_name[item_name].update({"open": False, "current_location": {"location": "cardinal"},
                                                         "start_location": {None: None}})
             else:
-                for item_name, data in items.items(): # it calls this a duplication, which is right on the data level
-                    # but I find it useful having it define cardinal vs item_name immediately. Still might change the
-                    # format of the loc_loot dict yet so not refining it too much here yet
-                    # for item_name, data in data.items():
+                for item_name, data in items.items():
                     entry = dict(data)
 
                     entry["category"] = category
@@ -303,12 +282,6 @@ class LootTable:
         # mark as 'removed from container'
         # mark container as 'item removed'.
 
-    ## carrier ##
-    # carrier_options = {
-    #    "large": [{"backpack": 10}],
-    #    "medium": [{"cargo pants": 8}, {"satchel": 8}],
-    #    "small": [{"pockets": 6}]
-    #    }
     def pick_up_test(self,
                      name: str):  ## everything in the regular loot table is pick-up-able. This is just for location items currently.
         item = self.get_item(name)
@@ -332,14 +305,8 @@ class LootTable:
         if has_children:  # assumes only one child. Fix this later.
             to_set.append(has_children)
 
-        # print(f"to set: {to_set}")
         for loot_here in to_set:
             item = self.get_item(loot_here)
-            # print(f"item: {item}")
-            # print(f"loot_here: {loot_here}, type: {type(loot_here)}")
-            # print()
-            # print(f"loot_here get_item: {self.get_item(loot_here)}")
-
             if item["start_location"] == {None: None}:
                 # print("Start location is none: ")
                 item["start_location"] = {location: cardinal}
@@ -374,11 +341,3 @@ def initialise_location_loot():
 
 
 loc_loot = initialise_location_loot()
-
-# print(loot.describe("plastic bag", caps=True))
-# → A used plastic bag from a grocery store. no holes, at least.
-
-# print(loot.random_from("minor_loot"))
-# → Randomly picks one of the minor_loot items
-# randomloot = loot.random_from("minor_loot")
-# print((loot.describe(randomloot)))
