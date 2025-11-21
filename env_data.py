@@ -1,4 +1,5 @@
 #env_data - the extensive writings for specific environ details
+from typing import Any
 
 ## Rules: One direction is always the exit.
 
@@ -19,7 +20,7 @@ weatherdict = {
     "template": {
         "descrip": "You see a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences",
         "inside":True, "electricity": True, "nature": False
-        "n_desc": "The entrace gates are",
+        "n_desc": "The entrance gates are",
         "e_desc": "a variety of headstones",
         "s_desc": "a mausoleum",
         "w_desc": "what looks like a work shed of some kind",
@@ -122,7 +123,7 @@ dataset = {
 }
 #"overview": "{descrip}. {n_desc} to the north. To the east is {e_desc}, to the south is {s_desc}, and to the west is {w_desc}."
 
-class place_data:
+class PlaceData:
 
     def __init__(self, name):
         self.name = name
@@ -131,7 +132,7 @@ class place_data:
             #print(f"name: {name}, attr: {attr}, value: {value}")
             setattr(self, attr, value)
         if dataset[name].get("descrip"):
-            self.overview = f"{dataset[name]["descrip"]}.\n \n{self.n_desc} to the north. To the east is {self.e_desc}, to the south is {self.s_desc}, and to the west is {self.w_desc}."
+            self.overview = f"{dataset[name]['descrip']}.\n \n{self.n_desc} to the north. To the east is {self.e_desc}, to the south is {self.s_desc}, and to the west is {self.w_desc}."
 
         for attr in ("inside", "electricity", "nature"):
             value = dataset[name].get(attr)
@@ -140,20 +141,20 @@ class place_data:
         for cardinal in ("north", "south", "east", "west"):
             cardinal_data = dataset[name].get(cardinal)
             w_cardinal = dataset[name].get(cardinal + "_weird") # I need to figure out a better way of implementing the 'weird' things. Or just not implement it at all. Or always implement it. Why even allow for it not to be weird? I'm still of mixed minds on that. For now it's broadly ignored while I set up the basics. Maybe should just put it on hold for now until the structure's built up more. idk.
-            if w_cardinal == None:
+            if w_cardinal is None:
                 w_cardinal = cardinal_data
                 setattr(self, cardinal + "_weird", w_cardinal)
             setattr(self, cardinal, cardinal_data)
             cardinal_actions = dataset[name].get(cardinal + "_actions")
-            if not cardinal_actions or cardinal_actions == None:
+            if not cardinal_actions or cardinal_actions is None:
                 cardinal_actions = leave_options # use the defaults if none.
-
+                ## Guessing I got distracted partway through...?
         #def get_cardinal_desc()
 
-def placedata_init():
+def placedata_init() -> dict[Any, Any]:
     p_data = {}
     for name in places.keys():
-        place = place_data(name)
+        place = PlaceData(name)
         p_data[name] = place
     return p_data
 

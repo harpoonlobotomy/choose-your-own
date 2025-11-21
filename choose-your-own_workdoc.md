@@ -228,3 +228,58 @@ Okay so I broke the inventory, now I can't leave because it doesn't recognise pl
 7.56pm I need a day counter. Certain plot events happen at certain points, maybe it runs over the course of a week? So to solve the mystery or w/e, you need to do everything in enough time. Which also means I need activities/etc that can kill time and make that harder, because right now all there is is looking at things.
 
 Still kinda like the idea of giving the locations map coords and calculating distance for approximated travel times (per time_of_day segment).
+
+
+2.06pm 21/11/25
+Using the linux boot for a while. Testing pycharm while I'm here. The debugger is certainly more comprehensive. 
+Haven't installed a newer version of python yet. Apparently changing the python install can fuck w ubuntu so slightly worried. Probably just too tired to think straight though.
+
+6.07pm 21/11/25
+Did a heap of reformatting, renaming vars, etc. Not sure how I feel about a lot of it, a lot was just suggestions and style guides and I'm probably far too immature at this to be thinking I know better but... I'm ignoring a few of the style guide preferences anyway. 
+
+Current bugbear:
+
+=======================
+Pick a direction to investigate, or go elsewhere?
+    (north, south, east, west) or (go)
+i
+[inventory content here, as intended, looking at items, hitting enter to continue]
+
+Continuing.
+To examine an item more closely, type it here, otherwise hit 'enter' to continue.
+    (paperclip, fashion mag, unlabelled cream, anxiety meds, car keys, regional map)
+
+
+You decide to leave the graveyard
+Please pick your destination:
+======================
+
+So. We didn't decide to leave the graveyard.
+    (a city hotel room, a graveyard, a forked tree branch)
+    
+    
+Oh. Seem to have just fixed that.
+=================
+
+Continuing.
+To examine an item more closely, type it here, otherwise hit 'enter' to continue.
+    (severed tentacle, puzzle mag, unlabelled cream, anxiety meds, batteries)
+
+
+Pick a direction to investigate, or go elsewhere?
+    (north, south, east, west) or (go)
+================
+
+Nice.
+
+Okay in that case, thing to work on:
+
+The entrance gates are to the north. To the east is a variety of headstones, to the south is a mausoleum, and to the west is what looks like a work shed of some kind.
+Pick a direction to investigate, or go elsewhere?
+    (north, south, east, west) or (go)
+    
+Is it good or bad that I'm not facing any direction yet? Maybe it'd good. My gut reaction was bad. Hm.
+
+
+6:25pm 21/11/25
+Going to commit this evening's changes; have not yet updated this setup's python version I just realised, so hopefully that didn't break anything. I don't think so. Mostly I just want a firm copy of what I've done so far so I can delineate with whatever happens next. Probably want to try to get rid of locations.py entirely, really.
