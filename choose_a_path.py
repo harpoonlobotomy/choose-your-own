@@ -1,7 +1,8 @@
 import choices
 import env_data
+import misc_utilities
 from set_up_game import load_world, set_up, init_settings
-from choices import choose, loot
+from choices import choose, loot, loc_loot
 import random
 from locations import run_loc, places, descriptions
 from env_data import placedata_init, p_data
@@ -51,7 +52,7 @@ def do_inventory():
                 if desc and desc != "" and desc != f"No such item: {test}":
                     slowWriting((f"Description: {desc}"))
                 else:
-                    desc = choices.loc_loot.describe(test, caps=True)
+                    desc = loc_loot.describe(test, caps=True)
                     if desc and desc != "":
                         slowWriting((f"Description: {desc}"))
                     else:
@@ -63,9 +64,11 @@ def do_inventory():
                 if decision=="" or decision == None:
                     print("Continuing.")
                     break
-                if decision in ("drop", "separate"):
+                if decision == "drop":
                     drop_loot(test)
                     break
+                if decision == "separate":
+                    print("Separating parts isn't done yet.")
                 print()
             else:
                 break
@@ -167,11 +170,12 @@ def option(*values, no_lookup=None, print_all=False, none_possible=True, preambl
     for v in values:
         if isinstance(v, (list, tuple)):
             if print_all:
+                v=misc_utilities.col_list(v)
                 formatted.append(f"({', '.join(v)})")
             else:
                 formatted.append(f"({v[0]})") # add the first one as the 'label', use the rest as list later.
         else:
-            formatted.append(f"({v})")
+            formatted.append(f"({misc_utilities.assign_colour(v)})")
     #print(f"--" * 10, f"\nformatted: {formatted}, formatted_type: {type(formatted)}\n")
     while option_chosen != True:
         if preamble:
@@ -256,7 +260,7 @@ def roll_risk(rangemin=None, rangemax=None):
 
 def outcomes(state, activity):
     item = None
-    very_negative = ["It hurts suddenly. This isn't good...", f"You suddenly realise, your {item} is missing. Did you leave it somewhere?"]
+    very_negative = ["It hurts suddenly. This isn't good...", f"You suddenly realise, your {loot.name_col(item)} is missing. Did you leave it somewhere?[ NAME SHOULD BE COLOURED ]"]
     negative = [f"Uncomfortable, but broadly okay. Not the worst {activity} ever", f"Entirely survivable, but not much else to say about this {activity}.", f"You did a {activity}. Not much else to say about it really."]
     positive = [f"Honestly, quite a good {activity}", f"One of the better {activity}-based events, it turns out."]
     very_positive = [f"Your best {activity} in a long, long time."]
@@ -348,10 +352,11 @@ def switch_the(text, replace_with=""): # remember: if specifying the replace_wit
 
 def get_loot(value=None, random=True, named="", message:str=None):
     item=None
-    carryweight = game.volume
+    carryweight = game.carryweight
     #print(f"in get_loot: value: {value}, random: {random}, named: {named}, message: {message}")
     if named != "" and value == None: # don't add value for location items.
-        pickup_test=choices.loc_loot.pick_up_test(named) #should I test for get_item first? Probably no point. No.
+        print(f"Named in get_loot, about to go to pick_up_test: `{named}`, type: {type(named)}")
+        pickup_test=loc_loot.pick_up_test(named) #should I test for get_item first? Probably no point. No.
         if pickup_test == "No such item.":
             print("Not a location object.")
         elif pickup_test == "Can pick up":
@@ -367,7 +372,7 @@ def get_loot(value=None, random=True, named="", message:str=None):
             if test_item:
                 print("Item found in regular loot tables. Continuing.")
                 item=test_item
-        #if choices.loc_loot.pick_up_test(named): # should this be negative or positive? More things to look at but not pick up, or the inverse?
+        #if loc_loot.pick_up_test(named): # should this be negative or positive? More things to look at but not pick up, or the inverse?
         #    item = named
 
     elif random:
@@ -379,20 +384,25 @@ def get_loot(value=None, random=True, named="", message:str=None):
         item = loot.random_from(value)
     #print(f"Item: {item}")
     if message:
-        message = message.replace("[item]", loot.nicename(item))
+        message = message.replace("[item]", misc_utilities.assign_colour(loot.nicename(item)))
         message = message.replace("[place]", game.place)
         slowWriting(message)
     #item = loot.get_item(item)
-    slowWriting(f"[[ `{item}` added to inventory. ]]")
+    slowWriting(f"[[ `{misc_utilities.assign_colour(item)}` added to inventory. [NAME SHOULD BE COLOURED]]]")
     game.inventory.append(item)
-    choices.loc_loot.set_location(item, game.place, game.facing_direction, picked_up=True)
+    item_location = loc_loot.set_location(item, game.place, game.facing_direction, picked_up=True)
+    if not item_location:
+        item_location = loot.set_location(item, game.place, game.facing_direction, picked_up=True) # just try it
+    if not item_location:
+        print("Failed both item dicts")
 
     #TODO: Need to remove the item from the location. Currently it just 'duplicates' whatever is picked up because it's never removed from its origin.
 
 ### drop random item if inventory full // not sure if I hate this. ###
     if len(game.inventory) > carryweight:
         print()
-        test = option(f"drop", "ignore", preamble=f"It looks like you're already carrying too much. If you want to pick up {switch_the(item, 'the ')}, you might need to drop something - or you can try to carry it all.")
+        switched = switch_the(item, 'the ')
+        test = option(f"drop", "ignore", preamble=f"It looks like you're already carrying too much. If you want to pick up {misc_utilities.assign_colour(switched)}, you might need to drop something - or you can try to carry it all. [NAME SHOULD BE COLOURED.]")
         if test in ("ignore", "i"):
             if game.player["encumbered"]: # 50/50 chance to drop something if already encumbered and choose to ignore
                 outcome = roll_risk()
@@ -450,8 +460,11 @@ def relocate(need_sleep=None):
         if new_place not in options: # and new_place != current_loc <- turn on when I don't want current loc as an option anymore.
             options.append(new_place)
 
-    game.place = option(options, print_all=True, preamble="Please pick your destination:")
-    load_world(relocate=True)
+    new_location = option(options, print_all=True, preamble="Please pick your destination:")
+    if new_location in options:
+        game.place=new_location
+        load_world(relocate=True)
+
     if game.place==current_loc:
         print(f"You decided to stay at {switch_the(game.place, 'the')} a while longer.")
     else:
@@ -608,13 +621,13 @@ def look_around(status=None):
                 #for option_entry in options: ## 'if text in options', surely?
                 #    if text in option_entry: # this gets 'television' if I type 'e'. Not working...
                     print(f"text just before get_item: {text}")
-                    print(f"loc loot: {choices.loc_loot}")
+                    print(f"loc loot: {loc_loot}")
                     print(f"text: {text}")
-                    #item_entry = getattr(choices.loc_loot[game.place][game.facing_direction], text)
-                    item_entry = choices.loc_loot.get_item(text)
+                    #item_entry = getattr(loc_loot[game.place][game.facing_direction], text)
+                    item_entry = loc_loot.get_item(text)
                     print(f"item entry: {item_entry}")
                     if item_entry:
-                        print(f"{choices.loc_loot.describe(text, caps=True)}")
+                        print(f"{loc_loot.describe(text, caps=True)}")
                         #print("What do you want to do? [Investigate] item, [take] item, [leave] it alone.") # Do I want to list the options like this, or just try to make a megalist of what options may be chosen and work from that?
                         decision=option("investigate", "take", "leave", preamble="What do you want to do - investigate it, take it, or leave it alone?")
                         #print(f"text after decision: {text}")
@@ -626,7 +639,7 @@ def look_around(status=None):
                             picked_up = get_loot(value=None, random=True, named=text, message=None)
                             if picked_up:
                                 print(f"To set location: {picked_up}, {game.place}, {game.facing_direction}")
-                                set_items:list = choices.loc_loot.set_location(picked_up, game.place, game.facing_direction, picked_up=True)
+                                set_items:list = loc_loot.set_location(picked_up, game.place, game.facing_direction, picked_up=True) ## I'm dong this inside get loot too. Shouldn't need todo this, it's silly. ## also it breaks if inventory isn't in local loot immediately.
                                 for item_name in set_items:
                                     if item_name not in game.inventory:
                                         game.inventory.append(item_name)
@@ -635,7 +648,7 @@ def look_around(status=None):
                             print(f"You decide to leave the {text} where you found it.")
                         # this should loop, not just kick you out and relocate you immediately.
                     else:
-                        print(f"No entry in loc_loot for {item_entry}: {choices.loc_loot}")
+                        print(f"No entry in loc_loot for {item_entry}: {loc_loot}")
                 else:
                     print(f"Could not find what you're looking for. The options: {options}")
                     #for item in options:
@@ -745,7 +758,7 @@ def run():
     run_loc()
     placedata_init()
     choices.initialise_location_loot()
-    rigged=True # this one's just for the name/intro skip, doesn't affect weather etc.
+    rigged=False#True # this one's just for the name/intro skip, doesn't affect weather etc.
     if rigged:
         playernm = "Testbot"
     else:

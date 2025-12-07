@@ -228,3 +228,134 @@ Okay so I broke the inventory, now I can't leave because it doesn't recognise pl
 7.56pm I need a day counter. Certain plot events happen at certain points, maybe it runs over the course of a week? So to solve the mystery or w/e, you need to do everything in enough time. Which also means I need activities/etc that can kill time and make that harder, because right now all there is is looking at things.
 
 Still kinda like the idea of giving the locations map coords and calculating distance for approximated travel times (per time_of_day segment).
+
+
+1.03pm, 5/12/25 Short break to work on a birthday present, now back.
+
+Going to implement colours to identify typeable words.
+
+Also:
+    - This:
+        "You can drop the car keys or try to separate it into parts, or hit enter to continue. " Should only be shown if the item /can/ be split. Currently it happens after any inventory item inspection.
+
+
+Could randomly assign colours to items as they're identified the first time, and then use those colours each time. Would be neat. And could have specific colours for types eventually if I wanted.
+
+
+Also:
+
+This:
+    The entrance gates are to the north. To the east is a variety of headstones, to the south is a mausoleum, and to the west is what looks like a work shed of some kind.
+    Pick a direction to investigate, or go elsewhere?
+        (north, south, east, west) or (go)
+    i
+
+    INVENTORY:
+    To examine an item more closely, type it here, otherwise hit 'enter' to continue.
+        (paperclip, fashion mag, batteries, unlabelled cream, regional map, fish food, anxiety meds)
+    regional map
+    Chosen: (regional map)
+    Description: None yet
+
+    You can drop the regional map or try to separate it into parts, or hit enter to continue.
+        (drop) or (separate)
+
+    Continuing.
+    To examine an item more closely, type it here, otherwise hit 'enter' to continue.
+        (paperclip, fashion mag, batteries, unlabelled cream, regional map, fish food, anxiety meds)
+
+
+    You decide to leave the graveyard
+    Please pick your destination:
+        (a graveyard, a forked tree branch, a city hotel room)
+
+    Should not happen. After finishing in the inventory, it should return to the question, not take the question as answered when it wasn't.
+
+
+Also:
+
+    You can look around more, leave, or try to interact with the environment:
+        (north, south, west), (leave) or (glass jar, dried flowers, moss, headstone, north, west, south)
+
+It's repeating the cardinals in the 'or' section. Need to exclude those if they appear again, or better yet stop them reappearing.
+
+(They're nicely coloured, though. Can't tell here, but they are.)
+
+
+Also:
+
+    You decide to move on from the graveyard
+    Please pick your destination:
+        (a forked tree branch, a graveyard, a city hotel room)
+    a city hotel room
+    Chosen: (a city hotel room)
+    You decided to stay at the graveyard a while longer.
+
+I clearly didn't pick the graveyard...
+Rigged is off, so it shouldn't be forcing the graveyard.
+
+Hm. Well rigged was partly on, and I tried to fix it but this isn't quite right...:
+
+    a city hotel room
+    Chosen: (a city hotel room)
+    You make your way to a city hotel room. It's 2am, the weather is raining, and you're feeling pretty okay overall.
+    With the weather outside raining, you decide to look around the south of the city hotel room.
+
+    There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble.
+
+    Directions to look: ['north', 'east', 'west']
+    You can look around more, leave, or try to interact with the environment:
+        (north, east, west) or (leave)
+
+Oh nvm, I hadn't updated the description yet. It's not a coding issue, just a copywriting one.
+
+I need a way to mark objects in the descriptions, so 'You see a TV set' has 'tv set' in the tv's predefined colour.
+
+
+Also, this:
+
+item start location: {'a forked tree branch': 'east'}
+[Find the loot taking function that already exists, make sure the item is removed from the list here.]
+Unfortunately I haven't written anything here yet. Maybe just... go somewhere else?
+Keeping in mind that it's early morning and cloudy, where do you want to go?
+Please pick your destination:
+    (a forked tree branch, a city hotel room, a graveyard)
+i
+
+INVENTORY:
+To examine an item more closely, type it here, otherwise hit 'enter' to continue.
+    (severed tentacle, fashion mag, fish food, unlabelled cream, batteries, car keys, carved stick)
+carved stick
+Chosen: (carved stick)
+Description: [DESCRIBE] No such item: carved stick
+
+You can drop the carved stick or try to separate it into parts, or hit enter to continue.
+    (drop) or (separate)
+
+Continuing.
+To examine an item more closely, type it here, otherwise hit 'enter' to continue.
+    (severed tentacle, fashion mag, fish food, unlabelled cream, batteries, car keys, carved stick)
+
+
+You make your way to None. It's mid-morning, the weather is perfect, and you're feeling doing quite well.
+Traceback (most recent call last):
+  File "d:\Git_Repos\choose-your-own\choose_a_path.py", line 766, in <module>
+
+I went to inventory while it was asking me to choose a new destination, and it ended up with no destination (ie it lost where I just was). game.locatin should never be cleared...
+
+
+ah, it's because I set the game.location directly from the return of option:
+
+game.place = option(options, print_all=True, preamble="Please pick your destination:")
+
+So if the input doesn't make sense, it just returns none.
+
+
+
+Also this:
+
+You can drop the regional map or try to separate it into parts, or hit enter to continue.
+    (drop) or (separate)
+separate
+Chosen: (separate)
+Dropped regional map. If you want to drop anything else, type 'drop', otherwise we'll carry on.

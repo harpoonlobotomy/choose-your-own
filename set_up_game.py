@@ -45,10 +45,10 @@ def loadout(): # for random starting items, game, etc (could be renamed
 
     starting_items = loot.get_full_category("starting")
     #print(f"starting items: {starting_items}, type: {type(starting_items)}")
-    k = random.randint(3, game.volume-1) # changed to set max at game.volume, so I don't need to pop them later.
+    k = random.randint(3, game.carryweight-1) # changed to set max at game.carryweight, so I don't need to pop them later.
     if k > len(starting_items):
         k=len(starting_items)
-    print(f"random int from 3_to_game.vol: {k}, game.volume: {game.volume}")
+    print(f"random int from 3_to_game.vol: {k}, game.carryweight: {game.carryweight}")
     print(f"starting_items: {starting_items}")
     temp_inventory = random.sample(starting_items, k)
     for item in temp_inventory:
@@ -78,13 +78,14 @@ def calc_emotions():
     if counter <1:
         return "doing quite well"
 
-def load_world(relocate=False, rigged=False):
+def load_world(relocate=False, rigged=False, new_loc=None):
 
     from env_data import weatherdict
-    rigged = True
+    rigged = False#True
     rig_place = "a graveyard"
     rig_weather = "raining"
     rig_time = "midday"
+
     if rigged:
         game.time=rig_time
         game.place=rig_place
@@ -96,6 +97,8 @@ def load_world(relocate=False, rigged=False):
             game.weather = random.choice(weatherlist)#"fine", "stormy", "thunderstorm", "raining", "cloudy", "perfect", "a heatwave"))
             game.place = random.choice((game.loc_list))#"your home", "the city centre", "a small town", "the nature reserve", "the back alley", "a hospital", "a friend's house", "graveyard"))
 
+    if game.place != None:
+        game.last_loc = game.place
     #game.pops = random.choice(("few", "many"))
     game.bad_weather = weatherdict[game.weather].get("bad_weather")
 
@@ -229,6 +232,7 @@ class game:
         "inventory_management": True
         }
 
+    inv_colours = {(i for i in inventory): None}
     emotional_summary = None
 
     place = "home"
@@ -241,10 +245,14 @@ class game:
 
     currency = choices.currency
     carrier = choices.carrier
-    volume = choices.volume
+    carryweight = choices.carryweight
     painting = "a ship in rough seas"
     cardinals = ["north", "south", "east", "west"]
     loc_list = list(locations.descriptions.keys())
+
+    colour_counter = 0
+
+    last_loc = "a graveyard" # just here to keep the persistence if things get distracted during a scene change
 
 #set_up(weirdness, bad_language, player_name)
 

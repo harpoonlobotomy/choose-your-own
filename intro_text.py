@@ -30,11 +30,11 @@ col_dict = {
     }
 counter = 0
 
-def alt_col(counter, text:list=None, col_index:list=None): # this is more flexible. Not sure how I feel about the order-based way it works but at least it doesn't have a hard cap or preset.
+def alt_col(counter, text:list=None, col_index:list=None):
 
     line=[]
     if col_index == None:
-        col_index = [1,2,1] # default 'outside, main, outside'
+        col_index = [2,4,2] # default 'outside, main, outside'
 
 
     for i, section in enumerate(text):
@@ -70,7 +70,7 @@ def alt_col(counter, text:list=None, col_index:list=None): # this is more flexib
         counter_str=str(counter)
     line_str=""
     line_str = line_str.join(line)
-    print(f"line {counter_str}: {line_str}")
+    print(f"line {counter_str}: {line_str}") # counter just exists for line numbers, can remove later.
     return counter
 
 

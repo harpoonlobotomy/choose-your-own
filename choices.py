@@ -1,6 +1,9 @@
 # choices - static dicts etc used as reference.
+## ' volume' is now 'carryweight', need to make sure it's changed everywhere.
 
 import random
+
+#import misc_utilities
 #from set_up_game import game
 # letters used: y, n, s, g
 
@@ -25,7 +28,7 @@ carrier_options = {
     "small": [{"pockets": 6}]
     }
 
-#volume = {
+#vcarryweight = {
 #    "large": 10,
 #    "medium": 8,
 #    "small": 6
@@ -66,7 +69,7 @@ location_loot = {
                             "north": {"north_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
                             "west": {"west_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
                             "south":{"south_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}}}}, # not separated by facing_direction. Should it be?
-    "a city hotel room": {"east": {"TV set": {"name": "a television set", "description": "A decent looking TV set, probably a few years old but appears to be well kept. Currently turned off. This model has a built-in DVD.", "can_pick_up": False,}, # need to be able to add a DVD to this maybe.
+    "a city hotel room": {"east": {"TV set": {"name": "a television set", "description": "A decent looking TV set, probably a few years old but appears to be well kept. Currently turned off. This model has a built-in DVD.", "can_pick_up": False, "can_open":False}, # need to be able to add a DVD to this maybe.
                 "window": {"name":"a window", "description":"a window, facing out of the hotel room and down over the street below. Currently closed.", "can_pick_up":False, "can_open":True},
                            "north": {"north_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
                             "west": {"west_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
@@ -161,6 +164,36 @@ trip_over={"any": ["some poorly lit hazard", "your own feet"],
 def smart_capitalise(s: str) -> str:
     return s[0].upper() + s[1:] if s else s
 
+
+def apply_col_to_text(item, colour="green"):
+
+    baseline_format=';'.join([str(4), str(36), str("40")]) ## Add more colours later
+    white_format=';'.join([str(1), str(37), str("40")])
+    red_format=';'.join([str(0), str(31), str("40")])
+    bold_red_format=';'.join([str(1), str(31), str("40")])
+    green_format=';'.join([str(0), str(32), str("40")])
+    bold_green_format=';'.join([str(1), str(32), str("40")])
+
+    BASELINE=f"\x1b[{baseline_format}m"
+    RED=f"\x1b[{red_format}m"
+    END="\x1b[0m"
+    BOLD_RED=f"\x1b[{bold_red_format}m"
+    GRN=f"\x1b[{green_format}m"
+    BOLD_GRN=f"\x1b[{bold_green_format}m"
+    REAL_WHT=f"\x1b[{white_format}m"
+
+    if colour == "red":
+        col=RED
+    elif colour == "green":
+        col=GRN
+    else:
+        col=BASELINE
+
+    col_text = f'{col}{item}{END}'
+
+    return col_text
+
+
 class LootTable:
     def __init__(self, loot_data: dict, name: str = "Unnamed Table"):
         self.name = name
@@ -171,25 +204,19 @@ class LootTable:
     def _build_lookup(self):
         """Flatten the loot data for fast name lookups."""
         for category, items in self.by_category.items():
-            if self.name == "location_loot":
-                for cardinal, data in items.items():
-                    for item_name, data in data.items():
-                        entry = dict(data)
-                        entry["category"] = category
-                        print(f"item_name: {item_name}")
-                        print(f"ENTRY: {entry}")
-                        self.by_name[item_name] = entry
-                        self.by_name[item_name].update({"open":False, "current_location": {"location": "cardinal"}, "start_location": {None: None}})
-            else:
-                for item_name, data in items.items():
-                #for item_name, data in data.items():
-                    entry = dict(data)
 
+            def building_for_loop(dict_items):
+                for item_name, data in dict_items:
+                    entry = dict(data)
                     entry["category"] = category
-                    print(f"item_name: {item_name}")
-                    print(f"ENTRY: {entry}")
                     self.by_name[item_name] = entry
-                    self.by_name[item_name].update({"open":False, "current_location": {"location": "cardinal"}, "start_location": {None: None}}) # add this for everything, then update if needed.
+                    self.by_name[item_name].update({"open":False, "current_location": {"location": "cardinal"}, "start_location": {None: None}, "text_col": None})
+
+            if self.name == "location_loot":
+                for _, data in items.items():
+                    building_for_loop(data.items())
+            else:
+                building_for_loop(items.items()) # add this for everything, then update if needed.
                 # need to update cardinal, so we have 'found this jar in the east of the graveyard'. I like that better than just 'in the graveyard. May walk it back later.
 
                 ## only for those in location table.
@@ -240,14 +267,38 @@ class LootTable:
             else:
                 description = item['description']
             return description#{name} ({item['category']}): {item['description']}"
-        return f"No such item: {name}"
+        return f"[DESCRIBE] No such item: {name}"
 
     def nicename(self, name: str):
         item = self.get_item(name)
         if not item:
-            print("No such item.")
+            print("[NICENAME] No such item.")
             return None
         return item['name']
+
+    def name_col(self, name:str, colour:str):
+
+        item = self.get_item(name)
+        self.by_name[name].update({"text_col":colour})
+
+    #def name_col(self, name: str, is_nicename: bool=False): ## may switch this later to just be what nicename is, instead of an alternate. # use 'is_nicename' to apply nicename, otherwise regular item name returned.
+    #    item = self.get_item(name)
+    #    print(f"Name: {name}")
+    #    print(f"Item: {item}")
+    #    if not item:
+    #        print("[NAME_COL] No such item. Returning input unchanged.")
+    #        return name
+#
+    #    ""
+    #    text_colour = item["text_col"]
+#
+    #    if is_nicename:
+    #        item=loot.nicename(name)
+#
+    #    coloured_text = misc_utilities.col_text(item, text_colour)
+    #    return coloured_text
+
+
 
     def remove_from_container(self, name:str):
         print("Doesn't do anything yet.")
@@ -278,8 +329,11 @@ class LootTable:
     def set_location(self, name:str, location:str, cardinal:str, picked_up=False):
 
         item = self.get_item(name)
+        if not item:
+            return None
         to_set = [name]
-
+        print(f"Get location, name: {name}")
+        print(f"Get location, item: {item}")
         has_children = item.get("children")
         if has_children: # assumes only one child. Fix this later.
             to_set.append(has_children)
@@ -293,9 +347,8 @@ class LootTable:
             #print(f"loot_here get_item: {self.get_item(loot_here)}")
 
             if item["start_location"] == {None:None}:
-                print("Start location is none: ")
                 item["start_location"]={location: cardinal}
-                print(f"{item['start_location']}")
+                print(f"Start location was None, now is{item['start_location']}")
             if picked_up:
                 item["current_location"]=({"inventory": "inventory"})
             else:
@@ -311,14 +364,14 @@ def set_choices():
     carrier_size = random.choice((list(carrier_options.keys())))
     carrier_dict = random.choice((carrier_options[carrier_size]))
     for k, v in carrier_dict.items():
-        carrier, volume = k, v
-    return loot, carrier, volume
+        carrier, carryweight = k, v
+    return loot, carrier, carryweight
 
-loot, carrier, volume = set_choices()
+loot, carrier, carryweight = set_choices()
 
 def initialise_location_loot():
-    loot=LootTable(location_loot, name="location_loot")
-    return loot
+    loc_loot=LootTable(location_loot, name="location_loot")
+    return loc_loot
 
 loc_loot=initialise_location_loot()
 
