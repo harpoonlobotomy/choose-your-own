@@ -3,6 +3,7 @@
 ## Rules: One direction is always the exit.
 
 from locations import places
+from misc_utilities import assign_colour
 
 # a little section for weather. This is a weird, environment-data file. idk.
 weatherdict = {
@@ -58,7 +59,7 @@ dataset = {
             "n_desc": "There's a queen-size bed, simple but clean looking,",
             "e_desc": "a television and two decent sized windows overlooking the city",
             "s_desc": "a door, likely to a bathroom",
-            "w_desc": "the door out of the room, out to the hallway",
+            "w_desc": "the door out of the room, likely to the hallway",
             "exitwall": "west",
             "north": f"The bed looks nice enough - nothing fancy, but not a disaster either. Two pillows, a spare blanket at the foot of the bed. There's a small bedside drawer to each side, and a painting above the bed.",
             "north_weird": "You think you could leave through the large wrought-iron gates to the north. They're imposing - creaking constantly, and they seem to loom over you even from a distance.",
@@ -130,8 +131,6 @@ class place_data:
         for attr, value in dataset.get(name, {}).items():
             #print(f"name: {name}, attr: {attr}, value: {value}")
             setattr(self, attr, value)
-        if dataset[name].get("descrip"):
-            self.overview = f"{dataset[name]["descrip"]}.\n \n{self.n_desc} to the north. To the east is {self.e_desc}, to the south is {self.s_desc}, and to the west is {self.w_desc}."
 
         for attr in ("inside", "electricity", "nature"):
             value = dataset[name].get(attr)
@@ -148,6 +147,8 @@ class place_data:
             if not cardinal_actions or cardinal_actions == None:
                 cardinal_actions = leave_options # use the defaults if none.
 
+        if dataset[name].get("descrip"):
+            self.overview = f"{dataset[name]["descrip"]}.\n \n{self.n_desc} to the {assign_colour("north")}. To the {assign_colour("east")} is {self.e_desc}, to the {assign_colour("south")} is {self.s_desc}, and to the {assign_colour("west")} is {self.w_desc}."
         #def get_cardinal_desc()
 
 def placedata_init():

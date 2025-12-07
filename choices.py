@@ -14,7 +14,7 @@ choose = {
     "yes": ["y", "yes"],
     "no": ["n", "no", "nope"],
     "stay": ["s", "l", "stay", "look", "look around"],
-    "go": ["g", "e", "go", "elsewhere"]
+    "go": ["g", "e", "go", "elsewhere", "leave"] ## added 'leave', remove if it causes issues.
     }
 
 emphasis={"low": ["rather", "a bit", "somewhat", "quite"],
@@ -61,24 +61,24 @@ current_location (far more useful - just tracks where the item is now, either 'i
 
 location_loot = {
     "inventory": {"inventory":{"inventory":[]}},
-    "a graveyard": {"east": {"glass jar": {"name": "a glass jar", "description": f"a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.",
-                "description_no_children": "a glass jar, now empty aside from some bits of debris.", "children": "dried flowers", "can_pick_up": True,},
-                "dried flowers": {"name": "some dried flowers", "description": "a bunch of old flowers, brittle and pale; certainly not as vibrant as you imagine they once were.", "contained_in": "glass jar", "can_pick_up": True,},
-                "moss": {"name": "a few moss clumps", "description": "a few clumps of mostly green moss.", "can_pick_up": True,},
-                "headstone": {"name":"a carved headstone", "description": "a simple stone headstone, engraved with the name `J.W. Harstott`.", "can_pick_up":False},
-                            "north": {"north_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
-                            "west": {"west_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
-                            "south":{"south_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}}}}, # not separated by facing_direction. Should it be?
+    "a graveyard": {"east": {"glass jar": {"name": "a glass jar with flowers", "description": f"a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.",
+                "description_no_children": "a glass jar, now empty aside from some bits of debris.", "children": ["dried flowers"], "can_pick_up": True, "name_children_removed":"a glass jar"},
+                "dried flowers": {"name": "some dried flowers", "description": "a bunch of old flowers, brittle and pale; certainly not as vibrant as you imagine they once were.", "contained_in": "glass jar", "can_pick_up": True},
+                "moss": {"name": "a few moss clumps", "description": "a few clumps of mostly green moss.", "can_pick_up": True},
+                "headstone": {"name":"a carved headstone", "description": "a simple stone headstone, engraved with the name `J.W. Harstott`.", "can_pick_up":False}},
+                    "north": {"north_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
+                    "west": {"west_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
+                    "south":{"south_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}}}, # not separated by facing_direction. Should it be?
     "a city hotel room": {"east": {"TV set": {"name": "a television set", "description": "A decent looking TV set, probably a few years old but appears to be well kept. Currently turned off. This model has a built-in DVD.", "can_pick_up": False, "can_open":False}, # need to be able to add a DVD to this maybe.
-                "window": {"name":"a window", "description":"a window, facing out of the hotel room and down over the street below. Currently closed.", "can_pick_up":False, "can_open":True},
-                           "north": {"north_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
-                            "west": {"west_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
-                            "south":{"south_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}}}}, # need to add an open/closed attrib for this...
+                "window": {"name":"a window", "description":"a window, facing out of the hotel room and down over the street below. Currently closed.", "can_pick_up":False, "can_open":True}},
+                    "north": {"north_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
+                    "west": {"west_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
+                    "south":{"south_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}}}, # need to add an open/closed attrib for this...
                 # do I want the curtains to be separate? We open the curtains, can look, and can open the window separately? Or maybe the window doesn't open, and we can only open the curtains. The latter I think.
     "a forked tree branch": {"east": {"carved stick": {"name": "a spiral-carved stick", "description": "a stick, around 3 feet long, with tight spirals carved around the length except for a 'handle' at the thicker end.", "can_pick_up": True}},
-                            "north": {"north_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
-                            "west": {"west_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
-                            "south":{"south_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}}}
+                    "north": {"north_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
+                    "west": {"west_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
+                    "south":{"south_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}}}
                 }       # heap of placeholders, one per cardinal per location, just for testing. Will add actual data later. Note: location loot doesn't only include objects to collect, also includes specific decor/environmental
 
 
@@ -112,7 +112,7 @@ standard_loot = {
               }
     }
 
-time_of_day = ("pre-dawn", "early morning", "mid-morning", "late morning", "midday", "early afternoon", "late afternoon" "evening", "late evening", "middle of the night", "2am")
+time_of_day = ("pre-dawn", "early morning", "mid-morning", "late morning", "midday", "early afternoon", "late afternoon", "evening", "late evening", "middle of the night", "2am")
 
 starting = ["car keys", "fish food", "anxiety meds", "regional map", "unlabelled cream", "batteries"]
 
@@ -266,7 +266,7 @@ class LootTable:
                 description = smart_capitalise(item['description'])
             else:
                 description = item['description']
-            return description#{name} ({item['category']}): {item['description']}"
+            return description
         return f"[DESCRIBE] No such item: {name}"
 
     def nicename(self, name: str):
@@ -332,11 +332,12 @@ class LootTable:
         if not item:
             return None
         to_set = [name]
-        print(f"Get location, name: {name}")
-        print(f"Get location, item: {item}")
+        #print(f"Get location, name: {name}")
+        #print(f"Get location, item: {item}")
         has_children = item.get("children")
         if has_children: # assumes only one child. Fix this later.
-            to_set.append(has_children)
+            for child in has_children:
+                to_set.append(child)
 
         #print(f"to set: {to_set}")
         for loot_here in to_set:
@@ -348,13 +349,13 @@ class LootTable:
 
             if item["start_location"] == {None:None}:
                 item["start_location"]={location: cardinal}
-                print(f"Start location was None, now is{item['start_location']}")
+                #print(f"Start location was None, now is{item['start_location']}")
             if picked_up:
                 item["current_location"]=({"inventory": "inventory"})
             else:
                 item["current_location"]=({location: cardinal})
-            print(f"item: {item}")
-            print(f"item start location: {item["start_location"]}")
+            #print(f"item: {item}")
+            #print(f"item start location: {item["start_location"]}")
         return to_set
         #exit()
 

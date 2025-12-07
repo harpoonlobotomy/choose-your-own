@@ -83,7 +83,7 @@ def load_world(relocate=False, rigged=False, new_loc=None):
     from env_data import weatherdict
     rigged = False#True
     rig_place = "a graveyard"
-    rig_weather = "raining"
+    rig_weather = "perfect"
     rig_time = "midday"
 
     if rigged:

@@ -359,3 +359,196 @@ You can drop the regional map or try to separate it into parts, or hit enter to 
 separate
 Chosen: (separate)
 Dropped regional map. If you want to drop anything else, type 'drop', otherwise we'll carry on.
+
+
+7/12/25 5.05pm
+I think I need to update the inventory system entirely. I want to be able to treat item names as a specific type, and apply colours to that. Currently the colour application is context dependent.
+
+But for now, I think I'm going to work on this:
+
+    You could stay and sleep in the forked tree branch until morning, or go somewhere else to spend the wee hours. What do you do?
+        (stay) or (go)
+    i
+
+    INVENTORY:
+    To examine an item more closely, type it here, otherwise hit 'enter' to continue.
+        (paperclip, puzzle mag, anxiety meds, regional map, unlabelled cream, fish food, car keys, paper scrap with number)
+    paper scrap with number
+    Chosen: (paper scrap with number)
+    Description: A small scrap of torn, off-white paper with a hand-scrawled phone number written on it
+
+    You can drop the paper scrap with number or try to separate it into parts, or hit enter to continue.
+        (drop) or (separate)
+
+    Continuing.
+    To examine an item more closely, type it here, otherwise hit 'enter' to continue.
+        (paperclip, puzzle mag, anxiety meds, regional map, unlabelled cream, fish food, car keys, paper scrap with number)
+
+
+    Keeping in mind that it's pre-dawn and a heatwave, where do you want to go?
+    Please pick your destination:
+        (a graveyard, a city hotel room, a forked tree branch)
+
+Where the 'i' takes you to inventory, but when you leave the inventory, it puts you back /after/ the input call, not before it. It should return you to the prior input call.
+
+That particular example is this:
+
+            if test in no:
+                slowWriting("Thinking better of it, you decide to keep the advanced investigations until you have more light. What now, though?")
+            test = option("stay", "go", preamble=f"You could stay and sleep in {switch_the(place, "the ")} until morning, or go somewhere else to spend the wee hours. What do you do?")
+            if test in ("sleep", "stay"):
+                if places[game.place].inside == False:
+                    sleep_outside()
+                else:
+                    sleep_inside()
+            else:
+                slowWriting(f"Keeping in mind that it's {time} and {weather}, where do you want to go?")
+                relocate()
+
+So the input is either returning `i` (what was typed) or None (the last enter on leaving the inventory)
+
+this:
+        test=user_input()
+        if test in ("inventory_done"):
+            continue
+doesn't work, as it just repeats the last line of the inventory management line itself, I need it to trigger only after the inventory management is done.
+
+Okay, think I fixed it. Seemingly having only one entry in that list made it fail, probably checking against the letters instead of the full string. But now it seems to work; 'enter' just takes you to the single prior entry, so if in description it goes back to inventory, if in inventory it reprints the prior text:
+
+    Pick a direction to investigate, or go elsewhere?
+        (north, south, east, west) or (go)
+    i
+
+    INVENTORY:
+    To examine an item more closely, type it here, otherwise hit 'enter' to continue.
+        (severed tentacle, mail order catalogue, regional map, unlabelled cream, batteries, car keys, fish food)
+    car keys
+    Chosen: (car keys)
+    Description: None yet
+
+    You can drop the car keys or try to separate it into parts, or hit enter to continue.
+        (drop) or (separate)
+
+    Continuing.
+    To examine an item more closely, type it here, otherwise hit 'enter' to continue.
+        (severed tentacle, mail order catalogue, regional map, unlabelled cream, batteries, car keys, fish food)
+
+
+    Pick a direction to investigate, or go elsewhere?
+        (north, south, east, west) or (go)
+
+Also:
+
+q
+No sufficient response to the text. Returning Null.
+
+in response to:
+
+Unfortunately, it's raining
+You can weather it out (no pun intended) or try a last minute relocation - what do you do?
+    (stay) or (move)
+q
+No sufficient response to the text. Returning Null.
+Please pick your destination:
+    (a city hotel room, a forked tree branch, a graveyard)
+
+1, I thought 'q' should be 'quit'. Two, why isn't that picked up earlier? Glad I added that print line.
+
+Also I need to inforce the 'none_allowed' flag or whatever it's called. None should not be allowed in 'do you want to stay or move', it shouldn't default to 'move'.
+
+Well this is a bizarre bug I introduced:
+
+    The entrance gates are to the north. To the east is a variety of headstones, to the south is a mausoleum, and to the west is what looks like a work shed of some kind.
+    Pick a direction to investigate, or go elsewhere?
+        (west, west, west, west) or (go)
+
+blue, cyan cyan cyan, and it changed the text. Whoops.
+
+When it's not cardinals it doesn't change the text:
+    Please pick your destination:
+        (a graveyard, a forked tree branch, a graveyard)
+but it's all cyan.
+
+Think it's fixed now. Maybe.
+
+Thing to note though:
+
+    Once your eyes adjust a bit, you manage to make out more shapes than you expected - you find a scrap of paper with a phone-number written on it.
+    colour: `None`. Type: <class 'NoneType'>
+    [[ `paper scrap with number` added to inventory. [NAME SHOULD BE COLOURED]]]
+
+"a scrap of paper" is coloured, as it should be, but 'paper scrap with number' has a differnt colour. I really want the inventory items to store and retrieve their colours, so they're persistent each time.
+
+Okay so it's not fully fixed. The full colours do loop around properly for longer lists now, but for two items it's still looping the full four, instead of 1==1 and 2==2.
+
+Oh, it's because those aren't a list, they're each processed separately.
+Okay so... I need to make it so that if it's a list, we enumerate and get the number /there/. Otherwise only those with 'print_all' are getting the ordered list.
+
+Think I've fixed that now.
+
+
+Why does this:
+    You can look around more, leave, or try to interact with the environment:
+        (north, south, west), (leave) or (glass jar, dried flowers, moss, headstone, north, west, south)
+
+add the cardinals to the inventory list?
+It's getting it from here:
+
+potential = choices.location_loot[game.place].get(game.facing_direction)
+
+Okay have at least confirmed it's not an issue of the colour text somehow, it must predate it.
+
+If  there is no inventory in that direction, it prints normally:
+
+    You can look around more, leave, or try to interact with the environment:
+        (north, south, east) or (leave)
+
+OOOh. It's because I'd had 'north, west, south' as children of 'east', so looking 'east' gets you those as location loot. Oops.
+
+Directions to look: ['north', 'south', 'west']
+Interactable items: ['glass jar', 'dried flowers', 'moss', 'headstone']
+
+  (north, south, west), (leave) or (glass jar, dried flowers, moss, headstone)
+
+Okay, fixed it now.
+
+7:13pm
+Trying to fix the loot pickups a bit.
+
+also this:
+    Please pick your destination:
+        (a graveyard, a city hotel room, a forked tree branch)
+Having to type the 'a' is a pain.
+
+
+Another variation of the 'why are you ending early':
+Pick a direction to investigate, or go elsewhere?
+    (north, south, east, west) or (go)
+d
+d: Describe location.
+[A forked tree branch]  None yet....
+
+The entrace gates are to the north. To the east is a variety of headstones, to the south is a mausoleum, and to the west is what looks like a work shed of some kind.
+  You're facing north. You think you could leave through the large wrought-iron gates to the north. They're imposing but run-down; this graveyard doesn't get as much love as it could.
+
+
+
+You decide to leave the forked tree branch
+Please pick your destination:
+    (a city hotel room, a graveyard, a forked tree branch)
+
+Ah. Because I never added the 'description' return from user_input.
+
+8:33pm.
+Next thing.
+
+    INVENTORY:
+    To examine an item more closely, type it here, otherwise hit 'enter' to continue.
+        (severed tentacle, mail order catalogue, batteries, unlabelled cream, regional map, car keys, fish food, glass jar, dried flowers)
+    Chosen: (glass jar)
+    Description: [DESCRIBE] No such item: glass jar
+
+11.45pm
+TODO:
+If drop item, need to add it to the description to the current location.
+
