@@ -552,3 +552,18 @@ Next thing.
 TODO:
 If drop item, need to add it to the description to the current location.
 
+11.27am, 8.12.25
+I'm thinking I might need a second Class for the loot. One for actual loot management, separate from the loot tables. idk.
+
+Also need to make the descriptions modular.
+
+This:
+    You're facing east. You see a variety of headstones, most quite worn and decorated by clumps of moss. There's a glass jar being used as a vase in front of one of the headstones, dried flowers left long ago.
+
+stops working as soon as you pick up the glass jar. (Or anything else, that's just my default selection.)
+
+1.11pm Succumbed to chatting to chat gpt to discuss refactoring the inventory/item system before it gets too much messier. Think I have a decent plan now.
+
+Going to work on the JSON file for the item defs (which I needed to switch to anyway)
+
+EDIT: Actually it's going to be a .py file, at least for now. No need to bring JSON into it at this scale.

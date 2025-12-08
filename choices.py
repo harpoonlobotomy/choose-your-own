@@ -281,38 +281,9 @@ class LootTable:
         item = self.get_item(name)
         self.by_name[name].update({"text_col":colour})
 
-    #def name_col(self, name: str, is_nicename: bool=False): ## may switch this later to just be what nicename is, instead of an alternate. # use 'is_nicename' to apply nicename, otherwise regular item name returned.
-    #    item = self.get_item(name)
-    #    print(f"Name: {name}")
-    #    print(f"Item: {item}")
-    #    if not item:
-    #        print("[NAME_COL] No such item. Returning input unchanged.")
-    #        return name
-#
-    #    ""
-    #    text_colour = item["text_col"]
-#
-    #    if is_nicename:
-    #        item=loot.nicename(name)
-#
-    #    coloured_text = misc_utilities.col_text(item, text_colour)
-    #    return coloured_text
-
-
-
     def remove_from_container(self, name:str):
         print("Doesn't do anything yet.")
 
-
-        #get container item obj
-        #mark as 'removed from container'
-        # mark container as 'item removed'.
-    ## carrier ##
-    #carrier_options = {
-    #    "large": [{"backpack": 10}],
-    #    "medium": [{"cargo pants": 8}, {"satchel": 8}],
-    #    "small": [{"pockets": 6}]
-    #    }
     def pick_up_test(self, name:str): ## everything in the regular loot table is pick-up-able. This is just for location items currently.
         item = self.get_item(name)
         if not item:
