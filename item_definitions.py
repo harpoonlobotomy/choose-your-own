@@ -76,7 +76,7 @@ item_definitions = {
                     "starting_location": ("city hotel room", "east")},
     "carved stick": {"name": "a spiral-carved stick", "description": "a stick, around 3 feet long, with tight spirals carved around the length except for a 'handle' at the thicker end.",
                     "flags":[CAN_PICKUP], "item_size": BIGGER_THAN_BASKETBALL,  "starting_location": ("forked tree branch", "east")},
-    "paperclip": {"name": "a paperclip", "description": "a humble paperclip.", "flags":[DUPE], "item_size": SMALL_FLAT_THINGS, "loot_type": "magazine"},
+    "paperclip": {"name": "a paperclip", "description": "a humble paperclip.", "flags":[DUPE], "item_size": SMALL_FLAT_THINGS, "loot_type": "starting"},
     "puzzle mag": {"name": "a puzzle magazine", "description": "none yet", "flags":list(), "item_size": SMALLER_THAN_BASKETBALL, "loot_type": "magazine"},
     "fashion mag": {"name": "a fashion magazine", "description": "none yet", "flags":list(), "item_size": SMALLER_THAN_BASKETBALL, "loot_type": "magazine"},
     "gardening mag": {"name": "a gardening magazine", "description": "none yet", "flags":list(), "item_size": SMALLER_THAN_BASKETBALL, "loot_type": "magazine"},
@@ -102,7 +102,7 @@ item_definitions = {
 
 
 
-def update_flags():
+def get_item_defs():
     #print("\n" * 10)
     for item, attr in item_definitions.items():
         #print(f"Item: {item}, attr: {attr}")
@@ -119,7 +119,11 @@ def update_flags():
                     if flag not in item_data["flags"]:
                         item_data["flags"].append(flag)
             if item_data.get("started_contained_in"):
-                item_data["flags"].append(IS_CHILD) ## this flag is flexibile. Maybe shouldn't be added here. Maybe should be added at the instance generation instead, so 'IS_CHILD' can be removed when the item is separated from Parent.
+                item_data["flags"].append(IS_CHILD)
+                 ## this flag is flexibile. Maybe shouldn't be added here. Maybe should be added at the instance generation instead, so 'IS_CHILD' can be removed when the item is separated from Parent.
+            if not item_data.get("current_location"):
+                if item_data["starting_location"]:
+                    item_data["current_location"]=item_data["starting_location"]
             #print(f"Amended: {item_data["flags"]}")
 
     #from pprint import pprint

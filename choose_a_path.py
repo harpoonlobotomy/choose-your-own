@@ -7,7 +7,7 @@ from misc_utilities import assign_colour, col_list, col_text
 from set_up_game import load_world, set_up, init_settings
 from choices import choose, loot, loc_loot
 import random
-from locations import run_loc, places, descriptions
+from locations import Place, run_loc, places, descriptions
 from env_data import placedata_init, p_data
 from pprint import pprint
 
@@ -378,6 +378,17 @@ def switch_the(text, replace_with=""): # remember: if specifying the replace_wit
         text = "the "+ text # so I can add 'the' in front of a string, even if it doesn't start w 'a' or 'an'.
     return text
 
+def move_item_any(item):
+    game.inventory.append(item)
+    slowWriting(f"[[ `{assign_colour(item)}` added to inventory.")
+    location_obj = places[game.place] ## finally figured out how to add items to locatios.
+    location_obj.add_item(item)
+    item_location = loc_loot.set_location(item, game.place, game.facing_direction, picked_up=True)
+    if not item_location:
+        item_location = loot.set_location(item, game.place, game.facing_direction, picked_up=True) # just try it
+    if not item_location:
+        print("Failed both item dicts")
+
 def get_loot(value=None, random=True, named="", message:str=None):
     item=None
     carryweight = game.carryweight
@@ -416,21 +427,14 @@ def get_loot(value=None, random=True, named="", message:str=None):
         message = message.replace("[place]", game.place)
         slowWriting(message)
     #item = loot.get_item(item)
-    slowWriting(f"[[ `{assign_colour(item)}` added to inventory. [NAME SHOULD BE COLOURED]]]")
-    game.inventory.append(item)
-    item_location = loc_loot.set_location(item, game.place, game.facing_direction, picked_up=True)
-    if not item_location:
-        item_location = loot.set_location(item, game.place, game.facing_direction, picked_up=True) # just try it
-    if not item_location:
-        print("Failed both item dicts")
 
-    #TODO: Need to remove the item from the location. Currently it just 'duplicates' whatever is picked up because it's never removed from its origin.
+    move_item_any(item)
 
 ### drop random item if inventory full // not sure if I hate this. ###
     if len(game.inventory) > carryweight:
         print()
         switched = switch_the(item, 'the ')
-        test = option(f"drop", "ignore", preamble=f"It looks like you're already carrying too much. If you want to pick up {assign_colour(switched)}, you might need to drop something - or you can try to carry it all. [NAME SHOULD BE COLOURED.]")
+        test = option(f"drop", "ignore", preamble=f"It looks like you're already carrying too much. If you want to pick up {assign_colour(switched)}, you might need to drop something - or you can try to carry it all.")
         if test in ("ignore", "i"):
             if game.player["encumbered"]: # 50/50 chance to drop something if already encumbered and choose to ignore
                 outcome = roll_risk()

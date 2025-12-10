@@ -567,3 +567,51 @@ stops working as soon as you pick up the glass jar. (Or anything else, that's ju
 Going to work on the JSON file for the item defs (which I needed to switch to anyway)
 
 EDIT: Actually it's going to be a .py file, at least for now. No need to bring JSON into it at this scale.
+
+
+10/12/25
+
+    You make your way to a graveyard. It's middle of the night, the weather is cloudy, and you're feeling pretty okay overall.
+    With the weather cloudy, you decide to look around the east of the graveyard.
+
+    You're facing east. You see a variety of headstones, most quite worn and decorated by clumps of moss. There's a glass jar being used as a vase in front of one of the headstones, dried flowers left long ago.
+
+    You can look around more, leave, or try to interact with the environment:
+        (north, south, west), (leave) or (glass jar, dried flowers, moss, headstone)
+
+Need to add time-relevance to this section.
+
+    You can look around more, leave, or try to interact with the environment:
+        (north, south, west), (leave) or (glass jar, dried flowers, moss, headstone)
+
+If it's too dark to see, the inventory shouldn't be provided without investigating.
+
+ALSO:
+
+
+        INVENTORY:
+        To examine an item more closely, type it here, otherwise hit 'enter' to continue.
+            (severed tentacle, gardening mag, fish food, unlabelled cream, car keys, regional map, batteries, glass jar)
+        Chosen: (glass jar)
+        Description: A glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.
+
+        You can drop the glass jar or try to separate it into parts, or hit enter to continue.
+            (drop) or (separate)
+        Chosen: (separate)
+        dried flowers separated from glass jar
+
+        Description: A glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.
+
+        You can drop the glass jar or try to separate it into parts, or hit enter to continue.
+            (drop) or (separate)
+        Chosen: (separate)
+
+Once an item is separated, it should print both updated descriptions, and then return to the inventory 'screen'.
+
+ALSO also:
+
+Continuing.
+To examine an item more closely, type it here, otherwise hit 'enter' to continue.
+    (severed tentacle, gardening mag, fish food, unlabelled cream, car keys, regional map, batteries, glass jar, dried flowers, dried flowers, dried flowers, dried flowers)
+
+Currently it just keeps making more dried flowers, as there's no tracking on whether the item's already separated from children yet. But the new inventory system should fix that at least once it's implemented.

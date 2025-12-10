@@ -70,6 +70,8 @@ class Place: # had a lot of help with this part. Barely understand classes yet.
         self.visited = False
         self.items = []
         self.first_weather = None
+        self.items_here = set()  # store item instance IDs
+
         for attr, value in descriptions.get(name, {}).items():
             setattr(self, attr, value)
         else:
@@ -79,8 +81,15 @@ class Place: # had a lot of help with this part. Barely understand classes yet.
     def visit(self):
         self.visited = True
 
-    def add_item(self, item):
-        self.items.append(item)
+    def add_item(self, inst_id):
+        self.items_here.add(inst_id)
+        print(f"Added item {inst_id} to location {self.name}")
+
+    def remove_item(self, inst_id):
+        self.items_here.discard(inst_id)
+
+    #def add_item(self, item):
+    #    self.items.append(item)
 
 def build_places(template):
     places = {}
