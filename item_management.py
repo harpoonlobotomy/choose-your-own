@@ -260,7 +260,7 @@ class LootTable:
             if not defn:
                 return inst.definition_key
             # dynamic naming: if children removed, prefer name_children_removed when present
-            if not inst.children and defn.get("name_children_removed"):
+            if not inst.children and defn.get("name_children_removed"): ##
                 return defn.get("name_children_removed")
             # else return definition 'name'
             return defn.get("name", inst.definition_key)

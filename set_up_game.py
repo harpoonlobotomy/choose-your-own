@@ -2,6 +2,7 @@
 
 import random
 import env_data
+from item_management_2 import initialise_registry, registry
 import locations
 import choices
 from choices import loot
@@ -32,27 +33,38 @@ def test_for_weird():
 
 def set_inventory():
 
+
+    #print(f"Registry after initialise: {registry.instances}")
     #print(f"weird value: {game.w_value}")
     if game.w_value != 0:
-        game.inventory = ["severed tentacle"]
+        registry.pick_up("severed tentacle", game.inventory, is_id=False)
+        print(f"back after item management: game.inventory :: {game.inventory}")
         game.weirdness = True # what's the point of both weirdness and w_value? I guess w_value allows for severity later on.
 
     return
 
 def loadout(): # for random starting items, game, etc (could be renamed
+    ##
+#        something like this being used maybe  , exclude_none=True
+    paperclip = registry.instances_by_name("paperclip")[0].id
+    print(f"Paperclip: {paperclip}")
 
-    game.inventory.append((loot.random_from("mags")))
+    _, game.inventory = registry.pick_up(paperclip, game.inventory)
+    _, game.inventory = registry.pick_up(registry.random_from("magazine"), game.inventory)
 
-    starting_items = loot.get_full_category("starting")
+    print(f"Game inventory after managizine added: {game.inventory}")
+    starting_items = registry.instances_by_category("starting") ## starting items == list of instances
     #print(f"starting items: {starting_items}, type: {type(starting_items)}")
-    k = random.randint(3, game.carryweight-1) # changed to set max at game.carryweight, so I don't need to pop them later.
+    k = random.randint(5, game.carryweight-1) # changed to set max at game.carryweight, so I don't need to pop them later.
     if k > len(starting_items):
         k=len(starting_items)
     print(f"random int from 3_to_game.vol: {k}, game.carryweight: {game.carryweight}")
     print(f"starting_items: {starting_items}")
     temp_inventory = random.sample(starting_items, k)
     for item in temp_inventory:
-        game.inventory.append(item)
+        if item == None:
+            continue
+        game.inventory.append(item.id)
 
     hp = random.randrange(4, 8)
     game.player.update({"hp":hp})
@@ -184,11 +196,12 @@ def init_game():
 
     init_settings()
     test_for_weird()
-    set_inventory()
     #choices.set_choices()
-    loadout()
     load_world()
-
+    initialise_registry()
+    set_inventory()
+    loadout() ## move loadout after load_world to allow for time_management to run first. Testing...
+    print("Initial inventory:: ", game.inventory)
 
 def set_up(weirdness, bad_language, player_name): # skip straight to init_game to skip print
     game.weirdness = weirdness
@@ -196,7 +209,7 @@ def set_up(weirdness, bad_language, player_name): # skip straight to init_game t
     game.playername = player_name
     game.facing_direction = random.choice(("north", "east", "south", "west"))
     game.painting = random.choice(choices.paintings) # new, testing. Only needed for city hotel room at present. May update later if more locations. Nice to have semi-randomised location aspects.
-    print(f"game.painting: {game.painting}")
+    #print(f"game.painting: {game.painting}")
     init_game()
     #print(f"Player name: {player_name}")
     #print(f"Starting items: {game.inventory}")
@@ -218,7 +231,7 @@ class game:
         "inventory_on": False,
         "play_again": False
     }
-    inventory = ["paperclip"]
+    inventory = list()
     playername = "Test"
     player = {
         "hp": 5,
@@ -256,3 +269,5 @@ class game:
 
 #set_up(weirdness, bad_language, player_name)
 
+if __name__ == "__main__":
+    set_up(weirdness=True, bad_language=True, player_name="Testing")

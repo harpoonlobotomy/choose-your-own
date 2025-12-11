@@ -11,6 +11,8 @@ from locations import Place, run_loc, places, descriptions
 from env_data import placedata_init, p_data
 from pprint import pprint
 
+from item_management_2 import registry
+
 user_prefs = r"D:\Git_Repos\Choose_your_own\path_userprefs.json"
 run_again = False
 
@@ -44,12 +46,28 @@ def separate_loot(item):
                 game.inventory.append(child)
                 print(f"{child} separated from {item}")
 
+def print_inventory():
+
+    for item in game.inventory:
+        item=registry.by_name(item)
+        slowWriting(f"    {assign_colour(item.name)}") ### I kinda prefer it like this, line by line.
+        ## Might do a version of that where it makes 5 row columns, instead of just a singular long list.
+
+def get_inventory_names():
+    game.inventory_names = []
+    for item_id in game.inventory:
+        item_name = registry.by_id(item_id).name
+        game.inventory_names.append(item_name)
+
 def do_inventory():
     done=False
     slowWriting("INVENTORY: ")
     while done == False:
         #slowWriting("To examine an item more closely, type it here, otherwise hit 'enter' to continue.")
         #slowWriting(f"    {game.inventory}")
+        print_inventory()
+        get_inventory_names()
+        game.inventory
         test=option(game.inventory, print_all=True, none_possible=True, preamble="To examine an item more closely, type it here, otherwise hit 'enter' to continue.")
         #test = user_input()
         #print(f"Test: {test}")
@@ -794,7 +812,7 @@ def run():
     global game
     run_loc()
     placedata_init()
-    choices.initialise_location_loot()
+    #choices.initialise_location_loot()
     rigged=True # this one's just for the name/intro skip, doesn't affect weather etc.
     if rigged:
         playernm = "Testbot"

@@ -15,6 +15,7 @@ Yellow for 'interactable' in description text, maybe?
 """
 from choices import loot, loc_loot
 from set_up_game import game
+from item_management_2 import registry
 
 def col_text(text:str="", colour:str=None):
 
@@ -90,13 +91,13 @@ def assign_colour(item, colour=None):
     if not colour:
         if item in cardinals:
             colour=cardinal_cols[item]
-        elif loot.get_item(item):
-            entry = loot.get_item(item)
+        elif registry.get_item(item):
+            entry = registry.get_item(item)
 
-            if entry and entry.get('text_col'):
+            if entry and entry.colour != None:
                 print("Item found.")
-                if entry.get('text_col') != None:
-                    colour=text_colour
+                print(f"Tex col is not none. {entry.get('text_col')}")
+                colour=text_colour
             #if game.inv_colours.get(item):
             #    text_colour = game.inv_colours.get(item)
             if text_colour != None:
@@ -106,7 +107,7 @@ def assign_colour(item, colour=None):
                 colour=cardinal_cols[colour]
                 game.colour_counter += 1
                 game.inv_colours[item]=colour # souldn't need this at all, only made it because name_col didn't work.
-                loot.name_col(item, colour)
+                registry.name_col(item, colour)
         else:
             colour=cardinals[game.colour_counter]
             colour=cardinal_cols[colour]
@@ -119,6 +120,7 @@ def col_list(list:list=[], colour:str=None):
     coloured_list=[]
 
     for i, item in enumerate(list):
+        
         if not colour:
             coloured_text = assign_colour(item, i)
         else:

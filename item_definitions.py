@@ -63,19 +63,19 @@ If flags(CONTAINER):
 """
 
 
-item_definitions = {
+item_defs_dict = {
     "glass jar": {"name": "a glass jar with flowers", "description": f"a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.",
-                    "description_no_children": "a glass jar, now empty aside from some bits of debris.", "starting_children": ["dried flowers"], "name_children_removed":"a glass jar", "flags":[CAN_PICKUP, CONTAINER, DIRTY], "container_limits": SMALLER_THAN_APPLE, "item_size": SMALLER_THAN_BASKETBALL, "starting_location": ("graveyard", "east")},
+                    "description_no_children": "a glass jar, now empty aside from some bits of debris.", "starting_children": ["dried flowers"], "name_children_removed":"a glass jar", "flags":[CAN_PICKUP, CONTAINER, DIRTY], "container_limits": SMALLER_THAN_APPLE, "item_size": SMALLER_THAN_BASKETBALL, "starting_location": {"graveyard": "east"}},
     "dried flowers": {"name": "some dried flowers", "description": "a bunch of old flowers, brittle and pale; certainly not as vibrant as you imagine they once were.", "started_contained_in": "glass jar",
-                    "flags":[CAN_PICKUP, FLAMMABLE], "item_size": SMALLER_THAN_APPLE, "starting_location": ("graveyard", "east")},
-    "moss": {"name": "a few moss clumps", "description": "a few clumps of mostly green moss.", "flags":[CAN_PICKUP], "special_traits": MOSS_TRAIT, "item_size": A_FEW_MARBLES, "starting_location": ("graveyard", "east")}, # will dry up after a few days
-    "headstone": {"name":"a carved headstone", "description": "a simple stone headstone, engraved with the name `J.W. Harstott`.", "flags":[DIRTY], "starting_location": ("graveyard", "east")},
+                    "flags":[CAN_PICKUP, FLAMMABLE], "item_size": SMALLER_THAN_APPLE, "starting_location": {"graveyard": "east"}},
+    "moss": {"name": "a few moss clumps", "description": "a few clumps of mostly green moss.", "flags":[CAN_PICKUP], "special_traits": MOSS_TRAIT, "item_size": A_FEW_MARBLES, "starting_location": {"graveyard": "east"}}, # will dry up after a few days
+    "headstone": {"name":"a carved headstone", "description": "a simple stone headstone, engraved with the name `J.W. Harstott`.", "flags":[DIRTY], "starting_location": {"graveyard": "east"}},
     "TV set": {"name": "a television set", "description": "A decent looking TV set, probably a few years old but appears to be well kept. Currently turned off. This model has a built-in DVD.",
-                    "flags":list(), "starting_location": ("city hotel room", "east")}, # need to be able to add a DVD to this maybe.
+                    "flags":list(), "starting_location": {"city hotel room": "east"}}, # need to be able to add a DVD to this maybe.
     "window": {"name":"a window", "description":"a window, facing out of the hotel room and down over the street below. Currently closed.", "flags":[CAN_OPEN, FRAGILE],
-                    "starting_location": ("city hotel room", "east")},
+                    "starting_location": {"city hotel room": "east"}},
     "carved stick": {"name": "a spiral-carved stick", "description": "a stick, around 3 feet long, with tight spirals carved around the length except for a 'handle' at the thicker end.",
-                    "flags":[CAN_PICKUP], "item_size": BIGGER_THAN_BASKETBALL,  "starting_location": ("forked tree branch", "east")},
+                    "flags":[CAN_PICKUP], "item_size": BIGGER_THAN_BASKETBALL,  "starting_location": {"forked tree branch": "east"}},
     "paperclip": {"name": "a paperclip", "description": "a humble paperclip.", "flags":[DUPE], "item_size": SMALL_FLAT_THINGS, "loot_type": "starting"},
     "puzzle mag": {"name": "a puzzle magazine", "description": "none yet", "flags":list(), "item_size": SMALLER_THAN_BASKETBALL, "loot_type": "magazine"},
     "fashion mag": {"name": "a fashion magazine", "description": "none yet", "flags":list(), "item_size": SMALLER_THAN_BASKETBALL, "loot_type": "magazine"},
@@ -104,10 +104,10 @@ item_definitions = {
 
 def get_item_defs():
     #print("\n" * 10)
-    for item, attr in item_definitions.items():
+    for item, attr in item_defs_dict.items():
         #print(f"Item: {item}, attr: {attr}")
         if "loot_type" in list(attr):
-            item_data = item_definitions[item]
+            item_data = item_defs_dict[item]
             if not CAN_PICKUP in item_data["flags"]:
                 #print(f"Can Pickup not listed in `{item}`. Adding now.")
                 item_data["flags"].append(CAN_PICKUP)
@@ -122,11 +122,19 @@ def get_item_defs():
                 item_data["flags"].append(IS_CHILD)
                  ## this flag is flexibile. Maybe shouldn't be added here. Maybe should be added at the instance generation instead, so 'IS_CHILD' can be removed when the item is separated from Parent.
             if not item_data.get("current_location"):
-                if item_data["starting_location"]:
+                if item_data.get("starting_location"):
                     item_data["current_location"]=item_data["starting_location"]
+                else:
+                    item_data["current_location"] = None
+        description = attr["description"]
+        if description == "none yet":
+            attr["description"] = f"It's a {item}"
             #print(f"Amended: {item_data["flags"]}")
 
     #from pprint import pprint
     #pprint(item_definitions)
 
-    return item_definitions
+    return item_defs_dict
+
+
+##   0d3757a0-a070-471e-b922-ac43c764f39a ## glass jar id
