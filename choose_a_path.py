@@ -11,7 +11,7 @@ from locations import Place, run_loc, places, descriptions
 from env_data import placedata_init, p_data
 from pprint import pprint
 
-from item_management_2 import registry
+from item_management_2 import LootRegistry, ItemInstance, registry
 
 user_prefs = r"D:\Git_Repos\Choose_your_own\path_userprefs.json"
 run_again = False
@@ -49,47 +49,55 @@ def separate_loot(item):
 def print_inventory():
 
     for item in game.inventory:
-        item=registry.by_name(item)
-        slowWriting(f"    {assign_colour(item.name)}") ### I kinda prefer it like this, line by line.
+        if isinstance(item, ItemInstance):
+            slowWriting(f"    {assign_colour(item.name)}") ### I kinda prefer it like this, line by line.
+        elif isinstance(item, str):
+            slowWriting(f"    {assign_colour(item)}")
         ## Might do a version of that where it makes 5 row columns, instead of just a singular long list.
 
 def get_inventory_names():
     game.inventory_names = []
-    for item_id in game.inventory:
-        item_name = registry.by_id(item_id).name
-        game.inventory_names.append(item_name)
+    for item in game.inventory:
+        game.inventory_names.append(item.name)
 
 def do_inventory():
     done=False
     slowWriting("INVENTORY: ")
     while done == False:
-        #slowWriting("To examine an item more closely, type it here, otherwise hit 'enter' to continue.")
-        #slowWriting(f"    {game.inventory}")
         print_inventory()
         get_inventory_names()
-        game.inventory
-        test=option(game.inventory, print_all=True, none_possible=True, preamble="To examine an item more closely, type it here, otherwise hit 'enter' to continue.")
+        test=option(game.inventory_names, print_all=True, none_possible=True, preamble="To examine an item more closely, type it here, otherwise hit 'enter' to continue.")
         #test = user_input()
         #print(f"Test: {test}")
         if not test or test=="" or test==None:
             done=True
             return test
         while True:
-            if test and test in game.inventory:
+            if test and test in game.inventory_names:
                     #places[game.place].first_weather = game.weather
                 # needs to be looking in [name].values().get("inv_name")
-                desc = loot.describe(test, caps=True)
+
+                list_index=game.inventory_names.index(test)
+                if list_index is not None:
+                    test=game.inventory[list_index]
+                ## need to get item instance from name, but maybe from index instead to allow for muultiple instances of same name. Done, I think.
+
+                desc = registry.describe(test, caps=True)
                 if desc and desc != "" and desc != f"[DESCRIBE] No such item: {test}":
                     slowWriting((f"Description: {col_text(desc, "description")}"))
                 else:
                     desc = loc_loot.describe(test, caps=True)
                     if desc and desc != "":
-                        slowWriting((f"Description: {col_text(desc, "description")}"))
+                        if test.colour != None:
+                            colour = test.colour
+                        else:
+                            colour = "description"
+                        slowWriting((f"Description: {col_text(desc, colour)}"))
                     else:
                         slowWriting(f"Not much to say about the {test}.")
 
                 print()
-                decision=option("drop", "separate", none_possible=True, preamble=f"You can drop the {test} or try to separate it into parts, or hit enter to continue.")
+                decision=option("drop", "separate", none_possible=True, preamble=f"You can drop the {test.name} or try to separate it into parts, or hit enter to continue.")
                 #text=user_input()
                 if decision=="" or decision == None:
                     print("Continuing.")
@@ -399,13 +407,13 @@ def switch_the(text, replace_with=""): # remember: if specifying the replace_wit
 def move_item_any(item):
     game.inventory.append(item)
     slowWriting(f"[[ `{assign_colour(item)}` added to inventory.")
-    location_obj = places[game.place] ## finally figured out how to add items to locatios.
-    location_obj.add_item(item)
-    item_location = loc_loot.set_location(item, game.place, game.facing_direction, picked_up=True)
-    if not item_location:
-        item_location = loot.set_location(item, game.place, game.facing_direction, picked_up=True) # just try it
-    if not item_location:
-        print("Failed both item dicts")
+    #location_obj = places[game.place] ## finally figured out how to add items to locatios.
+    #location_obj.add_item(item)
+    #item_location = loc_loot.set_location(item, game.place, game.facing_direction, picked_up=True)
+    #if not item_location:
+    #    item_location = loot.set_location(item, game.place, game.facing_direction, picked_up=True) # just try it
+    #if not item_location:
+    #    print("Failed both item dicts")
 
 def get_loot(value=None, random=True, named="", message:str=None):
     item=None
@@ -413,35 +421,43 @@ def get_loot(value=None, random=True, named="", message:str=None):
     #print(f"in get_loot: value: {value}, random: {random}, named: {named}, message: {message}")
     if named != "" and value == None: # don't add value for location items.
         print(f"Named in get_loot, about to go to pick_up_test: `{named}`, type: {type(named)}")
-        pickup_test=loc_loot.pick_up_test(named) #should I test for get_item first? Probably no point. No.
-        if pickup_test == "No such item.":
-            print("Not a location object.")
-        elif pickup_test == "Can pick up":
-            #print("Can be picked up. Will let it continue, obj should get picked up.")
-            item=named
-        elif pickup_test == "Cannot pick up": # is a positive failure - it was found, so is a loc item.
-            print("Cannot be picked up. Print a message about how it can't be picked up. Maybe one per item for variation.")
-            return None
+        if isinstance(named, str):
+            item = registry.instances_by_name(named)
+        elif isinstance(named, ItemInstance):
+            item = named
+        print(f"item: {item}, type: {type(item)}")
+        if item:
+            _, game.inventory = registry.pick_up(item, game.inventory, game.place, game.facing_direction)
+        #pickup_test=loc_loot.pick_up_test(named) #should I test for get_item first? Probably no point. No.
+        #if pickup_test == "No such item.":
+        #    print("Not a location object.")
+        #elif pickup_test == "Can pick up":
+        #    #print("Can be picked up. Will let it continue, obj should get picked up.")
+        #    item=named
+        #elif pickup_test == "Cannot pick up": # is a positive failure - it was found, so is a loc item.
+        #    print("Cannot be picked up. Print a message about how it can't be picked up. Maybe one per item for variation.")
+        #    return None
         else:
-            print("Failed to check pickupability. Letting it run to see what happens.")
-        if not item:
-            test_item = loot.get_item(named)
-            if test_item:
-                print("Item found in regular loot tables. Continuing.")
-                item=test_item
+            print(f"Failed to check pickupability. Count not get item instance. named: {named}.")
+
+        #if not item:
+        #    test_item = loot.get_item(named)
+        #    if test_item:
+        #        print("Item found in regular loot tables. Continuing.")
+        #        item=test_item
         #if loc_loot.pick_up_test(named): # should this be negative or positive? More things to look at but not pick up, or the inverse?
         #    item = named
 
     elif random:
         #print(f"value: {value}")
-        item = loot.random_from(value)
+        item = registry.random_from(value)
     else:
         print("Not random and no name given. This shouldn't happen, but defaulting to random.")
         print(f"value: {value}")
-        item = loot.random_from(value)
+        item = registry.random_from(value)
     #print(f"Item: {item}")
     if message:
-        message = message.replace("[item]", assign_colour(loot.nicename(item)))
+        message = message.replace("[item]", assign_colour(registry.nicename(item)))
         message = message.replace("[place]", game.place)
         slowWriting(message)
     #item = loot.get_item(item)
@@ -688,17 +704,17 @@ def look_around(status=None):
                                 ## Might have to change how I do this. Currently, flowers + jar are listed separately from each other, but when picked up are one unit.
                                 # Maybe I need to rename the glass jar, if children, glass jar with flowers, otherwise just glass jar when they're separated.
                             picked_up = get_loot(value=None, random=True, named=text, message=None)
-                            if picked_up:
-                                if text not in game.inventory:
-                                    game.inventory.append(text) # doing this here, so the children aren't added, but are part of the main object.
-                                #print(f"To set location: {picked_up}, {assign_colour(game.place, 'loc')}, {game.facing_direction}")
-                                set_items:list = loc_loot.set_location(picked_up, game.place, game.facing_direction, picked_up=True) ## I'm dong this inside get loot too. Shouldn't need todo this, it's silly. ## also it breaks if inventory isn't in local loot immediately.
-                                for item_name in set_items:
-                                    #print(f"Full list before: {choices.location_loot[game.place][game.facing_direction]}")
-                                    #print("testing: choices.location_loot[game.place][game.facing_direction].pop(picked_up)")
-                                    choices.location_loot[game.place][game.facing_direction].pop(item_name)
+                            #if picked_up:
+                            #    if text not in game.inventory:
+                            #        game.inventory.append(text) # doing this here, so the children aren't added, but are part of the main object.
+                            #    #print(f"To set location: {picked_up}, {assign_colour(game.place, 'loc')}, {game.facing_direction}")
+                            #    set_items:list = loc_loot.set_location(picked_up, game.place, game.facing_direction, picked_up=True) ## I'm dong this inside get loot too. Shouldn't need todo this, it's silly. ## also it breaks if inventory isn't in local loot immediately.
+                            #    for item_name in set_items:
+                            #        #print(f"Full list before: {choices.location_loot[game.place][game.facing_direction]}")
+                            #        #print("testing: choices.location_loot[game.place][game.facing_direction].pop(picked_up)")
+                            #        choices.location_loot[game.place][game.facing_direction].pop(item_name)
                                     #print(f"Full list after: {choices.location_loot[game.place][game.facing_direction]}")
-                                print("[Find the loot taking function that already exists, make sure the item is removed from the list here.]") # does the current loot table allow for 'already picked up'? I don't think it does. Need to do that.
+                            #    print("[Find the loot taking function that already exists, make sure the item is removed from the list here.]") # does the current loot table allow for 'already picked up'? I don't think it does. Need to do that.
                         elif decision.lower()=="leave":
                             print(f"You decide to leave the {assign_colour(text)} where you found it.")
                         # this should loop, not just kick you out and relocate you immediately.

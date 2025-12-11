@@ -82,6 +82,7 @@ class Place: # had a lot of help with this part. Barely understand classes yet.
         self.visited = True
 
     def add_item(self, inst_id):
+        print(f"Inst id in add_item in Place: {inst_id}")
         self.items_here.add(inst_id)
         print(f"Added item {inst_id} to location {self.name}")
 

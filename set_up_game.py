@@ -37,7 +37,7 @@ def set_inventory():
     #print(f"Registry after initialise: {registry.instances}")
     #print(f"weird value: {game.w_value}")
     if game.w_value != 0:
-        registry.pick_up("severed tentacle", game.inventory, is_id=False)
+        registry.pick_up("severed tentacle", game.inventory)
         print(f"back after item management: game.inventory :: {game.inventory}")
         game.weirdness = True # what's the point of both weirdness and w_value? I guess w_value allows for severity later on.
 
@@ -46,25 +46,25 @@ def set_inventory():
 def loadout(): # for random starting items, game, etc (could be renamed
     ##
 #        something like this being used maybe  , exclude_none=True
-    paperclip = registry.instances_by_name("paperclip")[0].id
-    print(f"Paperclip: {paperclip}")
+    paperclip_list = registry.instances_by_name("paperclip")
+    #print(f"Paperclip: {paperclip_list}, type: {type(paperclip_list)}")
 
-    _, game.inventory = registry.pick_up(paperclip, game.inventory)
+    _, game.inventory = registry.pick_up(paperclip_list[0], game.inventory)
     _, game.inventory = registry.pick_up(registry.random_from("magazine"), game.inventory)
 
     print(f"Game inventory after managizine added: {game.inventory}")
     starting_items = registry.instances_by_category("starting") ## starting items == list of instances
     #print(f"starting items: {starting_items}, type: {type(starting_items)}")
     k = random.randint(5, game.carryweight-1) # changed to set max at game.carryweight, so I don't need to pop them later.
-    if k > len(starting_items):
+    if k > int(len(starting_items)):
         k=len(starting_items)
-    print(f"random int from 3_to_game.vol: {k}, game.carryweight: {game.carryweight}")
-    print(f"starting_items: {starting_items}")
-    temp_inventory = random.sample(starting_items, k)
+    #print(f"random int from 3_to_game.vol: {k}, game.carryweight: {game.carryweight}")
+    #print(f"starting_items: {starting_items}")
+    temp_inventory = random.sample(list(starting_items), k)
     for item in temp_inventory:
         if item == None:
             continue
-        game.inventory.append(item.id)
+        _, game.inventory = registry.pick_up(item, game.inventory)
 
     hp = random.randrange(4, 8)
     game.player.update({"hp":hp})
@@ -232,6 +232,7 @@ class game:
         "play_again": False
     }
     inventory = list()
+    inventory_names = list()
     playername = "Test"
     player = {
         "hp": 5,

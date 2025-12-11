@@ -14,6 +14,7 @@ Yellow for 'interactable' in description text, maybe?
 
 """
 from choices import loot, loc_loot
+from item_management_2 import ItemInstance
 from set_up_game import game
 from item_management_2 import registry
 
@@ -30,6 +31,7 @@ def col_text(text:str="", colour:str=None):
     cyan_format=';'.join([str(0), str(36), str("40")])
     blue_format=';'.join([str(0), str(34), str("40")])
     yellow_format=';'.join([str(0), str(33), str("40")])
+    b_yellow_format=';'.join([str(1), str(33), str("40")])
     magenta_format=';'.join([str(0), str(35), str("40")])
 
 
@@ -41,6 +43,7 @@ def col_text(text:str="", colour:str=None):
     CYAN=f"\x1b[{cyan_format}m"
     BLUE=f"\x1b[{blue_format}m"
     YEL=f"\x1b[{yellow_format}m"
+    B_YEL=f"\x1b[{b_yellow_format}m"
     MAG=f"\x1b[{magenta_format}m"
     #BOLD_GRN=f"\x1b[{bold_green_format}m"
     #REAL_WHT=f"\x1b[{white_format}m"
@@ -51,11 +54,14 @@ def col_text(text:str="", colour:str=None):
     "green": GRN,
     "red": RED,
     "yellow": YEL,
-    "magenta":MAG
+    "magenta":MAG,
+    "description": B_YEL
     }
+
 
     if col_dict.get(colour):
         col=col_dict.get(colour)
+
     else:
         col=BASELINE
 
@@ -88,27 +94,44 @@ def assign_colour(item, colour=None):
         if "loc" in colour:
             colour="green" # change it here to change all location text. Maybe a decent way to do it.
 
+    if isinstance(item, list):
+        item=item[0] #arbitrarily take the first one.
+        print(f"Item was a list. Now: {item}, type: {type(item)}")
     if not colour:
+        print(f"Item does not have prescribed colour. Item: {item}")
         if item in cardinals:
+            print(f"Item is a cardinal: {item}")
             colour=cardinal_cols[item]
-        elif registry.get_item(item):
-            entry = registry.get_item(item)
+        elif isinstance(item, ItemInstance):
+            print(f"Item is an instance: {item}")
+            entry:ItemInstance = item
 
             if entry and entry.colour != None:
                 print("Item found.")
-                print(f"Tex col is not none. {entry.get('text_col')}")
+                print(f"Tex col is not none. {entry.get(colour)}")
                 colour=text_colour
             #if game.inv_colours.get(item):
             #    text_colour = game.inv_colours.get(item)
             if text_colour != None:
+                print(f"Text colour is not None: {text_colour}")
                 colour=text_colour
             else:
+                print("Text colour is none, assigning based on counter")
                 colour=cardinals[game.colour_counter]
                 colour=cardinal_cols[colour]
+                print(f"Colour from counter: {colour}")
                 game.colour_counter += 1
                 game.inv_colours[item]=colour # souldn't need this at all, only made it because name_col didn't work.
-                registry.name_col(item, colour)
+                item_name = registry.name_col(item, colour) ## set colour to inst object. Returns the item.name.
+                print(f"Colour: {item.colour}")
+                item=item_name # can do this inline, just here for now while testing.
         else:
+            print(f"Item not in cardinals and not an instance: {item}") ####
+
+# WHY IS THIS TRIGGERING
+# WHEN THIS IS WHAT IT'S PRINTING:
+#  "" Item not in cardinals and not an instance: <ItemInstance moss (9aae9489-13ee-40a3-af9b-2cdf8c63ef66)> ""
+
             colour=cardinals[game.colour_counter]
             colour=cardinal_cols[colour]
             game.colour_counter += 1
@@ -120,7 +143,7 @@ def col_list(list:list=[], colour:str=None):
     coloured_list=[]
 
     for i, item in enumerate(list):
-        
+
         if not colour:
             coloured_text = assign_colour(item, i)
         else:

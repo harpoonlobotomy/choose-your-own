@@ -102,34 +102,38 @@ item_defs_dict = {
 
 
 
-def get_item_defs():
+def get_item_defs(item_name=None):
     #print("\n" * 10)
-    for item, attr in item_defs_dict.items():
-        #print(f"Item: {item}, attr: {attr}")
-        if "loot_type" in list(attr):
-            item_data = item_defs_dict[item]
-            if not CAN_PICKUP in item_data["flags"]:
-                #print(f"Can Pickup not listed in `{item}`. Adding now.")
-                item_data["flags"].append(CAN_PICKUP)
+    if item_name:
+        attr=item_defs_dict.get(item_name)
+        return attr
+    else:
+        for item, attr in item_defs_dict.items():
+            #print(f"Item: {item}, attr: {attr}")
+            if "loot_type" in list(attr):
+                item_data = item_defs_dict[item]
+                if not CAN_PICKUP in item_data["flags"]:
+                    #print(f"Can Pickup not listed in `{item}`. Adding now.")
+                    item_data["flags"].append(CAN_PICKUP)
 
-            if not item_data.get("item_size"):
-                print(f"Item `{item}` does not have item size but can be picked up. Please add an item size to {item}'s entry in item_definitions")
-            if item_data.get("loot_type") == "magazine":
-                for flag in group_flags["magazine"]:
-                    if flag not in item_data["flags"]:
-                        item_data["flags"].append(flag)
-            if item_data.get("started_contained_in"):
-                item_data["flags"].append(IS_CHILD)
-                 ## this flag is flexibile. Maybe shouldn't be added here. Maybe should be added at the instance generation instead, so 'IS_CHILD' can be removed when the item is separated from Parent.
-            if not item_data.get("current_location"):
-                if item_data.get("starting_location"):
-                    item_data["current_location"]=item_data["starting_location"]
-                else:
-                    item_data["current_location"] = None
-        description = attr["description"]
-        if description == "none yet":
-            attr["description"] = f"It's a {item}"
-            #print(f"Amended: {item_data["flags"]}")
+                if not item_data.get("item_size"):
+                    print(f"Item `{item}` does not have item size but can be picked up. Please add an item size to {item}'s entry in item_definitions")
+                if item_data.get("loot_type") == "magazine":
+                    for flag in group_flags["magazine"]:
+                        if flag not in item_data["flags"]:
+                            item_data["flags"].append(flag)
+                if item_data.get("started_contained_in"):
+                    item_data["flags"].append(IS_CHILD)
+                    ## this flag is flexibile. Maybe shouldn't be added here. Maybe should be added at the instance generation instead, so 'IS_CHILD' can be removed when the item is separated from Parent.
+                if not item_data.get("current_location"):
+                    if item_data.get("starting_location"):
+                        item_data["current_location"]=item_data["starting_location"]
+                    else:
+                        item_data["current_location"] = None
+            description = attr["description"]
+            if description == "none yet":
+                attr["description"] = f"It's a {item}"
+                #print(f"Amended: {item_data["flags"]}")
 
     #from pprint import pprint
     #pprint(item_definitions)

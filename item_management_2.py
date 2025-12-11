@@ -26,7 +26,8 @@ class ItemInstance:
         self.nicename=attr["name"]
         self.description = attr["description"]
         self.starting_location = attr.get("starting_location")     # dict (game.place: cardinal) or None
-        self.location = (attr.get("starting_location") if not attr.get("contained_in") and not (attr.get("starting_location") == None) else None)  # starting location or None
+        self.location = (attr.get("starting_location") if not attr.get("contained_in") and not (attr.get("starting_location") == None)
+        else None)  # starting location or None
         self.colour = None
         if can_pick_up:
             self.item_size=item_size
@@ -79,7 +80,7 @@ class LootRegistry:
     #
     #
     #   def __init__(self, definition_key, item_def, primary_category, description=None, location=None, contained_in=None, item_size=None, container_data=None):
-    def create_instance(self, definition_key, attr, counter):#nicename, primary_category, is_container, can_pick_up, description, location, contained_in, item_size, container_data):
+    def create_instance(self, definition_key, attr, counter=None):#nicename, primary_category, is_container, can_pick_up, description, location, contained_in, item_size, container_data):
 
 
 #### ALL ATTRS + FLAGS IN ALL CURRENT ITEMS:
@@ -115,7 +116,7 @@ class LootRegistry:
         if location:
             location, cardinal = next(iter(location.items()))
             cardinal_key = cardinal if cardinal is not None else "__none__"
-            self.by_location.setdefault(location, {}).setdefault(cardinal_key, set()).add(inst.id)
+            self.by_location.setdefault(location, {}).setdefault(cardinal_key, set()).add(inst)
             #self.by_location.setdefault(location, set()).add(inst.id)
 
 ## original:
@@ -127,10 +128,10 @@ class LootRegistry:
 ## better version:
         loot_type = attr.get("loot_type")
         if loot_type:
-            self.by_category.setdefault(loot_type, set()).add(inst.id)
+            self.by_category.setdefault(loot_type, set()).add(inst)
 
         if container_data:
-            self.by_container.setdefault(inst.id, set())
+            self.by_container.setdefault(inst, set())
 
         # if item starts inside container
         if attr.get("started_contained_in"):
@@ -142,13 +143,13 @@ class LootRegistry:
             if parent_obj_list:
                 if len(parent_obj_list)==1:
                     for prospective_parent in parent_obj_list:
-                        pros_parent_obj=self.instances.get(prospective_parent)
+                        pros_parent_obj=self.instances.get(prospective_parent.id)
                         print(f"pros parent obj: {pros_parent_obj}")
                         pros_children = pros_parent_obj.starting_children
                         if inst.name in pros_children:
                             print(f"Pros children: {pros_children}")
-                            inst.contained_in = pros_parent_obj.id
-                            self.by_container[pros_parent_obj.id].add(inst.id) ## idk if this'll work.
+                            inst.contained_in = pros_parent_obj
+                            self.by_container[pros_parent_obj].add(inst) ## idk if this'll work.
                             #for child in pros_children:
                                 #if child ==
                         #if child.id == inst.id:
@@ -161,25 +162,25 @@ class LootRegistry:
                     #print(f"Parent id (next): {parent_id}, type: {type(parent_id)}")
                     #inst.contained_in = parent_id
                     #self.by_container[parent_id].add(inst.id) ## idk if this'll work.
-                    print(f"Added {inst.id} to parent {pros_parent_obj.id}: {self.by_container[pros_parent_obj.id]}")
+                    print(f"Added {inst} to parent {pros_parent_obj}: {self.by_container[pros_parent_obj]}")
                 else:
                     for prospective_parent in parent_obj_list:
                         print("Prospective parent:  ", prospective_parent)
-                        pros_parent_obj=self.instances.get(prospective_parent)
+                        pros_parent_obj=self.instances.get(prospective_parent.id)
                         pros_children = pros_parent_obj.starting_children
                         if pros_children:
                             for child in pros_children:
                                 print(child)
 
                         #self.by_container[parent_id]
-                    print(f"Child `{inst.id}` does not have a parent object (expecting {parent_name})")
+                    print(f"Child `{inst}` does not have a parent object (expecting {parent_name})")
 
-            print(f"Container obj: {pros_parent_obj.id}")
-            print(f" After adding children to containers:  ", self.by_container[pros_parent_obj.id])
+            print(f"Container obj: {pros_parent_obj}")
+            print(f" After adding children to containers:  ", self.by_container[pros_parent_obj])
 
         #print("FULL by_container:", registry.by_container)
         # Index by name
-        self.by_name.setdefault(definition_key, set()).add(inst.id)
+        self.by_name.setdefault(definition_key, list()).append(inst)
 
         return inst
 
@@ -231,7 +232,8 @@ class LootRegistry:
 
 
 
-    def delete_instance(self, inst_id):
+    def delete_instance(self, inst: ItemInstance):
+        inst_id=inst.id
         inst = self.instances.pop(inst_id, None)
         if not inst:
             return
@@ -243,27 +245,29 @@ class LootRegistry:
                 del self.by_location[inst.location]
 
         # remove from name index
-        self.by_name.get(inst.definition_key, set()).discard(inst_id)
+        self.by_name.get(inst.definition_key, set()).discard(inst)
 
     # -------------------------
     # Movement
     # -------------------------
-    def move_item(self, inst_id, new_location=None, new_container=None):
-        inst = self.instances[inst_id]
+    def move_item(self, inst:ItemInstance, place=None, direction=None, new_container=None, ):
+
         print(f"INST IN MOVE_ITEM: {inst}")
         # Update location
-        old_location = inst.location
 
-        if old_location and old_location in self.by_location:
-            self.by_location[old_location].discard(inst_id)
-            if not self.by_location[old_location]:
-                del self.by_location[old_location]
+        print(f"old location: {place}")
+        if place and place in list[self.by_location.keys()]:
+            self.by_location.place.discard(inst)
+            if not self.by_location[place]:
+                del self.by_location[place]
 
+        new_location = {place:direction} if place and direction else None
         inst.location = new_location
+        inst.direction = direction
         inst.contained_in = new_container ## 'inventory' should be a container.
 
         if new_location:
-            self.by_location.setdefault(new_location, set()).add(inst_id)
+            self.by_location.setdefault((place, direction), set()).add(inst)
 
 #       move_item(inst_id, new_location=None, new_container=None)
 #           if moving out of container:
@@ -278,7 +282,7 @@ class LootRegistry:
     # -------------------------
     # Lookup
     # -------------------------
-    def get_instance(self, inst_id):
+    def get_instance_from_id(self, inst_id):
         return self.instances.get(inst_id)
 
     def get_item(self, inst_id): # is a dupe of the previous, but I have this all througout the existing script so may change to it and remove get_instance later. One or the other, but for the moment, both.
@@ -288,13 +292,13 @@ class LootRegistry:
         return [self.instances[i] for i in self.by_location.get((place, direction), set())]
 
     def instances_by_name(self, definition_key):
-        return [self.instances[i] for i in self.by_name.get(definition_key, set())]
+        return self.by_name.get(definition_key)# if self.by_name.get(definition_key) else None
 
     def instances_by_container(self, container):
         return [self.instances[i] for i in self.by_container.get(container, set())]
 
     def instances_by_category(self, category):
-        return [self.instances[i] for i in self.by_category.get(category, set())]
+        return self.by_category.get(category, set())
 
     def instance_by_counter(self, counter_val):
         [self.instances[i] for i in self.by_counter[counter_val]]
@@ -323,73 +327,75 @@ class LootRegistry:
 
         return random.choice(items)# if items else "No Items (RANDOM_FROM)"
 
-    def describe(self, inst_id: str, caps=False):
-        if isinstance(inst_id, ItemInstance):
-            print("[DESCRIBE] Was not expecting ItemInstance.")
-            inst_id = inst_id.id
-            return "Cannot describe, no item instance supplied."
+    def describe(self, inst: ItemInstance, caps=False):
 
         """Convenience method to return a formatted description."""
-        instance = self.get_instance(inst_id)
-        if instance:
-            if caps:
-                description = smart_capitalise(instance.description)
-            else:
-                description = instance.description
+        if caps:
+            description = smart_capitalise(inst.description)
+        else:
+            description = inst.description
+        if description:
             return description
-        return f"[DESCRIBE] No such item: {inst_id}"
+        return "You see nothing special."
 
-    def nicename(self, inst_id: str):
-        item = self.get_instance(inst_id)
-        if not item:
+    def nicename(self, inst: ItemInstance):
+        if not inst:
             print("[NICENAME] No such item.")
             return None
-        return item.nicename
+        return inst.nicename
 
-    def get_name(self, instance_id: str):
+    def get_name(self, inst: ItemInstance):
 
-        item = self.get_instance(instance_id)
-        if not item:
+        if not inst:
             print("[GET_NAME] No such item.")
             return None
-        return item.name
+        return inst.name
 
-    def name_col(self, inst_id:str, colour:str):
+    def name_col(self, inst: ItemInstance, colour:str):
 
-        item = self.get_item(inst_id)
-        item.colour=colour
+        inst.colour=colour
+        print(f"Assigning colour to instance: inst: {inst}, colour: {colour}, inst.colour: {inst.colour}")
+        return inst.name
 
-    def pick_up(self, inst_id, inventory_list, is_id=True):
+    def pick_up(self, inst, inventory_list, place=None, direction=None):
 
-        print(f"Pick_up: inst_id: {inst_id}, type: {type(inst_id)}")
-        if isinstance(inst_id, ItemInstance):
-            inst_id = inst_id.id
-        elif not is_id:
-            item_list = self.instances_by_name(inst_id)
+        if isinstance(inst, set) or isinstance(inst, list):
+            inst=inst[0]
+        print(f"Pick_up: inst: {inst}, type: {type(inst)}")
+        if not isinstance(inst, ItemInstance):
+            item_list = self.instances_by_name(inst)
+            inst = item_list[0] # arbitrarily pick the first one
             print(f"pick_up id list: {item_list}")
             if not item_list:
-                print(f"No items found (pick_up), inst_id: {inst_id}")
-                return None
-            inst = item_list[0] # arbitrarily pick the first one
-            inst_id = inst.id
-        else:
-            inst = self.instances[inst_id]
+                inst=self.get_instance_from_id(self, inst)
+
         if not inst:
             print("Failed to find inst in pick_up.")
 
-        self.move_item(inst_id, new_location=None)
-        inventory_list.append(inst.id)
-        print("INVENTORY LIST:: ", inventory_list) ## always add the ID, not instance or name, to the inventory. Make it prinable elsewhere.
+        if not "can_pick_up" in inst.flags:
+            print("Item cannot be picked up.")
+            return None, inventory_list
+
+        if inst in inventory_list:
+            print("Item already in inventory. Creating new...")
+            from item_definitions import get_item_defs
+            attr = get_item_defs(inst.name)
+            inst = self.create_instance(inst.name, attr)
+
+
+        self.move_item(inst, place, direction)
+        inventory_list.append(inst)
+        #print("INVENTORY LIST:: ", inventory_list) ## always add the ID, not instance or name, to the inventory. Make it prinable elsewhere.
 
         ## Note: I don't understand why we use id everywhere instead of instance itself. The first step of almost every function is getting the instance from the id anyway.
         return inst, inventory_list
 
-    def drop(self, inst_id, location_tuple, inventory_list):
-        if inst_id not in inventory_list:
+    def drop(self, inst: ItemInstance, location_tuple, inventory_list):
+        if inst not in inventory_list:
             return None
-        inventory_list.remove(inst_id)
-        self.move_item(inst_id, new_location=location_tuple)
-        return self.instances[inst_id], inventory_list
+        inventory_list.remove(inst)
+        self.move_item(inst, new_location=location_tuple)
+        return self.instances[inst], inventory_list
 
 
 # setup
