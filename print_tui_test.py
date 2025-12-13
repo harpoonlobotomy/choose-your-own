@@ -15,8 +15,12 @@ spacing = 0
 get_longest=True # temporarily, later will be used to do auto spacing + centering.
 longest_min = 0
 tui_linelist = []
-
+END="\x1b[0m"
 title_str = "Choose a Path"
+
+### UI blocking ###
+global ui_blocking
+ui_blocking = {"inv_start":None, "inv_end":None, "playerdata_start":None, "playerdata_end":None, "worldstate_start":None, "worldstate_end":None, "input_line":None, "text_block_start":None, "text_block_end":None}
 
 
 def col_text(text:str="", colour:str=None):
@@ -43,7 +47,7 @@ def col_text(text:str="", colour:str=None):
     BASELINE=f"\x1b[{baseline_format}m"
     B_WHITE=f"\x1b[{b_white_format}m"
     RED=f"\x1b[{red_format}m"
-    END="\x1b[0m"
+
     #BOLD_RED=f"\x1b[{bold_red_format}m"
     GRN=f"\x1b[{green_format}m"
     B_GRN=f"\x1b[{b_green_format}m"
@@ -95,7 +99,7 @@ def col_text(text:str="", colour:str=None):
 
     return col_text
 
-def col_text_partial(text:str="", symbol:str="", col:str=""):
+def col_text_partial(text:str="", plain_line="", ui_blocking:dict=(), symbol:str="", col:str=""):
 
     #print(f"Col text partial: text: {text}, symbol: {symbol}, col: {col}")
     individual = [" | ", "\\", "//", "|"]
@@ -103,11 +107,37 @@ def col_text_partial(text:str="", symbol:str="", col:str=""):
     all = ["=", "-", "_"]
     excl = ["-===", "===-"]
 
+ ## UI blocking
+    ui_blocks = ["i", "w", "p"]
+
+    if symbol in ui_blocks:
+
+        if symbol == 'i':
+            block_part="inv_"
+        elif symbol == "w":
+            block_part = "worldstate_"
+        elif symbol == "p":
+            block_part = "playerdata_"
+
+        if ui_blocking[f"{block_part}start"]==None:
+            area_start = plain_line.find(symbol)
+            # line number in `col`.
+            ui_blocking[f"{block_part}start"] = (col, area_start)
+            #print(f'ui_blocking["inv_start"]: {ui_blocking["inv_start"]}')
+        else:
+            area_end = plain_line.rfind(symbol)
+            ui_blocking[f"{block_part}end"] = (col, area_end)
+        text=text.replace(symbol, col_text(symbol.upper(), None))
+        return text
+
     if symbol == "|##|":
         text=text.replace("|", col_text("|", "b_yellow"))
         text=text.replace("##", col_text("##", "hash"))
     elif symbol == "^":
         text=text.replace(symbol, col_text("=", col))
+
+    elif symbol == "!":
+        text=text.replace("!", col_text(":", col))
 
     elif symbol == "titles":
         texts = ["INVENTORY", "PLAYER DATA", "WORLD STATE"]
@@ -150,7 +180,6 @@ def title_text(line):
     if len(title_str) > title_length:
         diff = len(title_str) - title_length
         print(f"Title is too long by {diff} characters. Adjust hardcoded title line.")
-    #if len(title_str) < title_length:
     diff = title_length - len(title_str)
     title= (" " * int(diff/2)) + title_str + (" " * int(diff/2))
     if len(title) < title_length:
@@ -162,22 +191,18 @@ def title_text(line):
     pre_title = col_text(pre_title_0, colour=None)
     post_title = col_text(post_title_0, colour=None)
 
-    #print(f"Pre title_start_2: {pre_title}")
-    #print(f"Pre title_end: {post_title}")
     line = line[:title_start-len(pre_title_0)] + pre_title + " " + title + " " + post_title + line[title_end+len(post_title_0)+1:]#+ (" " * int(diff/4)) + title_str + (" " * int(diff/4)) + line[:title_end]
 
     return line
-
 
 
 def get_terminal_cols_rows():
 
     from shutil import get_terminal_size
     cols, rows = get_terminal_size()
-    #print(f"cols: {cols}, rows: {rows}")
     return cols, rows
 
-def make_centred_list(input_list:list, linelength):
+def make_centred_list(input_list:list, linelength, ui_blocking):
     cols, rows = get_terminal_cols_rows()
     spare_cols = cols-linelength
     spacing=int(spare_cols/no_of_spacers)
@@ -186,21 +211,14 @@ def make_centred_list(input_list:list, linelength):
     up_lines = []
     list_length = len(input_list)
     additional_rows = rows-list_length-2
-    #print(f"Additional rows: {additional_rows}")
-    #print(f"Length of list: {len(input_list)}")
     longer_list = []
     for line in input_list:
-        #print(f"Line: {line}")
         if '+' in line:
             line_str = "  |##| $$  -| $$                                                                                                                                                                                    $$ |-   $$ |##|"
             for number in range(0, additional_rows):
                 longer_list.append(line_str)
         else:
             longer_list.append("\n" + line)
-#    for line in new_list:
-#        print(line)
-#    exit()
-    #print(f"Length of list: {len(longer_list)}")
     for i, line in enumerate(longer_list):
         if "&" in line:
             line = line.replace('&', ('_' * spacing))
@@ -208,6 +226,7 @@ def make_centred_list(input_list:list, linelength):
             line = line.replace('*', ('=' * spacing))
         if '%' in line:
             line = line.replace('%', ('-' * spacing))
+
         plain_line=line
         if "~" in line:
             line = title_text(line)
@@ -220,7 +239,7 @@ def make_centred_list(input_list:list, linelength):
             line = col_text_partial(line, symbol=exl_2, col="deco_1")
 
         elif "=" in line:
-                line = col_text_partial(line, symbol="=", col="equals")
+            line = col_text_partial(line, symbol="=", col="equals")
         elif "-" in line:
             line = col_text_partial(line, symbol="-", col="dash")
         if "|##|" in line:
@@ -231,30 +250,41 @@ def make_centred_list(input_list:list, linelength):
             line = col_text_partial(line, symbol="/", col="slash")
         if "\\" in line:
             line = col_text_partial(line, symbol="\\", col="slash")
+        if "!" in line:
+            line = col_text_partial(line, symbol="!", col="yellow")
+
         line = line.replace('$', (' ' * spacing))
         plain_line=plain_line.replace('$', (' ' * spacing))
+
+        if "INVENTORY" in line:
+            line = col_text_partial(line, symbol="titles", col="title_white")
+
         if "^" in line:
             line = line.replace('@', '^' * spacing)
             plain_line=plain_line.replace('@', '^' * spacing)
             up_lines.append(i)
             text_area_start = plain_line.find('^')
             text_area_end = plain_line.rfind('^')
-            #print(f"Text area start: {text_area_start}")
-            #print(f"Text area end: {text_area_end}")
+            text_box_count=plain_line.count("^")
             line = col_text_partial(line, symbol="^", col="up")
 
-        if "INVENTORY" in line:
-            line = col_text_partial(line, symbol="titles", col="title_white")
+
         if longest_min + (no_of_spacers * spacing) < cols-1:
             extra_spaces = cols - (longest_min + (no_of_spacers * spacing) -1)
             line = (' ' * int(extra_spaces/2)) + line + (' ' * int(extra_spaces/2))
+            plain_line = (' ' * int(extra_spaces/2)) + plain_line + (' ' * int(extra_spaces/2))
+
+    #### INVENTORY BOX ####
+        ui_blocks = ["i", "w", "p"]
+        for block in ui_blocks:
+            if block in line:
+                line = col_text_partial(line, plain_line, ui_blocking, symbol=block, col=i+1)
         line = line.replace('\n', '')
         plain_line = plain_line.replace('\n', '')
         new_list.append(line)
         plain_list.append(plain_line)
-        #print(line)
 
-    return new_list, plain_list, text_area_start, text_area_end, up_lines
+    return new_list, plain_list, text_area_start, text_area_end, up_lines, text_box_count
 
 with open(tui_lines) as f:
     for line in f:
@@ -267,11 +297,13 @@ import os
 os.system("cls")
 
 if get_longest:
-    #print(f"Longest line without adding spacers: {longest_min}")
-    tui_linelist, plain_list, text_area_start, text_area_end, up_lines = make_centred_list(tui_linelist, longest_min)
+    #print(f"ui blocking: {ui_blocking}, type: {type(ui_blocking)}")
+    tui_linelist, plain_list, text_area_start, text_area_end, up_lines, text_box_count = make_centred_list(tui_linelist, longest_min, ui_blocking)
+
+    ui_blocking["input_line"] = up_lines[1]+3
 
 ## longest line: 206
-def print_screen():
+def print_TUI():
     for line in tui_linelist:
         print(line)#, end='')
 
@@ -284,13 +316,14 @@ def print_screen():
 
 def print_at_start_of_line(text_area_start, text_area_end, up_lines):
 
-    print_screen()
-    print("\033[s")
-
     first_row=None
     last_row=None
-    text_block_start=text_area_start+7
-
+    text_block_start_col=(up_lines[0]+3)
+    inset = int(text_area_start+8)
+    end_offset = int(text_box_count-11)
+    #if end_offset > inset:
+    #    inset += 1
+    #    end_offset -= 1
     printable_lines = list(range((up_lines[0]+3), (up_lines[1])))
     #print(f"Printable lines: {printable_lines}")
     import random
@@ -299,22 +332,76 @@ def print_at_start_of_line(text_area_start, text_area_end, up_lines):
     for i, row in enumerate(printable_lines):
         #print("len of letters: ", len(letters))
         #print(f"text_area_end: {text_area_end}, text area start: {text_area_start}")
-        printline = random.sample(letters, int(text_area_end)-(text_area_start+7))
+        printline = random.sample(letters, end_offset)#int(text_area_end)-(text_area_start+7))
         printline=''.join(printline)
-        line=(f"\033[{row};{str(int(text_area_start+7))}H {printline}")
+
+        line=(f"\033[{row};{str(inset)}H {printline}")
+        #line=(f"\033[{row};{str(int(text_area_start+7))}H {printline}")
         if i==0:
             first_row=row
         print(line, end='')
         last_row=row
 
     print("\033[u")
-    return first_row, last_row, text_block_start
+    return first_row, last_row, text_block_start_col
 
-first_row, last_row, text_block_start = print_at_start_of_line(text_area_start, text_area_end, up_lines)
+def overwrite_infoboxes():
+
+#ui_blocking = {"inv_start":None, "inv_end":None, "playerdata_start":None, "playerdata_end":None, "worldstate_start":None, "worldstate_end":None, "input_line":None}
+    #part = "inv_"
+    #part = "worldstate_"
+    #part = "playerdata_"
+
+    def overprint_part(part):
+        top_row, left_col, = ui_blocking[f"{part}start"]
+        bottom_row, right_col, = ui_blocking[f"{part}end"]
+
+        for row in range(top_row, bottom_row+1):
+            for col in range(left_col, right_col+1):
+
+                bg_format=';'.join([str(7), str(34), str("40")])
+                bg=f"\x1b[{bg_format}m"
+                coloured = f'{bg}{" "}{END}'
+                print(f"\033[{row};{col}H{coloured}") ### this works now
+
+    for part in ["inv_", "worldstate_", "playerdata_", "text_block_"]:
+        overprint_part(part)
+
+
+## print TUI
+print_TUI()
+overwrite_infoboxes()
+print("\033[s")
+
+
+first_row, last_row, text_block_start_col = print_at_start_of_line(text_area_start, text_area_end, up_lines)
 
 #print(f"First row: {first_row}, last row: {last_row}, start_block_start: {text_block_start}")
-print(f"\033[6A", end='')
+
+## go to inventory block and mark it out:
+
+#row, column = ui_blocking["inv_start"] ## top left corner of inventory box
+#print(f"\033[{row};{column}HI") ### this works now
+#
+#row, column = ui_blocking["inv_end"] ## bottom right corner of inventory box
+#print(f"\033[{row};{column}HI")
+
+
+
+
+
+#print(f"\033[6A", end='')
 input_str=col_text("INPUT:  ", "title_white")
-print(f"\033[{int(text_block_start-7)}C{input_str}", end='')
+print(f"\033[{int(ui_blocking["input_line"])};{(up_lines[0]+3)+7}H{input_str}", end='')
+
+
 # you can print "\033[1;2H" to position the cursor. It will move the cursor and will not print anything on screen. The values 1 and 2 are the row and the column, so change them to use different positions.
 input()
+print(f"\033[5B", end='')
+
+
+
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#### https://tldp.org/HOWTO/Bash-Prompt-HOWTO/x361.html
