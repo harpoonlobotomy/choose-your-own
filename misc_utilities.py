@@ -13,10 +13,7 @@ Yellow for 'interactable' in description text, maybe?
 
 
 """
-from choices import loot, loc_loot
-from item_management_2 import ItemInstance
-from set_up_game import game
-from item_management_2 import registry
+from item_management_2 import ItemInstance, registry
 
 def col_text(text:str="", colour:str=None):
 
@@ -78,7 +75,7 @@ cardinal_cols = {
 }
 
 def assign_colour(item, colour=None):
-
+    from set_up_game import game
     specials = ("location", "loc")
     cardinals=["north", "south", "east", "west"]
     game.colour_counter = game.colour_counter%len(cardinals)
@@ -96,45 +93,48 @@ def assign_colour(item, colour=None):
 
     if isinstance(item, list):
         item=item[0] #arbitrarily take the first one.
-        print(f"Item was a list. Now: {item}, type: {type(item)}")
+        #print(f"Item was a list. Now: {item}, type: {type(item)}")
     if not colour:
-        print(f"Item does not have prescribed colour. Item: {item}")
+        #print(f"Item does not have prescribed colour. Item: {item}")
         if item in cardinals:
-            print(f"Item is a cardinal: {item}")
+            #print(f"Item is a cardinal: {item}")
             colour=cardinal_cols[item]
-        elif isinstance(item, ItemInstance):
-            print(f"Item is an instance: {item}")
-            entry:ItemInstance = item
+        elif isinstance(item, str) or isinstance(item, ItemInstance):
+            if isinstance(item, str):
+                item_instance=registry.instances_by_name(item)
+                if item_instance:
+                    item=item_instance[0]
 
-            if entry and entry.colour != None:
-                print("Item found.")
-                print(f"Tex col is not none. {entry.get(colour)}")
-                colour=text_colour
-            #if game.inv_colours.get(item):
-            #    text_colour = game.inv_colours.get(item)
-            if text_colour != None:
-                print(f"Text colour is not None: {text_colour}")
-                colour=text_colour
+            if isinstance(item, ItemInstance):
+                #print(f"Item is an instance: {item}")
+                entry:ItemInstance = item
+
+                if entry and entry.colour != None:
+                    #print("Item found.")
+                    #print(f"Tex col is not none. {entry.get(colour)}")
+                    colour=entry.colour
+                #if game.inv_colours.get(item):
+                #    text_colour = game.inv_colours.get(item)
+                else:
+                    #print("Text colour is none, assigning based on counter")
+                    colour=cardinals[game.colour_counter]
+                    colour=cardinal_cols[colour]
+                    #print(f"Colour from counter: {colour}")
+                    game.colour_counter += 1
+                    game.inv_colours[item]=colour # souldn't need this at all, only made it because name_col didn't work.
+                    item_name = registry.name_col(item, colour) ## set colour to inst object. Returns the item.name.
+                    #print(f"Colour: {item.colour}")
+                    item=item_name # can do this inline, just here for now while testing.
             else:
-                print("Text colour is none, assigning based on counter")
-                colour=cardinals[game.colour_counter]
-                colour=cardinal_cols[colour]
-                print(f"Colour from counter: {colour}")
-                game.colour_counter += 1
-                game.inv_colours[item]=colour # souldn't need this at all, only made it because name_col didn't work.
-                item_name = registry.name_col(item, colour) ## set colour to inst object. Returns the item.name.
-                print(f"Colour: {item.colour}")
-                item=item_name # can do this inline, just here for now while testing.
-        else:
-            print(f"Item not in cardinals and not an instance: {item}") ####
+                print(f"Item not in cardinals and not an instance: {item}") ####
 
 # WHY IS THIS TRIGGERING
 # WHEN THIS IS WHAT IT'S PRINTING:
 #  "" Item not in cardinals and not an instance: <ItemInstance moss (9aae9489-13ee-40a3-af9b-2cdf8c63ef66)> ""
 
-            colour=cardinals[game.colour_counter]
-            colour=cardinal_cols[colour]
-            game.colour_counter += 1
+                colour=cardinals[game.colour_counter%len(cardinals)]
+                colour=cardinal_cols[colour]
+                game.colour_counter += 1
 
     coloured_text=col_text(item, colour)
     return coloured_text

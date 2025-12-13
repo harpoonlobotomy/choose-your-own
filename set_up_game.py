@@ -1,11 +1,10 @@
 # Choose your own adventure
 
 import random
-import env_data
 from item_management_2 import initialise_registry, registry
 import locations
 import choices
-from choices import loot
+
 
 """
 Sample start:
@@ -38,7 +37,7 @@ def set_inventory():
     #print(f"weird value: {game.w_value}")
     if game.w_value != 0:
         registry.pick_up("severed tentacle", game.inventory)
-        print(f"back after item management: game.inventory :: {game.inventory}")
+        #print(f"back after item management: game.inventory :: {game.inventory}")
         game.weirdness = True # what's the point of both weirdness and w_value? I guess w_value allows for severity later on.
 
     return
@@ -52,7 +51,7 @@ def loadout(): # for random starting items, game, etc (could be renamed
     _, game.inventory = registry.pick_up(paperclip_list[0], game.inventory)
     _, game.inventory = registry.pick_up(registry.random_from("magazine"), game.inventory)
 
-    print(f"Game inventory after managizine added: {game.inventory}")
+    #print(f"Game inventory after managizine added: {game.inventory}")
     starting_items = registry.instances_by_category("starting") ## starting items == list of instances
     #print(f"starting items: {starting_items}, type: {type(starting_items)}")
     k = random.randint(5, game.carryweight-1) # changed to set max at game.carryweight, so I don't need to pop them later.
@@ -201,7 +200,7 @@ def init_game():
     initialise_registry()
     set_inventory()
     loadout() ## move loadout after load_world to allow for time_management to run first. Testing...
-    print("Initial inventory:: ", game.inventory)
+    #print("Initial inventory:: ", game.inventory)
 
 def set_up(weirdness, bad_language, player_name): # skip straight to init_game to skip print
     game.weirdness = weirdness
@@ -263,6 +262,7 @@ class game:
     painting = "a ship in rough seas"
     cardinals = ["north", "south", "east", "west"]
     loc_list = list(locations.descriptions.keys())
+    day_number=1
 
     colour_counter = 0
 

@@ -11,6 +11,7 @@
 
 tui_lines = "screen_draft_expanding.txt"
 no_of_spacers = 8
+global spacing
 spacing = 0
 get_longest=True # temporarily, later will be used to do auto spacing + centering.
 longest_min = 0
@@ -122,12 +123,12 @@ def col_text_partial(text:str="", plain_line="", ui_blocking:dict=(), symbol:str
         if ui_blocking[f"{block_part}start"]==None:
             area_start = plain_line.find(symbol)
             # line number in `col`.
-            ui_blocking[f"{block_part}start"] = (col, area_start)
+            ui_blocking[f"{block_part}start"] = (col, area_start+1)
             #print(f'ui_blocking["inv_start"]: {ui_blocking["inv_start"]}')
         else:
             area_end = plain_line.rfind(symbol)
-            ui_blocking[f"{block_part}end"] = (col, area_end)
-        text=text.replace(symbol, col_text(symbol.upper(), None))
+            ui_blocking[f"{block_part}end"] = (col, area_end-1)
+        text=text.replace(symbol, col_text(" ", None))
         return text
 
     if symbol == "|##|":
@@ -205,6 +206,8 @@ def get_terminal_cols_rows():
 def make_centred_list(input_list:list, linelength, ui_blocking):
     cols, rows = get_terminal_cols_rows()
     spare_cols = cols-linelength
+    global spacing
+
     spacing=int(spare_cols/no_of_spacers)
     plain_list = []
     new_list=[]
@@ -263,16 +266,22 @@ def make_centred_list(input_list:list, linelength, ui_blocking):
             line = line.replace('@', '^' * spacing)
             plain_line=plain_line.replace('@', '^' * spacing)
             up_lines.append(i)
-            text_area_start = plain_line.find('^')
-            text_area_end = plain_line.rfind('^')
-            text_box_count=plain_line.count("^")
-            line = col_text_partial(line, symbol="^", col="up")
 
 
         if longest_min + (no_of_spacers * spacing) < cols-1:
             extra_spaces = cols - (longest_min + (no_of_spacers * spacing) -1)
             line = (' ' * int(extra_spaces/2)) + line + (' ' * int(extra_spaces/2))
             plain_line = (' ' * int(extra_spaces/2)) + plain_line + (' ' * int(extra_spaces/2))
+
+        if "^" in line:
+            if ui_blocking["text_block_start"] == None:
+                ui_blocking["text_block_start"] = (i+3, plain_line.find('^')+3)
+            else:
+                ui_blocking["text_block_end"] = (i-1, plain_line.rfind('^')-3)
+            text_area_start = plain_line.find('^')
+            text_area_end = plain_line.rfind('^')
+            text_box_count=plain_line.count("^")
+            line = col_text_partial(line, symbol="^", col="up")
 
     #### INVENTORY BOX ####
         ui_blocks = ["i", "w", "p"]
@@ -345,6 +354,14 @@ def print_at_start_of_line(text_area_start, text_area_end, up_lines):
     print("\033[u")
     return first_row, last_row, text_block_start_col
 
+
+def prep_datablocks(text):
+    new_text=[]
+    for line in text:
+        line=line.replace('$', (' ' * spacing))
+        new_text.append(line)
+    return new_text
+
 def overwrite_infoboxes():
 
 #ui_blocking = {"inv_start":None, "inv_end":None, "playerdata_start":None, "playerdata_end":None, "worldstate_start":None, "worldstate_end":None, "input_line":None}
@@ -352,29 +369,64 @@ def overwrite_infoboxes():
     #part = "worldstate_"
     #part = "playerdata_"
 
-    def overprint_part(part):
+    def overprint_part(part, text, inv):
         top_row, left_col, = ui_blocking[f"{part}start"]
         bottom_row, right_col, = ui_blocking[f"{part}end"]
+        r_counter=0
 
         for row in range(top_row, bottom_row+1):
+            if inv != None:
+                ## Need to print inventory items by the numbers.
+                # Can remove the numbers and just add spacers between entries, but need to pay attention to r_col and "make newline" if itll hit.
+                pass
+            c_counter=0
             for col in range(left_col, right_col+1):
 
-                bg_format=';'.join([str(7), str(34), str("40")])
+                bg_format=';'.join([str(0), str(37), str("44")])
                 bg=f"\x1b[{bg_format}m"
-                coloured = f'{bg}{" "}{END}'
+                if text != None:
+                    char = text[r_counter][c_counter-1:c_counter]
+                    if char == "*":
+                        coloured = f'{bg}{" "}{END}'
+                        #### future marking for stat data
+                    else:
+                        coloured = f'{bg}{char}{END}'
+                else:
+                    coloured = f'{bg}{" "}{END}'
                 print(f"\033[{row};{col}H{coloured}") ### this works now
+                c_counter+=1
+            r_counter+=1
 
-    for part in ["inv_", "worldstate_", "playerdata_", "text_block_"]:
-        overprint_part(part)
+    from datablocks import inv_, worldstate_, playerdata_, inventory_items
+
+    for part in ["inv_", "worldstate_", "playerdata_"]:
+        if part == "inv_":
+            text=inv_
+            inv = inventory_items
+        elif part == "worldstate_":
+            text=worldstate_
+            inv=None
+        elif part == "playerdata_":
+            text=playerdata_
+            inv=None
+        #text=db[part]
+        text=prep_datablocks(text)
+        #print(f"Text: ")
+        #for line in text:
+        #    print(line)
+        #exit()
+        overprint_part(part, text, inv)
+    for part in ["text_block_"]:
+        overprint_part(part, None, None)
 
 
 ## print TUI
 print_TUI()
-overwrite_infoboxes()
 print("\033[s")
+overwrite_infoboxes()
 
 
-first_row, last_row, text_block_start_col = print_at_start_of_line(text_area_start, text_area_end, up_lines)
+#first_row, last_row, text_block_start_col = print_at_start_of_line(text_area_start, text_area_end, up_lines)
 
 #print(f"First row: {first_row}, last row: {last_row}, start_block_start: {text_block_start}")
 

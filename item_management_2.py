@@ -138,16 +138,16 @@ class LootRegistry:
             self.by_counter = {counter:inst}
 
             parent_name =attr.get("started_contained_in")
-            print(f"Parent name: {parent_name}")
+            #print(f"Parent name: {parent_name}")
             parent_obj_list = self.by_name.get(parent_name)#instances_by_name(self, parent)
             if parent_obj_list:
                 if len(parent_obj_list)==1:
                     for prospective_parent in parent_obj_list:
                         pros_parent_obj=self.instances.get(prospective_parent.id)
-                        print(f"pros parent obj: {pros_parent_obj}")
+                        #print(f"pros parent obj: {pros_parent_obj}")
                         pros_children = pros_parent_obj.starting_children
                         if inst.name in pros_children:
-                            print(f"Pros children: {pros_children}")
+                            #print(f"Pros children: {pros_children}")
                             inst.contained_in = pros_parent_obj
                             self.by_container[pros_parent_obj].add(inst) ## idk if this'll work.
                             #for child in pros_children:
@@ -162,7 +162,7 @@ class LootRegistry:
                     #print(f"Parent id (next): {parent_id}, type: {type(parent_id)}")
                     #inst.contained_in = parent_id
                     #self.by_container[parent_id].add(inst.id) ## idk if this'll work.
-                    print(f"Added {inst} to parent {pros_parent_obj}: {self.by_container[pros_parent_obj]}")
+                    #print(f"Added {inst} to parent {pros_parent_obj}: {self.by_container[pros_parent_obj]}")
                 else:
                     for prospective_parent in parent_obj_list:
                         print("Prospective parent:  ", prospective_parent)
@@ -173,10 +173,10 @@ class LootRegistry:
                                 print(child)
 
                         #self.by_container[parent_id]
-                    print(f"Child `{inst}` does not have a parent object (expecting {parent_name})")
+                    #print(f"Child `{inst}` does not have a parent object (expecting {parent_name})")
 
-            print(f"Container obj: {pros_parent_obj}")
-            print(f" After adding children to containers:  ", self.by_container[pros_parent_obj])
+            #print(f"Container obj: {pros_parent_obj}")
+            #print(f" After adding children to containers:  ", self.by_container[pros_parent_obj])
 
         #print("FULL by_container:", registry.by_container)
         # Index by name
@@ -191,31 +191,31 @@ class LootRegistry:
         if attr.get("started_contained_in"):
             child_inst = self.by_counter[counter2]
             parent_name =attr.get("started_contained_in")
-            print(f"Parent name: {parent_name}")
+            #print(f"Parent name: {parent_name}")
             parent_obj_list = self.by_name.get(parent_name)#instances_by_name(self, parent)
             if parent_obj_list:
                 if len(parent_obj_list)==1:
                     for prospective_parent in parent_obj_list:
                         pros_parent_obj=self.instances.get(prospective_parent)
 
-                        print(f"pros parent obj: {pros_parent_obj}")
-                        print(f"pros parent obj id: {pros_parent_obj.id}, type: {type(pros_parent_obj.id)}")
-                        pros_children = pros_parent_obj.starting_children
+                        #print(f"pros parent obj: {pros_parent_obj}")
+                        #print(f"pros parent obj id: {pros_parent_obj.id}, type: {type(pros_parent_obj.id)}")
+                        #pros_children = pros_parent_obj.starting_children
                         if pros_children:
-                            print(f"Pros children: {pros_children}")
+                            #print(f"Pros children: {pros_children}")
                             for child in pros_children:
-                                print("Child: ", child)
+                                #print("Child: ", child)
                                 #if child.id == inst.id:
                                 child_inst.contained_in = pros_parent_obj.id
                                 container_list = self.instances_by_container(pros_parent_obj.id) ## idk if this'll work.
-                                print(f"container list: {container_list}, type: {type(container_list)}")
+                                #print(f"container list: {container_list}, type: {type(container_list)}")
                                 container_list.add(child.inst.id)
 
-                                print(f"Added {child_inst.id} to parent: {self.instances_by_container([container_list[0].id])}")
+                                #print(f"Added {child_inst.id} to parent: {self.instances_by_container([container_list[0].id])}")
 
                     parent_id=next(iter(parent_obj_list))
-                    print(f"Parent obj list: {parent_obj_list}")
-                    print(f"parent_id: {parent_id}")
+                    #print(f"Parent obj list: {parent_obj_list}")
+                    #print(f"parent_id: {parent_id}")
                     #self.instance_by_counter(parent_id)
                     #self.instance_by_container(parent_id)
                 else:
@@ -225,10 +225,10 @@ class LootRegistry:
                         if len(pros_children)==1:
                             if item_name in pros_children:
                                 self.by_container[parent_id].add(child_inst.id) ## idk if this'll work.
-                                print(f"Added {child_inst.id} to parent: {self.by_container[parent_id]}")
-            else:
+                                #print(f"Added {child_inst.id} to parent: {self.by_container[parent_id]}")
+            #else:
                         #self.by_container[parent_id]
-                print(f"Child `{child_inst.id}` does not have a parent object (expecting {parent_name})")
+                #print(f"Child `{child_inst.id}` does not have a parent object (expecting {parent_name})")
 
 
 
@@ -252,18 +252,17 @@ class LootRegistry:
     # -------------------------
     def move_item(self, inst:ItemInstance, place=None, direction=None, new_container=None, ):
 
-        print(f"INST IN MOVE_ITEM: {inst}")
+        #print(f"INST IN MOVE_ITEM: {inst}")
         # Update location
 
-        print(f"old location: {place}")
-        if place and place in list[self.by_location.keys()]:
-            self.by_location.place.discard(inst)
-            if not self.by_location[place]:
-                del self.by_location[place]
+        #print(f"old location: {place}")
+        if place and (place, direction) in self.by_location:
+            self.by_location[(place, direction)].discard(inst)
+            if not self.by_location[(place, direction)]:
+                del self.by_location[(place, direction)]
 
-        new_location = {place:direction} if place and direction else None
+        new_location = (place, direction) if place and direction else None
         inst.location = new_location
-        inst.direction = direction
         inst.contained_in = new_container ## 'inventory' should be a container.
 
         if new_location:
@@ -354,18 +353,18 @@ class LootRegistry:
     def name_col(self, inst: ItemInstance, colour:str):
 
         inst.colour=colour
-        print(f"Assigning colour to instance: inst: {inst}, colour: {colour}, inst.colour: {inst.colour}")
+        print(f"Assigning colour to instance: inst: {inst}, colour: {colour}, inst.colour: {inst.colour}") ## TODO: Maybe this should return the name pre-coloured. Would make sense.
         return inst.name
 
     def pick_up(self, inst, inventory_list, place=None, direction=None):
 
         if isinstance(inst, set) or isinstance(inst, list):
             inst=inst[0]
-        print(f"Pick_up: inst: {inst}, type: {type(inst)}")
+        #print(f"Pick_up: inst: {inst}, type: {type(inst)}")
         if not isinstance(inst, ItemInstance):
             item_list = self.instances_by_name(inst)
             inst = item_list[0] # arbitrarily pick the first one
-            print(f"pick_up id list: {item_list}")
+            #print(f"pick_up id list: {item_list}")
             if not item_list:
                 inst=self.get_instance_from_id(self, inst)
 
@@ -377,7 +376,7 @@ class LootRegistry:
             return None, inventory_list
 
         if inst in inventory_list:
-            print("Item already in inventory. Creating new...")
+            #print("Item already in inventory. Creating new...")
             from item_definitions import get_item_defs
             attr = get_item_defs(inst.name)
             inst = self.create_instance(inst.name, attr)

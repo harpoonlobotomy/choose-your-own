@@ -7,11 +7,11 @@ from misc_utilities import assign_colour, col_list, col_text
 from set_up_game import load_world, set_up, init_settings
 from choices import choose, loot, loc_loot
 import random
-from locations import Place, run_loc, places, descriptions
+from locations import run_loc, places, descriptions
 from env_data import placedata_init, p_data
 from pprint import pprint
 
-from item_management_2 import LootRegistry, ItemInstance, registry
+from item_management_2 import ItemInstance, registry
 
 user_prefs = r"D:\Git_Repos\Choose_your_own\path_userprefs.json"
 run_again = False
@@ -50,7 +50,7 @@ def print_inventory():
 
     for item in game.inventory:
         if isinstance(item, ItemInstance):
-            slowWriting(f"    {assign_colour(item.name)}") ### I kinda prefer it like this, line by line.
+            slowWriting(f"    {assign_colour(item)}") ### I kinda prefer it like this, line by line.
         elif isinstance(item, str):
             slowWriting(f"    {assign_colour(item)}")
         ## Might do a version of that where it makes 5 row columns, instead of just a singular long list.
@@ -86,6 +86,8 @@ def do_inventory():
                 if desc and desc != "" and desc != f"[DESCRIBE] No such item: {test}":
                     slowWriting((f"Description: {col_text(desc, "description")}"))
                 else:
+                    print(f"Failed to describe from registry. Investigate. Data: {test}")
+                    exit()
                     desc = loc_loot.describe(test, caps=True)
                     if desc and desc != "":
                         if test.colour != None:
@@ -97,7 +99,7 @@ def do_inventory():
                         slowWriting(f"Not much to say about the {test}.")
 
                 print()
-                decision=option("drop", "separate", none_possible=True, preamble=f"You can drop the {test.name} or try to separate it into parts, or hit enter to continue.")
+                decision=option("drop", "separate", none_possible=True, preamble=f"You can drop the {test.name} or try to separate it into parts, or hit enter to continue.") ## TODO: needs text colour
                 #text=user_input()
                 if decision=="" or decision == None:
                     print("Continuing.")
@@ -334,7 +336,7 @@ def outcomes(state, activity):
     return outcome ## better? Not sure.
 
 def drop_loot(named=None, forced_drop=False):
-
+    newlist = [x for x in game.inventory]
     if forced_drop:
         test = random.choice((game.inventory))
         #TODO: update location for test.
@@ -348,7 +350,8 @@ def drop_loot(named=None, forced_drop=False):
             slowWriting("You don't have anything to drop!")
         #slowWriting("[[ Type the name of the object you want to leave behind ]]")
         #print(game.inventory)
-        test = option(game.inventory, print_all=True, preamble="[Type the name of the object you want to leave behind]")
+        get_inventory_names()
+        test = option(game.inventory_names, print_all=True, preamble="[Type the name of the object you want to leave behind]")
         #while test not in game.inventory and test not in ("done", "exit", "quit"):
         #    slowWriting("Type the name of the object you want to leave behind.")
         #    test = user_input()
@@ -389,6 +392,15 @@ def drop_loot(named=None, forced_drop=False):
     print()
 
 def switch_the(text, replace_with=""): # remember: if specifying the replace_with string, it must end with a space. Might just add that here actually...
+    if isinstance(text, list):
+        if len(text) == 1:
+            text=text[0]
+            text=text.name
+        else:
+            print("Trying to `switch_the`, but text is a list with more than one item.")
+            exit()
+    if isinstance(text, ItemInstance):
+        text=text.name
     for article in ("a ", "an "):
         if text.startswith(article):# in text:
             if replace_with != "":
@@ -423,11 +435,12 @@ def get_loot(value=None, random=True, named="", message:str=None):
         print(f"Named in get_loot, about to go to pick_up_test: `{named}`, type: {type(named)}")
         if isinstance(named, str):
             item = registry.instances_by_name(named)
+            if isinstance(item, list) and len(item) == 1:
+                item=item[0]
         elif isinstance(named, ItemInstance):
             item = named
         print(f"item: {item}, type: {type(item)}")
-        if item:
-            _, game.inventory = registry.pick_up(item, game.inventory, game.place, game.facing_direction)
+
         #pickup_test=loc_loot.pick_up_test(named) #should I test for get_item first? Probably no point. No.
         #if pickup_test == "No such item.":
         #    print("Not a location object.")
@@ -437,7 +450,7 @@ def get_loot(value=None, random=True, named="", message:str=None):
         #elif pickup_test == "Cannot pick up": # is a positive failure - it was found, so is a loc item.
         #    print("Cannot be picked up. Print a message about how it can't be picked up. Maybe one per item for variation.")
         #    return None
-        else:
+        if not item:
             print(f"Failed to check pickupability. Count not get item instance. named: {named}.")
 
         #if not item:
@@ -451,18 +464,24 @@ def get_loot(value=None, random=True, named="", message:str=None):
     elif random:
         #print(f"value: {value}")
         item = registry.random_from(value)
+        print(f"Item: {item}, type: {type(item)}")
     else:
         print("Not random and no name given. This shouldn't happen, but defaulting to random.")
         print(f"value: {value}")
         item = registry.random_from(value)
+    if isinstance(item, str):
+        item = registry.instances_by_name(named)
+        if isinstance(item, list):# and len(item) == 1: ## always pick first of the list for now
+            item=item[0]
     #print(f"Item: {item}")
     if message:
         message = message.replace("[item]", assign_colour(registry.nicename(item)))
         message = message.replace("[place]", game.place)
         slowWriting(message)
     #item = loot.get_item(item)
-
-    move_item_any(item)
+    if item:
+        _, game.inventory = registry.pick_up(item, game.inventory, game.place, game.facing_direction)
+    #move_item_any(item)
 
 ### drop random item if inventory full // not sure if I hate this. ###
     if len(game.inventory) > carryweight:
@@ -689,12 +708,14 @@ def look_around(status=None):
                     #print(f"loc loot: {loc_loot}")
                     #print(f"text: {text}")
                     #item_entry = getattr(loc_loot[game.place][game.facing_direction], text)
-                    item_entry = loc_loot.get_item(text)
+                    item_entry = registry.instances_by_name(text)
+                    item_entry = item_entry[0] ## TODO: Fix this, it's always defaulting to the first one and it shouldn't, will break dupes when they're introduced.
+                    #item_entry = registry.get_item(text)
                     #print(f"item entry: {item_entry}")
                     if item_entry:
-                        print(f"{loc_loot.describe(text, caps=True)}")
+                        print(f"{registry.describe(item_entry, caps=True)}")
                         #print("What do you want to do? [Investigate] item, [take] item, [leave] it alone.") # Do I want to list the options like this, or just try to make a megalist of what options may be chosen and work from that?
-                        decision=option("investigate", "take", "leave", preamble=f"What do you want to do with {switch_the(text)} - investigate it, take it, or leave it alone?")
+                        decision=option("investigate", "take", "leave", preamble=f"What do you want to do with {assign_colour(switch_the(text))} - investigate it, take it, or leave it alone?")
                         #print(f"text after decision: {text}")
                         #decision=user_input()
                         if decision.lower()=="investigate":
@@ -719,7 +740,7 @@ def look_around(status=None):
                             print(f"You decide to leave the {assign_colour(text)} where you found it.")
                         # this should loop, not just kick you out and relocate you immediately.
                     else:
-                        print(f"No entry in loc_loot for {item_entry}: {loc_loot}")
+                        print(f"No entry in loc_loot for {item_entry}")
                 else:
                     print(f"Could not find what you're looking for. The options: {potential}")
                     #for item in options:
