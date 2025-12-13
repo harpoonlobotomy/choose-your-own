@@ -352,6 +352,7 @@ class LootRegistry:
 
     def name_col(self, inst: ItemInstance, colour:str):
 
+        #if not isinstance(inst, ItemInstance):
         inst.colour=colour
         print(f"Assigning colour to instance: inst: {inst}, colour: {colour}, inst.colour: {inst.colour}") ## TODO: Maybe this should return the name pre-coloured. Would make sense.
         return inst.name

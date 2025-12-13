@@ -615,3 +615,61 @@ To examine an item more closely, type it here, otherwise hit 'enter' to continue
     (severed tentacle, gardening mag, fish food, unlabelled cream, car keys, regional map, batteries, glass jar, dried flowers, dried flowers, dried flowers, dried flowers)
 
 Currently it just keeps making more dried flowers, as there's no tracking on whether the item's already separated from children yet. But the new inventory system should fix that at least once it's implemented.
+
+
+13/12/25 5.50pm
+Worked on the TUI for a couple of days.
+Back to trying to fix inventory item colour consistency.
+
+Currently, when printing one-by-one, it properly applies the item.colour. But when printing a list, it still goes by item-index.
+
+6.25 Okay, seem to have gotten the item.colour to work consistently now.
+
+Not sure what else is still broken, probably quite a bit. Part of the game is still using loc_loot, so I need to fix that and switch over entirely before I do too much else.
+
+7:32 I want to get multiples organised. Currently it just lists them as separate items, but then there's no way to differentiate, it just takes the first one each time. I need some way to differentiate between them.
+Given that I'm storing the instance in the inventory directly now, shouldn't be too hard.
+Really, if >1 of an item in the inventory, it should just print "paperclip x2". Then if I 'drop', it asks 'how many do you want to drop, you are carrying 2 <item>'. Similar for describing the item. 'You have two paperclips; they are virtually identical. Need a description for 'is_plural'. currently the descrip is 'A humble paperclip'. Could do it automatically, maybe. Depends on the descrip tho.
+
+I need to fix the 'drop' function implementation.
+
+I switched it up so you can 'drop' anywhere, instead of only inside the inventory after looking at the item (so you can just write 'drop paperclip', instead of 'paperclip', then 'drop'.)
+
+But, it doesn't break the loop early enough:
+
+        To examine an item more closely, type it here, otherwise hit 'enter' to continue.
+            severed tentacle, paperclip, mail order catalogue, regional map, paperclip, anxiety meds, 5 pound note, paper scrap with number
+        paperclip
+        Chosen: (paperclip)ls and not an instance: Chosen: (paperclip)
+        Description: A humble paperclip.
+
+        You can drop the paperclip or try to separate it into parts, or hit enter to continue.
+            drop or separate
+        drop paperclip
+        Text starts with drop: drop paperclip
+        textparts: ['paperclip'], len: 1
+        Item: [<ItemInstance paperclip (557bbf4c-39c1-4672-a792-e1b20db1af7e)>, <ItemInstance paperclip (dd6aadfd-ef4d-4826-9997-26e31cb5cb93)>], type: <class 'list'>
+        Dropped paperclip. If you want to drop anything else, type 'drop', otherwise we'll carry on.
+
+        Load lightened, you decide to carry on.
+        [[ Psst. Hey. Type 'secret' for a secret hidden option, otherwise type literally anything else. ]]
+
+
+        You can drop the paperclip or try to separate it into parts, or hit enter to continue.
+            drop or separate
+
+        Continuing.
+            severed tentacle
+            mail order catalogue
+            regional map
+            paperclip
+            anxiety meds
+            5 pound note
+            paper scrap with number
+        To examine an item more closely, type it here, otherwise hit 'enter' to continue.
+            severed tentacle, mail order catalogue, regional map, paperclip, anxiety meds, 5 pound note, paper scrap with number
+
+
+8:32 Seems to be fixed now.
+
+Really want to get the main game 'playing' in the textblock of the tui. That's for another day though. Maybe tomorrow.

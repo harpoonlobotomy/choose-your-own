@@ -112,7 +112,7 @@ standard_loot = {
               }
     }
 
-time_of_day = ("pre-dawn", "early morning", "mid-morning", "late morning", "midday", "early afternoon", "late afternoon", "evening", "late evening", "middle of the night", "2am")
+time_of_day = ("pre-dawn", "early morning", "mid-morning", "late morning", "midday", "early afternoon", "late afternoon", "evening", "late evening", "late night", "midnight", "2am")
 
 starting = ["car keys", "fish food", "anxiety meds", "regional map", "unlabelled cream", "batteries"]
 

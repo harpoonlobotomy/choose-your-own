@@ -16,7 +16,7 @@ inv_=[
 playerdata_=[
 "$                                      $",
 f"$HEALTH:  {game.player["hp"]}                             $",
-"$                                       $",
+f"$CARRYWEIGHT:  {game.carryweight}                        $",
 "$  **********************************   $",
 "$  **********************************   $",
 "$                                      $"]
@@ -40,3 +40,8 @@ f"$WEATHER: {game.weather}{wthr_spacing}$",
 f"$TIME OF DAY: {game.time}{tod_spacing}$",
 f"$                          DAY NUMBER {game.day_number}  $",
 "$                                       $"]
+
+commands_ = [
+"  COMMANDS:     `1` for first option, `2` for second, etc.                                  In inventory: 'drop <item_name>'/'separate <item_name>' to drop/separate <item>  ",
+"                          `i` for inventory       'd' to describe surroundings         <item_name> to examine <item>                q/quit` to quit.                         "
+]

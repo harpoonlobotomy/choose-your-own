@@ -92,10 +92,10 @@ def calc_emotions():
 def load_world(relocate=False, rigged=False, new_loc=None):
 
     from env_data import weatherdict
-    rigged = False#True
+    rigged = True#False
     rig_place = "a graveyard"
     rig_weather = "perfect"
-    rig_time = "midday"
+    rig_time = "midnight"
 
     if rigged:
         game.time=rig_time
@@ -227,6 +227,7 @@ class game:
     loop=True
 
     checks = {
+        "inventory_asked":False,
         "inventory_on": False,
         "play_again": False
     }
@@ -242,10 +243,10 @@ class game:
         "encumbered": 0,
         "blind": False,
         "in love": False,
-        "inventory_management": True
+        "inventory_management": True,
+        "inventory_asked": False ## Just so it only asks once per playthrough.
         }
 
-    inv_colours = {(i for i in inventory): None}
     emotional_summary = None
 
     place = "home"

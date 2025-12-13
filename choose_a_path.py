@@ -60,13 +60,19 @@ def get_inventory_names():
     for item in game.inventory:
         game.inventory_names.append(item.name)
 
+def from_inventory_name(test):
+    list_index=game.inventory_names.index(test)
+    if list_index is not None:
+        test=game.inventory[list_index]
+        return test
+
 def do_inventory():
     done=False
     slowWriting("INVENTORY: ")
     while done == False:
         print_inventory()
         get_inventory_names()
-        test=option(game.inventory_names, print_all=True, none_possible=True, preamble="To examine an item more closely, type it here, otherwise hit 'enter' to continue.")
+        test=option(game.inventory_names, print_all=True, none_possible=True, preamble="To examine an item more closely, type it here, otherwise hit 'enter' to continue.", inventory=True)
         #test = user_input()
         #print(f"Test: {test}")
         if not test or test=="" or test==None:
@@ -77,9 +83,7 @@ def do_inventory():
                     #places[game.place].first_weather = game.weather
                 # needs to be looking in [name].values().get("inv_name")
 
-                list_index=game.inventory_names.index(test)
-                if list_index is not None:
-                    test=game.inventory[list_index]
+                test=from_inventory_name(test)
                 ## need to get item instance from name, but maybe from index instead to allow for muultiple instances of same name. Done, I think.
 
                 desc = registry.describe(test, caps=True)
@@ -98,17 +102,6 @@ def do_inventory():
                     else:
                         slowWriting(f"Not much to say about the {test}.")
 
-                print()
-                decision=option("drop", "separate", none_possible=True, preamble=f"You can drop the {test.name} or try to separate it into parts, or hit enter to continue.") ## TODO: needs text colour
-                #text=user_input()
-                if decision=="" or decision == None:
-                    print("Continuing.")
-                    break
-                if decision == "drop":
-                    drop_loot(test)
-                    break
-                if decision == "separate":
-                    separate_loot(test)
                 print()
             else:
                 break
@@ -174,7 +167,8 @@ def user_input():
     if text.lower() == "stats":
         print()
         print(f"    weird: {game.weirdness}. location: {assign_colour(game.place, 'loc')}. time: {game.time}. weather: {game.weather}. checks: {game.checks}")
-        print(f"    inventory: {game.inventory}, carryweight: {game.volume}")
+        get_inventory_names()
+        print(f"    inventory: {game.inventory_names}, carryweight: {game.carryweight}")
         pprint(f"    {game.player}")
         print()
         return "done"
@@ -192,8 +186,23 @@ def user_input():
         print()
 #        print(f"{[game.place]}:{places[game.place].description}")#{descriptions[game.place].get('description')}")
         print()
-        return "done"
         text=None # clear text to stop it picking 'dried flowers' after `describe location` runs.
+        return "done"
+    if text.startswith("drop "):
+        print(f"Text starts with drop: {text}")
+        textparts=text.split()[1:]
+        print(f"textparts: {textparts}, len: {len(textparts)}")
+        if len(textparts) > 1:
+            textparts = " ".join(textparts[0:])
+        else:
+            textparts = textparts[0]
+        item = registry.instances_by_name(textparts)
+        print(f"Item: {item}, type: {type(item)}")
+        if item:
+            item=item[0]
+            print(f"Sending item to drop: {item}")
+            drop_loot(item)
+        return "drop_done"
     if text and text.lower() in ("exit", "quit", "stop", "q"):
         # Should add the option of saving and returning later.
         print("Okay, bye now!")
@@ -201,28 +210,40 @@ def user_input():
     else:
         return text
 
-def option(*values, no_lookup=None, print_all=False, none_possible=True, preamble=None):
+def option(*values, no_lookup=None, print_all=False, none_possible=True, preamble=None, inventory=False):
 
+    values = [v for v in values if v is not None]
     # none_possible=True == "if blank input, consider it a viable return". I didn't need this before but I'm going to see if it fixes it.
     option_chosen = False
-    values = [v for v in values if v is not None]
     #print(f"Values: {values}m len(values): {len(values)}")
-    formatted = []
-    for i, v in enumerate(values):
-        if isinstance(v, (list, tuple)):
-            if print_all:
-                v=col_list(v)
-                formatted.append(f"({', '.join(v)})")
+    def get_formatted(values):
+        if inventory:
+            values = game.inventory ## force use the actual inventory instead of the list values.
+
+        values = [v for v in values if v is not None]
+        formatted = []
+        for i, v in enumerate(values):
+            if isinstance(v, (list, tuple)):
+                if print_all:
+                    v=col_list(v)
+                    formatted.append(f"{', '.join(v)}")
+                else:
+                    formatted.append(f"{assign_colour(v[0])}") # add the first one as the 'label', use the rest as list later. ## NOTE: Just changed this, might break things.
             else:
-                formatted.append(f"({assign_colour(v[0])})") # add the first one as the 'label', use the rest as list later. ## NOTE: Just changed this, might break things.
-        else:
-            formatted.append(f"({assign_colour(v, i)})")
+                formatted.append(f"{assign_colour(v, i)}")
+        return values, formatted
+
+    values, formatted=get_formatted(values)
     #print(f"--" * 10, f"\nformatted: {formatted}, formatted_type: {type(formatted)}\n")
     while option_chosen != True:
+        if inventory:
+             values, formatted=get_formatted(values)
         if preamble:
             slowWriting(preamble)
-        if len(formatted) > 1:
+        if len(formatted) > 1 and not inventory:
             slowWriting(f"    {', '.join(formatted[:-1])} or {formatted[-1]}") # this formatting is good visually, so don't change it before  this. The delineation here is preferable.
+        elif len(formatted) > 1 and inventory:
+            slowWriting(f"    {', '.join(formatted)}") # this formatting is good visually, so don't change it before  this. The delineation here is preferable.
         else:
             slowWriting(f"    {formatted[0]}")
 
@@ -234,14 +255,19 @@ def option(*values, no_lookup=None, print_all=False, none_possible=True, preambl
             for value in values:
                 if type(value) == str:
                     clean_values.append(value)
+                elif isinstance(value, ItemInstance):
+                    clean_values.append(value.name)
                 else:
                     for value_deeper in value:
                         if type(value_deeper) == str:
                             clean_values.append(value_deeper) # I cannot imagine another layer of nesting here.
 
         test=user_input()
-        if test in ("inventory_done", "description_done", "done"): # testing this as an escape for post-Inventory management
-            continue
+        if test in ("inventory_done", "description_done", "drop_done"): # testing this as an escape for post-Inventory management
+            if test == "drop_done":
+                get_inventory_names()
+                values=game.inventory
+            continue ## here, it loops. Which is usually good, but if I've dropped, it doesn't refresh the inventory and reprints the pre-dropped list.
         if none_possible and test=="":
             return None
         #print(f"Test: {test}")
@@ -336,8 +362,9 @@ def outcomes(state, activity):
     return outcome ## better? Not sure.
 
 def drop_loot(named=None, forced_drop=False):
-    newlist = [x for x in game.inventory]
-    if forced_drop:
+    get_inventory_names()
+    #newlist = [x for x in game.inventory]
+    if forced_drop: ## TODO: Set a limit on this so only value-based loot can be dropped.
         test = random.choice((game.inventory))
         #TODO: update location for test.
         newlist = [x for x in game.inventory if x is not test]
@@ -350,27 +377,35 @@ def drop_loot(named=None, forced_drop=False):
             slowWriting("You don't have anything to drop!")
         #slowWriting("[[ Type the name of the object you want to leave behind ]]")
         #print(game.inventory)
-        get_inventory_names()
-        test = option(game.inventory_names, print_all=True, preamble="[Type the name of the object you want to leave behind]")
+        test = option(game.inventory_names, print_all=True, preamble="[Type the name of the object you want to leave behind]", inventory=True)
         #while test not in game.inventory and test not in ("done", "exit", "quit"):
         #    slowWriting("Type the name of the object you want to leave behind.")
         #    test = user_input()
-    if test in game.inventory:
+    if test in game.inventory_names or isinstance(test, ItemInstance):
+        if isinstance(test, ItemInstance):
+            item_test=test
+
+        else:
+            print(f"Test in inventory names: {test}")
+            item_test=from_inventory_name(test)
+
+        game.inventory.remove(item_test)
+        game.inventory_names.remove(item_test.name)
+        print(f"test from inventory name: {test}")
         #print(f"test: {test}")
-        newlist = [x for x in game.inventory if x is not test]
         # TODO: update location for test
 
         #print(f"newlist: {newlist}")
-        slowWriting(f"Dropped {test}. If you want to drop anything else, type 'drop', otherwise we'll carry on.")
-        game.inventory = newlist
-        test = user_input()
-        if test == "drop" and len(game.inventory) >= 1:
-            drop_loot()
+        #if isinstance(test, ItemInstance):
+        #    test=test.name
+        slowWriting(f"Dropped {assign_colour(test)}.")
+
 
     #print(f"game.inventory: {game.inventory}, named: {named}")
     slowWriting("Load lightened, you decide to carry on.")
-    if game.checks["inventory_on"] == False:
+    if game.checks["inventory_asked"] == False:
         slowWriting("[[ Psst. Hey. Type 'secret' for a secret hidden option, otherwise type literally anything else. ]]")
+        game.player["inventory_asked"] = True
         test = user_input()
         if test == "secret":
             #slowWriting("Hey so... not everyone loves inventory management. So I'll give you the option now - do you want to turn it off and carry without limitation?")
@@ -382,13 +417,20 @@ def drop_loot(named=None, forced_drop=False):
                 #slowWriting("Do you want to update this for future runs too?")
                 update_settings_json=option("yes", "no", preamble="Do you want to update this for future runs too?")
                 if update_settings_json in yes:
-                    print("update the settings json here. Not implemented yet.")
+                    import json
+                    with open("settings.json") as f:
+                        data = json.load(f)
+                        inventory_state=data["no_inv"]
+                        if inventory_state == False and 'yes' in test: ## need to switch these around, currently have 'inventory management = true' == 'no_inv = False'. Should be equivalent for both.
+                            data["no_inv"] = True
+                        elif inventory_state != False and not 'yes' in test:
+                            data["no_inv"] = False
 
-            if test in no:
-                game.player["inventory_management"] = True
-            # if no proper answer, it stays as it already was.
+                    with open("settings.json", "w+") as f:
+                        json.dump(data, f)
+                print("Settings updated. Returning.")
 
-    game.inventory = newlist
+    get_inventory_names()
     print()
 
 def switch_the(text, replace_with=""): # remember: if specifying the replace_with string, it must end with a space. Might just add that here actually...
@@ -419,13 +461,6 @@ def switch_the(text, replace_with=""): # remember: if specifying the replace_wit
 def move_item_any(item):
     game.inventory.append(item)
     slowWriting(f"[[ `{assign_colour(item)}` added to inventory.")
-    #location_obj = places[game.place] ## finally figured out how to add items to locatios.
-    #location_obj.add_item(item)
-    #item_location = loc_loot.set_location(item, game.place, game.facing_direction, picked_up=True)
-    #if not item_location:
-    #    item_location = loot.set_location(item, game.place, game.facing_direction, picked_up=True) # just try it
-    #if not item_location:
-    #    print("Failed both item dicts")
 
 def get_loot(value=None, random=True, named="", message:str=None):
     item=None
@@ -475,28 +510,34 @@ def get_loot(value=None, random=True, named="", message:str=None):
             item=item[0]
     #print(f"Item: {item}")
     if message:
-        message = message.replace("[item]", assign_colour(registry.nicename(item)))
+        message = message.replace("[item]", assign_colour(item, None, nicename=registry.nicename(item)))
         message = message.replace("[place]", game.place)
         slowWriting(message)
     #item = loot.get_item(item)
     if item:
         _, game.inventory = registry.pick_up(item, game.inventory, game.place, game.facing_direction)
+        slowWriting(f"{assign_colour(item)} added to inventory.")
     #move_item_any(item)
 
 ### drop random item if inventory full // not sure if I hate this. ###
     if len(game.inventory) > carryweight:
         print()
-        switched = switch_the(item, 'the ')
-        test = option(f"drop", "ignore", preamble=f"It looks like you're already carrying too much. If you want to pick up {assign_colour(switched)}, you might need to drop something - or you can try to carry it all.")
+        #switched = switch_the(item, 'the ')
+        test = option(f"drop", "ignore", preamble=f"It looks like you're already carrying too much. If you want to pick up {assign_colour(item, None, nicename=registry.nicename(item), switch=True)}, you might need to drop something - or you can try to carry it all.")
         if test in ("ignore", "i"):
+            slowWriting("Well alright. You're the one in charge...")
+
             if game.player["encumbered"]: # 50/50 chance to drop something if already encumbered and choose to ignore
                 outcome = roll_risk()
                 if outcome in (1, 2):
                     #print(f"Forced to drop something.") #TODO: remove this later.
-                    drop_loot(forced_drop=True) # force drop something
+                    drop_loot(forced_drop=True) # force drop something.
+                    print("You feel a little lighter all of a sudden...") ## does not add the item to the location yet. Have to do that.
+            if len(game.inventory) > game.carryweight:
+                game.player["encumbered"] = True
+            else:
+                game.player["encumbered"] = False
 
-            slowWriting("Well alright. You're the one in charge...")
-            game.player["encumbered"] = True
         else:
             slowWriting("You decide to look in your inventory and figure out what you don't need.")
             drop_loot()
@@ -715,7 +756,7 @@ def look_around(status=None):
                     if item_entry:
                         print(f"{registry.describe(item_entry, caps=True)}")
                         #print("What do you want to do? [Investigate] item, [take] item, [leave] it alone.") # Do I want to list the options like this, or just try to make a megalist of what options may be chosen and work from that?
-                        decision=option("investigate", "take", "leave", preamble=f"What do you want to do with {assign_colour(switch_the(text))} - investigate it, take it, or leave it alone?")
+                        decision=option("investigate", "take", "leave", preamble=f"What do you want to do with {assign_colour(text, switch=True)} - investigate it, take it, or leave it alone?")
                         #print(f"text after decision: {text}")
                         #decision=user_input()
                         if decision.lower()=="investigate":
@@ -859,6 +900,9 @@ def run():
         slowWriting("What's your name?")
         playernm = input() # is not 'user_input' because we don't want the inventory actions available until game is initialised.
     game = set_up(weirdness=True, bad_language=True, player_name=playernm)
+    ## set starting inventory colours now
+    col_list(game.inventory)
+
     print()
     slowWriting("[[ Type 'help' for controls and options. ]]")
     print()

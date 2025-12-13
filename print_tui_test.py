@@ -21,7 +21,7 @@ title_str = "Choose a Path"
 
 ### UI blocking ###
 global ui_blocking
-ui_blocking = {"inv_start":None, "inv_end":None, "playerdata_start":None, "playerdata_end":None, "worldstate_start":None, "worldstate_end":None, "input_line":None, "text_block_start":None, "text_block_end":None}
+ui_blocking = {"inv_start":None, "inv_end":None, "playerdata_start":None, "playerdata_end":None, "worldstate_start":None, "worldstate_end":None, "input_line":None, "text_block_start":None, "text_block_end":None, "commands_start":None, "commands_end":None}
 
 
 def col_text(text:str="", colour:str=None):
@@ -109,7 +109,7 @@ def col_text_partial(text:str="", plain_line="", ui_blocking:dict=(), symbol:str
     excl = ["-===", "===-"]
 
  ## UI blocking
-    ui_blocks = ["i", "w", "p"]
+    ui_blocks = ["i", "w", "p", "c"]
 
     if symbol in ui_blocks:
 
@@ -119,6 +119,8 @@ def col_text_partial(text:str="", plain_line="", ui_blocking:dict=(), symbol:str
             block_part = "worldstate_"
         elif symbol == "p":
             block_part = "playerdata_"
+        elif symbol == "c":
+            block_part = "commands_"
 
         if ui_blocking[f"{block_part}start"]==None:
             area_start = plain_line.find(symbol)
@@ -284,7 +286,7 @@ def make_centred_list(input_list:list, linelength, ui_blocking):
             line = col_text_partial(line, symbol="^", col="up")
 
     #### INVENTORY BOX ####
-        ui_blocks = ["i", "w", "p"]
+        ui_blocks = ["i", "w", "p", "c"]
         for block in ui_blocks:
             if block in line:
                 line = col_text_partial(line, plain_line, ui_blocking, symbol=block, col=i+1)
@@ -397,18 +399,18 @@ def overwrite_infoboxes():
                 c_counter+=1
             r_counter+=1
 
-    from datablocks import inv_, worldstate_, playerdata_, inventory_items
-
-    for part in ["inv_", "worldstate_", "playerdata_"]:
+    from datablocks import inv_, worldstate_, playerdata_, inventory_items, commands_
+    inv=None
+    for part in ["inv_", "worldstate_", "playerdata_", "commands_"]:
         if part == "inv_":
             text=inv_
             inv = inventory_items
         elif part == "worldstate_":
             text=worldstate_
-            inv=None
         elif part == "playerdata_":
             text=playerdata_
-            inv=None
+        elif part == "commands_":
+            text=commands_
         #text=db[part]
         text=prep_datablocks(text)
         #print(f"Text: ")
