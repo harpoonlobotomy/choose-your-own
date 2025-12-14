@@ -10,7 +10,7 @@
 #   |##|  /                                                $INVENTORY $                                         $\   /              $PLAYER DATA              $\   /$              WORLD STATE              $$\  |##|
 
 tui_lines = "screen_draft_expanding.txt"
-no_of_spacers = 8
+#no_of_spacers = 10
 global spacing
 spacing = 0
 get_longest=True # temporarily, later will be used to do auto spacing + centering.
@@ -25,25 +25,28 @@ ui_blocking = {"inv_start":None, "inv_end":None, "playerdata_start":None, "playe
 
 
 def col_text(text:str="", colour:str=None):
-
+    bg=40
+    hash_bg=44
 ## def apply_col_to_text(item, colour="green"): # is just this, copied from Choices.
 
-    baseline_format=';'.join([str(0), str(37), str("40")]) ## Add more colours later
+    baseline_format=';'.join([str(0), str(37), str(bg)]) ## Add more colours later
     #bold_white_format=';'.join([str(1), str(37), str("40")])
-    red_format=';'.join([str(0), str(31), str("40")])
+    red_format=';'.join([str(0), str(31), str(bg)])
     #bold_red_format=';'.join([str(1), str(31), str("40")])
-    green_format=';'.join([str(0), str(32), str("40")])
-    b_green_format=';'.join([str(1), str(32), str("40")])
-    u_green_format=';'.join([str(4), str(32), str("40")])
-    cyan_format=';'.join([str(0), str(36), str("40")])
-    u_cyan_format=';'.join([str(1), str(36), str("40")])
-    blue_format=';'.join([str(0), str(34), str("40")])
-    b_blue_format=';'.join([str(1), str(34), str("40")])
-    u_blue_format=';'.join([str(4), str(34), str("40")])
-    yellow_format=';'.join([str(0), str(33), str("40")])
-    b_yellow_format=';'.join([str(1), str(33), str("40")])
-    magenta_format=';'.join([str(0), str(35), str("40")])
-    b_white_format=';'.join([str(1), str(37), str("40")])
+    green_format=';'.join([str(0), str(32), str(bg)])
+    b_green_format=';'.join([str(1), str(32), str(bg)])
+    u_green_format=';'.join([str(4), str(32), str(hash_bg)])
+    bg_green_format=';'.join([str(0), str(32), str(hash_bg)])
+    cyan_format=';'.join([str(0), str(36), str(bg)])
+    b_cyan_format=';'.join([str(1), str(36), str(bg)])
+    blue_format=';'.join([str(0), str(34), str(bg)])
+    b_blue_format=';'.join([str(1), str(34), str(bg)])
+    u_blue_format=';'.join([str(4), str(32), str(hash_bg)])
+    yellow_format=';'.join([str(0), str(33), str(bg)])
+    bg_yellow_format=';'.join([str(0), str(33), str(hash_bg)])
+    b_yellow_format=';'.join([str(1), str(33), str(bg)])
+    magenta_format=';'.join([str(0), str(35), str(bg)])
+    b_white_format=';'.join([str(1), str(37), str(bg)])
 
     BASELINE=f"\x1b[{baseline_format}m"
     B_WHITE=f"\x1b[{b_white_format}m"
@@ -53,13 +56,15 @@ def col_text(text:str="", colour:str=None):
     GRN=f"\x1b[{green_format}m"
     B_GRN=f"\x1b[{b_green_format}m"
     U_GRN=f"\x1b[{u_green_format}m"
+    BG_GRN=f"\x1b[{bg_green_format}m"
     CYAN=f"\x1b[{cyan_format}m"
-    U_CYAN = f"\x1b[{u_cyan_format}m"
+    U_CYAN = f"\x1b[{b_cyan_format}m"
     BLUE=f"\x1b[{blue_format}m"
     B_BLUE=f"\x1b[{b_blue_format}m"
     U_BLUE=f"\x1b[{u_blue_format}m"
     YEL=f"\x1b[{yellow_format}m"
     B_YEL=f"\x1b[{b_yellow_format}m"
+    BG_YEL=f"\x1b[{bg_yellow_format}m"
     MAG=f"\x1b[{magenta_format}m"
     #BOLD_GRN=f"\x1b[{bold_green_format}m"
     #REAL_WHT=f"\x1b[{white_format}m"
@@ -75,26 +80,30 @@ def col_text(text:str="", colour:str=None):
     "b_yellow": B_YEL,
     "magenta":MAG,
     "description": B_YEL,
-    "deco_1": B_GRN,#YEL,
+    "deco_1": B_GRN,
     "title": B_YEL,
     "pipe": GRN,
     "underscore": YEL,
     "equals": U_BLUE,
-    "dash": U_GRN,
-    "hash": GRN,
+    "dash": GRN,
+    "hash": BG_GRN,
     "slash": YEL,
     "up": GRN,
-    "title_white": B_WHITE
+    "title_white": B_WHITE,
+    "bg_yellow": BG_YEL
     }
 
-    if colour == None:
-        return text
 
     if col_dict.get(colour):
         col=col_dict.get(colour)
-
     else:
         col=BASELINE
+
+    if text == None:
+        col = BASELINE ## Hadded this here, stops it randomly colouring a couple of blocks off to the side with the previously used blue backgrounds.
+        return f"{col}{text}{END}"
+    if colour == None:
+        return f"{col}{text}{END}"
 
     col_text = f'{col}{text}{END}'
 
@@ -125,7 +134,7 @@ def col_text_partial(text:str="", plain_line="", ui_blocking:dict=(), symbol:str
         if ui_blocking[f"{block_part}start"]==None:
             area_start = plain_line.find(symbol)
             # line number in `col`.
-            ui_blocking[f"{block_part}start"] = (col, area_start+1)
+            ui_blocking[f"{block_part}start"] = (col, area_start)
             #print(f'ui_blocking["inv_start"]: {ui_blocking["inv_start"]}')
         else:
             area_end = plain_line.rfind(symbol)
@@ -140,37 +149,22 @@ def col_text_partial(text:str="", plain_line="", ui_blocking:dict=(), symbol:str
         text=text.replace(symbol, col_text("=", col))
 
     elif symbol == "!":
-        text=text.replace("!", col_text(":", col))
+        text=text.replace("!", col_text(":", "yellow"))
 
     elif symbol == "titles":
         texts = ["INVENTORY", "PLAYER DATA", "WORLD STATE"]
         for item in texts:
             text=text.replace(item, col_text(item, col))
     else:
-        if symbol in "all" and (symbol * 10) in text:
-            symbol_start = text.find(symbol)
-            symbol_end = text.rfind(symbol)
-            symbol_text = text[symbol_start+1:symbol_end]
-            text=text.replace(symbol_text, col_text(symbol_text, col))
-        else:
-            if col == "dash":
-                col = "pipe"
+        #if symbol in "all" and (symbol * 10) in text: ## commented out because using it leaves some of the `all` symbols uncoloured.
+        #    symbol_start = text.find(symbol)
+        #    symbol_end = text.rfind(symbol)
+        #    symbol_text = text[symbol_start+1:symbol_end]
+        #    text=text.replace(symbol_text, col_text(symbol_text, col))
+        #else:
+#            if col == "dash":
+#                col = "pipe"
             text=text.replace(symbol, col_text(symbol, col)) ## I want to reimplement the 'all' section, to avoid recolouring every character at once.
-        #if symb in complex_individual:
-        #    text=text.replace(symb, col_text(symb, colour=col[i]))
-#
-        #if symb in individual:
-        #    #symb = symb.strip()
-        #    #symb = symb.rstrip()
-        #    text=text.replace(symb, col_text(symb, colour="magenta"))
-#
-        #if symb in all:
-        #    text=text.replace(symb, col_text(symb, colour=col[i]))
-        #    #text=col_text(text, colour=col[i])
-        #if symb in excl:
-        #    text=text.replace(symb, col_text(symb, colour=col[i]))
-
-
     return text
 
 def title_text(line):
@@ -198,10 +192,11 @@ def title_text(line):
 
     return line
 
-
 def get_terminal_cols_rows():
-
+    ### If you change the size of the terminal after a run, the next run will have coloured bgs off to the right side. On the second run (without changing the terminal size again), it fixes. need to figure out how to fix this.
     from shutil import get_terminal_size
+    import os
+    os.system("cls") ##<-- seems to fix the above issue.
     cols, rows = get_terminal_size()
     return cols, rows
 
@@ -211,16 +206,20 @@ def make_centred_list(input_list:list, linelength, ui_blocking):
     global spacing
 
     spacing=int(spare_cols/no_of_spacers)
+    if spacing <= 0:
+        spacing = 0
     plain_list = []
     new_list=[]
     up_lines = []
     list_length = len(input_list)
     additional_rows = rows-list_length-2
     longer_list = []
+        ## There has to be a much better way of doing this. but this does work... eh idk.
+
     for line in input_list:
         if '+' in line:
-            line_str = "  |##| $$  -| $$                                                                                                                                                                                    $$ |-   $$ |##|"
-            for number in range(0, additional_rows):
+            #line_str = "  |##| $$  -| $$                                                                                                                                                                                    $$ |-   $$ |##|"
+            for number in range(0, additional_rows+1):
                 longer_list.append(line_str)
         else:
             longer_list.append("\n" + line)
@@ -262,7 +261,7 @@ def make_centred_list(input_list:list, linelength, ui_blocking):
         plain_line=plain_line.replace('$', (' ' * spacing))
 
         if "INVENTORY" in line:
-            line = col_text_partial(line, symbol="titles", col="title_white")
+            line = col_text_partial(line, symbol="titles", col="yellow")
 
         if "^" in line:
             line = line.replace('@', '^' * spacing)
@@ -298,11 +297,17 @@ def make_centred_list(input_list:list, linelength, ui_blocking):
     return new_list, plain_list, text_area_start, text_area_end, up_lines, text_box_count
 
 with open(tui_lines) as f:
+    counter=0
     for line in f:
+        if counter==0:
+            no_of_spacers = line.count("&")
+        if counter == 19:
+            line_str = line.rstrip('\n')
         tui_linelist.append(line.rstrip('\n'))
         if get_longest:
             if len(line) > longest_min:
                 longest_min = len(line)-no_of_spacers
+        counter += 1
 
 import os
 os.system("cls")
@@ -325,28 +330,49 @@ def print_TUI():
 
 #print(tui_linelist)
 
-def print_at_start_of_line(text_area_start, text_area_end, up_lines):
+def print_in_text_box(text_area_start, text_area_end, up_lines, text:str=""):
 
     first_row=None
     last_row=None
+    #top_row, left_col, = ui_blocking[f"text_block_start"]
+    #bottom_row, right_col, = ui_blocking[f"text_block_end"]
     text_block_start_col=(up_lines[0]+3)
-    inset = int(text_area_start+8)
-    end_offset = int(text_box_count-11)
+    #inset = int(text_area_start+8)
+    inset = int(text_area_start)
+    _, start_offset = ui_blocking["text_block_start"]
+    _, end_offset = ui_blocking["text_block_end"]
+    end_offset = end_offset-start_offset+1
+    inset = start_offset
+    #end_offset = int(text_area_end)
+    #end_offset = int(text_box_count-11)
     #if end_offset > inset:
     #    inset += 1
     #    end_offset -= 1
     printable_lines = list(range((up_lines[0]+3), (up_lines[1])))
+
+    ### TODO: Get the contents of the previous line, add the new input to the last line, append all previous lines above (minus the earliest). Scrolling up, is what this is.
+
     #print(f"Printable lines: {printable_lines}")
     import random
     #print(f"Text area end: {text_area_end}, text_area_start: {text_area_start}")
-    letters = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"]
+    print_once = False
     for i, row in enumerate(printable_lines):
         #print("len of letters: ", len(letters))
         #print(f"text_area_end: {text_area_end}, text area start: {text_area_start}")
-        printline = random.sample(letters, end_offset)#int(text_area_end)-(text_area_start+7))
-        printline=''.join(printline)
+        if print_once:
+            text = " "
+        if text == "":
+            import string
+            result = random.choices(string.ascii_uppercase, k=end_offset)
+            printline = ''.join(result)
+        else:
+            if isinstance(text, str):
+                printline = text
+                print_once = True
+        #printline = random.sample(letters, end_offset)#int(text_area_end)-(text_area_start+7))
+        #printline=''.join(printline)
 
-        line=(f"\033[{row};{str(inset)}H {printline}")
+        line=(f"\033[{row};{str(inset)}H{printline}")
         #line=(f"\033[{row};{str(int(text_area_start+7))}H {printline}")
         if i==0:
             first_row=row
@@ -364,27 +390,38 @@ def prep_datablocks(text):
         new_text.append(line)
     return new_text
 
-def overwrite_infoboxes():
+def overwrite_infoboxes(backgrounds = False):
 
 #ui_blocking = {"inv_start":None, "inv_end":None, "playerdata_start":None, "playerdata_end":None, "worldstate_start":None, "worldstate_end":None, "input_line":None}
     #part = "inv_"
     #part = "worldstate_"
     #part = "playerdata_"
+    bg_col = 40
+    if backgrounds:
+        bg_col = 44
 
     def overprint_part(part, text, inv):
         top_row, left_col, = ui_blocking[f"{part}start"]
         bottom_row, right_col, = ui_blocking[f"{part}end"]
         r_counter=0
-
-        for row in range(top_row, bottom_row+1):
+        if inv == None:
+            top_row = top_row-1
+            bottom_row = bottom_row + 2
+            left_col = left_col-3
+            right_col = right_col+4
+        else:
+            bottom_row = bottom_row + 1
+        for row in range(top_row, bottom_row):
             if inv != None:
                 ## Need to print inventory items by the numbers.
                 # Can remove the numbers and just add spacers between entries, but need to pay attention to r_col and "make newline" if itll hit.
                 pass
             c_counter=0
-            for col in range(left_col, right_col+1):
+            for col in range(left_col, right_col):
+                bg_format=';'.join([str(1), str(33), str(bg_col)])
+                if part == "commands_":
+                    bg_format=';'.join([str(0), str(33), str(bg_col)])
 
-                bg_format=';'.join([str(0), str(37), str("44")])
                 bg=f"\x1b[{bg_format}m"
                 if text != None:
                     char = text[r_counter][c_counter-1:c_counter]
@@ -411,12 +448,9 @@ def overwrite_infoboxes():
             text=playerdata_
         elif part == "commands_":
             text=commands_
-        #text=db[part]
-        text=prep_datablocks(text)
-        #print(f"Text: ")
-        #for line in text:
-        #    print(line)
-        #exit()
+
+        text=prep_datablocks(text) ## makes sure the inventory etc have the same internal spacing to match the rest of the UI
+
         overprint_part(part, text, inv)
     for part in ["text_block_"]:
         overprint_part(part, None, None)
@@ -425,7 +459,7 @@ def overwrite_infoboxes():
 ## print TUI
 print_TUI()
 print("\033[s")
-overwrite_infoboxes()
+overwrite_infoboxes(backgrounds = False)
 
 
 #first_row, last_row, text_block_start_col = print_at_start_of_line(text_area_start, text_area_end, up_lines)
@@ -450,8 +484,15 @@ print(f"\033[{int(ui_blocking["input_line"])};{(up_lines[0]+3)+7}H{input_str}", 
 
 
 # you can print "\033[1;2H" to position the cursor. It will move the cursor and will not print anything on screen. The values 1 and 2 are the row and the column, so change them to use different positions.
-input()
-print(f"\033[5B", end='')
+test=None
+while test not in ["done", "quit", "q", "exit", ""]:
+    test = input()
+    length = len(test)
+    print(f"\033[{int(ui_blocking["input_line"])};{(up_lines[0]+3)+7}H{'                                                                             '}", end='') # just here to wipe the previous input
+    print_in_text_box(text_area_start, text_area_end, up_lines, test) ## does not overwrite the rest of the line.
+    print(f"\033[{int(ui_blocking["input_line"])};{(up_lines[0]+3)+7}H{input_str}", end='')
+
+print(f"\033[5B", end='') ## return to end of screen when program ends to avoid overwriting, doesn't matter but is better aesthetically.
 
 
 

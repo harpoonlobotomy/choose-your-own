@@ -4,14 +4,14 @@ from set_up_game import game, set_up
 set_up(1, 1, "Player")
 
 inventory_items = game.inventory
-
+#  $$$                                           $$$$                                             $
 inv_=[
-"$1.                                              $$7.                                               $",
-"$2.                                              $$8.                                               $",
-"$3.                                              $$9.                                               $",
-"$4.                                              $$10.                                              $",
-"$5.                                              $$11.                                              $",
-"$6.                                              $$12.                                             $"]
+"$$1.                                           $$$$7.                                             $$$",
+"$$2.                                           $$$$8.                                             $$$",
+"$$3.                                           $$$$9.                                             $$$",
+"$$4.                                           $$$$10.                                            $$$",
+"$$5.                                           $$$$11.                                            $$$",
+"$$6.                                           $$$$12.                                            $$$"]
 
 playerdata_=[
 "$                                      $",
@@ -38,7 +38,7 @@ worldstate_=[
 f"$CURRENT LOCATION: {game.place}{loc_spacing}$",
 f"$WEATHER: {game.weather}{wthr_spacing}$",
 f"$TIME OF DAY: {game.time}{tod_spacing}$",
-f"$                          DAY NUMBER {game.day_number}  $",
+f"$                                DAY {game.day_number}   $",
 "$                                       $"]
 
 commands_ = [
