@@ -330,7 +330,7 @@ def print_TUI():
 
 #print(tui_linelist)
 
-def print_in_text_box(text_area_start, text_area_end, up_lines, text:str=""):
+def print_in_text_box(text_area_start, text_area_end, up_lines, text:str="", reverse_txt:list=None, reverse=False):
 
     first_row=None
     last_row=None
@@ -338,7 +338,7 @@ def print_in_text_box(text_area_start, text_area_end, up_lines, text:str=""):
     #bottom_row, right_col, = ui_blocking[f"text_block_end"]
     text_block_start_col=(up_lines[0]+3)
     #inset = int(text_area_start+8)
-    inset = int(text_area_start)
+    #inset = int(text_area_start)
     _, start_offset = ui_blocking["text_block_start"]
     _, end_offset = ui_blocking["text_block_end"]
     end_offset = end_offset-start_offset+1
@@ -349,14 +349,41 @@ def print_in_text_box(text_area_start, text_area_end, up_lines, text:str=""):
     #    inset += 1
     #    end_offset -= 1
     printable_lines = list(range((up_lines[0]+3), (up_lines[1])))
-
+    from rich.console import Console
+    console = Console(record=True)
     ### TODO: Get the contents of the previous line, add the new input to the last line, append all previous lines above (minus the earliest). Scrolling up, is what this is.
+    if reverse:
+        last_line = len(printable_lines)
+        for i, row_no in enumerate(printable_lines):
+            from rich.control import Control
+            console.control(Control.move_to(x=inset, y=row_no-1))
+            if i == last_line-1:
+                test=text
+            elif reverse_txt and i!=last_line-1:
+                reverse_txt=reverse_txt
+                test=reverse_txt[i]
+                #console.print(test)
+            #else:
+            #    test=f"Text in row: {row_no}"
+                #console.print(test)
+            else:
+                test = " "
+            if isinstance(text, str):
+                if len(text) < end_offset:
+                    text = text + (" " * (end_offset-len(text)))
+            console.print(test)
+            #console.print("Text in row")
+            #print(f"\033[{row};{str(inset)}H")
 
+        console_text = console.export_text()
+        #print(console_text)
+        return console_text
     #print(f"Printable lines: {printable_lines}")
     import random
     #print(f"Text area end: {text_area_end}, text_area_start: {text_area_start}")
     print_once = False
     for i, row in enumerate(printable_lines):
+        print(f"\033[{row};{str(inset)}H")
         #print("len of letters: ", len(letters))
         #print(f"text_area_end: {text_area_end}, text area start: {text_area_start}")
         if print_once:
@@ -367,6 +394,8 @@ def print_in_text_box(text_area_start, text_area_end, up_lines, text:str=""):
             printline = ''.join(result)
         else:
             if isinstance(text, str):
+                if len(text) < end_offset:
+                    text = text + (" " * (end_offset-len(text)))
                 printline = text
                 print_once = True
         #printline = random.sample(letters, end_offset)#int(text_area_end)-(text_area_start+7))
@@ -390,7 +419,7 @@ def prep_datablocks(text):
         new_text.append(line)
     return new_text
 
-def overwrite_infoboxes(backgrounds = False):
+def add_infobox_data(backgrounds = False):
 
 #ui_blocking = {"inv_start":None, "inv_end":None, "playerdata_start":None, "playerdata_end":None, "worldstate_start":None, "worldstate_end":None, "input_line":None}
     #part = "inv_"
@@ -459,9 +488,30 @@ def overwrite_infoboxes(backgrounds = False):
 ## print TUI
 print_TUI()
 print("\033[s")
-overwrite_infoboxes(backgrounds = False)
+add_infobox_data(backgrounds = False) ## will need to run again if numbers change. Currently the changes happen in 'datablocks.py', not locally.
 
 
+def make_reversed_list(console_text, not_reverse=False): ## turns out reversing it was the opposite thing I needed. Whoops. Will rename this later, seeing as the reversal is why it was behaving so strangely before. Now it advances properly.
+
+    cleaned_list = []
+    console_list = console_text.split("\n")
+    length = len(console_list)
+    for i, entry in enumerate(console_list):
+        if i == 0:
+            continue
+        elif entry == "":
+            continue
+        #elif i == length-1:
+        #    cleaned_list.append(" ")
+        else:
+            cleaned_list.append(entry)
+    #cleaned_list.append(" ")
+    if not_reverse:
+        reversed_list = list(cleaned_list)
+    else:
+        reversed_list = reversed(cleaned_list) ## makes a string
+        reversed_list = list(reversed_list)
+    return reversed_list
 #first_row, last_row, text_block_start_col = print_at_start_of_line(text_area_start, text_area_end, up_lines)
 
 #print(f"First row: {first_row}, last row: {last_row}, start_block_start: {text_block_start}")
@@ -475,26 +525,28 @@ overwrite_infoboxes(backgrounds = False)
 #print(f"\033[{row};{column}HI")
 
 
-
-
-
 #print(f"\033[6A", end='')
 input_str=col_text("INPUT:  ", "title_white")
 print(f"\033[{int(ui_blocking["input_line"])};{(up_lines[0]+3)+7}H{input_str}", end='')
+print("\033[s")
 
-
+reverse_bool=True#False
 # you can print "\033[1;2H" to position the cursor. It will move the cursor and will not print anything on screen. The values 1 and 2 are the row and the column, so change them to use different positions.
 test=None
+reversed_list=None
 while test not in ["done", "quit", "q", "exit", ""]:
+    print(f"\033[u", end='')
     test = input()
-    length = len(test)
-    print(f"\033[{int(ui_blocking["input_line"])};{(up_lines[0]+3)+7}H{'                                                                             '}", end='') # just here to wipe the previous input
-    print_in_text_box(text_area_start, text_area_end, up_lines, test) ## does not overwrite the rest of the line.
-    print(f"\033[{int(ui_blocking["input_line"])};{(up_lines[0]+3)+7}H{input_str}", end='')
+    #length = len(test)
+    print(f"\033[u{'                                                                             '}", end='') # just here to wipe the previous input
+    console_text = print_in_text_box(text_area_start, text_area_end, up_lines, test, reverse_txt=reversed_list, reverse=reverse_bool) ## does not overwrite the rest of the line. // fixed, just adds spaces to the rest of the line.
+    #print(f"\033[u{input_str}", end='')
+    if reverse_bool:
+        reversed_list = make_reversed_list(console_text, not_reverse=True)
+        #print(f"\033[{int(ui_blocking["input_line"])+2};{(up_lines[0]+1)}HReversed list: {reversed_list}", end='')
+        #print(f"\033[u{'                                                                             '}", end='')
 
 print(f"\033[5B", end='') ## return to end of screen when program ends to avoid overwriting, doesn't matter but is better aesthetically.
-
-
 
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
