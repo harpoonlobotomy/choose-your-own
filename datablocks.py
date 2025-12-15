@@ -22,21 +22,42 @@ inv_3_=[
 "$$  *.                                            $$$*.                                          $$$$"]
 
 inv_=[
-"$$  *.                           $$$*.                           $$$*.                           $$$$",
-"$$  *.                           $$$*.                           $$$*.                           $$$$",
-"$$  *.                           $$$*.                           $$$*.                           $$$$",
-"$$  *.                           $$$*.                           $$$*.                           $$$$",
-"$$  *.                           $$$*.                           $$$*.                           $$$$",
+"$$ *.                           $$*.                           $$*.                            $$$$$$",
+"$$ *.                           $$*.                           $$*.                            $$$$$$",
+"$$ *.                           $$*.                           $$*.                            $$$$$$",
+"$$ *.                           $$*.                           $$*.                            $$$$$$",
+"$$ *.                           $$*.                           $$*.                            $$$$$$",
 ]
 
 ## 12 total $
 
+playerdata2_=[
+"$                                      $",
+"$  HEALTH:  *                          $",
+"$  CARRYWEIGHT:  *                     $",
+"$  s                                   $",
+"$                                  s   $",
+"$                                      $"]
+
+
+"""
 playerdata_=[
 "$                                      $",
-f"$  HEALTH:  *                          $",
-f"$  CARRYWEIGHT:  *                     $",
-"$  **********************************   $",
-"$  **********************************   $",
+"$  HEALTH:  *                          $",
+"$  CARRYWEIGHT:  *                     $",
+"$  tired   full   bored   sad   blind  $", <--- Full array of player states (will need to think on it if it expands)
+"$   hungry   overwhelmed   encumbered  $",
+"$                                      $"]
+"""
+
+
+
+playerdata_=[
+"$                                      $",
+"$  HEALTH:  *                          $",
+"$  CARRYWEIGHT:  *                     $",
+"$  *                                   $", # 3 spaces between entries
+"$       *                              $",
 "$                                      $"]
 
 #loc_spaces = len(game.place)
@@ -52,16 +73,17 @@ f"$  CARRYWEIGHT:  *                     $",
 #tod_spacing = (" " * tod_spacing)
 
 worldstate_=[
-"$                                       $",
-"$  CURRENT LOCATION: *                  $",
-"$  WEATHER: *                           $",
-"$  TIME OF DAY: *                       $",
-"$                            DAY *      $",
-"$                                       $"]
+" $                                       $ ",
+" $  CURRENT LOCATION: *                  $ ",
+" $  WEATHER: *                           $ ",
+" $  TIME OF DAY: *                       $ ",
+" $                            DAY *      $ ",
+" $                                       $ "]
 #
+
 commands_ = [
-"$$$ COMMANDS:  `1` for first option, `2` for second, etc.  $ $$   i` for inventory   $$$   'd' to describe surroundings                               $$$",
-"$$$$           `'drop <item_name>'/'separate <item_name>' to drop/separate <item>   $$$   <item_name> to examine <item>   $$   q/quit` to quit.       $$"
+"$$$$ COMMANDS:  `1` for first option, `2` for second, etc.  $ $$   i` for inventory   $$$   'd' to describe surroundings                      $$$",
+"$$$$           `'drop <item_name>'/'separate <item_name>' to drop/separate <item>   $$$   <item_name> to examine <item>   $$   q/quit` to quit.$$$"
 ]
 
 

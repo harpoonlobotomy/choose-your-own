@@ -617,7 +617,7 @@ To examine an item more closely, type it here, otherwise hit 'enter' to continue
 Currently it just keeps making more dried flowers, as there's no tracking on whether the item's already separated from children yet. But the new inventory system should fix that at least once it's implemented.
 
 
-13/12/25 5.50pm
+5.50pm, 13/12/25
 Worked on the TUI for a couple of days.
 Back to trying to fix inventory item colour consistency.
 
@@ -675,7 +675,7 @@ But, it doesn't break the loop early enough:
 Really want to get the main game 'playing' in the textblock of the tui. That's for another day though. Maybe tomorrow.
 
 
-15/12/25 2.14pm
+2.14pm, 15/12/25
 Trying to figure out why the text block is wrong as smaller sizes.
 At full size, the text block starts one line below ====..., and ends one line above, as it should.
 But when smaller, all the info blocks and the text block are one line down.
@@ -689,3 +689,8 @@ idk why the centering is off. the spacing works properly, but fullscreen I have 
 Right now, going to work on inventory. Probably the trickiest one tbh.
 
 Note: Going to have an issue later because datablocks runs game, set_up, which will clash later. Need to keep that in mind and just replace the game/setup elements of datablocks with placeholders once I get to that point.
+
+9.44pm, 15/12/25
+All three infoboxes working properly now. Code could use a cleanup but those elements are working.
+
+Next up, need to get the actual 'gameplay' in the text box. Not sure how to do that yet given it likely means having to rejig every print section, but maybe I can route it via slowWriting and slowLines. idk.

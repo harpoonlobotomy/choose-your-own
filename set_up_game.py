@@ -190,8 +190,11 @@ def init_settings(manual=False):
 
 def init_game():
 
-    for attr in ["blind", "tired", "full", "sad", "overwhelmed", "in love"]: # options to be randomised at gamestart
+    for attr in ["blind", "tired", "full", "hungry", "sad", "overwhelmed"]: # options to be randomised at gamestart
         game.player.update({attr: random.choice((True, False))})
+        if game.player["full"]:
+            game.player["hungry"] = game.player["hungry"]-1
+
 
     init_settings()
     test_for_weird()
@@ -238,15 +241,19 @@ class game:
         "hp": 5,
         "tired": 0,
         "full": 0,
+        "hungry":1,
         "sad": 0,
         "overwhelmed": 0,
         "encumbered": 0,
         "blind": False,
-        "in love": False,
+        "in love":False,
         "inventory_management": True,
         "inventory_asked": False ## Just so it only asks once per playthrough.
         }
 
+    if player.get("full"):
+        #hunger = not player.get("full")
+        player.update({"hungry":player.get("hungry")-1})
     emotional_summary = None
 
     place = "home"

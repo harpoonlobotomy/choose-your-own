@@ -406,7 +406,7 @@ def prep_datablocks(text):
         new_text.append(line)
     return new_text
 
-def overprint_part(part:str="", text:list=None, inv:list=None, backgrounds:bool=False): ## for inventory:  part = "inv_", text=inv_, inv=game.inventory, backgrounds=bool
+def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:bool=False): ## for inventory:  part = "inv_", text=inv_, inv=game.inventory, backgrounds=bool
 
     bg_col = 40
     if backgrounds:
@@ -419,15 +419,33 @@ def overprint_part(part:str="", text:list=None, inv:list=None, backgrounds:bool=
         inv_pos = set()
         for i, item in enumerate(text):
             pos = item.find("*")
-            inv_pos.add((i, pos))
+            if pos >= 0:
+                inv_pos.add((i, pos))
             pos = item.rfind("*")
-            inv_pos.add((i, pos))
+            if pos >= 0:
+                inv_pos.add((i, pos))
             pos_2 = item.rfind("*", 0, (pos-1)) ## find the middle one
-            if pos_2 != pos:
+            if pos_2 != pos and pos_2 >= 0:
                 inv_pos.add((i, pos_2)) ## allow for only two items. Will mean I can use the get_pos for all ui context boxes.
         return list(sorted(inv_pos))
 
-    def print_playerdata():
+    def print_playerdata(part=None, inv=None, datablock=None):
+        ## Potentially a bad idea, but given how the playerdata will work (with HP+carryweight being hard-positioned and the stats being whatever (based on state), I feel like I need to split them. Though having said that, I could just make sure that the stat names are all the same/close enough length to be able to fit whenever needed. They don't have values, just 'print if true'.
+
+        """
+        "$  s                                   $",
+        "$                                  s   $",
+        "$                                      $"]
+        """
+
+        """
+        "$  tired   full   bored   sad   blind  $",
+        "$       overwhelmed   encumbered       $",
+        "$                                      $"]
+        """
+
+    # actually that works. The short ones on top line, long ones on second. Have cut 'in love', was never sure how that'd work anyway. Not that kinda game. Was just interesting conceptually.
+
     #    player = {
     #    "hp": 5,
     #    "tired": 0,
@@ -436,16 +454,67 @@ def overprint_part(part:str="", text:list=None, inv:list=None, backgrounds:bool=
     #    "overwhelmed": 0,
     #    "encumbered": 0,
     #    "blind": False,
-    #    "in love": False,
     #    "inventory_management": True,
     #    "inventory_asked": False ## Just so it only asks once per playthrough.
     #    }
+        item_list = []
+        inv_format=';'.join([str(1), str(33), str(bg_col)])
+        inv_col=f"\x1b[{inv_format}m"
 
-        pass
+        header_format=';'.join([str(0), str(33), str(bg_col)])
+        header_col=f"\x1b[{header_format}m"
+        item_list=inv
+
+        datablock=prep_datablocks(datablock) ## Want a way to do this accounting for the items in the list. Don't know how to do that yet.
+        item_pos = get_positions(datablock)
+#value	Required. The value to search for
+#start	Optional. Where to start the search. Default is 0
+#end	Optional. Where to end the search. Default is to the end of the string
+        #print(f"datablock in print_inventory: {datablock}")
+        #print(f"inv_pos in get_inventory: {item_pos}")
+        #print(f"inv pos: {inv_pos}")
+        if len(item_list) > len(item_pos):
+            print(f"Too many items for {part}.")
+        # temporary compensation for too much inventory:
+        i=0
+        item=None
+        while i < len(item_pos)-1 and i < len(item_list)-2: # i don't understand why this has to be -2, but when it was -1 it was recursive. Will look into it more.
+            for i, item in enumerate(item_list):
+                pos = item_pos[i]
+                row_base, col_base = pos
+                row = row_base + top_row ## not +1 like it is for inventory. Need to add the blank line to inventory as well to make them unilateral again and use these parts modularly.
+
+                if part == "playerdata_": ## adding this here for later when it might not be true
+                    if i in [2, 3]: ## small words/long words dict
+    ## This does work, ish. I'd rather have it all on one line until it was too long, though. But it does /function/ as is. Leaving it for now, later will combine the two sets based on how many free character spaces are left in the first line
+                        row += 1
+                        #print(f"Item : {item}, type: {type(item)}")
+                        line = []
+                        #print("i == 2: ", i, item)
+                        for stat, val in item.items():
+                            if val and val is True:
+                                line.append(f"{stat}   ")
+
+                            #print(f"stat: {stat}")
+                            #if isinstance(val, (int, float)) and val > 0:
+                            #    line = f"{line}   ".join(stat)
+                            #if isinstance(val, bool) and val is True:
+                            #    line = f"{val}   ".join(stat)
+                        #print(f"line: {line}")
+                        item="".join(line)
+
+                col = col_base + left_col
+                title_str = datablock[i+1]
+                title_str = title_str.replace("*", " ")
+                title = f'{header_col}{title_str}{END}'
+                print(f"\033[{int(row)};{left_col}H{title}", end='')
+                coloured = f'{inv_col}{item}{END}'
+                print(f"\033[{int(row)};{col}H{coloured}", end='')
+
     def print_worldstate():
         pass
 
-    def print_inventory(part=None):
+    def print_inventory(part=None, inv=None, datablock=None):
 
         inv_list = []
         inv_format=';'.join([str(1), str(33), str(bg_col)])
@@ -457,18 +526,21 @@ def overprint_part(part:str="", text:list=None, inv:list=None, backgrounds:bool=
             for item in inv:
                 inv_list.append(item) ## just use item_list=inv, but doing this for now to catch edge cases.
 
-        inv_pos = get_positions(text)
+
+        datablock=prep_datablocks(datablock) ## Want a way to do this accounting for the items in the list. Don't know how to do that yet.
+        inv_pos = get_positions(datablock)
 #value	Required. The value to search for
 #start	Optional. Where to start the search. Default is 0
 #end	Optional. Where to end the search. Default is to the end of the string
-
+        #print(f"Text in print_inventory: {datablock}")
+        #print(f"inv_pos in get_inventory: {inv_pos}")
         #print(f"inv pos: {inv_pos}")
         if len(inv_list) > len(inv_pos):
             print(f"Too many items for {part}.")
         # temporary compensation for too much inventory:
         i=0
-        while i < len(inv_pos)-1 and i < len(inv_list)-2:
-            for i, item in enumerate(inv_list): # might not need to enumerate here.
+        while i < len(inv_pos)-1 and i < len(inv_list)-2: # i don't understand why this has to be -2, but when it was -1 it was recursive. Will look into it more.
+            for i, item in enumerate(inv_list):
                 pos = inv_pos[i]
                 row_base, col_base = pos
                 row = row_base + top_row +1
@@ -487,16 +559,19 @@ def overprint_part(part:str="", text:list=None, inv:list=None, backgrounds:bool=
             # or: place one item at each * in inv_ in datablocks.
             # Probably going with the latter, neat columns. Not expecting a huge inventory so max of 12 should be enough.
 
-
     r_counter=0
-    if inv == None:
+
+    if inv == None: ## This is only command_
         top_row = top_row#-1
         bottom_row = bottom_row + 1
         #left_col = left_col-3
         #right_col = right_col+4
     else:
-        print_inventory(part) ## this is so silly to do it this way but I think I'll need to do the parts modularly, they all operate differently.
+        if part not in ["playerdata_", "worldstate_"]:
+            print_inventory(part, inv, datablock) ## this is so silly to do it this way but I think I'll need to do the parts modularly, they all operate differently.
     #    bottom_row = bottom_row + 1
+        else:
+            print_playerdata(part, inv, datablock)
 
     for row in range(top_row, bottom_row):
         if inv != None:
@@ -510,8 +585,8 @@ def overprint_part(part:str="", text:list=None, inv:list=None, backgrounds:bool=
                 bg_format=';'.join([str(0), str(33), str(bg_col)])
 
             bg=f"\x1b[{bg_format}m"
-            if text != None:
-                char = text[r_counter][c_counter-1:c_counter]
+            if datablock != None:
+                char = datablock[r_counter][c_counter-1:c_counter]
                 if char == "*": ## This is why the asterisk doesn't print. Add an 'if not inv_list' clause if needed. // not relevant now because if inv it never gets here.
                     coloured = f'{bg}{" "}{END}'
                     #### future marking for stat data
@@ -524,7 +599,7 @@ def overprint_part(part:str="", text:list=None, inv:list=None, backgrounds:bool=
         r_counter+=1
 
 
-def add_infobox_data(print_data = False, backgrounds = False, inventory:list=None, playerdata:list=None, worldstate:list=None): ## inventory: to pass 'inventory' from main script instead of getting it via inventory_items )(which just gets it from 'game.inventory' anyway, but via datablocks. Transitional. Later, inventory wil always come from here.)
+def add_infobox_data(print_data = False, backgrounds = False, inventory:list=None, playerdata:tuple=None, worldstate:list=None): ## inventory: to pass ## playerdata may be a set instead of a list.     'inventory' from main script instead of getting it via inventory_items )(which just gets it from 'game.inventory' anyway, but via datablocks. Transitional. Later, inventory wil always come from here.)
 
 #ui_blocking = {"inv_start":None, "inv_end":None, "playerdata_start":None, "playerdata_end":None, "worldstate_start":None, "worldstate_end":None, "input_line":None}
     #part = "inv_"
@@ -535,32 +610,54 @@ def add_infobox_data(print_data = False, backgrounds = False, inventory:list=Non
 
     inv=None
 
-    def print_commands(part="commands_"): #should be part of the UI itself, doesn't get updated like the other parts.
-        text=commands_
+    def clean_player_data(playerdata):
+        game_player, carryweight = playerdata
+        health = game_player.get("hp")
+        short_stats = {
+            "tired": game_player.get("tired"),
+            "full": game_player.get("full"),
+            "bored": game_player.get("bored"),
+            "sad": game_player.get("sad"),
+            "blind": game_player.get("blind")}
+
+        long_stats={
+            "hungry": game_player.get("hungry"),
+            "overwhelmed": game_player.get("overwhelmed"),
+            "encumbered": game_player.get("encumbered")}
+
+        pd=list((health, carryweight, short_stats, long_stats))
+        return pd
+
+
+
+    def print_commands(part="commands_", datablock=None): #should be part of the UI itself, doesn't get updated like the other parts.
         inv=None
-        text=prep_datablocks(text)
-        overprint_part(part, text, inv, backgrounds)
+        datablock=prep_datablocks(datablock)
+        overprint_part(part, datablock, inv, backgrounds)
+
+    print_commands("commands_", datablock=commands_) #for now just print commands first always. Move this later to only print once at init then leave it alone.
+
 
     if inventory:
         part="inv_"
-        text=inv_
+        datablock=inv_
         inv=inventory
     elif playerdata:
         part="playerdata_"
-        text=playerdata_
-        inv=playerdata
+        datablock=playerdata_
+        inv = clean_player_data(playerdata)
+        #inv=playerdata
 ## needs prep. Don't know whether to do it here or elsewhere, but need to clear up the data to only add hp + carryweight at certain positions, and others elsewhere. Right now it does print everything, but wherever, and also I don't want it printing everything. But it's a start.
 
     elif worldstate:
         part="worldstate_"
-        text=worldstate_
+        datablock=worldstate_
         inv=worldstate
 
     if print_data:
-        text=prep_datablocks(text)
+        #text=prep_datablocks(text)
+        overprint_part(part, datablock, inv, backgrounds)
         #print(f"Text: {text}")
-        overprint_part(part, text, inv, backgrounds)
-        #print_commands("commands_")
 
 
     #if inventory == None:
@@ -741,12 +838,12 @@ def run_tui_intro():
 
     ## with the new changes, this version of add_infobox_data does nothing. Which is better, as it doesn't spoof data anymore. No need.
     #add_infobox_data(print_data=False, backgrounds = False) ## will need to run again if numbers change. Currently the changes happen in 'datablocks.py', not locally.
-
-    from datablocks import intro
-
-    intro = clean_intro_block(intro)
-    print_text_from_bottom_up(input_list=intro) # plays automatically to print intro text
-    print_text_from_bottom_up()
+    print_intro=False
+    if print_intro:
+        from datablocks import intro
+        intro = clean_intro_block(intro)
+        print_text_from_bottom_up(input_list=intro) # plays automatically to print intro text
+        print_text_from_bottom_up()
     return ui_blocking
 
 

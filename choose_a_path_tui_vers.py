@@ -921,7 +921,7 @@ def test():
     tui_placements = run_tui_intro()
     #print("Tui placements:")
     #pprint(tui_placements)
-    world = (game.weather, game.place, game.time)
+    world = (game.place, game.weather, game.time, game.day_number)
 
     #    player = {
     #    "hp": 5,
@@ -935,13 +935,14 @@ def test():
     #    "inventory_management": True,
     #    "inventory_asked": False ## Just so it only asks once per playthrough.
     #    }
+    player = (game.player, game.carryweight)
 
     from tui_elements import add_infobox_data, print_text_from_bottom_up
     #add_infobox_data(print_data = True, backgrounds = False, inventory=None) ## spoofs default data
     add_infobox_data(print_data = True, backgrounds = False, inventory=game.inventory) ## can pull the actual functions directly, I don't think the overarching function is actually going to be beneficial.
     add_infobox_data(print_data = True, backgrounds = False, inventory=None, worldstate=world)
 
-    add_infobox_data(print_data = True, backgrounds = False, inventory=None, playerdata=game.player)
+    add_infobox_data(print_data = True, backgrounds = False, inventory=None, playerdata=player)
     print_text_from_bottom_up(None, input_text=" ")
     print(f"\033[5B", end='')
 test()
