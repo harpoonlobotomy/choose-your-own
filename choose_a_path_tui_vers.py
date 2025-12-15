@@ -889,7 +889,6 @@ def run():
     global game
     run_loc()
     placedata_init()
-    #choices.initialise_location_loot()
     rigged=True # this one's just for the name/intro skip, doesn't affect weather etc.
     if rigged:
         playernm = "Testbot"
@@ -910,41 +909,27 @@ def run():
 #run() # uncomment me to actually play again.
 
 def test():
-    #from set_up_game import calc_emotions#loadout, set_up
-    #calc_emotions()#
-    #global game
     import os
-    os.system("cls") ##<-- seems to fix the above issue.
+    os.system("cls") ##<-- run this first to get the ansi to work later
+
     game = set_up(weirdness=True, bad_language=True, player_name="A")
-    #get_hazard()
     from tui_elements import run_tui_intro
-    tui_placements = run_tui_intro()
-    #print("Tui placements:")
-    #pprint(tui_placements)
+    tui_placements, player_name = run_tui_intro() # Hopefully use tui_placements to directly print to the printable area, instead of having to reroute each part manually.
+
+    if player_name:
+        game.playername = player_name
+
     world = (game.place, game.weather, game.time, game.day_number)
 
-    #    player = {
-    #    "hp": 5,
-    #    "tired": 0,
-    #    "full": 0,
-    #    "sad": 0,
-    #    "overwhelmed": 0,
-    #    "encumbered": 0,
-    #    "blind": False,
-    #    "in love": False,
-    #    "inventory_management": True,
-    #    "inventory_asked": False ## Just so it only asks once per playthrough.
-    #    }
-    player = (game.player, game.carryweight)
+    player = (game.player, game.carryweight, game.playername)
 
     from tui_elements import add_infobox_data, print_text_from_bottom_up
-    #add_infobox_data(print_data = True, backgrounds = False, inventory=None) ## spoofs default data
-    add_infobox_data(print_data = True, backgrounds = False, inventory=game.inventory) ## can pull the actual functions directly, I don't think the overarching function is actually going to be beneficial.
+    add_infobox_data(print_data = True, backgrounds = False, inventory=game.inventory)
     add_infobox_data(print_data = True, backgrounds = False, inventory=None, worldstate=world)
-
-    add_infobox_data(print_data = True, backgrounds = False, inventory=None, playerdata=player)
+    add_infobox_data(print_data = True, backgrounds = False, inventory=None, playerdata=player) ## change this to take whichever is offered and cycle them internally, instead of separate calls like this.
     print_text_from_bottom_up(None, input_text=" ")
     print(f"\033[5B", end='')
+
 test()
 
 
