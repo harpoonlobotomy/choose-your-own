@@ -165,12 +165,15 @@ class LootRegistry:
                     #print(f"Added {inst} to parent {pros_parent_obj}: {self.by_container[pros_parent_obj]}")
                 else:
                     for prospective_parent in parent_obj_list:
-                        print("Prospective parent:  ", prospective_parent)
+                        #print("Prospective parent:  ", prospective_parent)
                         pros_parent_obj=self.instances.get(prospective_parent.id)
                         pros_children = pros_parent_obj.starting_children
-                        if pros_children:
-                            for child in pros_children:
-                                print(child)
+
+### TODO: NEED TO DO SOMETHING HERE.
+
+                        #if pros_children:
+                        #    for child in pros_children:
+                        #        print(child)
 
                         #self.by_container[parent_id]
                     #print(f"Child `{inst}` does not have a parent object (expecting {parent_name})")

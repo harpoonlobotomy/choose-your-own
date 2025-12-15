@@ -673,3 +673,19 @@ But, it doesn't break the loop early enough:
 8:32 Seems to be fixed now.
 
 Really want to get the main game 'playing' in the textblock of the tui. That's for another day though. Maybe tomorrow.
+
+
+15/12/25 2.14pm
+Trying to figure out why the text block is wrong as smaller sizes.
+At full size, the text block starts one line below ====..., and ends one line above, as it should.
+But when smaller, all the info blocks and the text block are one line down.
+
+Oh, it's because it was one column too thin, so there was overlap at the top line. So the movement didn't match what was expected.
+
+idk why the centering is off. the spacing works properly, but fullscreen I have 0 spaces to the left and 2 spaces to the right. Should be centred...
+
+
+2.51pm Working on implementing the main game with the tui. Just starting with the context boxes first, to get health/etc in.
+Right now, going to work on inventory. Probably the trickiest one tbh.
+
+Note: Going to have an issue later because datablocks runs game, set_up, which will clash later. Need to keep that in mind and just replace the game/setup elements of datablocks with placeholders once I get to that point.

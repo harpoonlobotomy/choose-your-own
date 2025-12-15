@@ -139,7 +139,7 @@ def col_text_partial(text:str="", plain_line="", ui_blocking:dict=(), symbol:str
             area_start = plain_line.find(symbol)
             # line number in `col`.
             ui_blocking[f"{block_part}start"] = (col, area_start)
-            #print(f'ui_blocking["inv_start"]: {ui_blocking["inv_start"]}')
+            #print(f'ui_blocking["{block_part}start"]: {ui_blocking[f"{block_part}start"]}')
         else:
             area_end = plain_line.rfind(symbol)
             ui_blocking[f"{block_part}end"] = (col, area_end-1)
@@ -406,74 +406,194 @@ def prep_datablocks(text):
         new_text.append(line)
     return new_text
 
-def add_infobox_data(backgrounds = False):
+def overprint_part(part:str="", text:list=None, inv:list=None, backgrounds:bool=False): ## for inventory:  part = "inv_", text=inv_, inv=game.inventory, backgrounds=bool
+
+    bg_col = 40
+    if backgrounds:
+        bg_col = 44
+
+    top_row, left_col, = ui_blocking[f"{part}start"]
+    bottom_row, right_col, = ui_blocking[f"{part}end"]
+
+    def get_positions(text):
+        inv_pos = set()
+        for i, item in enumerate(text):
+            pos = item.find("*")
+            inv_pos.add((i, pos))
+            pos = item.rfind("*")
+            inv_pos.add((i, pos))
+            pos_2 = item.rfind("*", 0, (pos-1)) ## find the middle one
+            if pos_2 != pos:
+                inv_pos.add((i, pos_2)) ## allow for only two items. Will mean I can use the get_pos for all ui context boxes.
+        return list(sorted(inv_pos))
+
+    def print_playerdata():
+    #    player = {
+    #    "hp": 5,
+    #    "tired": 0,
+    #    "full": 0,
+    #    "sad": 0,
+    #    "overwhelmed": 0,
+    #    "encumbered": 0,
+    #    "blind": False,
+    #    "in love": False,
+    #    "inventory_management": True,
+    #    "inventory_asked": False ## Just so it only asks once per playthrough.
+    #    }
+
+        pass
+    def print_worldstate():
+        pass
+
+    def print_inventory(part=None):
+
+        inv_list = []
+        inv_format=';'.join([str(1), str(33), str(bg_col)])
+        inv_col=f"\x1b[{inv_format}m"
+        if part == "inv_":
+            for item in inv:
+                inv_list.append(item.name)
+        else:
+            for item in inv:
+                inv_list.append(item) ## just use item_list=inv, but doing this for now to catch edge cases.
+
+        inv_pos = get_positions(text)
+#value	Required. The value to search for
+#start	Optional. Where to start the search. Default is 0
+#end	Optional. Where to end the search. Default is to the end of the string
+
+        #print(f"inv pos: {inv_pos}")
+        if len(inv_list) > len(inv_pos):
+            print(f"Too many items for {part}.")
+        # temporary compensation for too much inventory:
+        i=0
+        while i < len(inv_pos)-1 and i < len(inv_list)-2:
+            for i, item in enumerate(inv_list): # might not need to enumerate here.
+                pos = inv_pos[i]
+                row_base, col_base = pos
+                row = row_base + top_row +1
+                col = col_base + left_col
+                coloured = f'{inv_col}{item}{END}'
+                print(f"\033[{int(row)};{col}H{coloured}", end='')
+
+        #print(sorted(inv_pos))
+        #  inv_ui_width = right_col - left_col ## should not be necessary, by this point, text should be sized already. Should just be overprinting inv over text. Text is the UI, inv in the live inventory list.
+        #print(inv_ui_width) == 114 at full screen as at 15/12/25
+
+
+
+        ## intent: build inv ui using inv list items, based on width of item.
+        # options: however many items fit, with appropriate spacing
+            # or: place one item at each * in inv_ in datablocks.
+            # Probably going with the latter, neat columns. Not expecting a huge inventory so max of 12 should be enough.
+
+
+    r_counter=0
+    if inv == None:
+        top_row = top_row#-1
+        bottom_row = bottom_row + 1
+        #left_col = left_col-3
+        #right_col = right_col+4
+    else:
+        print_inventory(part) ## this is so silly to do it this way but I think I'll need to do the parts modularly, they all operate differently.
+    #    bottom_row = bottom_row + 1
+
+    for row in range(top_row, bottom_row):
+        if inv != None:
+            break
+            # doing this above instead. Probably should just incorporate it, but this works for the moment while it's isolated.
+
+        c_counter=0
+        for col in range(left_col, right_col):
+            bg_format=';'.join([str(1), str(33), str(bg_col)])
+            if part == "commands_":
+                bg_format=';'.join([str(0), str(33), str(bg_col)])
+
+            bg=f"\x1b[{bg_format}m"
+            if text != None:
+                char = text[r_counter][c_counter-1:c_counter]
+                if char == "*": ## This is why the asterisk doesn't print. Add an 'if not inv_list' clause if needed. // not relevant now because if inv it never gets here.
+                    coloured = f'{bg}{" "}{END}'
+                    #### future marking for stat data
+                else:
+                    coloured = f'{bg}{char}{END}'
+            else:
+                coloured = f'{bg}{" "}{END}'
+            print(f"\033[{row};{col}H{coloured}") ### this works now
+            c_counter+=1
+        r_counter+=1
+
+
+def add_infobox_data(print_data = False, backgrounds = False, inventory:list=None, playerdata:list=None, worldstate:list=None): ## inventory: to pass 'inventory' from main script instead of getting it via inventory_items )(which just gets it from 'game.inventory' anyway, but via datablocks. Transitional. Later, inventory wil always come from here.)
 
 #ui_blocking = {"inv_start":None, "inv_end":None, "playerdata_start":None, "playerdata_end":None, "worldstate_start":None, "worldstate_end":None, "input_line":None}
     #part = "inv_"
     #part = "worldstate_"
     #part = "playerdata_"
-    bg_col = 40
-    if backgrounds:
-        bg_col = 44
 
-    def overprint_part(part, text, inv):
-        top_row, left_col, = ui_blocking[f"{part}start"]
-        bottom_row, right_col, = ui_blocking[f"{part}end"]
-        r_counter=0
-        if inv == None:
-            top_row = top_row-1
-            bottom_row = bottom_row + 2
-            left_col = left_col-3
-            right_col = right_col+4
-        else:
-            bottom_row = bottom_row + 1
-        for row in range(top_row, bottom_row):
-            if inv != None:
-                ## Need to print inventory items by the numbers.
-                # Can remove the numbers and just add spacers between entries, but need to pay attention to r_col and "make newline" if itll hit.
-                pass
-            c_counter=0
-            for col in range(left_col, right_col):
-                bg_format=';'.join([str(1), str(33), str(bg_col)])
-                if part == "commands_":
-                    bg_format=';'.join([str(0), str(33), str(bg_col)])
+    from datablocks import inv_, worldstate_, playerdata_, commands_
 
-                bg=f"\x1b[{bg_format}m"
-                if text != None:
-                    char = text[r_counter][c_counter-1:c_counter]
-                    if char == "*":
-                        coloured = f'{bg}{" "}{END}'
-                        #### future marking for stat data
-                    else:
-                        coloured = f'{bg}{char}{END}'
-                else:
-                    coloured = f'{bg}{" "}{END}'
-                print(f"\033[{row};{col}H{coloured}") ### this works now
-                c_counter+=1
-            r_counter+=1
-
-    from datablocks import inv_, worldstate_, playerdata_, inventory_items, commands_
     inv=None
-    for part in ["inv_", "worldstate_", "playerdata_", "commands_"]:
-        if part == "inv_":
-            text=inv_
-            inv = inventory_items
-        elif part == "worldstate_":
-            text=worldstate_
-        elif part == "playerdata_":
-            text=playerdata_
-        elif part == "commands_":
-            text=commands_
 
-        text=prep_datablocks(text) ## makes sure the inventory etc have the same internal spacing to match the rest of the UI
+    def print_commands(part="commands_"): #should be part of the UI itself, doesn't get updated like the other parts.
+        text=commands_
+        inv=None
+        text=prep_datablocks(text)
+        overprint_part(part, text, inv, backgrounds)
 
-        overprint_part(part, text, inv)
-    for part in ["text_block_"]:
-        overprint_part(part, None, None)
+    if inventory:
+        part="inv_"
+        text=inv_
+        inv=inventory
+    elif playerdata:
+        part="playerdata_"
+        text=playerdata_
+        inv=playerdata
+## needs prep. Don't know whether to do it here or elsewhere, but need to clear up the data to only add hp + carryweight at certain positions, and others elsewhere. Right now it does print everything, but wherever, and also I don't want it printing everything. But it's a start.
+
+    elif worldstate:
+        part="worldstate_"
+        text=worldstate_
+        inv=worldstate
+
+    if print_data:
+        text=prep_datablocks(text)
+        #print(f"Text: {text}")
+        overprint_part(part, text, inv, backgrounds)
+        #print_commands("commands_")
 
 
-def advance_list(console_text, not_reverse=False): ## turns out reversing it was the opposite thing I needed. Whoops. Will rename this later, seeing as the reversal is why it was behaving so strangely before. Now it advances properly.
+    #if inventory == None:
+    #for part in ["inv_", "worldstate_", "playerdata_", "commands_"]:
+        #if part == "inv_":
+        #    text=inv_
+        #    inv=inventory
+        #if part == "worldstate_":
+        #    text=worldstate_
+        #    inv=worldstate
+        #elif part == "playerdata_":
+        #    text=playerdata_
+        #    inv=playerdata
+    #    if part == "commands_":
+    #        text=commands_
+    #        inv=None
+    #    if print_data:
+     #       text=prep_datablocks(text)
+    #        overprint_part(part, text, inv, backgrounds)
+    #else:
+    #    part="inv_"
+    #    text=inv_
+    #    inv=inventory
+    #    if print_data:
+    #        text=prep_datablocks(text) ## makes sure the inventory etc have the same internal spacing to match the rest of the UI
+    #        overprint_part(part, text, inv, backgrounds) ##  part = "inv_", text=inv_, inv=game.inventory, backgrounds=bool
+    #else:
+    #    #for part in ["text_block_"]: ## could be 'part = "text_block_"', but allowing for an extension of a separate printing space.
+    #    if "text_block_" in part:
+    #        overprint_part(part, None, None, backgrounds)
 
+
+def advance_list(console_text): ## turns out reversing it was the opposite thing I needed. Whoops. Will rename this later, seeing as the reversal is why it was behaving so strangely before. Now it advances properly.
     cleaned_list = []
     console_list = console_text.split("\n")
     for i, entry in enumerate(console_list):
@@ -563,7 +683,7 @@ def clear_print_area(intro):
     clean_intro_block(intro)
 
 
-def print_text_from_bottom_up(input_list=None):
+def print_text_from_bottom_up(input_list:list=None, input_text:str=""):
     text=None
     reversed_list=None
     slow_bool=False
@@ -572,7 +692,7 @@ def print_text_from_bottom_up(input_list=None):
     def print_output(text="", reversed_list=None, slow=False):
         print(HIDE, end='')
         console_text = print_in_text_box(up_lines, text, reverse_txt=reversed_list, print_from_bottom=True, slow=slow) ## does not overwrite the rest of the line. // fixed, just adds spaces to the rest of the line.
-        reversed_list = advance_list(console_text, not_reverse=True)
+        reversed_list = advance_list(console_text)
         return reversed_list
 
     if input_list:
@@ -580,38 +700,47 @@ def print_text_from_bottom_up(input_list=None):
 
     else:
         slow_bool=False
-        while text not in ["done", "quit", "q", "exit", ""]:
-            if not first_input_done:
-                input_str = col_text("Please enter your name:  ", "title_white")
-            else:
-                input_str=col_text("INPUT:  ", "title_white")
-            print(f"\033[{int(ui_blocking["input_line"])};{(up_lines[0]+3)+7}H{input_str}", end='')
-            print("\033[s") ## instead of saving, maybe specifically save the cursor position for the input line. Not sure if that's beneficial or not. // Oh, I already did. 'input_line' in the dict. Duh.
-            print(HIDE, end='')
-            print(f"\033[u", SHOW, end='')
-            text = input()
-            if not first_input_done:
-                while True:
-                    first_input_done = True
-                    player_name = text
-                    print(f"\033[{int(ui_blocking["input_line"])};{(up_lines[0]+3)+7}H{'                                           '}", end='')
-                    if isinstance(player_name, str) and len(player_name) > 1:
-                        clean = clean_intro_block()
-                        print_output(text="", reversed_list=clean, slow=True)
-                        break
-                    input_str = col_text("Please enter your name:  ", "title_white")
-                    print(f"\033[{int(ui_blocking["input_line"])};{(up_lines[0]+3)+7}H{input_str}", end='')
-                    text = input()
+        #while text not in ["done", "quit", "q", "exit", ""]: ## make it not require input before adding the ui data to the screen.
+        if not first_input_done and not input_text:
+            input_str = col_text("Please enter your name:  ", "title_white")
+        else:
+            input_str=col_text("INPUT:  ", "title_white")
 
-            else:
+        print(f"\033[{int(ui_blocking["input_line"])};{(up_lines[0]+3)+7}H{input_str}", end='')
+        print("\033[s") ## instead of saving, maybe specifically save the cursor position for the input line. Not sure if that's beneficial or not. // Oh, I already did. 'input_line' in the dict. Duh.
+        print(HIDE, end='')
+        print(f"\033[u", SHOW, end='')
+        text = input()
+
+        if not first_input_done and not input_text:
+            while True:
+                player_name = text
+                print(f"\033[{int(ui_blocking["input_line"])};{(up_lines[0]+3)+7}H{'                                           '}", end='')
+                if isinstance(player_name, str) and len(player_name) > 0:
+                    clean = clean_intro_block()
+                    print_output(text="", reversed_list=clean, slow=True)
+                    first_input_done = True
+                    return player_name
+                input_str = col_text("Please enter your name:  ", "title_white")
+                print(f"\033[{int(ui_blocking["input_line"])};{(up_lines[0]+3)+7}H{input_str}", end='')
+                text = input()
+
+        if input_text:
+            print(f"\033[{int(ui_blocking["input_line"])};{(up_lines[0]+3)+7}H{input_str}", end='')
+            while text != "":
+                print(HIDE, end='')
                 reversed_list = print_output(text, reversed_list, slow=slow_bool)
-            print(f"\033[u{'                                                                             '}", end='') # just here to wipe the previous input
+                print(f"\033[u", SHOW, end='')
+                text = input()
+        print(f"\033[u{'                                                                             '}", end='') # just here to wipe the previous input
 
 
 def run_tui_intro():
     print_TUI()
     print("\033[s")
-    add_infobox_data(backgrounds = False) ## will need to run again if numbers change. Currently the changes happen in 'datablocks.py', not locally.
+
+    ## with the new changes, this version of add_infobox_data does nothing. Which is better, as it doesn't spoof data anymore. No need.
+    #add_infobox_data(print_data=False, backgrounds = False) ## will need to run again if numbers change. Currently the changes happen in 'datablocks.py', not locally.
 
     from datablocks import intro
 
@@ -620,11 +749,10 @@ def run_tui_intro():
     print_text_from_bottom_up()
     return ui_blocking
 
+
 if "__main__" in __name__:
     run_tui_intro()
-
-print(f"\033[5B", end='') ## return to end of screen when program ends to avoid overwriting, doesn't matter but is better aesthetically.
-
+    print(f"\033[5B", end='') ## return to end of screen when program ends to avoid overwriting, doesn't matter but is better aesthetically.
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 

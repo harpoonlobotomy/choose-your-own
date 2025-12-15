@@ -234,7 +234,6 @@ def option(*values, no_lookup=None, print_all=False, none_possible=True, preambl
         return values, formatted
 
     values, formatted=get_formatted(values)
-    #print(f"--" * 10, f"\nformatted: {formatted}, formatted_type: {type(formatted)}\n")
     while option_chosen != True:
         if inventory:
              values, formatted=get_formatted(values)
@@ -908,33 +907,60 @@ def run():
     print()
     inner_loop()
 
-run() # uncomment me to actually play again.
+#run() # uncomment me to actually play again.
 
 def test():
     #from set_up_game import calc_emotions#loadout, set_up
     #calc_emotions()#
-    global game
+    #global game
+    import os
+    os.system("cls") ##<-- seems to fix the above issue.
     game = set_up(weirdness=True, bad_language=True, player_name="A")
-    get_hazard()
+    #get_hazard()
+    from tui_elements import run_tui_intro
+    tui_placements = run_tui_intro()
+    #print("Tui placements:")
+    #pprint(tui_placements)
+    world = (game.weather, game.place, game.time)
 
-#test()
+    #    player = {
+    #    "hp": 5,
+    #    "tired": 0,
+    #    "full": 0,
+    #    "sad": 0,
+    #    "overwhelmed": 0,
+    #    "encumbered": 0,
+    #    "blind": False,
+    #    "in love": False,
+    #    "inventory_management": True,
+    #    "inventory_asked": False ## Just so it only asks once per playthrough.
+    #    }
 
-"""You wake up in a hospital, right around midday.
-`Alex`, you think to yourself, `is this a weird time to be in a hospital? And with so few people around?`
-     What do you want to do? Stay here and (look) around, or go (elsewhere)?
-i
-INVENTORY:
-    ['severed tentacle', 'mail order magazine', 'fish food', 'regional map']
-(type stay, look, or go, elsewhere)
-stay
-You decide to look around some more anyway.
-     Honestly it's too dark to see much of anything in the a hospital. You can just about avoid tripping over yourself, but it's hard to see much else. Do you want to keep trying?
-y
-Determined, you peer through the darkness.
-Narrowly avoiding tripping over some poorly lit hazard, you find a {'damp newspaper'}. Better than nothing, but probably all you'll find until there's more light.
-{'damp newspaper'} added to inventory.
-You could (sleep) in a hospital until morning, or (choose) somewhere else to spend the wee hours. What do you do?
-sleep
-You decide to sleep right where you are. Nice and comfy.
-Thankfully, the weather isn't terrible at least.
-You sleep until morning."""
+    from tui_elements import add_infobox_data, print_text_from_bottom_up
+    #add_infobox_data(print_data = True, backgrounds = False, inventory=None) ## spoofs default data
+    add_infobox_data(print_data = True, backgrounds = False, inventory=game.inventory) ## can pull the actual functions directly, I don't think the overarching function is actually going to be beneficial.
+    add_infobox_data(print_data = True, backgrounds = False, inventory=None, worldstate=world)
+
+    add_infobox_data(print_data = True, backgrounds = False, inventory=None, playerdata=game.player)
+    print_text_from_bottom_up(None, input_text=" ")
+    print(f"\033[5B", end='')
+test()
+
+
+"""
+tui_ placements: (values for fullscreen at 15/12/25)
+ 'commands_start': (16, 24),
+ 'commands_end': (17, 211),
+ 'input_line': 57,
+ 'inv_end': (13, 124),
+ 'inv_start': (8, 10),
+ 'playerdata_start': (8, 131),
+ 'playerdata_end': (13, 174),
+ 'text_block_start': (21, 21),
+ 'text_block_end': (53, 214),
+ 'worldstate_start': (8, 181)}
+ 'worldstate_end': (13, 225),
+ 'printable_lines': [21,
+                     ...
+                     53],
+"""
