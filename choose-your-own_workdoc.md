@@ -694,3 +694,14 @@ Note: Going to have an issue later because datablocks runs game, set_up, which w
 All three infoboxes working properly now. Code could use a cleanup but those elements are working.
 
 Next up, need to get the actual 'gameplay' in the text box. Not sure how to do that yet given it likely means having to rejig every print section, but maybe I can route it via slowWriting and slowLines. idk.
+
+2.53pm 16/12/25
+ ## small words/long words dict
+    #if i in [3, 4]: ## small words/long words dict ## with name, but wipes HP. Not sure why.
+    ## This does work, ish. I'd rather have it all on one line until it was too long, though. But it does /function/ as is. Leaving it for now, later will combine the two sets based on how many free character spaces are left in the first line
+I need to reinstate this at some point. Where it'll check the space and apply the new element on the first or second line based on that, instead of specific items per line (eg using the second line even if the first line is blank just because the item name is longer.)
+That, /or/, have everything visible but not 'bold', and just bold it when selected.
+
+Also I need to fix the name printing.
+
+

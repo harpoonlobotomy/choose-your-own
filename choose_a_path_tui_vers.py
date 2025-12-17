@@ -908,6 +908,9 @@ def run():
 
 #run() # uncomment me to actually play again.
 
+
+
+
 def test():
     import os
     os.system("cls") ##<-- run this first to get the ansi to work later
@@ -924,28 +927,41 @@ def test():
 
     from tui_elements import add_infobox_data, print_text_from_bottom_up, print_commands
 
+    tui_placements = add_infobox_data(tui_placements, print_data = True, backgrounds = False, inventory=game.inventory, playerdata=player, worldstate=world)
     print_commands(backgrounds=False)
-    add_infobox_data(print_data = True, backgrounds = False, inventory=game.inventory, playerdata=player, worldstate=world)
     print_text_from_bottom_up(None, input_text=" ")
+
+    from tui_update import update_playerdata, update_worlddata
+
+    update_playerdata(tui_placements, hp_value=8, carryweight_value=17)
+
+    update_worlddata(tui_placements, weather="perfect", time_of_day="midday", location="a graveyard")
+
     print(f"\033[5B", end='')
 
 test()
 
-
 """
-tui_ placements: (values for fullscreen at 15/12/25)
- 'commands_start': (16, 24),
- 'commands_end': (17, 211),
- 'input_line': 57,
- 'inv_end': (13, 124),
- 'inv_start': (8, 10),
- 'playerdata_start': (8, 131),
- 'playerdata_end': (13, 174),
- 'text_block_start': (21, 21),
- 'text_block_end': (53, 214),
- 'worldstate_start': (8, 181)}
- 'worldstate_end': (13, 225),
- 'printable_lines': [21,
-                     ...
-                     53],
+tui_ placements: (values for fullscreen at 16/12/25)
+'inv_start': (7, 11),
+'inv_end': (12, 125),
+'playerdata_start': (7, 132),
+'playerdata_end': (12, 175),
+'worldstate_start': (7, 182),
+'worldstate_end': (12, 226),
+'input_line': 57,
+'text_block_start': (21, 22),
+'text_block_end': (53, 215),
+'commands_start': (15, 23),
+'commands_end': (16, 215),
+'cols': 237, 'rows': 64,
+'spacing': 3,
+'no_of_spacers': 16,
+'linelength': 188,
+'line_str': '
+'up_lines': [18, 54],
+'printable_lines': [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53],
+'inv_positions': [(0, 7), (0, 42), (0, 77), (1, 7), (1, 42), (1, 77), (2, 7), (2, 42), (2, 77), (3, 7), (3, 42), (3, 77), (4, 7), (4, 42), (4, 77)],
+'playerdata_positions': [(1, 14), (2, 19), (4, 5), (5, 10)],
+'worldstate_positions': [(1, 24), (2, 15), (3, 19), (4, 36)]}
 """

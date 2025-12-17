@@ -1,38 +1,20 @@
 tui_lines = "screen_draft_expanding.txt"
-global spacing
-spacing = 0
-get_longest=True
 linelength = 0
-tui_linelist = []
 END="\x1b[0m"
 RESET = "\033[0m"
 HIDE = "\033[?25l"
 SHOW = "\033[?25h"
 
+import time
+import os
+
 title_str = "Choose a Path"
 
 ### UI blocking ###
-global ui_blocking
+#global ui_blocking
 ui_blocking = {"inv_start":None, "inv_end":None, "playerdata_start":None, "playerdata_end":None, "worldstate_start":None, "worldstate_end":None, "input_line":None, "text_block_start":None, "text_block_end":None, "commands_start":None, "commands_end":None}
 
-with open(tui_lines) as f:
-    counter=0
-    for line in f:
-        if counter==0:
-            no_of_spacers = line.count("&")
 
-        if counter == 19:
-            line_str = line.rstrip('\n')
-        tui_linelist.append(line.rstrip('\n'))
-        if get_longest:
-            if len(line) > linelength:
-                linelength = len(line)-no_of_spacers
-        counter += 1
-
-ui_blocking["no_of_spacers"] = no_of_spacers
-ui_blocking["linelength"] = linelength
-
-import os
 os.system("cls")
 
 def get_terminal_cols_rows():
@@ -40,21 +22,124 @@ def get_terminal_cols_rows():
     import os
     os.system("cls")
     cols, rows = get_terminal_size()
+
     return cols, rows
 
-cols, rows = get_terminal_cols_rows()
-ui_blocking["cols"] = cols
-ui_blocking["rows"] = rows
-spare_cols = cols-ui_blocking["linelength"]
-spacing=int(spare_cols/ui_blocking["no_of_spacers"])
-if spacing <= 0:
-    spacing = 0
-ui_blocking["spacing"]=spacing
 
-def col_text(text:str="", colour:str=None):
+def get_TUI_list(tui_lines):
+    linelength=0
+    tui_linelist = []
+    with open(tui_lines) as f:
+        counter=0
+        for line in f:
+            if counter==0:
+                no_of_spacers = line.count("&")
+            if counter == 19:
+                line_str = line.rstrip('\n')
+            tui_linelist.append(line.rstrip('\n'))
+            if len(line) > linelength:
+                linelength = len(line)-no_of_spacers
+            counter += 1
+
+    cols, rows = get_terminal_cols_rows()
+    spare_cols = cols-linelength
+    spacing=int(spare_cols/no_of_spacers)
+    if spacing <= 0:
+        spacing = 0
+
+    ui_blocking.update({
+        "cols": cols,
+        "rows": rows,
+        "spacing": spacing,
+        "no_of_spacers": no_of_spacers,
+        "linelength": linelength,
+        "line_str": line_str
+        })
+
+    return ui_blocking, tui_linelist
+
+def space_and_get_cursor_pos(ui_blocking, input_list, space=True):
+    ## UI blocking
+    spaced_list = []
+    up_lines = []
+
+    ui_blocks = {
+        'i': {"block_part": "inv_"},
+        "w": {"block_part": "worldstate_"},
+        "p": {"block_part": "playerdata_"},
+        "c": {"block_part": "commands_"}
+        }
+
+    replace_dict = {
+        "&": {"to_print":"_"},
+        "*": {"to_print":"="},
+        "%": {"to_print":"-"}
+    }
+
+    linelength=ui_blocking["linelength"]
+    spacing=ui_blocking["spacing"] #  == 3
+
+    cols = ui_blocking["cols"]
+    rows = ui_blocking["rows"]
+    line_str = ui_blocking["line_str"]
+
+    rows = ui_blocking["rows"]
+    additional_rows = rows-len(input_list)-2
+    longer_list = []
+    for line in input_list:
+        if '+' in line:
+            for _ in range(0, additional_rows+1):
+                longer_list.append(line_str)
+        else:
+            longer_list.append(line)
+
+    input_list = longer_list
+
+    for row, text_line in enumerate(input_list):
+        if len(text_line) < linelength:
+            diff = linelength - len(text_line)
+            text_line = text_line + (" " * diff)
+
+        if space:
+            text_line = text_line.replace("$", " " * spacing)
+            text_line = text_line.replace('@', '^' * spacing)
+            for item in replace_dict:
+                text_line = text_line.replace(item, (replace_dict[item]["to_print"] * spacing))
+
+        if len(text_line) < cols:
+            extra_spaces = cols - len(text_line)
+            text_line = (' ' * int(extra_spaces/2)) + text_line + (' ' * int(extra_spaces/2))
+
+        for symbol in ui_blocks:
+            if symbol in text_line:
+                if ui_blocking[f"{ui_blocks[symbol]["block_part"]}start"]==None:
+                    column = text_line.find(symbol)
+                    ui_blocking[f"{ui_blocks[symbol]["block_part"]}start"] = (row, column)
+                else:
+                    column = text_line.rfind(symbol)
+                    ui_blocking[f"{ui_blocks[symbol]["block_part"]}end"] = (row, column-1)
+                text_line = text_line.replace(symbol, " ")
+
+        if "^" in text_line:
+            if ui_blocking["text_block_start"] == None:
+                ui_blocking["text_block_start"] = (row+3, text_line.find('^')+3)
+            else:
+                ui_blocking["text_block_end"] = (row-1, text_line.rfind('^')-3)
+            up_lines.append(row) ## and this works. So why do the end lines not work properly?
+        if text_line != "":
+            spaced_list.append(text_line)
+
+    printable_lines = list(range((up_lines[0]+3), (up_lines[1])))
+    ui_blocking["up_lines"] = up_lines
+    ui_blocking["input_line"] = up_lines[1]+3
+    ui_blocking["printable_lines"]=printable_lines
+
+    return spaced_list, ui_blocking
+
+
+def col_text(text:str="", colour:str=None, no_ending=False):
     bg=40
     hash_bg=44
-## def apply_col_to_text(item, colour="green"): # is just this, copied from Choices.
 
     baseline_format=';'.join([str(0), str(37), str(bg)])
     red_format=';'.join([str(0), str(31), str(bg)])
@@ -71,11 +156,12 @@ def col_text(text:str="", colour:str=None):
     b_yellow_format=';'.join([str(1), str(33), str(bg)])
     magenta_format=';'.join([str(0), str(35), str(bg)])
     b_white_format=';'.join([str(1), str(37), str(bg)])
+    title_bg=';'.join([str(7), str(31), str(32)])
+
 
     BASELINE=f"\x1b[{baseline_format}m"
     B_WHITE=f"\x1b[{b_white_format}m"
     RED=f"\x1b[{red_format}m"
-
     GRN=f"\x1b[{green_format}m"
     B_GRN=f"\x1b[{b_green_format}m"
     BG_GRN=f"\x1b[{bg_green_format}m"
@@ -88,6 +174,7 @@ def col_text(text:str="", colour:str=None):
     B_YEL=f"\x1b[{b_yellow_format}m"
     BG_YEL=f"\x1b[{bg_yellow_format}m"
     MAG=f"\x1b[{magenta_format}m"
+    TITLE_BG=f"\x1b[{title_bg}m"
 
     col_dict={
     "blue": BLUE,
@@ -110,8 +197,15 @@ def col_text(text:str="", colour:str=None):
     "slash": YEL,
     "up": GRN,
     "title_white": B_WHITE,
-    "bg_yellow": BG_YEL
+    "bg_yellow": BG_YEL,
+    "title_bg": TITLE_BG
     }
+
+
+    if no_ending:
+        END = ""
+    else:
+        END="\x1b[0m"
 
 
     if col_dict.get(colour):
@@ -122,6 +216,7 @@ def col_text(text:str="", colour:str=None):
     if text == None:
         col = BASELINE
         return f"{col}{text}{END}"
+
     if colour == None:
         return f"{col}{text}{END}"
 
@@ -129,46 +224,26 @@ def col_text(text:str="", colour:str=None):
 
     return col_text
 
-def col_text_partial(text:str="", plain_line="", symbol:str="", col:str=""):
 
- ## UI blocking
-    ui_blocks = ["i", "w", "p", "c"]
-
-    if symbol in ui_blocks:
-        if symbol == 'i':
-            block_part="inv_"
-        elif symbol == "w":
-            block_part = "worldstate_"
-        elif symbol == "p":
-            block_part = "playerdata_"
-        elif symbol == "c":
-            block_part = "commands_"
-
-        if ui_blocking[f"{block_part}start"]==None:
-            area_start = plain_line.find(symbol)
-            ui_blocking[f"{block_part}start"] = (col, area_start)
-        else:
-            area_end = plain_line.rfind(symbol)
-            ui_blocking[f"{block_part}end"] = (col, area_end-1)
-        text=text.replace(symbol, col_text(" ", None))
-        return text
+def col_text_partial(text:str="", symbol:str="", col:str="", not_end=False):
 
     if symbol == "|##|":
         text=text.replace("|", col_text("|", "b_yellow"))
         text=text.replace("##", col_text("##", "hash"))
     elif symbol == "^":
         text=text.replace(symbol, col_text("=", col))
-
     elif symbol == "!":
         text=text.replace("!", col_text(":", "yellow"))
 
     elif symbol == "titles":
         texts = ["INVENTORY", "PLAYER DATA", "WORLD STATE"]
         for item in texts:
-            text=text.replace(item, col_text(item, col))
+            text=text.replace(item, col_text(item, col, no_ending = not_end))
     else:
-        text=text.replace(symbol, col_text(symbol, col)) ## I want to reimplement the 'all' section, to avoid recolouring every character at once.
+        text=text.replace(symbol, col_text(symbol, col, no_ending = not_end)) ## I want to reimplement the 'all' section, to avoid recolouring every character at once.
+
     return text
+
 
 def title_text(line):
 
@@ -196,34 +271,22 @@ def title_text(line):
     return line
 
 
-def make_centred_list(input_list:list, void_resize=False):
+def make_coloured_list(input_list:list, title_block=False):
 
-    text_box_count = spacing = 0
-    if not void_resize:
-         spacing = ui_blocking["spacing"]
+    if title_block:
+        spacing=0
+    else:
+        spacing = ui_blocking["spacing"]
 
-    plain_list = []
     new_list=[]
-    up_lines = []
-    list_length = len(input_list)
     longer_list = []
 
-    if not void_resize:
-        additional_rows = rows-list_length-2
+    if not title_block:
         for line in input_list:
-            if '+' in line:
-                for _ in range(0, additional_rows+1):
-                    longer_list.append(line_str)
-            else:
-                longer_list.append("\n" + line)
+            longer_list.append("\n" + line)
     else:
         longer_list = input_list
 
-    replace_dict = {
-        "&": {"to_print":"_"},
-        "*": {"to_print":"="},
-        "%": {"to_print":"-"}
-    }
 
     symbol_dict = {
         "|##|": {"to_print":"|##|", "col":"hash"},
@@ -235,93 +298,68 @@ def make_centred_list(input_list:list, void_resize=False):
     }
 
     void_dict = { #"exclude": "|##|",
-       "#": {"to_print":"|##|", "col":"hash"},
-       "$": {"to_print":"|##|", "col":"slash"}
+       "#": {"to_print":"#", "col":"title_bg"},
+       "$": {"to_print":"$", "col":"b_yellow"},
+       "|": {"to_print": "|", "col":"yellow"},
+       "/": {"to_print": "/", "col":"yellow"},
+       "\\": {"to_print": "\\", "col":"yellow"},
+       "=": {"to_print": "=", "col":"yellow"},
+       "_": {"to_print": "_", "col":"yellow"},
+
     }
-    for i, line in enumerate(longer_list):
-        for item in replace_dict:
-            line = line.replace(item, (replace_dict[item]["to_print"] * spacing))
+    test=None
+    for line in longer_list:
+        line = col_text_partial(line, line, "yellow")
 
-        plain_line=line
-        if "~" in line:
-            line = title_text(line)
-
-        excl="===-"
-        exl_2="-==="
-        if excl in line:
-            line = col_text_partial(line, symbol=excl, col="deco_1")
-            line = col_text_partial(line, symbol=exl_2, col="deco_1")
-
-        elif "=" in line: ## make this a dict.
-            line = col_text_partial(line, symbol="=", col="equals") ## These ones done separately to not mess with the title edges.
-        elif "-" in line:
-            line = col_text_partial(line, symbol="-", col="dash")
-
-        for item in symbol_dict:
-            if item in line:
-                line = col_text_partial(line, symbol=symbol_dict[item]["to_print"], col=symbol_dict[item]["col"])
-
-        if void_resize:
+        if title_block:
             for item in void_dict:
-                line = col_text_partial(line, symbol=void_dict[item]["to_print"], col=void_dict[item]["col"])
+                if item in line:
+                    line = col_text_partial(line, symbol=void_dict[item]["to_print"], col=void_dict[item]["col"])
+                    test=True
 
-        if not void_resize:
-            line = line.replace('$', (' ' * spacing))
-            plain_line=plain_line.replace('$', (' ' * spacing))
+        else:
+            if "~" in line:
+                line = title_text(line)
 
-        if "INVENTORY" in line:
-            line = col_text_partial(line, symbol="titles", col="yellow")
+            excl="===-"
+            exl_2="-==="
+            if excl in line:
+                line = col_text_partial(line, symbol=excl, col="deco_1")
+                line = col_text_partial(line, symbol=exl_2, col="deco_1")
 
-        if "^" in line:
-            line = line.replace('@', '^' * spacing)
-            plain_line=plain_line.replace('@', '^' * spacing)
-            up_lines.append(i)
+            elif "=" in line: ## make this a dict.
+                line = col_text_partial(line, symbol="=", col="equals") ## These ones done separately to not mess with the title edges.
+            elif "-" in line:
+                line = col_text_partial(line, symbol="-", col="dash")
 
-        if not void_resize:
-            linelength=ui_blocking["linelength"]
-            if linelength + (no_of_spacers * spacing) < cols-1:
-                extra_spaces = cols - (linelength + (no_of_spacers * spacing) -1)
-                line = (' ' * int(extra_spaces/2)) + line + (' ' * int(extra_spaces/2))
-                plain_line = (' ' * int(extra_spaces/2)) + plain_line + (' ' * int(extra_spaces/2))
+            for item in symbol_dict:
+                if item in line:
+                    line = col_text_partial(line, symbol=symbol_dict[item]["to_print"], col=symbol_dict[item]["col"])
 
-            if "^" in line:
-                if ui_blocking["text_block_start"] == None:
-                    ui_blocking["text_block_start"] = (i+3, plain_line.find('^')+3)
-                else:
-                    ui_blocking["text_block_end"] = (i-1, plain_line.rfind('^')-3)
-                text_box_count=plain_line.count("^")
-                line = col_text_partial(line, symbol="^", col="up")
+            if not title_block:
+                line = line.replace('$', (' ' * spacing))
 
-    #### INVENTORY BOX ####
-        if not void_resize:
-            ui_blocks = ["i", "w", "p", "c"]
-            for block in ui_blocks:
-                if block in line:
-                    line = col_text_partial(line, plain_line, symbol=block, col=i+1)
+            if "INVENTORY" in line:
+                line = col_text_partial(line, symbol="titles", col="yellow")
+
+            if not title_block:
+                if "^" in line:
+                    line = col_text_partial(line, symbol="^", col="up")
+
+        #### INVENTORY BOX ####
             line = line.replace('\n', '')
-            plain_line = plain_line.replace('\n', '')
         new_list.append(line)
-        plain_list.append(plain_line)
 
-    return new_list, plain_list, up_lines, text_box_count
+    return new_list
 
 
-if get_longest:
-    tui_linelist, plain_list, up_lines, text_box_count = make_centred_list(tui_linelist)
+def print_TUI(tui_linelist):
 
-    ui_blocking["input_line"] = up_lines[1]+3
-
-printable_lines = list(range((up_lines[0]+3), (up_lines[1])))
-ui_blocking["printable_lines"]=printable_lines
-
-def print_TUI():
-    print(HIDE, end='')
     for line in tui_linelist:
         print(line)
         time.sleep(.02)
 
 
-import time
 def print_in_text_box(up_lines, text:str="", text_list:list=None, print_console=False, slow_lines=False, slow_char=False): ## Cannot use this with ansi codes as it breaks. Need to either go all in on 'rich' or not.
     first_row=None
     last_row=None
@@ -329,7 +367,7 @@ def print_in_text_box(up_lines, text:str="", text_list:list=None, print_console=
     _, left_textblock_edge = ui_blocking["text_block_start"]
     _, right_textblock_edge = ui_blocking["text_block_end"]
     textblock_width = right_textblock_edge-left_textblock_edge+1
-    printable_lines = list(range((up_lines[0]+3), (up_lines[1])))
+    printable_lines = ui_blocking["printable_lines"]
 
     if print_console:
         from rich.console import Console, Control
@@ -350,11 +388,13 @@ def print_in_text_box(up_lines, text:str="", text_list:list=None, print_console=
                 for char in test:
                     console.print(char, end='')
                     time.sleep(.08)
+                    print(f"\033[{row_no};{str(left_textblock_edge)}H{END}")
                 print()
             else:
                 console.print(test)
             if slow_lines:
                 time.sleep(.08)
+                print(f"\033[{row_no};{str(left_textblock_edge)}H{END}")
         console_text = console.export_text()
         return console_text
 
@@ -414,32 +454,36 @@ def prep_datablocks(text):
         new_text.append(line)
     return new_text
 
-def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:bool=False): ## for inventory:  part = "inv_", text=inv_, inv=game.inventory, backgrounds=bool
+
+def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:bool=False, ui_blocking:dict={}): ## for inventory:  part = "inv_", text=inv_, inv=game.inventory, backgrounds=bool
 
     bg_col = 40
     if backgrounds:
         bg_col = 44
 
     top_row, left_col, = ui_blocking[f"{part}start"]
-    bottom_row, right_col, = ui_blocking[f"{part}end"]
     inv_format=';'.join([str(1), str(33), str(bg_col)])
     inv_col=f"\x1b[{inv_format}m"
 
-    def get_positions(text):
-        inv_pos = set()
+    def get_positions(part, text, ui_blocking):
+        positions_set = set()
         for i, item in enumerate(text):
             pos = item.find("*")
             if pos >= 0:
-                inv_pos.add((i, pos))
+                positions_set.add((i, pos))
             pos = item.rfind("*")
             if pos >= 0:
-                inv_pos.add((i, pos))
+                positions_set.add((i, pos))
             pos_2 = item.rfind("*", 0, (pos-1))
             if pos_2 != pos and pos_2 >= 0:
-                inv_pos.add((i, pos_2))
-        return list(sorted(inv_pos))
+                positions_set.add((i, pos_2))
 
-    def print_playerdata(part=None, inv=None, datablock=None):
+        positions_set = list(sorted(positions_set))
+        ui_blocking[f"{part}positions"] = positions_set
+
+        return positions_set, ui_blocking
+
+    def print_playerdata(part, inv, datablock, ui_blocking, speed=.05):
 
         item_list = []
 
@@ -447,8 +491,8 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
         header_col=f"\x1b[{header_format}m"
         item_list=inv
 
-        datablock=prep_datablocks(datablock) ## Want a way to do this accounting for the items in the list. Don't know how to do that yet.
-        item_pos = get_positions(datablock)
+        datablock =prep_datablocks(datablock)
+        item_pos, ui_blocking = get_positions(part, datablock, ui_blocking)
 
         if len(item_list) > len(item_pos):
             print(f"Too many items for {part}.")
@@ -459,12 +503,10 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
             for i, item in enumerate(item_list):
                 pos = item_pos[i]
                 row_base, col_base = pos
-                row = row_base + top_row ## not +1 like it is for inventory. Need to add the blank line to inventory as well to make them unilateral again and use these parts modularly.
+                row = row_base + top_row +1 # Don't know why this needs to be +1 again now. It didn't for a while. Very odd.
 
-                if part == "playerdata_": ## adding this here for later when it might not be true
-                    if i in [2, 3]: ## small words/long words dict
-                    #if i in [3, 4]: ## small words/long words dict ## with name, but wipes HP. Not sure why.
-    ## This does work, ish. I'd rather have it all on one line until it was too long, though. But it does /function/ as is. Leaving it for now, later will combine the two sets based on how many free character spaces are left in the first line
+                if part == "playerdata_":
+                    if i in [2, 3]:
                         line = []
                         for stat, val in item.items():
                             if val and val is True:
@@ -477,10 +519,15 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
                 title_str = title_str.replace("*", " ")
                 title = f'{header_col}{title_str}{END}'
                 print(f"\033[{int(row)};{left_col}H{title}", end='')
+                time.sleep(speed)
+                print(f"\033[0;0H{END}")
                 coloured = f'{inv_col}{item}{END}'
                 print(f"\033[{int(row)};{col}H{coloured}", end='')
+                time.sleep(speed)
+                print(f"\033[0;0H{END}")
+        return ui_blocking
 
-    def print_inventory(part=None, inv=None, datablock=None):
+    def print_inventory(part, inv, datablock, ui_blocking, speed=.05):
 
         inv_list = []
         if part == "inv_":
@@ -488,7 +535,7 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
                 inv_list.append(item.name)
 
         datablock=prep_datablocks(datablock) ## Want a way to do this accounting for the items in the list. Don't know how to do that yet.
-        inv_pos = get_positions(datablock)
+        inv_pos, ui_blocking = get_positions(part, datablock, ui_blocking)
 
         if len(inv_list) > len(inv_pos):
             print(f"Too many items for {part}.") # Need to actually act on this.
@@ -498,19 +545,18 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
             for i, item in enumerate(inv_list):
                 pos = inv_pos[i]
                 row_base, col_base = pos
-                row = row_base + top_row +1
+                row = row_base + top_row +2
                 col = col_base + left_col
                 coloured = f'{inv_col}{item}{END}'
                 print(f"\033[{int(row)};{col}H{coloured}", end='')
+                time.sleep(speed)
+                print(f"\033[0;0H{END}")
 
-    if inv != None: ## This is only command_
-        if part == "inv_":
-            print_inventory(part, inv, datablock)
-        else:
-            print_playerdata(part, inv, datablock) # playerdata + worldstate both
+        return ui_blocking
 
-    else:
+    def print_command(datablock, ui_blocking, speed=.05):
         r_counter=0
+        bottom_row, right_col, = ui_blocking[f"{part}end"]
         bottom_row = bottom_row + 1 # not sure why needed, but needed or it only prints the first line.
         for row in range(top_row, bottom_row):
             c_counter=0
@@ -522,16 +568,30 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
                     coloured = f'{bg}{" "}{END}'
                 else:
                     coloured = f'{bg}{char}{END}'
-                print(f"\033[{row};{col}H{coloured}")
+                print(f"\033[{row+1};{col}H{coloured}")
                 c_counter+=1
+            time.sleep(speed)
+            print(f"\033[0;0H{END}")
             r_counter+=1
+
+    if inv != None: ## This is only command_
+        if part == "inv_":
+            ui_blocking = print_inventory(part, inv, datablock, ui_blocking)
+        else:
+            ui_blocking = print_playerdata(part, inv, datablock, ui_blocking) # playerdata + worldstate both
+
+    else:
+        print_command(datablock, ui_blocking)
+
+    return ui_blocking
 
 def print_commands(backgrounds=False):
     from datablocks import commands_
     datablock=prep_datablocks(commands_)
-    overprint_part("commands_", datablock, None, backgrounds)
+    overprint_part("commands_", datablock, None, backgrounds, ui_blocking)
 
-def add_infobox_data(print_data:bool = False, backgrounds:bool = False, inventory:list=None, playerdata:tuple=None, worldstate:list=None):
+
+def add_infobox_data(ui_blocking:dict=(), print_data:bool = False, backgrounds:bool = False, inventory:list=None, playerdata:tuple=None, worldstate:list=None, ):
 
     def clean_player_data(playerdata):
         game_player, carryweight, name = playerdata # still here, just not being used until I can fix it overwriting the HP
@@ -550,7 +610,6 @@ def add_infobox_data(print_data:bool = False, backgrounds:bool = False, inventor
 
         pd=list((health, carryweight, short_stats, long_stats))
         return pd
-
 
     from datablocks import inv_, worldstate_, playerdata_
     infobox_dict = {
@@ -574,8 +633,9 @@ def add_infobox_data(print_data:bool = False, backgrounds:bool = False, inventor
         datablock = infobox_dict[section].get("datablock")
         inv = infobox_dict[section].get("inv")
         if print_data and inv:
-            overprint_part(part, datablock, inv, backgrounds)
+            ui_blocking = overprint_part(part, datablock, inv, backgrounds, ui_blocking)
 
+    return ui_blocking ## sending it back with updates, hopefully.
 
 def advance_list(console_text):
     cleaned_list = []
@@ -639,15 +699,15 @@ def clean_print_block(intro_list=None):
         total_list = cleaned_list
 
     return total_list
-# you can print "\033[1;2H" to position the cursor. It will move the cursor and will not print anything on screen. The values 1 and 2 are the row and the column, so change them to use different positions.
 
-def print_output(text="", print_list=None, slow=False, print_to_console=True,  by_char=False):
+
+def print_output(text="", print_list=None, slow=False, print_to_console=True, by_char=False):
     print(HIDE, end='')
-    console_text = print_in_text_box(up_lines, text, text_list=print_list, print_console=print_to_console, slow_lines=slow, slow_char=by_char)
+    console_text = print_in_text_box(ui_blocking["up_lines"], text, text_list=print_list, print_console=print_to_console, slow_lines=slow, slow_char=by_char)
     if print_to_console:
         print_list = advance_list(console_text)
     else:
-        print_list=console_text
+        print_list = console_text
     return print_list
 
 def print_text_from_bottom_up(input_list:list=None, input_text:str=""):
@@ -660,17 +720,18 @@ def print_text_from_bottom_up(input_list:list=None, input_text:str=""):
         print_output(text="", print_list=input_list, slow=True, by_char=True)
 
     else:
-        slow_bool=False
         if not first_input_done and not input_text:
             input_str = col_text("Please enter your name:  ", "title_white")
         else:
             input_str=col_text("INPUT:  ", "title_white")
 
+        up_lines = ui_blocking["up_lines"]
         print(f"\033[{int(ui_blocking["input_line"])};{(up_lines[0]+3)+7}H{input_str}", end='')
         print("\033[s")
         print(HIDE, end='')
         print(f"\033[u", SHOW, end='')
         text = input()
+        print(HIDE, end='')
 
         if not first_input_done and not input_text:
             while True:
@@ -684,6 +745,7 @@ def print_text_from_bottom_up(input_list:list=None, input_text:str=""):
                 input_str = col_text("Please enter your name:  ", "title_white")
                 print(f"\033[{int(ui_blocking["input_line"])};{(up_lines[0]+3)+7}H{input_str}", end='')
                 text = input()
+                print(HIDE, end='')
 
         if input_text:
             print(f"\033[{int(ui_blocking["input_line"])};{(up_lines[0]+3)+7}H{input_str}", end='')
@@ -692,19 +754,26 @@ def print_text_from_bottom_up(input_list:list=None, input_text:str=""):
                 reversed_list = print_output(text, reversed_list, slow=slow_bool)
                 print(f"\033[u", SHOW, end='')
                 text = input()
+                print(HIDE, end='')
                 print(f"\033[u{'                                                                             '}", end='')
         print(f"\033[u{'                                                                             '}", end='')
 
 
 def run_tui_intro():
-    print_TUI()
-    print("\033[s")
+
+    print(HIDE, end='')
+    ui_blocking, tui_linelist = get_TUI_list(tui_lines)
+    print("\033[s", end='')
+    spaced_linelist, ui_blocking = space_and_get_cursor_pos(ui_blocking, tui_linelist, space=True)
+    #print_TUI(spaced_linelist)
+    coloured_linelist = make_coloured_list(spaced_linelist)
+    print_TUI(coloured_linelist)
     player_name=None
     print_intro=True
     if print_intro:
         from datablocks import intro
         intro = clean_print_block(intro)
-        intro, _, _, _ = make_centred_list(intro, void_resize=True) ## How on earth does enabling this break the command_ lines?? It makes them justify left.
+        intro = make_coloured_list(intro, title_block=True)
         print_output(text="", print_list=intro, slow=True, print_to_console=False, by_char=True)
         player_name = print_text_from_bottom_up()
     return ui_blocking, player_name
