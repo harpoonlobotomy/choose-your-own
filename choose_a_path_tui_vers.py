@@ -931,11 +931,19 @@ def test():
     print_commands(backgrounds=False)
     print_text_from_bottom_up(None, input_text=" ")
 
-    from tui_update import update_playerdata, update_worlddata
+    from tui_update import update_infobox
 
-    update_playerdata(tui_placements, hp_value=8, carryweight_value=17)
-
-    update_worlddata(tui_placements, weather="perfect", time_of_day="midday", location="a graveyard")
+    between_flashes = 0.5
+    update_infobox(tui_placements, hp_value=17, carryweight_value=15, location="a graveyard", weather="perfect", time_of_day="midday", day=2)
+    #time.sleep(between_flashes)
+    #update_infobox(tui_placements, hp_value=2, carryweight_value=5, location="a place", weather="okay", time_of_day="night", day=11)
+    #time.sleep(between_flashes)
+    #update_infobox(tui_placements, hp_value=17, carryweight_value=15, location="a graveyard", weather="perfect", time_of_day="midday", day=2)
+    #time.sleep(between_flashes)
+    #update_infobox(tui_placements, hp_value=2, carryweight_value=5, location="a place", weather="okay", time_of_day="night", day=11)
+    #time.sleep(between_flashes)
+    #update_infobox(tui_placements, hp_value=17, carryweight_value=15, location="a graveyard", weather="perfect", time_of_day="midday", day=2)
+    #time.sleep(between_flashes)
 
     print(f"\033[5B", end='')
 

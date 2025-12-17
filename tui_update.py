@@ -1,63 +1,77 @@
-#  tui_update
+
 END="\x1b[0m"
 
-def update_playerdata(tui_placements, hp_value=None, carryweight_value=None):
-#    print(END, end='')
+def print_update(value, pos, base_start, alt_colour=False, min_length=2):
 
-    #for field in [hp_value, carryweight]: ## will do this in a bit.
-    base_start = tui_placements["playerdata_start"]
-
-    if hp_value:
-        hp_pos = tui_placements["playerdata_positions"][0]
-        hp_row, hp_col = hp_pos
-        base_row, base_col = base_start
-        hp_row = hp_row + base_row+1
-        hp_col = hp_col + base_col
-
-        if hp_value < 2:
-            colour = 31
-        else:
-            colour = 33
-        b_yellow_format=';'.join([str(1), str(colour), str(40)])
-        B_YEL=f"\x1b[{b_yellow_format}m"
-
-        val = f"{B_YEL}{hp_value}"
-        print(f"\033[{hp_row};{hp_col}H{val}{END}", end='')
-
-    if carryweight_value:
-        carryweight_pos = tui_placements["playerdata_positions"][1] ## will be 2 when name is added layer.
-
-        carryweight_row, carryweight_col = carryweight_pos
-        base_row, base_col = base_start
-        carryweight_row = carryweight_row + base_row+1
-        carryweight_col = carryweight_col + base_col
-
-        if carryweight_value < 2:
-            colour = 31
-        else:
-            colour = 33
-        b_yellow_format=';'.join([str(1), str(colour), str(40)])
-        B_YEL=f"\x1b[{b_yellow_format}m"
-
-        width = 2
-        carryweight_value = str(carryweight_value).ljust(width)
-
-        val = f"{B_YEL}{carryweight_value}"
-        print(f"\033[{carryweight_row};{carryweight_col}H{val}{END}", end='')
-
-
-def update_worlddata(tui_placements, weather=None, time_of_day=None, location=None):
-#    print(END, end='')
-
-#   'worldstate_start': (7, 182),
-#   'worldstate_end': (12, 226),
-#   'worldstate_positions': [(1, 24), (2, 15), (3, 19), (4, 36)]}
-
-    base_start = tui_placements["worldstate_start"]
-    location_pos = tui_placements["worldstate_positions"][0]
-    location_row, location_col = location_pos
-    weather_pos = tui_placements["worldstate_positions"][0]
-    weather_row, weather_col = weather_pos
+    row, col = pos
     base_row, base_col = base_start
+    row = row + base_row+1
+    col = col + base_col
+
+    colour = 33
+    if alt_colour:
+        if value < 2:
+            colour = 31
+
+    value = str(value).ljust(min_length)
+
+    b_yellow_format=';'.join([str(1), str(colour), str(40)])
+    B_YEL=f"\x1b[{b_yellow_format}m"
+    val = f"{B_YEL}{value}"
+    print(f"\033[{row};{col}H{val}{END}", end='')
+    print(f"\033{END}")
 
 
+def update_infobox(tui_placements, hp_value=None, carryweight_value=None, location=None, weather=None, time_of_day=None, day=None):
+
+    playerdata_base = tui_placements["playerdata_start"]
+    worldstate_base = tui_placements["worldstate_start"]
+
+    data_update_dict = {
+        "hp_value": {
+            "positions": tui_placements["playerdata_positions"][0],
+            "value": hp_value,
+            "base_pos": playerdata_base,
+            "alt_colour": True,
+            "min_length": 2},
+        "carryweight_value": {
+            "positions": tui_placements["playerdata_positions"][1],
+            "value": carryweight_value,
+            "base_pos": playerdata_base,
+            "alt_colour": True,
+            "min_length": 2},
+        "location": {
+            "positions": tui_placements["worldstate_positions"][0],
+            "value": location,
+            "base_pos": worldstate_base,
+            "alt_colour": False,
+            "min_length": 20},
+        "weather": {
+            "positions": tui_placements["worldstate_positions"][1],
+            "value": weather,
+            "base_pos": worldstate_base,
+            "alt_colour": False,
+            "min_length": 28},
+        "time_of_day": {
+            "positions": tui_placements["worldstate_positions"][2],
+            "value": time_of_day,
+            "base_pos": worldstate_base,
+            "alt_colour": False,
+            "min_length": 24},
+        "day": {
+            "positions": tui_placements["worldstate_positions"][3],
+            "value": day,
+            "base_pos": worldstate_base,
+            "alt_colour": False,
+            "min_length": 2}
+        }
+
+    for field in data_update_dict: ## will do this in a bit.
+        entry = data_update_dict[field]
+        value = entry["value"]
+        pos = entry["positions"]
+        is_alt = entry["alt_colour"]
+        base_data = entry["base_pos"]
+        min_length = entry["min_length"]
+        if value != None:
+            print_update(value, pos, base_data, alt_colour=is_alt, min_length=min_length)
