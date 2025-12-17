@@ -19,10 +19,12 @@ def print_update(value, pos, base_start, alt_colour=False, min_length=2):
     B_YEL=f"\x1b[{b_yellow_format}m"
     val = f"{B_YEL}{value}"
     print(f"\033[{row};{col}H{val}{END}", end='')
+    from time import sleep
+    sleep(.05)
     print(f"\033{END}")
 
 
-def update_infobox(tui_placements, hp_value=None, carryweight_value=None, location=None, weather=None, time_of_day=None, day=None):
+def update_infobox(tui_placements, hp_value=None, name=None, carryweight_value=None, location=None, weather=None, time_of_day=None, day=None):
 
     playerdata_base = tui_placements["playerdata_start"]
     worldstate_base = tui_placements["worldstate_start"]
@@ -34,8 +36,14 @@ def update_infobox(tui_placements, hp_value=None, carryweight_value=None, locati
             "base_pos": playerdata_base,
             "alt_colour": True,
             "min_length": 2},
-        "carryweight_value": {
+        "name": {
             "positions": tui_placements["playerdata_positions"][1],
+            "value": name,
+            "base_pos": playerdata_base,
+            "alt_colour": False,
+            "min_length": 13},
+        "carryweight_value": {
+            "positions": tui_placements["playerdata_positions"][2],
             "value": carryweight_value,
             "base_pos": playerdata_base,
             "alt_colour": True,

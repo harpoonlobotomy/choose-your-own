@@ -132,6 +132,7 @@ def space_and_get_cursor_pos(ui_blocking, input_list, space=True):
     printable_lines = list(range((up_lines[0]+3), (up_lines[1])))
     ui_blocking["up_lines"] = up_lines
     ui_blocking["input_line"] = up_lines[1]+3
+    ui_blocking["input_pos"] = f"{up_lines[1]+3};{(up_lines[0]+3)+7}"
     ui_blocking["printable_lines"]=printable_lines
 
     return spaced_list, ui_blocking
@@ -307,7 +308,6 @@ def make_coloured_list(input_list:list, title_block=False):
        "_": {"to_print": "_", "col":"yellow"},
 
     }
-    test=None
     for line in longer_list:
         line = col_text_partial(line, line, "yellow")
 
@@ -315,7 +315,6 @@ def make_coloured_list(input_list:list, title_block=False):
             for item in void_dict:
                 if item in line:
                     line = col_text_partial(line, symbol=void_dict[item]["to_print"], col=void_dict[item]["col"])
-                    test=True
 
         else:
             if "~" in line:
@@ -403,7 +402,6 @@ def print_in_text_box(up_lines, text:str="", text_list:list=None, print_console=
 
             slow_char=False # v so turning it off for now
             if slow_char: ## doesn't work with the coloured text. Neec to colour it here if this is what I want.
-
                 if len(text_list[i])> 1:
                     for v, char in enumerate(text_list[i]):
                         time.sleep(.0005)
@@ -413,7 +411,7 @@ def print_in_text_box(up_lines, text:str="", text_list:list=None, print_console=
                     print(f"\033[{int(row_no)};{left_textblock_edge}H{text_list[i]}", end='')
             else:
                 print(f"\033[{int(row_no)};{left_textblock_edge}H{text_list[i]}", end='')
-                time.sleep(.08) ### Why is this never triggering. It pauses /before/ printing anything in this section, but not between lines. I don't understand why.
+                time.sleep(.05) ### Why is this never triggering. It pauses /before/ printing anything in this section, but not between lines. I don't understand why.
                 print(f"\033[{row_no};{str(left_textblock_edge)}H{END}") ## having this on, it waits properly. Don't know why it needs it but apparently it does.
         time.sleep(.2)
         return text_list
@@ -450,12 +448,14 @@ def print_in_text_box(up_lines, text:str="", text_list:list=None, print_console=
 def prep_datablocks(text):
     new_text=[]
     for line in text:
+        if line == "":
+            continue
         line=line.replace('$', (' ' * ui_blocking["spacing"]))
         new_text.append(line)
     return new_text
 
 
-def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:bool=False, ui_blocking:dict={}): ## for inventory:  part = "inv_", text=inv_, inv=game.inventory, backgrounds=bool
+def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:bool=False, ui_blocking:dict={}):
 
     bg_col = 40
     if backgrounds:
@@ -477,7 +477,6 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
             pos_2 = item.rfind("*", 0, (pos-1))
             if pos_2 != pos and pos_2 >= 0:
                 positions_set.add((i, pos_2))
-
         positions_set = list(sorted(positions_set))
         ui_blocking[f"{part}positions"] = positions_set
 
@@ -490,41 +489,37 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
         header_format=';'.join([str(0), str(33), str(bg_col)])
         header_col=f"\x1b[{header_format}m"
         item_list=inv
-
-        datablock =prep_datablocks(datablock)
+        datablock = prep_datablocks(datablock)
         item_pos, ui_blocking = get_positions(part, datablock, ui_blocking)
 
         if len(item_list) > len(item_pos):
             print(f"Too many items for {part}.")
         i=0
         item=None
-        counter = 1
-        while i < len(item_pos)-1 and i < len(item_list)-2: # i don't understand why this has to be -2, but when it was -1 it was recursive. Will look into it more.
+        counter = 0
+        while i < len(item_pos)-1:
             for i, item in enumerate(item_list):
                 pos = item_pos[i]
                 row_base, col_base = pos
-                row = row_base + top_row +1 # Don't know why this needs to be +1 again now. It didn't for a while. Very odd.
-
+                row = (row_base + top_row)
+                row=row+1
                 if part == "playerdata_":
-                    if i in [2, 3]:
+                    if i in [3, 4]:
                         line = []
                         for stat, val in item.items():
                             if val and val is True:
                                 line.append(f"{stat}   ")
                         item="".join(line)
-
-                col = col_base + left_col
-                coloured = f'{inv_col}{item}{END}'
+                if part == "worldstate_":
+                    counter = 1 ## Adding this here gets 'day' back. Maybe deleted it some time ago but didn't realise? Not sure. The line alignment is weird, plus/minus ones everywhere.
+                print(f"\033[0;0H{END}", end='')
                 title_str = datablock[i + counter]
-                title_str = title_str.replace("*", " ")
-                title = f'{header_col}{title_str}{END}'
-                print(f"\033[{int(row)};{left_col}H{title}", end='')
+                title_str = title_str.replace("*", " ") ## titles only, no real data.
+                title = f'{header_col}{title_str}{END}' ## Will do the same with inventory later, printing it after the concept of 'carrying things in <carrier>' comes up.
+                print(f"\033[{int(row)};{left_col}H{title}")#, end='')
                 time.sleep(speed)
-                print(f"\033[0;0H{END}")
-                coloured = f'{inv_col}{item}{END}'
-                print(f"\033[{int(row)};{col}H{coloured}", end='')
-                time.sleep(speed)
-                print(f"\033[0;0H{END}")
+                print(f"\033[0;0H{END}", end='')
+
         return ui_blocking
 
     def print_inventory(part, inv, datablock, ui_blocking, speed=.05):
@@ -608,7 +603,7 @@ def add_infobox_data(ui_blocking:dict=(), print_data:bool = False, backgrounds:b
             "overwhelmed": game_player.get("overwhelmed"),
             "encumbered": game_player.get("encumbered")}
 
-        pd=list((health, carryweight, short_stats, long_stats))
+        pd=list((health, name, carryweight, short_stats, long_stats))
         return pd
 
     from datablocks import inv_, worldstate_, playerdata_
@@ -725,8 +720,7 @@ def print_text_from_bottom_up(input_list:list=None, input_text:str=""):
         else:
             input_str=col_text("INPUT:  ", "title_white")
 
-        up_lines = ui_blocking["up_lines"]
-        print(f"\033[{int(ui_blocking["input_line"])};{(up_lines[0]+3)+7}H{input_str}", end='')
+        print(f"\033[{ui_blocking["input_pos"]}H{input_str}", end='')
         print("\033[s")
         print(HIDE, end='')
         print(f"\033[u", SHOW, end='')
@@ -736,26 +730,30 @@ def print_text_from_bottom_up(input_list:list=None, input_text:str=""):
         if not first_input_done and not input_text:
             while True:
                 player_name = text
-                print(f"\033[{int(ui_blocking["input_line"])};{(up_lines[0]+3)+7}H{'                                           '}", end='')
+                print(HIDE, end='')
+                print(f"\033[{ui_blocking["input_pos"]}H{'                                           '}{END}", end='')
                 if isinstance(player_name, str) and len(player_name) > 0:
                     clean = clean_print_block()
                     print_output(text="", print_list=clean, slow=True)
                     first_input_done = True
                     return player_name
                 input_str = col_text("Please enter your name:  ", "title_white")
-                print(f"\033[{int(ui_blocking["input_line"])};{(up_lines[0]+3)+7}H{input_str}", end='')
+                print(f"\033[{ui_blocking["input_pos"]}H{input_str}{END}", end='')
+                print(SHOW, end='')
                 text = input()
+                print(f"\033[u{'                                                                             '}", end='')
                 print(HIDE, end='')
 
         if input_text:
-            print(f"\033[{int(ui_blocking["input_line"])};{(up_lines[0]+3)+7}H{input_str}", end='')
+            print(f"\033[u{'                                                                             '}", end='')
+            print(f"\033[{ui_blocking["input_pos"]}H{input_str}{END}", end='')
             while text != "":
                 print(HIDE, end='')
                 reversed_list = print_output(text, reversed_list, slow=slow_bool)
                 print(f"\033[u", SHOW, end='')
                 text = input()
-                print(HIDE, end='')
                 print(f"\033[u{'                                                                             '}", end='')
+                print(HIDE, end='')
         print(f"\033[u{'                                                                             '}", end='')
 
 

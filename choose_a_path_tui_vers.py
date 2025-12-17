@@ -917,7 +917,7 @@ def test():
 
     game = set_up(weirdness=True, bad_language=True, player_name="A")
     from tui_elements import run_tui_intro
-    tui_placements, player_name = run_tui_intro() # Hopefully use tui_placements to directly print to the printable area, instead of having to reroute each part manually.
+    tui_placements, player_name = run_tui_intro()
 
     if player_name:
         game.playername = player_name
@@ -928,22 +928,12 @@ def test():
     from tui_elements import add_infobox_data, print_text_from_bottom_up, print_commands
 
     tui_placements = add_infobox_data(tui_placements, print_data = True, backgrounds = False, inventory=game.inventory, playerdata=player, worldstate=world)
+    #print(tui_placements)
     print_commands(backgrounds=False)
-    print_text_from_bottom_up(None, input_text=" ")
-
     from tui_update import update_infobox
+    update_infobox(tui_placements, hp_value=17, name=game.playername, carryweight_value=15, location=game.place, weather="perfect", time_of_day="midday", day=2)
 
-    between_flashes = 0.5
-    update_infobox(tui_placements, hp_value=17, carryweight_value=15, location="a graveyard", weather="perfect", time_of_day="midday", day=2)
-    #time.sleep(between_flashes)
-    #update_infobox(tui_placements, hp_value=2, carryweight_value=5, location="a place", weather="okay", time_of_day="night", day=11)
-    #time.sleep(between_flashes)
-    #update_infobox(tui_placements, hp_value=17, carryweight_value=15, location="a graveyard", weather="perfect", time_of_day="midday", day=2)
-    #time.sleep(between_flashes)
-    #update_infobox(tui_placements, hp_value=2, carryweight_value=5, location="a place", weather="okay", time_of_day="night", day=11)
-    #time.sleep(between_flashes)
-    #update_infobox(tui_placements, hp_value=17, carryweight_value=15, location="a graveyard", weather="perfect", time_of_day="midday", day=2)
-    #time.sleep(between_flashes)
+    print_text_from_bottom_up(None, input_text=" ")
 
     print(f"\033[5B", end='')
 
@@ -970,6 +960,7 @@ tui_ placements: (values for fullscreen at 16/12/25)
 'up_lines': [18, 54],
 'printable_lines': [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53],
 'inv_positions': [(0, 7), (0, 42), (0, 77), (1, 7), (1, 42), (1, 77), (2, 7), (2, 42), (2, 77), (3, 7), (3, 42), (3, 77), (4, 7), (4, 42), (4, 77)],
-'playerdata_positions': [(1, 14), (2, 19), (4, 5), (5, 10)],
+'playerdata_positions': [(1, 14), (1, 28), (2, 19), (4, 5), (5, 10)]
 'worldstate_positions': [(1, 24), (2, 15), (3, 19), (4, 36)]}
 """
+
