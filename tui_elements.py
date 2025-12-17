@@ -2,7 +2,7 @@ tui_lines = "screen_draft_expanding.txt"
 global spacing
 spacing = 0
 get_longest=True
-longest_min = 0
+linelength = 0
 tui_linelist = []
 END="\x1b[0m"
 RESET = "\033[0m"
@@ -15,6 +15,41 @@ title_str = "Choose a Path"
 global ui_blocking
 ui_blocking = {"inv_start":None, "inv_end":None, "playerdata_start":None, "playerdata_end":None, "worldstate_start":None, "worldstate_end":None, "input_line":None, "text_block_start":None, "text_block_end":None, "commands_start":None, "commands_end":None}
 
+with open(tui_lines) as f:
+    counter=0
+    for line in f:
+        if counter==0:
+            no_of_spacers = line.count("&")
+
+        if counter == 19:
+            line_str = line.rstrip('\n')
+        tui_linelist.append(line.rstrip('\n'))
+        if get_longest:
+            if len(line) > linelength:
+                linelength = len(line)-no_of_spacers
+        counter += 1
+
+ui_blocking["no_of_spacers"] = no_of_spacers
+ui_blocking["linelength"] = linelength
+
+import os
+os.system("cls")
+
+def get_terminal_cols_rows():
+    from shutil import get_terminal_size
+    import os
+    os.system("cls")
+    cols, rows = get_terminal_size()
+    return cols, rows
+
+cols, rows = get_terminal_cols_rows()
+ui_blocking["cols"] = cols
+ui_blocking["rows"] = rows
+spare_cols = cols-ui_blocking["linelength"]
+spacing=int(spare_cols/ui_blocking["no_of_spacers"])
+if spacing <= 0:
+    spacing = 0
+ui_blocking["spacing"]=spacing
 
 def col_text(text:str="", colour:str=None):
     bg=40
@@ -94,15 +129,12 @@ def col_text(text:str="", colour:str=None):
 
     return col_text
 
-def col_text_partial(text:str="", plain_line="", ui_blocking:dict=(), symbol:str="", col:str=""):
-
-
+def col_text_partial(text:str="", plain_line="", symbol:str="", col:str=""):
 
  ## UI blocking
     ui_blocks = ["i", "w", "p", "c"]
 
     if symbol in ui_blocks:
-
         if symbol == 'i':
             block_part="inv_"
         elif symbol == "w":
@@ -163,70 +195,79 @@ def title_text(line):
 
     return line
 
-def get_terminal_cols_rows():
-    from shutil import get_terminal_size
-    import os
-    os.system("cls")
-    cols, rows = get_terminal_size()
-    return cols, rows
 
-def make_centred_list(input_list:list, linelength, ui_blocking):
-    cols, rows = get_terminal_cols_rows()
-    spare_cols = cols-linelength
-    global spacing
+def make_centred_list(input_list:list, void_resize=False):
 
-    spacing=int(spare_cols/no_of_spacers)
-    if spacing <= 0:
-        spacing = 0
+    text_box_count = spacing = 0
+    if not void_resize:
+         spacing = ui_blocking["spacing"]
+
     plain_list = []
     new_list=[]
     up_lines = []
     list_length = len(input_list)
-    additional_rows = rows-list_length-2
     longer_list = []
 
-    for line in input_list:
-        if '+' in line:
-            for _ in range(0, additional_rows+1):
-                longer_list.append(line_str)
-        else:
-            longer_list.append("\n" + line)
+    if not void_resize:
+        additional_rows = rows-list_length-2
+        for line in input_list:
+            if '+' in line:
+                for _ in range(0, additional_rows+1):
+                    longer_list.append(line_str)
+            else:
+                longer_list.append("\n" + line)
+    else:
+        longer_list = input_list
+
+    replace_dict = {
+        "&": {"to_print":"_"},
+        "*": {"to_print":"="},
+        "%": {"to_print":"-"}
+    }
+
+    symbol_dict = {
+        "|##|": {"to_print":"|##|", "col":"hash"},
+        " | ": {"to_print":" | ", "col":"pipe"},
+        "/": {"to_print": "/", "col":"slash"},
+        "\\": {"to_print": "\\", "col":"slash"},
+        "!": {"to_print": "!", "col":"yellow"},
+        "_": {"to_print": "_", "col": "underscore"}
+    }
+
+    void_dict = { #"exclude": "|##|",
+       "#": {"to_print":"|##|", "col":"hash"},
+       "$": {"to_print":"|##|", "col":"slash"}
+    }
     for i, line in enumerate(longer_list):
-        if "&" in line:
-            line = line.replace('&', ('_' * spacing))
-        if '*' in line:
-            line = line.replace('*', ('=' * spacing))
-        if '%' in line:
-            line = line.replace('%', ('-' * spacing))
+        for item in replace_dict:
+            line = line.replace(item, (replace_dict[item]["to_print"] * spacing))
 
         plain_line=line
         if "~" in line:
             line = title_text(line)
-        if "_" in line:
-            line = col_text_partial(line, symbol="_", col="underscore")
+
         excl="===-"
         exl_2="-==="
-        if excl in line or exl_2 in line:
+        if excl in line:
             line = col_text_partial(line, symbol=excl, col="deco_1")
             line = col_text_partial(line, symbol=exl_2, col="deco_1")
 
-        elif "=" in line:
-            line = col_text_partial(line, symbol="=", col="equals")
+        elif "=" in line: ## make this a dict.
+            line = col_text_partial(line, symbol="=", col="equals") ## These ones done separately to not mess with the title edges.
         elif "-" in line:
             line = col_text_partial(line, symbol="-", col="dash")
-        if "|##|" in line:
-            line = col_text_partial(line, symbol="|##|", col="hash")
-        if " | " in line:
-            line = col_text_partial(line, symbol=" | ", col="pipe")
-        if "/" in line:
-            line = col_text_partial(line, symbol="/", col="slash")
-        if "\\" in line:
-            line = col_text_partial(line, symbol="\\", col="slash")
-        if "!" in line:
-            line = col_text_partial(line, symbol="!", col="yellow")
 
-        line = line.replace('$', (' ' * spacing))
-        plain_line=plain_line.replace('$', (' ' * spacing))
+        for item in symbol_dict:
+            if item in line:
+                line = col_text_partial(line, symbol=symbol_dict[item]["to_print"], col=symbol_dict[item]["col"])
+
+        if void_resize:
+            for item in void_dict:
+                line = col_text_partial(line, symbol=void_dict[item]["to_print"], col=void_dict[item]["col"])
+
+        if not void_resize:
+            line = line.replace('$', (' ' * spacing))
+            plain_line=plain_line.replace('$', (' ' * spacing))
 
         if "INVENTORY" in line:
             line = col_text_partial(line, symbol="titles", col="yellow")
@@ -236,50 +277,37 @@ def make_centred_list(input_list:list, linelength, ui_blocking):
             plain_line=plain_line.replace('@', '^' * spacing)
             up_lines.append(i)
 
+        if not void_resize:
+            linelength=ui_blocking["linelength"]
+            if linelength + (no_of_spacers * spacing) < cols-1:
+                extra_spaces = cols - (linelength + (no_of_spacers * spacing) -1)
+                line = (' ' * int(extra_spaces/2)) + line + (' ' * int(extra_spaces/2))
+                plain_line = (' ' * int(extra_spaces/2)) + plain_line + (' ' * int(extra_spaces/2))
 
-        if longest_min + (no_of_spacers * spacing) < cols-1:
-            extra_spaces = cols - (longest_min + (no_of_spacers * spacing) -1)
-            line = (' ' * int(extra_spaces/2)) + line + (' ' * int(extra_spaces/2))
-            plain_line = (' ' * int(extra_spaces/2)) + plain_line + (' ' * int(extra_spaces/2))
-
-        if "^" in line:
-            if ui_blocking["text_block_start"] == None:
-                ui_blocking["text_block_start"] = (i+3, plain_line.find('^')+3)
-            else:
-                ui_blocking["text_block_end"] = (i-1, plain_line.rfind('^')-3)
-            text_box_count=plain_line.count("^")
-            line = col_text_partial(line, symbol="^", col="up")
+            if "^" in line:
+                if ui_blocking["text_block_start"] == None:
+                    ui_blocking["text_block_start"] = (i+3, plain_line.find('^')+3)
+                else:
+                    ui_blocking["text_block_end"] = (i-1, plain_line.rfind('^')-3)
+                text_box_count=plain_line.count("^")
+                line = col_text_partial(line, symbol="^", col="up")
 
     #### INVENTORY BOX ####
-        ui_blocks = ["i", "w", "p", "c"]
-        for block in ui_blocks:
-            if block in line:
-                line = col_text_partial(line, plain_line, ui_blocking, symbol=block, col=i+1)
-        line = line.replace('\n', '')
-        plain_line = plain_line.replace('\n', '')
+        if not void_resize:
+            ui_blocks = ["i", "w", "p", "c"]
+            for block in ui_blocks:
+                if block in line:
+                    line = col_text_partial(line, plain_line, symbol=block, col=i+1)
+            line = line.replace('\n', '')
+            plain_line = plain_line.replace('\n', '')
         new_list.append(line)
         plain_list.append(plain_line)
 
     return new_list, plain_list, up_lines, text_box_count
 
-with open(tui_lines) as f:
-    counter=0
-    for line in f:
-        if counter==0:
-            no_of_spacers = line.count("&")
-        if counter == 19:
-            line_str = line.rstrip('\n')
-        tui_linelist.append(line.rstrip('\n'))
-        if get_longest:
-            if len(line) > longest_min:
-                longest_min = len(line)-no_of_spacers
-        counter += 1
-
-import os
-os.system("cls")
 
 if get_longest:
-    tui_linelist, plain_list, up_lines, text_box_count = make_centred_list(tui_linelist, longest_min, ui_blocking)
+    tui_linelist, plain_list, up_lines, text_box_count = make_centred_list(tui_linelist)
 
     ui_blocking["input_line"] = up_lines[1]+3
 
@@ -287,12 +315,14 @@ printable_lines = list(range((up_lines[0]+3), (up_lines[1])))
 ui_blocking["printable_lines"]=printable_lines
 
 def print_TUI():
+    print(HIDE, end='')
     for line in tui_linelist:
         print(line)
+        time.sleep(.02)
 
 
 import time
-def print_in_text_box(up_lines, text:str="", reverse_txt:list=None, print_from_bottom=False, slow=False):
+def print_in_text_box(up_lines, text:str="", text_list:list=None, print_console=False, slow_lines=False, slow_char=False): ## Cannot use this with ansi codes as it breaks. Need to either go all in on 'rich' or not.
     first_row=None
     last_row=None
     text_block_start_col=(up_lines[0]+3)
@@ -300,29 +330,53 @@ def print_in_text_box(up_lines, text:str="", reverse_txt:list=None, print_from_b
     _, right_textblock_edge = ui_blocking["text_block_end"]
     textblock_width = right_textblock_edge-left_textblock_edge+1
     printable_lines = list(range((up_lines[0]+3), (up_lines[1])))
-    from rich.console import Console
-    console = Console(record=True)
 
-    if print_from_bottom:
+    if print_console:
+        from rich.console import Console, Control
+        console = Console(record=True)
         last_line = len(printable_lines)
         for i, row_no in enumerate(printable_lines):
-            from rich.control import Control
             console.control(Control.move_to(x=left_textblock_edge, y=row_no-1))
             if i == last_line-1:
                 test=text
-            elif reverse_txt and i!=last_line-1:
-                reverse_txt=reverse_txt
-                test=reverse_txt[i]
+            elif text_list and i!=last_line-1:
+                test=text_list[i]
             else:
                 test = " "
             if isinstance(text, str):
                 if len(text) < textblock_width:
                     text = text + (" " * (textblock_width-len(text)))
-            console.print(test)
-            if slow:
+            if slow_char:
+                for char in test:
+                    console.print(char, end='')
+                    time.sleep(.08)
+                print()
+            else:
+                console.print(test)
+            if slow_lines:
                 time.sleep(.08)
         console_text = console.export_text()
         return console_text
+
+    if text_list:
+        for i, row_no in enumerate(printable_lines):
+
+            slow_char=False # v so turning it off for now
+            if slow_char: ## doesn't work with the coloured text. Neec to colour it here if this is what I want.
+
+                if len(text_list[i])> 1:
+                    for v, char in enumerate(text_list[i]):
+                        time.sleep(.0005)
+                        print(f"\033[{int(row_no)};{left_textblock_edge+v}H{char}", end='')
+                        print(f"\033[{row_no};{str(left_textblock_edge)}H{END}") ## having this on, it waits properly. Don't know why it needs it but apparently it does.
+                else:
+                    print(f"\033[{int(row_no)};{left_textblock_edge}H{text_list[i]}", end='')
+            else:
+                print(f"\033[{int(row_no)};{left_textblock_edge}H{text_list[i]}", end='')
+                time.sleep(.08) ### Why is this never triggering. It pauses /before/ printing anything in this section, but not between lines. I don't understand why.
+                print(f"\033[{row_no};{str(left_textblock_edge)}H{END}") ## having this on, it waits properly. Don't know why it needs it but apparently it does.
+        time.sleep(.2)
+        return text_list
 
     import random
     print_once = False
@@ -345,7 +399,7 @@ def print_in_text_box(up_lines, text:str="", reverse_txt:list=None, print_from_b
         if i==0:
             first_row=row
         print(line, end='')
-        if slow:
+        if slow_lines:
             time.sleep(.08)
         last_row=row
 
@@ -356,7 +410,7 @@ def print_in_text_box(up_lines, text:str="", reverse_txt:list=None, print_from_b
 def prep_datablocks(text):
     new_text=[]
     for line in text:
-        line=line.replace('$', (' ' * spacing))
+        line=line.replace('$', (' ' * ui_blocking["spacing"]))
         new_text.append(line)
     return new_text
 
@@ -368,6 +422,8 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
 
     top_row, left_col, = ui_blocking[f"{part}start"]
     bottom_row, right_col, = ui_blocking[f"{part}end"]
+    inv_format=';'.join([str(1), str(33), str(bg_col)])
+    inv_col=f"\x1b[{inv_format}m"
 
     def get_positions(text):
         inv_pos = set()
@@ -386,8 +442,6 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
     def print_playerdata(part=None, inv=None, datablock=None):
 
         item_list = []
-        inv_format=';'.join([str(1), str(33), str(bg_col)])
-        inv_col=f"\x1b[{inv_format}m"
 
         header_format=';'.join([str(0), str(33), str(bg_col)])
         header_col=f"\x1b[{header_format}m"
@@ -429,20 +483,17 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
     def print_inventory(part=None, inv=None, datablock=None):
 
         inv_list = []
-        inv_format=';'.join([str(1), str(33), str(bg_col)])
-        inv_col=f"\x1b[{inv_format}m"
         if part == "inv_":
             for item in inv:
                 inv_list.append(item.name)
-        else:
-            inv_list = inv
 
         datablock=prep_datablocks(datablock) ## Want a way to do this accounting for the items in the list. Don't know how to do that yet.
         inv_pos = get_positions(datablock)
 
         if len(inv_list) > len(inv_pos):
-            print(f"Too many items for {part}.")
+            print(f"Too many items for {part}.") # Need to actually act on this.
         i=0
+
         while i < len(inv_pos)-1 and i < len(inv_list)-2: # i don't understand why this has to be -2, but when it was -1 it was recursive. Will look into it more.
             for i, item in enumerate(inv_list):
                 pos = inv_pos[i]
@@ -452,45 +503,35 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
                 coloured = f'{inv_col}{item}{END}'
                 print(f"\033[{int(row)};{col}H{coloured}", end='')
 
-    r_counter=0
-
-    if inv == None: ## This is only command_
-        bottom_row = bottom_row + 1 # not sure why needed, but needed or it only prints the first line.
-    else:
+    if inv != None: ## This is only command_
         if part == "inv_":
             print_inventory(part, inv, datablock)
         else:
-            print_playerdata(part, inv, datablock)
+            print_playerdata(part, inv, datablock) # playerdata + worldstate both
 
-    for row in range(top_row, bottom_row):
-        if inv != None:
-            break
-
-        c_counter=0
-        for col in range(left_col, right_col):
-            bg_format=';'.join([str(1), str(33), str(bg_col)])
-            if part == "commands_":
+    else:
+        r_counter=0
+        bottom_row = bottom_row + 1 # not sure why needed, but needed or it only prints the first line.
+        for row in range(top_row, bottom_row):
+            c_counter=0
+            for col in range(left_col, right_col):
                 bg_format=';'.join([str(0), str(33), str(bg_col)])
-
-            bg=f"\x1b[{bg_format}m"
-            if datablock != None:
+                bg=f"\x1b[{bg_format}m"
                 char = datablock[r_counter][c_counter-1:c_counter]
                 if char == "*":
                     coloured = f'{bg}{" "}{END}'
                 else:
                     coloured = f'{bg}{char}{END}'
-            else:
-                coloured = f'{bg}{" "}{END}'
-            print(f"\033[{row};{col}H{coloured}")
-            c_counter+=1
-        r_counter+=1
+                print(f"\033[{row};{col}H{coloured}")
+                c_counter+=1
+            r_counter+=1
 
+def print_commands(backgrounds=False):
+    from datablocks import commands_
+    datablock=prep_datablocks(commands_)
+    overprint_part("commands_", datablock, None, backgrounds)
 
-def add_infobox_data(print_data = False, backgrounds = False, inventory:list=None, playerdata:tuple=None, worldstate:list=None): ## inventory: to pass ## playerdata may be a set instead of a list.     'inventory' from main script instead of getting it via inventory_items )(which just gets it from 'game.inventory' anyway, but via datablocks. Transitional. Later, inventory wil always come from here.)
-
-    from datablocks import inv_, worldstate_, playerdata_, commands_
-
-    inv=None
+def add_infobox_data(print_data:bool = False, backgrounds:bool = False, inventory:list=None, playerdata:tuple=None, worldstate:list=None):
 
     def clean_player_data(playerdata):
         game_player, carryweight, name = playerdata # still here, just not being used until I can fix it overwriting the HP
@@ -510,46 +551,43 @@ def add_infobox_data(print_data = False, backgrounds = False, inventory:list=Non
         pd=list((health, carryweight, short_stats, long_stats))
         return pd
 
-    def print_commands(part="commands_", datablock=None): #should be part of the UI itself, doesn't get updated like the other parts.
-        inv=None
-        datablock=prep_datablocks(datablock)
-        overprint_part(part, datablock, inv, backgrounds)
 
-    print_commands("commands_", datablock=commands_)
+    from datablocks import inv_, worldstate_, playerdata_
+    infobox_dict = {
+        "inventory": {
+                    "part":"inv_",
+                    "datablock":inv_,
+                    "inv":inventory},
 
-    if inventory:
-        part="inv_"
-        datablock=inv_
-        inv=inventory
+        "playerdata": {
+                    "part":"playerdata_",
+                    "datablock":playerdata_,
+                    "inv":clean_player_data(playerdata)},
 
-    elif playerdata:
-        part="playerdata_"
-        datablock=playerdata_
-        inv = clean_player_data(playerdata)
+         "worldstate": {
+                    "part":"worldstate_",
+                    "datablock":worldstate_,
+                    "inv":worldstate}}
 
-    elif worldstate:
-        part="worldstate_"
-        datablock=worldstate_
-        inv=worldstate
+    for section in ["inventory", "playerdata", "worldstate"]:
+        part = infobox_dict[section].get("part")
+        datablock = infobox_dict[section].get("datablock")
+        inv = infobox_dict[section].get("inv")
+        if print_data and inv:
+            overprint_part(part, datablock, inv, backgrounds)
 
-    if print_data:
-        overprint_part(part, datablock, inv, backgrounds)
 
-
-def advance_list(console_text): ## turns out reversing it was the opposite thing I needed. Whoops. Will rename this later, seeing as the reversal is why it was behaving so strangely before. Now it advances properly.
+def advance_list(console_text):
     cleaned_list = []
     console_list = console_text.split("\n")
     for i, entry in enumerate(console_list):
-        if i == 0:
+        if i == 0 or entry == "":
             continue
-        elif entry == "":
-            continue
-        else:
-            cleaned_list.append(entry)
+        cleaned_list.append(entry)
     return list(cleaned_list)
 
 
-def clean_intro_block(intro_list=None):
+def clean_print_block(intro_list=None):
 
     cleaned_list = []
 
@@ -591,7 +629,6 @@ def clean_intro_block(intro_list=None):
                 if len(text) < text_block_width:
                     text = centring + text + centring
                     cleaned_list.append(text)
-
         total_list = start_list + cleaned_list + end_list
 
     else:
@@ -604,10 +641,14 @@ def clean_intro_block(intro_list=None):
     return total_list
 # you can print "\033[1;2H" to position the cursor. It will move the cursor and will not print anything on screen. The values 1 and 2 are the row and the column, so change them to use different positions.
 
-def clear_print_area(intro):
-
-    clean_intro_block(intro)
-
+def print_output(text="", print_list=None, slow=False, print_to_console=True,  by_char=False):
+    print(HIDE, end='')
+    console_text = print_in_text_box(up_lines, text, text_list=print_list, print_console=print_to_console, slow_lines=slow, slow_char=by_char)
+    if print_to_console:
+        print_list = advance_list(console_text)
+    else:
+        print_list=console_text
+    return print_list
 
 def print_text_from_bottom_up(input_list:list=None, input_text:str=""):
     text=None
@@ -615,14 +656,8 @@ def print_text_from_bottom_up(input_list:list=None, input_text:str=""):
     slow_bool=False
     first_input_done=False
 
-    def print_output(text="", reversed_list=None, slow=False):
-        print(HIDE, end='')
-        console_text = print_in_text_box(up_lines, text, reverse_txt=reversed_list, print_from_bottom=True, slow=slow)
-        reversed_list = advance_list(console_text)
-        return reversed_list
-
     if input_list:
-        print_output(text="", reversed_list=input_list, slow=True)
+        print_output(text="", print_list=input_list, slow=True, by_char=True)
 
     else:
         slow_bool=False
@@ -642,8 +677,8 @@ def print_text_from_bottom_up(input_list:list=None, input_text:str=""):
                 player_name = text
                 print(f"\033[{int(ui_blocking["input_line"])};{(up_lines[0]+3)+7}H{'                                           '}", end='')
                 if isinstance(player_name, str) and len(player_name) > 0:
-                    clean = clean_intro_block()
-                    print_output(text="", reversed_list=clean, slow=True)
+                    clean = clean_print_block()
+                    print_output(text="", print_list=clean, slow=True)
                     first_input_done = True
                     return player_name
                 input_str = col_text("Please enter your name:  ", "title_white")
@@ -657,6 +692,7 @@ def print_text_from_bottom_up(input_list:list=None, input_text:str=""):
                 reversed_list = print_output(text, reversed_list, slow=slow_bool)
                 print(f"\033[u", SHOW, end='')
                 text = input()
+                print(f"\033[u{'                                                                             '}", end='')
         print(f"\033[u{'                                                                             '}", end='')
 
 
@@ -667,8 +703,9 @@ def run_tui_intro():
     print_intro=True
     if print_intro:
         from datablocks import intro
-        intro = clean_intro_block(intro)
-        print_text_from_bottom_up(input_list=intro)
+        intro = clean_print_block(intro)
+        intro, _, _, _ = make_centred_list(intro, void_resize=True) ## How on earth does enabling this break the command_ lines?? It makes them justify left.
+        print_output(text="", print_list=intro, slow=True, print_to_console=False, by_char=True)
         player_name = print_text_from_bottom_up()
     return ui_blocking, player_name
 

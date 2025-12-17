@@ -920,13 +920,12 @@ def test():
         game.playername = player_name
 
     world = (game.place, game.weather, game.time, game.day_number)
-
     player = (game.player, game.carryweight, game.playername)
 
-    from tui_elements import add_infobox_data, print_text_from_bottom_up
-    add_infobox_data(print_data = True, backgrounds = False, inventory=game.inventory)
-    add_infobox_data(print_data = True, backgrounds = False, inventory=None, worldstate=world)
-    add_infobox_data(print_data = True, backgrounds = False, inventory=None, playerdata=player) ## change this to take whichever is offered and cycle them internally, instead of separate calls like this.
+    from tui_elements import add_infobox_data, print_text_from_bottom_up, print_commands
+
+    print_commands(backgrounds=False)
+    add_infobox_data(print_data = True, backgrounds = False, inventory=game.inventory, playerdata=player, worldstate=world)
     print_text_from_bottom_up(None, input_text=" ")
     print(f"\033[5B", end='')
 
