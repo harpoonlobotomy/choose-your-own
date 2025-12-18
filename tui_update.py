@@ -132,9 +132,14 @@ def update_text_box(tui_placements, to_print):
     if to_print:
         print_list=list()
         if isinstance(to_print, str):
-            print_list.append("".join(to_print))
+            if "\n" in to_print:
+                to_print = to_print.split("\n")
+                print(r"to print after \n: ", to_print)
+                print_list=to_print
+            else:
+                print_list.append("".join(to_print))
         if isinstance(to_print, list):
-            print_list=to_print
+            print_list=to_print ## for line in to_print - print line by line even if a given input has multiple lines. Otherwise it breaks and looks bad.
 
     if print_list and print_list != None:
         existing_list = existing_list + print_list
@@ -143,6 +148,7 @@ def update_text_box(tui_placements, to_print):
     printable_lines = tui_placements["printable_lines"]
 
     if len(print_list) < len(printable_lines):
+
         empty_list = list()
         counter=1
         while counter <= (len(printable_lines) - len(print_list)):
@@ -163,12 +169,13 @@ def update_text_box(tui_placements, to_print):
             blank_lines.add(i)
 
     if print_list:
+        #  for line in print_list: # need to do it line by line.
         print(HIDE, end='')
         print_in_text_box(tui_placements, blank_lines, pauselines, text_list=print_list, slow_lines=True)
         if print_list:
             print_list = advance_list(print_list)
 
-    sleep(.1)
+    sleep(.24)
 
     b_white_format=';'.join([str(1), str(37), str(40)])
     B_WHITE=f"\x1b[{b_white_format}m"
@@ -176,12 +183,6 @@ def update_text_box(tui_placements, to_print):
     input_str="INPUT:  "
     col_text = f"{col}{input_str}{END}"
     print(f"\033[{tui_placements["input_pos"]}H{col_text}{SHOW}", end='')
-    text = input()
-    print("print list after advance_list type::", type(print_list))
-    print(print_list)
-    print_list.append(text)
-    exit()
-
     tui_placements["existing_list"] = print_list
-    return text, tui_placements
+    return tui_placements
 

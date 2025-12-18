@@ -10,6 +10,7 @@ import random
 from locations import run_loc, places, descriptions
 from env_data import placedata_init, p_data
 from pprint import pprint
+import time
 
 from item_management_2 import ItemInstance, registry
 
@@ -20,11 +21,17 @@ from tui_update import update_infobox, update_text_box
 user_prefs = r"D:\Git_Repos\Choose_your_own\path_userprefs.json"
 run_again = False
 
+END="\x1b[0m"
+RESET = "\033[0m"
+HIDE = "\033[?25l"
+SHOW = "\033[?25h"
+
 yes = ["y", "yes"]
 no = ["n", "no", "nope"]
 night = ["midnight", "late evening", "night", "pre-dawn"]
 
-import time
+global tui_placements
+
 
 def slowLines(txt, speed=0.1):
     update_text_box(tui_placements, existing_list=None, to_print=txt)
@@ -32,10 +39,12 @@ def slowLines(txt, speed=0.1):
     #time.sleep(speed)
 
 def slowWriting(txt, speed=0.001): # remove a zero to set it to regular speed again.
-    for c in str(txt):
-        print(c, end='', flush=True)
-        time.sleep(speed * random.uniform(0.2, 2))
-    print()
+    print(f"TEXT: {txt}")
+    update_text_box(tui_placements, existing_list=None, to_print=txt)
+    #for c in str(txt):
+    #    print(c, end='', flush=True)
+    #    time.sleep(speed * random.uniform(0.2, 2))
+    #print()
 
 def smart_capitalise(s: str) -> str:
     return s[0].upper() + s[1:] if s else s
@@ -910,7 +919,7 @@ def run():
 import os
 def test():
 #def tui_intro():
-    global tui_placements
+
 
     os.system("cls") ##<-- run this first to get the ansi to work later
     game = set_up(weirdness=True, bad_language=True, player_name="A")
@@ -927,11 +936,39 @@ def test():
     tui_placements = add_infobox_data(tui_placements, print_data = True, backgrounds = False, inventory=game.inventory, playerdata=None, worldstate=None)
     update_infobox(tui_placements, hp_value=17, name=game.playername, carryweight_value=15, location=game.place, weather="perfect", time_of_day="midday", day=2)
 
-    to_print:list = [f"You wake up in {assign_colour(game.place, 'loc')}, right around {game.time}. You find have a bizarrely good sense of cardinal directions; how odd.", f"`{game.playername}`, you think to yourself, `is it weird to be in {assign_colour(game.place, 'loc')} at {game.time}, while it's {game.weather}?`", "[PAUSE]", "Another thing is...", "There's a mystery...", "[PAUSE]"]
+    loc_data = p_data[game.place]
 
-    to_print, tui_placements = update_text_box(tui_placements, to_print=to_print)
+    to_print:list = [f"You wake up in {assign_colour(game.place, 'loc')}, right around {game.time}. You find have a bizarrely good sense of cardinal directions; how odd.", f"`{game.playername}`, you think to yourself, `is it weird to be in {assign_colour(game.place, 'loc')} at {game.time}, while it's {game.weather}?`", "[PAUSE]", "Another thing is...", "There's a mystery...", "[PAUSE]", "[PAUSE]", f"You take a moment to take in your surroundings. {loc_data.overview}"]
 
-    #text_input, tui_placements = update_text_box(tui_placements, to_print=to_print)
+    tui_placements = update_text_box(tui_placements, to_print=to_print)
+
+    #def describe_loc():
+        ## Needs to also describe weather here.
+    tui_placements = update_text_box(tui_placements, to_print=f"You take a moment to take in your surroundings. {loc_data.overview}")
+    tui_placements = update_text_box(tui_placements, to_print="Pick a direction to investigate, or go elsewhere?")
+
+    choose_direction_list = []
+    for item in game.cardinals:
+        choose_direction_list.append(item)
+    choose_direction_list.append("go")
+    tui_placements = update_text_box(tui_placements, to_print=choose_direction_list)
+
+    #
+    #test=option(game.cardinals, "go", print_all=True)
+    #if test in game.cardinals:
+    #    game.facing_direction = test
+    #    look_around()
+    #else:
+    #    slowWriting(f"You decide to leave {assign_colour(switch_the(game.place, 'the '), 'loc')}")
+    #    relocate()
+#
+    #text = input()
+    #print(HIDE)
+    #tui_placements["print_list"].append(text)
+    #tui_placements["print_list"].append("[PAUSE]")
+#
+    #tui_placements = update_text_box(tui_placements, to_print=tui_placements["print_list"])
+
 #    slowWriting()
 #    places[game.place].visited = True
 #    places[game.place].first_weather = game.weather
