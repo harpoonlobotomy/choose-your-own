@@ -5,6 +5,9 @@ from rich.text import Text
 console = Console(record=True)
 
 END="\x1b[0m"
+RESET = "\033[0m"
+HIDE = "\033[?25l"
+SHOW = "\033[?25h"
 
 def print_update(value, pos, base_start, alt_colour=False, min_length=2):
 
@@ -89,59 +92,55 @@ def update_infobox(tui_placements, hp_value=None, name=None, carryweight_value=N
         if value != None:
             print_update(value, pos, base_data, alt_colour=is_alt, min_length=min_length)
 
-def update_text_box(tui_placements, existing_list, to_print):
+def update_text_box(tui_placements, to_print):
 
+    existing_list = tui_placements.get("existing_list")
     if not existing_list:
-         existing_list = tui_placements["existing_list"]
+        existing_list=list()
 
+    def advance_list(print_list):
+        cleaned_list = []
+        for i, entry in enumerate(print_list):
+            if i == 0:# or entry == "":
+                continue
+            cleaned_list.append(entry)
+        return list(cleaned_list)
 
-    def convert_to_rich_col(print_list):
+    def print_in_text_box(tui_placements, blank_lines, pauselines, text_list:list=None, slow_lines=True):
 
-        colour_list = []
-        for line in print_list:
-            text = Text.from_ansi(line)
-            colour_list.append(text)
-        return colour_list
-
-
-    def print_to_console(printable_lines, pauselines, blank_lines, left_margin, textblock_width, print_list, slow=False, clear=True):
-
+        _, left_textblock_edge = tui_placements["text_block_start"]
+        linelength = tui_placements["linelength"]
+        blankline = " " * linelength
         for i, row_no in enumerate(printable_lines):
-            if slow:
-                if i in pauselines:
-                    text=None
-                    sleep(.6)
-                    continue
-                elif i in blank_lines:
-                    sleep(0.0001)
-                else:
-                    sleep(.25)
-
-            console.control(Control.move_to(x=left_margin, y=row_no-1))
-            text = print_list[i]
-            if clear:
-                if len(text) < textblock_width:
-                    text = text + (" " * (textblock_width-len(text))) ## this will break with the
-
-            console.print(text)
-
-        console_text = console.export_text()
-        return console_text
+            test = text_list[i]
+            print(f"\033[{int(row_no)};{left_textblock_edge}H{blankline}")
+            if i in blank_lines:
+                test=" "
+                #test="BLANK"
+                duration=0.0
+            elif i in pauselines:
+                test=" "
+                duration=.5
+            else:
+                duration=.3
+#                sleep(.08)
+            sleep(float(duration))
+            print(f"\033[{int(row_no)};{left_textblock_edge}H{test}{END}", end='')
+                #print(f"\033[{row_no};{str(left_textblock_edge)}H{END}")
+        return
 
     if to_print:
+        print_list=list()
         if isinstance(to_print, str):
-            print_list = list((to_print))
+            print_list.append("".join(to_print))
         if isinstance(to_print, list):
             print_list=to_print
 
-    if existing_list:
-        if print_list and print_list != None:
-            existing_list = existing_list + print_list
-        print_list = existing_list
+    if print_list and print_list != None:
+        existing_list = existing_list + print_list
+    print_list = existing_list
 
     printable_lines = tui_placements["printable_lines"]
-    _, left_margin = tui_placements["text_block_start"]
-    textblock_width = tui_placements["linelength"]
 
     if len(print_list) < len(printable_lines):
         empty_list = list()
@@ -153,28 +152,36 @@ def update_text_box(tui_placements, existing_list, to_print):
 
     elif len(print_list) > len(printable_lines):
         while len(print_list) > len(printable_lines):
-            print_list = print_list.pop[0]
+            print_list = print_list.pop(0)
 
-    blank_lines = []
-    pauselines = []
+    blank_lines = set()
+    pauselines = set()
     for i, line in enumerate(print_list):
         if line == "[PAUSE]":
-            pauselines.append(i)
+            pauselines.add(i)
         if line.strip() == "":
-            blank_lines.append(i)
+            blank_lines.add(i)
 
-    print_list = convert_to_rich_col(print_list)
-
-    print_to_console(printable_lines, pauselines, blank_lines, left_margin, textblock_width, print_list, slow=True, clear=False)
+    if print_list:
+        print(HIDE, end='')
+        print_in_text_box(tui_placements, blank_lines, pauselines, text_list=print_list, slow_lines=True)
+        if print_list:
+            print_list = advance_list(print_list)
 
     sleep(.1)
-# putting this here temporarily. Will bring the text-colouring to unification later.
+
     b_white_format=';'.join([str(1), str(37), str(40)])
     B_WHITE=f"\x1b[{b_white_format}m"
     col=B_WHITE
     input_str="INPUT:  "
     col_text = f"{col}{input_str}{END}"
-    print(f"\033[{tui_placements["input_pos"]}H{col_text}", end='')
+    print(f"\033[{tui_placements["input_pos"]}H{col_text}{SHOW}", end='')
     text = input()
-    tui_placements["existing_list"] = existing_list
+    print("print list after advance_list type::", type(print_list))
+    print(print_list)
+    print_list.append(text)
+    exit()
+
+    tui_placements["existing_list"] = print_list
     return text, tui_placements
+

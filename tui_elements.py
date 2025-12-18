@@ -611,6 +611,9 @@ def add_infobox_data(ui_blocking:dict=(), print_data:bool = False, backgrounds:b
         return pd
 
     from datablocks import inv_, worldstate_, playerdata_
+    player_inv = None
+    if playerdata:
+        player_inv = clean_player_data(playerdata)
     infobox_dict = {
         "inventory": {
                     "part":"inv_",
@@ -620,7 +623,7 @@ def add_infobox_data(ui_blocking:dict=(), print_data:bool = False, backgrounds:b
         "playerdata": {
                     "part":"playerdata_",
                     "datablock":playerdata_,
-                    "inv":clean_player_data(playerdata)},
+                    "inv":player_inv},
 
          "worldstate": {
                     "part":"worldstate_",
