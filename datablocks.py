@@ -1,26 +1,3 @@
-
-#from set_up_game import game, set_up
-
-#set_up(1, 1, "Player")
-
-inventory_items = None#game.inventory
-#  $$$                                           $$$$                                             $
-inv2_=[
-"$$  1.                                            $$$7.                                          $$$$",
-"$$  2.                                            $$$8.                                          $$$$",
-"$$  3.                                            $$$9.                                          $$$$",
-"$$  4.                                            $$$10.                                         $$$$",
-"$$  5.                                            $$$11.                                         $$$$",
-"$$  6.                                            $$$12.                                         $$$$"]
-
-
-inv_3_=[
-"$$  *.                                            $$$*.                                          $$$$",
-"$$  *.                                            $$$*.                                          $$$$",
-"$$  *.                                            $$$*.                                          $$$$",
-"$$  *.                                            $$$*.                                          $$$$",
-"$$  *.                                            $$$*.                                          $$$$"]
-
 inv_=[
 "$$ *.                           $$*.                           $$*.                            $$$$$$",
 "$$ *.                           $$*.                           $$*.                            $$$$$$",
@@ -29,48 +6,14 @@ inv_=[
 "$$ *.                           $$*.                           $$*.                            $$$$$$",
 ]
 
-## 12 total $
-
-playerdata2_=[
-"$                                      $",
-"$  HEALTH:  *                          $",
-"$  CARRYWEIGHT:  *                     $",
-"$  s                                   $",
-"$                                  s   $",
-"$                                      $"]
-
-
-"""
 playerdata_=[
 "$                                      $",
-"$  HEALTH:  *                          $",
+"$  HEALTH:  *    $  NAME:  *            ",
 "$  CARRYWEIGHT:  *                     $",
-"$  tired   full   bored   sad   blind  $", <--- Full array of player states (will need to think on it if it expands)
-"$   hungry   overwhelmed   encumbered  $",
-"$                                      $"]
-"""
+"$                                      $", # 3 spaces between entries
+"$  *                                   $",
+"$       *                              $"]
 
-
-
-playerdata_=[
-"$                                      $",
-"$  HEALTH:  *                          $",
-"$  CARRYWEIGHT:  *                     $",
-"$  *                                   $", # 3 spaces between entries
-"$       *                              $",
-"$                                      $"]
-
-#loc_spaces = len(game.place)
-#loc_spacing = 20 - loc_spaces
-#loc_spacing = (" " * loc_spacing)
-
-#wthr_spaces = len(game.place)
-#wthr_spacing = 50 - wthr_spaces
-#wthr_spacing = (" " * wthr_spacing)
-
-#tod_spaces = len(game.place)
-#tod_spacing = 50 - tod_spaces
-#tod_spacing = (" " * tod_spacing)
 
 worldstate_=[
 " $                                       $ ",
@@ -78,12 +21,13 @@ worldstate_=[
 " $  WEATHER: *                           $ ",
 " $  TIME OF DAY: *                       $ ",
 " $                            DAY *      $ ",
+" $                                       $ ",
 " $                                       $ "]
 #
 
 commands_ = [
-"$$$$ COMMANDS:  `1` for first option, `2` for second, etc.  $ $$   i` for inventory   $$$   'd' to describe surroundings                      $$$",
-"$$$$           `'drop <item_name>'/'separate <item_name>' to drop/separate <item>   $$$   <item_name> to examine <item>   $$   q/quit` to quit.$$$"
+"$$$$      COMMANDS:  `1` for first option, `2` for second, etc.  $ $$   i` for inventory   $$   'd' to describe surroundings  $$",
+"$$$$           `'drop <item_name>'/'separate <item_name>' to drop/separate <item>   $$   <item_name> to examine <item>   $$   q/quit` to quit.$$"
 ]
 
 
@@ -103,13 +47,13 @@ intro = [
     "   #   | $$                                                 #",
     "   #   | $$       /======================================== #",
     "   #   |__/      /",
-    "   #            /",
-    "   # ==========/",
-    " ",
-    " ",
-    "To play: ",
-    "Type the words in parentheses, or select by number",
-    "    eg: for [[  (stay) or (go))  ]], '1' would choose 'stay'."
+    "   #            /                  harpoonlobotomy",
+    "   # ==========/                            2025.",
+    "",
+    "",
+    "",
+    "",
+    "      A text adventure game with no game or adventure yet."
 ]
 
 intro_wide = [
@@ -117,15 +61,15 @@ intro_wide = [
     "                         /                                  #",
     "   # ===================/     /$$     /$$                   #",
     "   #                         | $$    | $$                   #",
-    "   #     /$$$$$$   /$$$$$$  /$$$$$$  | $$$$$$$   /$$$$$$$   #            To play: ",
+    "   #     /$$$$$$   /$$$$$$  /$$$$$$  | $$$$$$$   /$$$$$$$   #",
     "   #    /$$__  $$ |____  $$|_  $$_/  | $$__  $$ /$$_____/   #",
-    r"   #   | $$  \ $$  /$$$$$$$  | $$    | $$  \ $$|  $$$$$$    #        Type the words in parentheses, or select by number",
-    r"   #   | $$  | $$ /$$__  $$  | $$ /$$| $$  | $$ \____  $$   #            eg: for [[  (stay) or (go))  ]], '1' would choose 'stay'."
+    r"   #   | $$  \ $$  /$$$$$$$  | $$    | $$  \ $$|  $$$$$$    #        harpoonlobotomy"
+    r"   #   | $$  | $$ /$$__  $$  | $$ /$$| $$  | $$ \____  $$   #                2025"
     "   #   | $$$$$$$/|  $$$$$$$  |  $$$$/| $$  | $$ /$$$$$$$/   #",
     r"   #   | $$____/  \_______/   \___/  |__/  |__/|_______/    #",
     "   #   | $$                                                 #",
     "   #   | $$       /======================================== #",
     "   #   |__/      /",
-    "   #            /",
+    "   #            /      A text adventure game with no game or adventure yet.",
     "   # ==========/",
 ]

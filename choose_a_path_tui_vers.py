@@ -911,8 +911,8 @@ def run():
 
 
 
+import os
 def test():
-    import os
     os.system("cls") ##<-- run this first to get the ansi to work later
 
     game = set_up(weirdness=True, bad_language=True, player_name="A")
@@ -930,37 +930,23 @@ def test():
     tui_placements = add_infobox_data(tui_placements, print_data = True, backgrounds = False, inventory=game.inventory, playerdata=player, worldstate=world)
     #print(tui_placements)
     print_commands(backgrounds=False)
-    from tui_update import update_infobox
+    from tui_update import update_infobox, update_text_box
     update_infobox(tui_placements, hp_value=17, name=game.playername, carryweight_value=15, location=game.place, weather="perfect", time_of_day="midday", day=2)
 
-    print_text_from_bottom_up(None, input_text=" ")
+    to_print:list = [f"You wake up in {game.place}, right around {game.time}. You find have a bizarrely good sense of cardinal directions; how odd.", f"`{game.playername}`, you think to yourself, `is it weird to be in {game.place} at {game.time}, while it's {game.weather}?`", "[PAUSE]", "Another thing is...", "There's a mystery...", "[PAUSE]"]
 
-    print(f"\033[5B", end='')
+    update_text_box(tui_placements, existing_list=None, to_print=to_print)
+    #
+    # printed_list = print_text_from_bottom_up(to_print, input_text=None)
 
+    #
+    # printed_list = print_text_from_bottom_up(printed_list, input_text=f"You wake up in {game.place}, right around {game.time}. You find have a bizarrely good sense of cardinal directions; how odd.")
+    #print_text_from_bottom_up(None, input_text=f"You wake up in {assign_colour(game.place, 'loc')}, right around {game.time}. You find have a bizarrely good sense of cardinal directions; how odd.")
+
+    #print_text_from_bottom_up(None, input_text=" ")
+    #print(f"\033[5B", end='')
+
+os.system("cls")
+time.sleep(1)
 test()
-
-"""
-tui_ placements: (values for fullscreen at 16/12/25)
-'inv_start': (7, 11),
-'inv_end': (12, 125),
-'playerdata_start': (7, 132),
-'playerdata_end': (12, 175),
-'worldstate_start': (7, 182),
-'worldstate_end': (12, 226),
-'input_line': 57,
-'text_block_start': (21, 22),
-'text_block_end': (53, 215),
-'commands_start': (15, 23),
-'commands_end': (16, 215),
-'cols': 237, 'rows': 64,
-'spacing': 3,
-'no_of_spacers': 16,
-'linelength': 188,
-'line_str': '
-'up_lines': [18, 54],
-'printable_lines': [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53],
-'inv_positions': [(0, 7), (0, 42), (0, 77), (1, 7), (1, 42), (1, 77), (2, 7), (2, 42), (2, 77), (3, 7), (3, 42), (3, 77), (4, 7), (4, 42), (4, 77)],
-'playerdata_positions': [(1, 14), (1, 28), (2, 19), (4, 5), (5, 10)]
-'worldstate_positions': [(1, 24), (2, 15), (3, 19), (4, 36)]}
-"""
 

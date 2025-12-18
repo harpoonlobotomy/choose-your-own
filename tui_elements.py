@@ -360,6 +360,9 @@ def print_TUI(tui_linelist):
 
 
 def print_in_text_box(up_lines, text:str="", text_list:list=None, print_console=False, slow_lines=False, slow_char=False): ## Cannot use this with ansi codes as it breaks. Need to either go all in on 'rich' or not.
+
+    ## I just gutted this a bit. Might regret that later.
+    # Have now decided to make a new separate function, because this one's too damn fragile.
     first_row=None
     last_row=None
     text_block_start_col=(up_lines[0]+3)
@@ -383,17 +386,18 @@ def print_in_text_box(up_lines, text:str="", text_list:list=None, print_console=
             if isinstance(text, str):
                 if len(text) < textblock_width:
                     text = text + (" " * (textblock_width-len(text)))
-            if slow_char:
-                for char in test:
-                    console.print(char, end='')
-                    time.sleep(.08)
-                    print(f"\033[{row_no};{str(left_textblock_edge)}H{END}")
-                print()
-            else:
-                console.print(test)
+            #if slow_char:
+            #    for char in test:
+            #        console.print(char, end='')
+            #        time.sleep(.08)
+            #        print(f"\033[{row_no};{str(left_textblock_edge)}H{END}")
+            #    print()
+            #else:
+            #    console.print(test)
             if slow_lines:
                 time.sleep(.08)
-                print(f"\033[{row_no};{str(left_textblock_edge)}H{END}")
+                console.print(test)
+                #print(f"\033[{row_no};{str(left_textblock_edge)}H{END}")
         console_text = console.export_text()
         return console_text
 
@@ -705,7 +709,7 @@ def print_output(text="", print_list=None, slow=False, print_to_console=True, by
         print_list = console_text
     return print_list
 
-def print_text_from_bottom_up(input_list:list=None, input_text:str=""):
+def print_text_from_bottom_up(input_list:list=None, input_text:str="", get_name=True):
     text=None
     reversed_list=None
     slow_bool=False
@@ -721,13 +725,16 @@ def print_text_from_bottom_up(input_list:list=None, input_text:str=""):
             input_str=col_text("INPUT:  ", "title_white")
 
         print(f"\033[{ui_blocking["input_pos"]}H{input_str}", end='')
-        print("\033[s")
+        print("\033[s", end="")
         print(HIDE, end='')
+        if input_text and input_text != " " and not input_list:
+            print_output(text=input_text, print_list=None, slow=False)
+            input_text=None
         print(f"\033[u", SHOW, end='')
         text = input()
         print(HIDE, end='')
 
-        if not first_input_done and not input_text:
+        if get_name:
             while True:
                 player_name = text
                 print(HIDE, end='')
@@ -745,6 +752,7 @@ def print_text_from_bottom_up(input_list:list=None, input_text:str=""):
                 print(HIDE, end='')
 
         if input_text:
+            print_output(text, print_list=None, slow=slow_bool)
             print(f"\033[u{'                                                                             '}", end='')
             print(f"\033[{ui_blocking["input_pos"]}H{input_str}{END}", end='')
             while text != "":
@@ -773,7 +781,7 @@ def run_tui_intro():
         intro = clean_print_block(intro)
         intro = make_coloured_list(intro, title_block=True)
         print_output(text="", print_list=intro, slow=True, print_to_console=False, by_char=True)
-        player_name = print_text_from_bottom_up()
+        player_name = print_text_from_bottom_up(get_name=True)
     return ui_blocking, player_name
 
 
