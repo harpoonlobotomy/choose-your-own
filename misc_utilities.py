@@ -152,8 +152,9 @@ def assign_colour(item, colour=None, nicename=None, switch=False):
             colour=cardinals[int(colour)] # get the value from the list by index, so lists always have the same order (separate from the game.colour_counter, which loops but not per text line. This way the first through fourth option always have the same order unless they've another priority.)
             # This should stop the current issue where 'yes, no' are green and blue, then red and cyan next time, because the loop is 4 colours long. Would prefer it to be consistent.
             colour=cardinal_cols[colour]
-        else:
-            print(f"Item not in cardinals and not an instance: {item}") ####
+        #else:
+        #    print(f"Item not in cardinals and not an instance: {item}") #### ## triggers on locations, possible other things too.
+        # This whole thing needs redoing so I'm not going to focus on it too much for now.
 
 # WHY IS THIS TRIGGERING
 # WHEN THIS IS WHAT IT'S PRINTING:

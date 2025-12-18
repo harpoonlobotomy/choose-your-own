@@ -73,19 +73,12 @@ def do_inventory():
         print_inventory()
         get_inventory_names()
         test=option(game.inventory_names, print_all=True, none_possible=True, preamble="To examine an item more closely, type it here, otherwise hit 'enter' to continue.", inventory=True)
-        #test = user_input()
-        #print(f"Test: {test}")
         if not test or test=="" or test==None:
             done=True
             return test
         while True:
             if test and test in game.inventory_names:
-                    #places[game.place].first_weather = game.weather
-                # needs to be looking in [name].values().get("inv_name")
-
                 test=from_inventory_name(test)
-                ## need to get item instance from name, but maybe from index instead to allow for muultiple instances of same name. Done, I think.
-
                 desc = registry.describe(test, caps=True)
                 if desc and desc != "" and desc != f"[DESCRIBE] No such item: {test}":
                     slowWriting((f"Description: {col_text(desc, "description")}"))
@@ -909,12 +902,11 @@ def run():
 #run() # uncomment me to actually play again.
 
 
-
-
 import os
 def test():
-    os.system("cls") ##<-- run this first to get the ansi to work later
+#def tui_intro():
 
+    os.system("cls") ##<-- run this first to get the ansi to work later
     game = set_up(weirdness=True, bad_language=True, player_name="A")
     from tui_elements import run_tui_intro
     tui_placements, player_name = run_tui_intro()
@@ -925,27 +917,25 @@ def test():
     world = (game.place, game.weather, game.time, game.day_number)
     player = (game.player, game.carryweight, game.playername)
 
-    from tui_elements import add_infobox_data, print_text_from_bottom_up, print_commands
+    from tui_elements import add_infobox_data, print_commands
 
     tui_placements = add_infobox_data(tui_placements, print_data = True, backgrounds = False, inventory=game.inventory, playerdata=player, worldstate=world)
-    #print(tui_placements)
     print_commands(backgrounds=False)
+
     from tui_update import update_infobox, update_text_box
     update_infobox(tui_placements, hp_value=17, name=game.playername, carryweight_value=15, location=game.place, weather="perfect", time_of_day="midday", day=2)
 
-    to_print:list = [f"You wake up in {game.place}, right around {game.time}. You find have a bizarrely good sense of cardinal directions; how odd.", f"`{game.playername}`, you think to yourself, `is it weird to be in {game.place} at {game.time}, while it's {game.weather}?`", "[PAUSE]", "Another thing is...", "There's a mystery...", "[PAUSE]"]
+    to_print:list = [f"You wake up in {assign_colour(game.place, 'loc')}, right around {game.time}. You find have a bizarrely good sense of cardinal directions; how odd.", f"`{game.playername}`, you think to yourself, `is it weird to be in {assign_colour(game.place, 'loc')} at {game.time}, while it's {game.weather}?`", "[PAUSE]", "Another thing is...", "There's a mystery...", "[PAUSE]"]
 
-    update_text_box(tui_placements, existing_list=None, to_print=to_print)
-    #
-    # printed_list = print_text_from_bottom_up(to_print, input_text=None)
-
-    #
-    # printed_list = print_text_from_bottom_up(printed_list, input_text=f"You wake up in {game.place}, right around {game.time}. You find have a bizarrely good sense of cardinal directions; how odd.")
-    #print_text_from_bottom_up(None, input_text=f"You wake up in {assign_colour(game.place, 'loc')}, right around {game.time}. You find have a bizarrely good sense of cardinal directions; how odd.")
-
-    #print_text_from_bottom_up(None, input_text=" ")
-    #print(f"\033[5B", end='')
-
+    text_input, tui_placements = update_text_box(tui_placements, existing_list=None, to_print=to_print)
+#    slowWriting()
+#    places[game.place].visited = True
+#    places[game.place].first_weather = game.weather
+#
+#    slowWriting()
+#    print()
+#    describe_loc()
+#
 os.system("cls")
 time.sleep(1)
 test()

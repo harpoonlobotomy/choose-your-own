@@ -1,5 +1,8 @@
 
 from time import sleep
+from rich.console import Console, Control
+from rich.text import Text
+console = Console(record=True)
 
 END="\x1b[0m"
 
@@ -88,26 +91,40 @@ def update_infobox(tui_placements, hp_value=None, name=None, carryweight_value=N
 
 def update_text_box(tui_placements, existing_list, to_print):
 
-    def print_to_console(printable_lines, pauselines, left_margin, textblock_width, print_list, slow=False, clear=True):
+    if not existing_list:
+         existing_list = tui_placements["existing_list"]
 
-        from rich.console import Console, Control
-        console = Console(record=True)
+
+    def convert_to_rich_col(print_list):
+
+        colour_list = []
+        for line in print_list:
+            text = Text.from_ansi(line)
+            colour_list.append(text)
+        return colour_list
+
+
+    def print_to_console(printable_lines, pauselines, blank_lines, left_margin, textblock_width, print_list, slow=False, clear=True):
+
         for i, row_no in enumerate(printable_lines):
-            if i in pauselines:
-                text=None
-                sleep(.8)
-                continue
+            if slow:
+                if i in pauselines:
+                    text=None
+                    sleep(.6)
+                    continue
+                elif i in blank_lines:
+                    sleep(0.0001)
+                else:
+                    sleep(.25)
+
             console.control(Control.move_to(x=left_margin, y=row_no-1))
             text = print_list[i]
             if clear:
                 if len(text) < textblock_width:
-                    text = text + (" " * (textblock_width-len(text)))
-            if slow:
-                console.print(text)
-                print(f"\033[{END}", end="")
-            else:
-                console.print(text)
-            sleep(.08)
+                    text = text + (" " * (textblock_width-len(text))) ## this will break with the
+
+            console.print(text)
+
         console_text = console.export_text()
         return console_text
 
@@ -138,12 +155,17 @@ def update_text_box(tui_placements, existing_list, to_print):
         while len(print_list) > len(printable_lines):
             print_list = print_list.pop[0]
 
+    blank_lines = []
     pauselines = []
     for i, line in enumerate(print_list):
         if line == "[PAUSE]":
             pauselines.append(i)
+        if line.strip() == "":
+            blank_lines.append(i)
 
-    print_to_console(printable_lines, pauselines, left_margin, textblock_width, print_list, slow=True, clear=False)
+    print_list = convert_to_rich_col(print_list)
+
+    print_to_console(printable_lines, pauselines, blank_lines, left_margin, textblock_width, print_list, slow=True, clear=False)
 
     sleep(.1)
 # putting this here temporarily. Will bring the text-colouring to unification later.
@@ -154,4 +176,5 @@ def update_text_box(tui_placements, existing_list, to_print):
     col_text = f"{col}{input_str}{END}"
     print(f"\033[{tui_placements["input_pos"]}H{col_text}", end='')
     text = input()
-    return text
+    tui_placements["existing_list"] = existing_list
+    return text, tui_placements
