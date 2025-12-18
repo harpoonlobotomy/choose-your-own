@@ -938,20 +938,20 @@ def test():
 
     loc_data = p_data[game.place]
 
-    to_print:list = [f"You wake up in {assign_colour(game.place, 'loc')}, right around {game.time}. You find have a bizarrely good sense of cardinal directions; how odd.", f"`{game.playername}`, you think to yourself, `is it weird to be in {assign_colour(game.place, 'loc')} at {game.time}, while it's {game.weather}?`", "[PAUSE]", "Another thing is...", "There's a mystery...", "[PAUSE]", "[PAUSE]", f"You take a moment to take in your surroundings. {loc_data.overview}"]
+    to_print:list = [f"You wake up in {assign_colour(game.place, 'loc')}, right around {game.time}. You find have a bizarrely good sense of cardinal directions; how odd.", f"`{game.playername}`, you think to yourself, `is it weird to be in {assign_colour(game.place, 'loc')} at {game.time}, while it's {game.weather}?`", "[PAUSE]", "Another thing is...", "There's a mystery...", "[PAUSE]", "[PAUSE]", f"You take a moment to take in your surroundings.", f"{loc_data.overview}"]
 
     tui_placements = update_text_box(tui_placements, to_print=to_print)
 
     #def describe_loc():
         ## Needs to also describe weather here.
-    tui_placements = update_text_box(tui_placements, to_print=f"You take a moment to take in your surroundings. {loc_data.overview}")
-    tui_placements = update_text_box(tui_placements, to_print="Pick a direction to investigate, or go elsewhere?")
+    #tui_placements = update_text_box(tui_placements, to_print=f"You take a moment to take in your surroundings. {loc_data.overview}")
+    #tui_placements = update_text_box(tui_placements, to_print="Pick a direction to investigate, or go elsewhere?")
 
-    choose_direction_list = []
-    for item in game.cardinals:
-        choose_direction_list.append(item)
-    choose_direction_list.append("go")
-    tui_placements = update_text_box(tui_placements, to_print=choose_direction_list)
+    #choose_direction_list = []
+    #for item in game.cardinals:
+    #    choose_direction_list.append(item)
+    #choose_direction_list.append("go")
+    #tui_placements = update_text_box(tui_placements, to_print=choose_direction_list)
 
     #
     #test=option(game.cardinals, "go", print_all=True)
