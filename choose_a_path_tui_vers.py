@@ -934,25 +934,25 @@ def test():
     tui_placements = add_infobox_data(tui_placements, print_data = True, backgrounds = False, inventory=None, playerdata=player, worldstate=world)
     print_commands(backgrounds=False)
     tui_placements = add_infobox_data(tui_placements, print_data = True, backgrounds = False, inventory=game.inventory, playerdata=None, worldstate=None)
-    update_infobox(tui_placements, hp_value=17, name=game.playername, carryweight_value=15, location=game.place, weather="perfect", time_of_day="midday", day=2)
+    update_infobox(tui_placements, hp_value=game.player["hp"], name=game.playername, carryweight_value=game.carryweight, location=game.place, weather=game.weather, time_of_day=game.time, day=game.day_number)
 
     loc_data = p_data[game.place]
 
-    to_print:list = [f"You wake up in {assign_colour(game.place, 'loc')}, right around {game.time}. You find have a bizarrely good sense of cardinal directions; how odd.", f"`{game.playername}`, you think to yourself, `is it weird to be in {assign_colour(game.place, 'loc')} at {game.time}, while it's {game.weather}?`", "[PAUSE]", "Another thing is...", "There's a mystery...", "[PAUSE]", "[PAUSE]", f"You take a moment to take in your surroundings.", f"{loc_data.overview}"]
+    choose_direction:str = ""
+    for item in game.cardinals:
+        choose_direction += (assign_colour(item) + " ")
+    choose_direction+="go"
+    #tui_placements = update_text_box(tui_placements, to_print=choose_direction_list)
+
+    to_print:list = [f"You wake up in {assign_colour(game.place, 'loc')}, right around {game.time}. You find have a bizarrely good sense of cardinal directions; how odd.\n `{game.playername}`, you think to yourself, `is it weird to be in {assign_colour(game.place, 'loc')} at {game.time}, while it's {game.weather}?`", "[PAUSE]", f"You take a moment to take in your surroundings.", f"{loc_data.overview}", "", "Pick a direction to investigate, or go elsewhere?", "", choose_direction, "[PAUSE]"]
 
     tui_placements = update_text_box(tui_placements, to_print=to_print)
 
-    #def describe_loc():
-        ## Needs to also describe weather here.
-    #tui_placements = update_text_box(tui_placements, to_print=f"You take a moment to take in your surroundings. {loc_data.overview}")
-    #tui_placements = update_text_box(tui_placements, to_print="Pick a direction to investigate, or go elsewhere?")
-
-    #choose_direction_list = []
-    #for item in game.cardinals:
-    #    choose_direction_list.append(item)
-    #choose_direction_list.append("go")
-    #tui_placements = update_text_box(tui_placements, to_print=choose_direction_list)
-
+    print(SHOW, end='')
+    text=input()
+    print(HIDE, end='')
+    tui_placements = update_text_box(tui_placements, to_print=f"[ {text} ]")
+    time.sleep(.3)
     #
     #test=option(game.cardinals, "go", print_all=True)
     #if test in game.cardinals:

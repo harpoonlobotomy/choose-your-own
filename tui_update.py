@@ -107,91 +107,99 @@ def update_text_box(tui_placements, to_print):
         if isinstance(to_print, str):
             if "\n" in to_print:
                 to_print = to_print.split("\n")
-                print(r"to print after \n: ", to_print, type(to_print))
                 print_list=to_print
             else:
                 print_list.append("".join(to_print))
 
         if isinstance(to_print, list):
-            print_list=to_print ## for line in to_print - print line by line even if a given input has multiple lines. Otherwise it breaks and looks bad.
-        else:
-            print(f"to_print is not a list: {to_print}")
-
-    for i, item in enumerate(print_list):
-        #existing_list = existing_list
-        #existing_list.append(item)
-        existing_list = tui_placements.get("existing_list")
-        if not existing_list:
-            existing_list=list()
-        existing_list.append(item)
-        print_list = existing_list
-        #print(f"item: {item}, print_list: {print_list}")
+            temp_list = []
+            for item in to_print:
+                if isinstance(item, str):
+                    if "\n" in item:
+                        parts = item.split("\n")
+                        for piece in parts:
+                            temp_list.append(piece)
+                    else:
+                        temp_list.append(item)
+                else:
+                    temp_list.append(item)
+            print_list = temp_list
+            #print_list=to_print ## for line in to_print - print line by line even if a given input has multiple lines. Otherwise it breaks and looks bad.
 
         printable_lines = tui_placements["printable_lines"]
+        empty_list = [" "] * len(printable_lines)
 
-        if len(print_list) < len(printable_lines):
-            empty_list = list()
-            counter=1
-            while counter <= (len(printable_lines) - len(print_list)):
-                empty_list.append(" ") ## there is a better way of doing this. Too tired. Don't know it. Should.
-                counter += 1
-            print_list = empty_list + print_list
-            #print(f"print list empty list: {print_list}, type: {type(print_list)}, len: {len(print_list)}, len printable_lines: {len(printable_lines)}")
+        #for i, item in enumerate(print_list):
+        for item in print_list:
+            existing_list = tui_placements.get("existing_list")
+            if not existing_list:
+                existing_list=empty_list
+            existing_list.append(item)
 
-        elif len(print_list) > len(printable_lines):
-            #print(f"print list longer than printable lines: {print_list}, type: {type(print_list)}, len: {len(print_list)}, len printable_lines: {len(printable_lines)}")
-            while len(print_list) > len(printable_lines):
-                #print(f"print_list: {print_list}")
-                print_list = print_list.pop(0)
+            for i, row_no in enumerate(printable_lines):
+                #print(f"i, row_no: {i}, {row_no}")
+                #existing_list = existing_list
+                #existing_list.append(item)
+                #print(f"existing list: {existing_list}")
+                new_print_list = existing_list
+                #print(f"item: {item}, print_list: {print_list}")
 
-        line = print_list[i]
-        #for i, line in enumerate(print_list):
-        blankline = False
-        pauseline = False
-        if line == "[PAUSE]":
-            pauseline = True
-            #pauselines.add(i)
-        if line.strip() == "":
-            blankline = True
-            #blank_lines.add(i)
-        if "\n" in line:
-            line = line.replace("\n","")
+                if len(new_print_list) > len(printable_lines):
+                    #print(f"print list longer than printable lines: {new_print_list}, type: {type(new_print_list)}, len: {len(new_print_list)}, len printable_lines: {len(printable_lines)}")
+                    while len(new_print_list) > len(printable_lines):
+                        #print(f"print_list: {print_list}")
+                        new_print_list.pop(0)
 
-        _, left_textblock_edge = tui_placements["text_block_start"]
-        linelength = tui_placements["linelength"]
-        blank_str = " " * linelength
-        row_no = printable_lines[i]
-        if blankline:
-            test=" "
-            #test="BLANK"
-            duration=0.0
-        elif pauseline:
-            test=" "
-            duration=.5
-        else:
-            duration=.3
-            test=line
+                line = new_print_list[i]
+                #print(f"new_print_list: {new_print_list}, len: {len(new_print_list)}")
+                #for i, line in enumerate(print_list):
+                blankline = False
+                pauseline = False
+                if line == "[PAUSE]":
+                    pauseline = True
+                    #pauselines.add(i)
+                if line.strip() == "":
+                    blankline = True
+                    #blank_lines.add(i)
+                #if "\n" in line:
+                #    line = line.replace("\n","")
 
-        sleep(float(duration))
-        print(f"\033[{int(row_no)};{left_textblock_edge}H", end='')
-        #print(f"\033[{int(row_no)};{left_textblock_edge}H{blank_str}") # blank the full line before printing
-        print(item)
+                _, left_textblock_edge = tui_placements["text_block_start"]
+                linelength = tui_placements["linelength"]
+                blank_str = " " * linelength
 
-            #  for line in print_list: # need to do it line by line.
-            #print(HIDE, end='')
-            #print_in_text_box(tui_placements, blank_lines, pauselines, text_list=print_list, slow_lines=True)
+                if blankline:
+                    test=" "
+                    #test="BLANK"
+                    duration=0.001
+                elif pauseline:
+                    test=" "
+                    duration=.001
+                else:
+                    duration=.003
+                    test=line
 
-        print_list = advance_list(print_list)
-        counter += 1
-        tui_placements["existing_list"] = print_list
+                sleep(float(duration))
+                print(f"\033[{int(row_no)};{left_textblock_edge}H{blank_str}") # blank the full line before printing
+                print(f"\033[{int(row_no)};{left_textblock_edge}H{test}", end='')
+                #print(item)
 
-    sleep(.24)
+                #  for line in print_list: # need to do it line by line.
+                #print(HIDE, end='')
+                #print_in_text_box(tui_placements, blank_lines, pauselines, text_list=print_list, slow_lines=True)
+
+                new_print_list = advance_list(new_print_list)
+                tui_placements["existing_list"] = new_print_list
+
+    sleep(.5)
+    sleep(.5)
 
     b_white_format=';'.join([str(1), str(37), str(40)])
     B_WHITE=f"\x1b[{b_white_format}m"
     col=B_WHITE
     input_str="INPUT:  "
     col_text = f"{col}{input_str}{END}"
-    print(f"\033[{tui_placements["input_pos"]}H{col_text}{SHOW}", end='')
+    print(f"\033[{tui_placements["input_pos"]}H{col_text}", end='')
+    sleep(.24)
     return tui_placements
 
