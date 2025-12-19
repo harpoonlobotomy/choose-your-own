@@ -1,247 +1,41 @@
-tui_lines = "screen_draft_expanding.txt"
+from layout import state
+from tui.colours import Colours
+from misc_utilities import assign_colour
+from time import sleep
+import os
+
 linelength = 0
 END="\x1b[0m"
 RESET = "\033[0m"
 HIDE = "\033[?25l"
 SHOW = "\033[?25h"
 
-import time
-import os
 
 title_str = "Choose a Path"
 
 ### UI blocking ###
 #global ui_blocking
-ui_blocking = {"inv_start":None, "inv_end":None, "playerdata_start":None, "playerdata_end":None, "worldstate_start":None, "worldstate_end":None, "input_line":None, "text_block_start":None, "text_block_end":None, "commands_start":None, "commands_end":None}
+#ui_blocking = {"inv_start":None, "inv_end":None, "playerdata_start":None, "playerdata_end":None, "worldstate_start":None, "worldstate_end":None, "input_line":None, "text_block_start":None, "text_block_end":None, "commands_start":None, "commands_end":None}
 
 
 os.system("cls")
 
-def get_terminal_cols_rows():
-    from shutil import get_terminal_size
-    import os
-    os.system("cls")
-    cols, rows = get_terminal_size()
-
-    return cols, rows
-
-
-def get_TUI_list(tui_lines):
-    linelength=0
-    tui_linelist = []
-    with open(tui_lines) as f:
-        counter=0
-        for line in f:
-            if counter==0:
-                no_of_spacers = line.count("&")
-            if counter == 19:
-                line_str = line.rstrip('\n')
-            tui_linelist.append(line.rstrip('\n'))
-            if len(line) > linelength:
-                linelength = len(line)-no_of_spacers
-            counter += 1
-
-    cols, rows = get_terminal_cols_rows()
-    spare_cols = cols-linelength
-    spacing=int(spare_cols/no_of_spacers)
-    if spacing <= 0:
-        spacing = 0
-
-    ui_blocking.update({
-        "cols": cols,
-        "rows": rows,
-        "spacing": spacing,
-        "no_of_spacers": no_of_spacers,
-        "linelength": linelength,
-        "line_str": line_str
-        })
-
-    return ui_blocking, tui_linelist
-
-def space_and_get_cursor_pos(ui_blocking, input_list, space=True):
-    ## UI blocking
-    spaced_list = []
-    up_lines = []
-
-    ui_blocks = {
-        'i': {"block_part": "inv_"},
-        "w": {"block_part": "worldstate_"},
-        "p": {"block_part": "playerdata_"},
-        "c": {"block_part": "commands_"}
-        }
-
-    replace_dict = {
-        "&": {"to_print":"_"},
-        "*": {"to_print":"="},
-        "%": {"to_print":"-"}
-    }
-
-    linelength=ui_blocking["linelength"]
-    spacing=ui_blocking["spacing"] #  == 3
-
-    cols = ui_blocking["cols"]
-    rows = ui_blocking["rows"]
-    line_str = ui_blocking["line_str"]
-
-    rows = ui_blocking["rows"]
-    additional_rows = rows-len(input_list)-2
-    longer_list = []
-    for line in input_list:
-        if '+' in line:
-            for _ in range(0, additional_rows+1):
-                longer_list.append(line_str)
-        else:
-            longer_list.append(line)
-
-    input_list = longer_list
-
-    for row, text_line in enumerate(input_list):
-        if len(text_line) < linelength:
-            diff = linelength - len(text_line)
-            text_line = text_line + (" " * diff)
-
-        if space:
-            text_line = text_line.replace("$", " " * spacing)
-            text_line = text_line.replace('@', '^' * spacing)
-            for item in replace_dict:
-                text_line = text_line.replace(item, (replace_dict[item]["to_print"] * spacing))
-
-        if len(text_line) < cols:
-            extra_spaces = cols - len(text_line)
-            text_line = (' ' * int(extra_spaces/2)) + text_line + (' ' * int(extra_spaces/2))
-
-        for symbol in ui_blocks:
-            if symbol in text_line:
-                if ui_blocking[f"{ui_blocks[symbol]["block_part"]}start"]==None:
-                    column = text_line.find(symbol)
-                    ui_blocking[f"{ui_blocks[symbol]["block_part"]}start"] = (row, column)
-                else:
-                    column = text_line.rfind(symbol)
-                    ui_blocking[f"{ui_blocks[symbol]["block_part"]}end"] = (row, column-1)
-                text_line = text_line.replace(symbol, " ")
-
-        if "^" in text_line:
-            if ui_blocking["text_block_start"] == None:
-                ui_blocking["text_block_start"] = (row+3, text_line.find('^')+3)
-            else:
-                ui_blocking["text_block_end"] = (row-1, text_line.rfind('^')-3)
-            up_lines.append(row) ## and this works. So why do the end lines not work properly?
-        if text_line != "":
-            spaced_list.append(text_line)
-
-    printable_lines = list(range((up_lines[0]+3), (up_lines[1])))
-    ui_blocking["up_lines"] = up_lines
-    ui_blocking["input_line"] = up_lines[1]+3
-    ui_blocking["input_pos"] = f"{up_lines[1]+3};{(up_lines[0]+3)+7}"
-    ui_blocking["printable_lines"]=printable_lines
-
-    return spaced_list, ui_blocking
-
-
-def col_text(text:str="", colour:str=None, no_ending=False):
-    bg=40
-    hash_bg=44
-
-    baseline_format=';'.join([str(0), str(37), str(bg)])
-    red_format=';'.join([str(0), str(31), str(bg)])
-    green_format=';'.join([str(0), str(32), str(bg)])
-    b_green_format=';'.join([str(1), str(32), str(bg)])
-    bg_green_format=';'.join([str(0), str(32), str(hash_bg)])
-    cyan_format=';'.join([str(0), str(36), str(bg)])
-    b_cyan_format=';'.join([str(1), str(36), str(bg)])
-    blue_format=';'.join([str(0), str(34), str(bg)])
-    b_blue_format=';'.join([str(1), str(34), str(bg)])
-    u_blue_format=';'.join([str(4), str(32), str(hash_bg)])
-    yellow_format=';'.join([str(0), str(33), str(bg)])
-    bg_yellow_format=';'.join([str(0), str(33), str(hash_bg)])
-    b_yellow_format=';'.join([str(1), str(33), str(bg)])
-    magenta_format=';'.join([str(0), str(35), str(bg)])
-    b_white_format=';'.join([str(1), str(37), str(bg)])
-    title_bg=';'.join([str(7), str(31), str(32)])
-
-
-    BASELINE=f"\x1b[{baseline_format}m"
-    B_WHITE=f"\x1b[{b_white_format}m"
-    RED=f"\x1b[{red_format}m"
-    GRN=f"\x1b[{green_format}m"
-    B_GRN=f"\x1b[{b_green_format}m"
-    BG_GRN=f"\x1b[{bg_green_format}m"
-    CYAN=f"\x1b[{cyan_format}m"
-    U_CYAN = f"\x1b[{b_cyan_format}m"
-    BLUE=f"\x1b[{blue_format}m"
-    B_BLUE=f"\x1b[{b_blue_format}m"
-    U_BLUE=f"\x1b[{u_blue_format}m"
-    YEL=f"\x1b[{yellow_format}m"
-    B_YEL=f"\x1b[{b_yellow_format}m"
-    BG_YEL=f"\x1b[{bg_yellow_format}m"
-    MAG=f"\x1b[{magenta_format}m"
-    TITLE_BG=f"\x1b[{title_bg}m"
-
-    col_dict={
-    "blue": BLUE,
-    "b_blue": B_BLUE,
-    "cyan": CYAN,
-    "u_cyan": U_CYAN,
-    "green": GRN,
-    "red": RED,
-    "yellow": YEL,
-    "b_yellow": B_YEL,
-    "magenta":MAG,
-    "description": B_YEL,
-    "deco_1": B_GRN,
-    "title": B_YEL,
-    "pipe": GRN,
-    "underscore": YEL,
-    "equals": U_BLUE,
-    "dash": GRN,
-    "hash": BG_GRN,
-    "slash": YEL,
-    "up": GRN,
-    "title_white": B_WHITE,
-    "bg_yellow": BG_YEL,
-    "title_bg": TITLE_BG
-    }
-
-
-    if no_ending:
-        END = ""
-    else:
-        END="\x1b[0m"
-
-
-    if col_dict.get(colour):
-        col=col_dict.get(colour)
-    else:
-        col=BASELINE
-
-    if text == None:
-        col = BASELINE
-        return f"{col}{text}{END}"
-
-    if colour == None:
-        return f"{col}{text}{END}"
-
-    col_text = f'{col}{text}{END}'
-
-    return col_text
-
-
-def col_text_partial(text:str="", symbol:str="", col:str="", not_end=False):
+def col_text_partial(text:str="", symbol:str="", col:str="", not_end=False): ## needs to use the misc_utility colours, but doesn't yet.
 
     if symbol == "|##|":
-        text=text.replace("|", col_text("|", "b_yellow"))
-        text=text.replace("##", col_text("##", "hash"))
+        text=text.replace("|", assign_colour("|", "b_yellow"))
+        text=text.replace("##", assign_colour("##", "hash"))
     elif symbol == "^":
-        text=text.replace(symbol, col_text("=", col))
+        text=text.replace(symbol, assign_colour("=", col))
     elif symbol == "!":
-        text=text.replace("!", col_text(":", "yellow"))
+        text=text.replace("!", assign_colour(":", "yellow"))
 
     elif symbol == "titles":
         texts = ["INVENTORY", "PLAYER DATA", "WORLD STATE"]
         for item in texts:
-            text=text.replace(item, col_text(item, col, no_ending = not_end))
+            text=text.replace(item, assign_colour(item, col, no_reset = not_end))
     else:
-        text=text.replace(symbol, col_text(symbol, col, no_ending = not_end)) ## I want to reimplement the 'all' section, to avoid recolouring every character at once.
+        text=text.replace(symbol, assign_colour(symbol, col, no_reset = not_end)) ## I want to reimplement the 'all' section, to avoid recolouring every character at once.
 
     return text
 
@@ -260,12 +54,12 @@ def title_text(line):
     title= (" " * int(diff/2)) + title_str + (" " * int(diff/2))
     if len(title) < title_length:
         title = title + " "
-    title = col_text(title, colour="title")
+    title = assign_colour(title, "b_title")
 
     pre_title_0 = line[title_start-5:title_start]
     post_title_0 = line[title_end+1:title_end+6]
-    pre_title = col_text(pre_title_0, colour=None)
-    post_title = col_text(post_title_0, colour=None)
+    pre_title = assign_colour(pre_title_0, "blue")
+    post_title = assign_colour(post_title_0, "blue")
 
     line = line[:title_start-len(pre_title_0)] + pre_title + " " + title + " " + post_title + line[title_end+len(post_title_0)+1:]#+ (" " * int(diff/4)) + title_str + (" " * int(diff/4)) + line[:title_end]
 
@@ -277,7 +71,7 @@ def make_coloured_list(input_list:list, title_block=False):
     if title_block:
         spacing=0
     else:
-        spacing = ui_blocking["spacing"]
+        spacing = state.spacing
 
     new_list=[]
     longer_list = []
@@ -323,8 +117,8 @@ def make_coloured_list(input_list:list, title_block=False):
             excl="===-"
             exl_2="-==="
             if excl in line:
-                line = col_text_partial(line, symbol=excl, col="deco_1")
-                line = col_text_partial(line, symbol=exl_2, col="deco_1")
+                line = col_text_partial(line, symbol=excl, col="deco")
+                line = col_text_partial(line, symbol=exl_2, col="deco")
 
             elif "=" in line: ## make this a dict.
                 line = col_text_partial(line, symbol="=", col="equals") ## These ones done separately to not mess with the title edges.
@@ -356,7 +150,7 @@ def print_TUI(tui_linelist):
 
     for line in tui_linelist:
         print(line)
-        time.sleep(.02)
+        sleep(.02)
 
 
 def print_in_text_box(up_lines, text:str="", text_list:list=None, print_console=False, slow_lines=False, slow_char=False): ## Cannot use this with ansi codes as it breaks. Need to either go all in on 'rich' or not.
@@ -366,10 +160,10 @@ def print_in_text_box(up_lines, text:str="", text_list:list=None, print_console=
     first_row=None
     last_row=None
     text_block_start_col=(up_lines[0]+3)
-    _, left_textblock_edge = ui_blocking["text_block_start"]
-    _, right_textblock_edge = ui_blocking["text_block_end"]
+    _, left_textblock_edge = state.text_block_start
+    _, right_textblock_edge = state.text_block_end
     textblock_width = right_textblock_edge-left_textblock_edge+1
-    printable_lines = ui_blocking["printable_lines"]
+    printable_lines = state.printable_lines
 
     if print_console:
         from rich.console import Console, Control
@@ -389,13 +183,13 @@ def print_in_text_box(up_lines, text:str="", text_list:list=None, print_console=
             #if slow_char:
             #    for char in test:
             #        console.print(char, end='')
-            #        time.sleep(.08)
+            #        sleep(.08)
             #        print(f"\033[{row_no};{str(left_textblock_edge)}H{END}")
             #    print()
             #else:
             #    console.print(test)
             if slow_lines:
-                time.sleep(.08)
+                sleep(.08)
                 console.print(test)
                 #print(f"\033[{row_no};{str(left_textblock_edge)}H{END}")
         console_text = console.export_text()
@@ -408,16 +202,16 @@ def print_in_text_box(up_lines, text:str="", text_list:list=None, print_console=
             if slow_char: ## doesn't work with the coloured text. Neec to colour it here if this is what I want.
                 if len(text_list[i])> 1:
                     for v, char in enumerate(text_list[i]):
-                        time.sleep(.0005)
+                        sleep(.0005)
                         print(f"\033[{int(row_no)};{left_textblock_edge+v}H{char}", end='')
                         print(f"\033[{row_no};{str(left_textblock_edge)}H{END}") ## having this on, it waits properly. Don't know why it needs it but apparently it does.
                 else:
                     print(f"\033[{int(row_no)};{left_textblock_edge}H{text_list[i]}", end='')
             else:
                 print(f"\033[{int(row_no)};{left_textblock_edge}H{text_list[i]}", end='')
-                time.sleep(.05) ### Why is this never triggering. It pauses /before/ printing anything in this section, but not between lines. I don't understand why.
+                sleep(.05) ### Why is this never triggering. It pauses /before/ printing anything in this section, but not between lines. I don't understand why.
                 print(f"\033[{row_no};{str(left_textblock_edge)}H{END}") ## having this on, it waits properly. Don't know why it needs it but apparently it does.
-        time.sleep(.2)
+        sleep(.2)
         return text_list
 
     import random
@@ -442,7 +236,7 @@ def print_in_text_box(up_lines, text:str="", text_list:list=None, print_console=
             first_row=row
         print(line, end='')
         if slow_lines:
-            time.sleep(.08)
+            sleep(.08)
         last_row=row
 
     print("\033[u")
@@ -454,39 +248,25 @@ def prep_datablocks(text):
     for line in text:
         if line == "":
             continue
-        line=line.replace('$', (' ' * ui_blocking["spacing"]))
+        line=line.replace('$', (' ' * state.spacing))
         new_text.append(line)
     return new_text
 
 
-def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:bool=False, ui_blocking:dict={}):
+def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:bool=False):
+
+    from layout import get_positions
 
     bg_col = 40
     if backgrounds:
         bg_col = 44
 
-    top_row, left_col, = ui_blocking[f"{part}start"]
+    attr_name = f"{part}start"
+    top_row, left_col, = getattr(state, attr_name)
     inv_format=';'.join([str(1), str(33), str(bg_col)])
     inv_col=f"\x1b[{inv_format}m"
 
-    def get_positions(part, text, ui_blocking):
-        positions_set = set()
-        for i, item in enumerate(text):
-            pos = item.find("*")
-            if pos >= 0:
-                positions_set.add((i, pos))
-            pos = item.rfind("*")
-            if pos >= 0:
-                positions_set.add((i, pos))
-            pos_2 = item.rfind("*", 0, (pos-1))
-            if pos_2 != pos and pos_2 >= 0:
-                positions_set.add((i, pos_2))
-        positions_set = list(sorted(positions_set))
-        ui_blocking[f"{part}positions"] = positions_set
-
-        return positions_set, ui_blocking
-
-    def print_playerdata(part, inv, datablock, ui_blocking, speed=.05):
+    def print_playerdata(part, inv, datablock, speed=.05):
 
         item_list = []
 
@@ -494,7 +274,7 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
         header_col=f"\x1b[{header_format}m"
         item_list=inv
         datablock = prep_datablocks(datablock)
-        item_pos, ui_blocking = get_positions(part, datablock, ui_blocking)
+        item_pos = get_positions(part, datablock)
 
         if len(item_list) > len(item_pos):
             print(f"Too many items for {part}.")
@@ -521,12 +301,12 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
                 title_str = title_str.replace("*", " ") ## titles only, no real data.
                 title = f'{header_col}{title_str}{END}' ## Will do the same with inventory later, printing it after the concept of 'carrying things in <carrier>' comes up.
                 print(f"\033[{int(row)};{left_col}H{title}")#, end='')
-                time.sleep(speed)
+                sleep(speed)
                 print(f"\033[0;0H{END}", end='')
 
-        return ui_blocking
+        return
 
-    def print_inventory(part, inv, datablock, ui_blocking, speed=.05):
+    def print_inventory(part, inv, datablock, speed=.05):
 
         inv_list = []
         if part == "inv_":
@@ -534,7 +314,7 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
                 inv_list.append(item.name)
 
         datablock=prep_datablocks(datablock) ## Want a way to do this accounting for the items in the list. Don't know how to do that yet.
-        inv_pos, ui_blocking = get_positions(part, datablock, ui_blocking)
+        inv_pos = get_positions(part, datablock)
 
         if len(inv_list) > len(inv_pos):
             print(f"Too many items for {part}.") # Need to actually act on this.
@@ -548,14 +328,15 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
                 col = col_base + left_col
                 coloured = f'{inv_col}{item}{END}'
                 print(f"\033[{int(row)};{col}H{coloured}", end='')
-                time.sleep(speed)
+                sleep(speed)
                 print(f"\033[0;0H{END}")
 
-        return ui_blocking
+        return
 
-    def print_command(datablock, ui_blocking, speed=.05):
+    def print_command(datablock, speed=.05):
         r_counter=0
-        bottom_row, right_col, = ui_blocking[f"{part}end"]
+        attr_name = f"{part}end"
+        bottom_row, right_col, = getattr(state, attr_name)
         bottom_row = bottom_row + 1 # not sure why needed, but needed or it only prints the first line.
         for row in range(top_row, bottom_row):
             c_counter=0
@@ -569,28 +350,28 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
                     coloured = f'{bg}{char}{END}'
                 print(f"\033[{row+1};{col}H{coloured}")
                 c_counter+=1
-            time.sleep(speed)
+            sleep(speed)
             print(f"\033[0;0H{END}")
             r_counter+=1
 
     if inv != None: ## This is only command_
         if part == "inv_":
-            ui_blocking = print_inventory(part, inv, datablock, ui_blocking)
+            print_inventory(part, inv, datablock)
         else:
-            ui_blocking = print_playerdata(part, inv, datablock, ui_blocking) # playerdata + worldstate both
+            print_playerdata(part, inv, datablock) # playerdata + worldstate both
 
     else:
-        print_command(datablock, ui_blocking)
+        print_command(datablock)
 
-    return ui_blocking
 
 def print_commands(backgrounds=False):
     from datablocks import commands_
     datablock=prep_datablocks(commands_)
-    overprint_part("commands_", datablock, None, backgrounds, ui_blocking)
+    overprint_part("commands_", datablock, None, backgrounds)
 
 
-def add_infobox_data(ui_blocking:dict=(), print_data:bool = False, backgrounds:bool = False, inventory:list=None, playerdata:tuple=None, worldstate:list=None, ):
+def add_infobox_data(print_data:bool = False, backgrounds:bool = False, inventory:list=None, playerdata:tuple=None, worldstate:list=None, ):
+
 
     def clean_player_data(playerdata):
         game_player, carryweight, name = playerdata # still here, just not being used until I can fix it overwriting the HP
@@ -635,9 +416,9 @@ def add_infobox_data(ui_blocking:dict=(), print_data:bool = False, backgrounds:b
         datablock = infobox_dict[section].get("datablock")
         inv = infobox_dict[section].get("inv")
         if print_data and inv:
-            ui_blocking = overprint_part(part, datablock, inv, backgrounds, ui_blocking)
+            overprint_part(part, datablock, inv, backgrounds)
 
-    return ui_blocking ## sending it back with updates, hopefully.
+    return
 
 def advance_list(console_text):
     cleaned_list = []
@@ -649,13 +430,13 @@ def advance_list(console_text):
     return list(cleaned_list)
 
 
-def clean_print_block(intro_list=None):
+def clean_print_block(state, intro_list=None):
 
     cleaned_list = []
 
-    linecount = ui_blocking["printable_lines"]
-    _, start_offset = ui_blocking["text_block_start"]
-    _, end_offset = ui_blocking["text_block_end"]
+    linecount = state.printable_lines
+    _, start_offset = state.text_block_start
+    _, end_offset = state.text_block_end
     text_block_width = end_offset-start_offset
 
     if intro_list:
@@ -705,7 +486,7 @@ def clean_print_block(intro_list=None):
 
 def print_output(text="", print_list=None, slow=False, print_to_console=True, by_char=False):
     print(HIDE, end='')
-    console_text = print_in_text_box(ui_blocking["up_lines"], text, text_list=print_list, print_console=print_to_console, slow_lines=slow, slow_char=by_char)
+    console_text = print_in_text_box(state.up_lines, text, text_list=print_list, print_console=print_to_console, slow_lines=slow, slow_char=by_char)
     if print_to_console:
         print_list = advance_list(console_text)
     else:
@@ -723,11 +504,11 @@ def print_text_from_bottom_up(input_list:list=None, input_text:str="", get_name=
 
     else:
         if not first_input_done and not input_text:
-            input_str = col_text("Please enter your name:  ", "title_white")
+            input_str = Colours.c("Please enter your name:  ", "title_white")
         else:
-            input_str=col_text("INPUT:  ", "title_white")
+            input_str=Colours.c("INPUT:  ", "title_white")
 
-        print(f"\033[{ui_blocking["input_pos"]}H{input_str}", end='')
+        print(f"\033[{state.input_pos}H{input_str}", end='')
         print("\033[s", end="")
         print(HIDE, end='')
         if input_text and input_text != " " and not input_list:
@@ -741,14 +522,14 @@ def print_text_from_bottom_up(input_list:list=None, input_text:str="", get_name=
             while True:
                 player_name = text
                 print(HIDE, end='')
-                print(f"\033[{ui_blocking["input_pos"]}H{'                                           '}{END}", end='')
+                print(f"\033[{state.input_pos}H{'                                           '}{END}", end='')
                 if isinstance(player_name, str) and len(player_name) > 0:
-                    clean = clean_print_block()
+                    clean = clean_print_block(state)
                     print_output(text="", print_list=clean, slow=True)
                     first_input_done = True
                     return player_name
-                input_str = col_text("Please enter your name:  ", "title_white")
-                print(f"\033[{ui_blocking["input_pos"]}H{input_str}{END}", end='')
+                input_str = Colours.c("Please enter your name:  ", "title_white")
+                print(f"\033[{state.input_pos}H{input_str}{END}", end='')
                 print(SHOW, end='')
                 text = input()
                 print(f"\033[u{'                                                                             '}", end='')
@@ -757,7 +538,7 @@ def print_text_from_bottom_up(input_list:list=None, input_text:str="", get_name=
         if input_text:
             print_output(text, print_list=None, slow=slow_bool)
             print(f"\033[u{'                                                                             '}", end='')
-            print(f"\033[{ui_blocking["input_pos"]}H{input_str}{END}", end='')
+            print(f"\033[{state.input_pos}H{input_str}{END}", end='')
             while text != "":
                 print(HIDE, end='')
                 reversed_list = print_output(text, reversed_list, slow=slow_bool)
@@ -771,9 +552,10 @@ def print_text_from_bottom_up(input_list:list=None, input_text:str="", get_name=
 def run_tui_intro():
 
     print(HIDE, end='')
-    ui_blocking, tui_linelist = get_TUI_list(tui_lines)
+
+
     print("\033[s", end='')
-    spaced_linelist, ui_blocking = space_and_get_cursor_pos(ui_blocking, tui_linelist, space=True)
+    spaced_linelist = state.ui_layout
     #print_TUI(spaced_linelist)
     coloured_linelist = make_coloured_list(spaced_linelist)
     print_TUI(coloured_linelist)
@@ -781,11 +563,11 @@ def run_tui_intro():
     print_intro=True
     if print_intro:
         from datablocks import intro
-        intro = clean_print_block(intro)
+        intro = clean_print_block(state, intro)
         intro = make_coloured_list(intro, title_block=True)
         print_output(text="", print_list=intro, slow=True, print_to_console=False, by_char=True)
         player_name = print_text_from_bottom_up(get_name=True)
-    return ui_blocking, player_name
+    return player_name
 
 
 if "__main__" in __name__:

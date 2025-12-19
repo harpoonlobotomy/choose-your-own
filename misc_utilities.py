@@ -1,6 +1,5 @@
 ## utilities to be used by any script at any point
 
-## colour selected string
 
 """ Want to do some colour coding.
 
@@ -40,57 +39,6 @@ def switch_the(text, replace_with=""): # remember: if specifying the replace_wit
         text = "the "+ text # so I can add 'the' in front of a string, even if it doesn't start w 'a' or 'an'.
     return text
 
-def col_text(text:str="", colour:str=None):
-
-## def apply_col_to_text(item, colour="green"): # is just this, copied from Choices.
-
-    baseline_format=';'.join([str(0), str(37), str("40")]) ## Add more colours later
-    #bold_white_format=';'.join([str(1), str(37), str("40")])
-    red_format=';'.join([str(0), str(31), str("40")])
-    #bold_red_format=';'.join([str(1), str(31), str("40")])
-    green_format=';'.join([str(0), str(32), str("40")])
-    #bold_green_format=';'.join([str(1), str(32), str("40")])
-    cyan_format=';'.join([str(0), str(36), str("40")])
-    blue_format=';'.join([str(0), str(34), str("40")])
-    yellow_format=';'.join([str(0), str(33), str("40")])
-    b_yellow_format=';'.join([str(1), str(33), str("40")])
-    magenta_format=';'.join([str(0), str(35), str("40")])
-
-
-    BASELINE=f"\x1b[{baseline_format}m"
-    RED=f"\x1b[{red_format}m"
-    END="\x1b[0m"
-    #BOLD_RED=f"\x1b[{bold_red_format}m"
-    GRN=f"\x1b[{green_format}m"
-    CYAN=f"\x1b[{cyan_format}m"
-    BLUE=f"\x1b[{blue_format}m"
-    YEL=f"\x1b[{yellow_format}m"
-    B_YEL=f"\x1b[{b_yellow_format}m"
-    MAG=f"\x1b[{magenta_format}m"
-    #BOLD_GRN=f"\x1b[{bold_green_format}m"
-    #REAL_WHT=f"\x1b[{white_format}m"
-
-    col_dict={
-    "blue": BLUE,
-    "cyan": CYAN,
-    "green": GRN,
-    "red": RED,
-    "yellow": YEL,
-    "magenta":MAG,
-    "description": B_YEL
-    }
-
-
-    if col_dict.get(colour):
-        col=col_dict.get(colour)
-
-    else:
-        col=BASELINE
-
-    col_text = f'{col}{text}{END}'
-
-    return col_text
-
 
 cardinal_cols = {
     "north": "red",
@@ -99,17 +47,49 @@ cardinal_cols = {
     "west": "magenta"
 }
 
-def assign_colour(item, colour=None, nicename=None, switch=False):
-    from set_up_game import game
-    specials = ("location", "loc")
+def assign_colour(item, colour=None, nicename=None, switch=False, no_reset=False):
+
+    from tui.colours import Colours
+
+    bg = None
+    bld = ita = u_line = invt = False
+
+    specials = ("location", "loc", "description", "title_bg", "title", "deco", "hash", "title_white", "equals", "underscore")
     cardinals=["north", "south", "east", "west"]
-    game.colour_counter = game.colour_counter%len(cardinals)
+    Colours.colour_counter = Colours.colour_counter%len(cardinals)
 
-    if colour in specials:
-        if "loc" in colour:
-            colour="green" # change it here to change all location text. Maybe a decent way to do it.
+    if colour and isinstance(colour, str):
+        if "b_" in colour:
+            bld=True
+            colour=colour.strip("b_")
+        if "u_" in colour:
+            u_line=True
+            colour=colour.strip("u_")
+        if "i_" in colour:
+            ita=True
+            colour=colour.strip("i_")
 
-    if isinstance(item, list):
+        bold_special = ["title", "deco", "description", "title_white"]
+
+        if colour in specials:
+            if "loc" in colour:
+                colour="green" # set 'loc' in colours.C instead of hardcoding the actual colours here. Only code here for bold, or if the colour named is inaccurate.
+            if colour == "title_bg":
+                colour="black"
+                bg="green"
+            if colour == "equals":
+                u_line=True
+                bg="blue"
+            if colour == "hash":
+                bg="blue"
+            if colour == "title_white":
+                colour="white"
+            if colour in bold_special:
+                bld=True
+            if colour == "title":
+                bld=True
+
+    elif isinstance(item, list):
         item=item[0] #arbitrarily take the first one.
         #print(f"Item was a list. Now: {item}, type: {type(item)}")
 
@@ -136,35 +116,30 @@ def assign_colour(item, colour=None, nicename=None, switch=False):
             #    text_colour = game.inv_colours.get(item)
             else:
                 #print("Text colour is none, assigning based on counter")
-                colour=cardinals[game.colour_counter%len(cardinals)]
+                colour=cardinals[Colours.colour_counter%len(cardinals)]
                 colour=cardinal_cols[colour]
-                game.colour_counter += 1
-                #colour=cardinals[game.colour_counter]
-                #colour=cardinal_cols[colour]
-                ##print(f"Colour from counter: {colour}")
-                #game.colour_counter += 1
-                #game.inv_colours[item]=colour # souldn't need this at all, only made it because name_col didn't work.
-                item_name = registry.name_col(item, colour) ## set colour to inst object. Returns the item.name.
-                #print(f"Colour: {item.colour}")
+                Colours.colour_counter += 1
+
+                item_name = registry.name_col(item, colour)
+
                 item=item_name # can do this inline, just here for now while testing.
-        elif isinstance(colour, (int, float)):# and colour != None: # and colour <= len(cardinals)-1: cut the length part as it makes the entries of list len>4 colourless.
+        elif isinstance(colour, (int, float)):
             colour=int(colour)%len(cardinals)
-            colour=cardinals[int(colour)] # get the value from the list by index, so lists always have the same order (separate from the game.colour_counter, which loops but not per text line. This way the first through fourth option always have the same order unless they've another priority.)
-            # This should stop the current issue where 'yes, no' are green and blue, then red and cyan next time, because the loop is 4 colours long. Would prefer it to be consistent.
+            colour=cardinals[int(colour)]
+
             colour=cardinal_cols[colour]
         #else:
         #    print(f"Item not in cardinals and not an instance: {item}") #### ## triggers on locations, possible other things too.
         # This whole thing needs redoing so I'm not going to focus on it too much for now.
 
-# WHY IS THIS TRIGGERING
-# WHEN THIS IS WHAT IT'S PRINTING:
-#  "" Item not in cardinals and not an instance: <ItemInstance moss (9aae9489-13ee-40a3-af9b-2cdf8c63ef66)> ""
-
     if nicename:
         item=nicename
     if switch:
         item=switch_the(item)
-    coloured_text=col_text(item, colour)
+
+    if colour == None:
+        print(f"Colour is None. Item: ({item})")
+    coloured_text=Colours.c(item, colour, bg, bold=bld, italics=ita, underline=u_line, invert=invt, no_reset=no_reset)
     return coloured_text
 
 def col_list(list:list=[], colour:str=None):

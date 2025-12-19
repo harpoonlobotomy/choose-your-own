@@ -1,4 +1,3 @@
-##REDUX VERSION, don't know if it's better or not yet.
 
 import uuid
 

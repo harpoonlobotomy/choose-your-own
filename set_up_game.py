@@ -50,20 +50,21 @@ def loadout(): # for random starting items, game, etc (could be renamed
 
     _, game.inventory = registry.pick_up(paperclip_list[0], game.inventory)
     _, game.inventory = registry.pick_up(registry.random_from("magazine"), game.inventory)
-
+    game.carryweight = 12
     #print(f"Game inventory after managizine added: {game.inventory}")
     starting_items = registry.instances_by_category("starting") ## starting items == list of instances
     #print(f"starting items: {starting_items}, type: {type(starting_items)}")
-    k = random.randint(5, game.carryweight-1) # changed to set max at game.carryweight, so I don't need to pop them later.
-    if k > int(len(starting_items)):
-        k=len(starting_items)
-    #print(f"random int from 3_to_game.vol: {k}, game.carryweight: {game.carryweight}")
-    #print(f"starting_items: {starting_items}")
-    temp_inventory = random.sample(list(starting_items), k)
-    for item in temp_inventory:
-        if item == None:
-            continue
-        _, game.inventory = registry.pick_up(item, game.inventory)
+    if game.carryweight-3 > 5:
+        k = random.randint(5, game.carryweight-3) # changed to set max at game.carryweight, so I don't need to pop them later.
+        if k > int(len(starting_items)):
+            k=len(starting_items)
+        #print(f"random int from 3_to_game.vol: {k}, game.carryweight: {game.carryweight}")
+        #print(f"starting_items: {starting_items}")
+        temp_inventory = random.sample(list(starting_items), k)
+        for item in temp_inventory:
+            if item == None:
+                continue
+            _, game.inventory = registry.pick_up(item, game.inventory)
 
     hp = random.randrange(4, 8)
     game.player.update({"hp":hp})
@@ -271,8 +272,6 @@ class game:
     cardinals = ["north", "south", "east", "west"]
     loc_list = list(locations.descriptions.keys())
     day_number=1
-
-    colour_counter = 0
 
     last_loc = "a graveyard" # just here to keep the persistence if things get distracted during a scene change
 
