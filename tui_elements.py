@@ -13,14 +13,9 @@ SHOW = "\033[?25h"
 
 title_str = "Choose a Path"
 
-### UI blocking ###
-#global ui_blocking
-#ui_blocking = {"inv_start":None, "inv_end":None, "playerdata_start":None, "playerdata_end":None, "worldstate_start":None, "worldstate_end":None, "input_line":None, "text_block_start":None, "text_block_end":None, "commands_start":None, "commands_end":None}
-
-
 os.system("cls")
 
-def col_text_partial(text:str="", symbol:str="", col:str="", not_end=False): ## needs to use the misc_utility colours, but doesn't yet.
+def col_text_partial(text:str="", symbol:str="", col:str="", not_end=False):
 
     if symbol == "|##|":
         text=text.replace("|", assign_colour("|", "b_yellow"))
@@ -35,7 +30,7 @@ def col_text_partial(text:str="", symbol:str="", col:str="", not_end=False): ## 
         for item in texts:
             text=text.replace(item, assign_colour(item, col, no_reset = not_end))
     else:
-        text=text.replace(symbol, assign_colour(symbol, col, no_reset = not_end)) ## I want to reimplement the 'all' section, to avoid recolouring every character at once.
+        text=text.replace(symbol, assign_colour(symbol, col, no_reset = not_end))
 
     return text
 
@@ -61,7 +56,7 @@ def title_text(line):
     pre_title = assign_colour(pre_title_0, "blue")
     post_title = assign_colour(post_title_0, "blue")
 
-    line = line[:title_start-len(pre_title_0)] + pre_title + " " + title + " " + post_title + line[title_end+len(post_title_0)+1:]#+ (" " * int(diff/4)) + title_str + (" " * int(diff/4)) + line[:title_end]
+    line = line[:title_start-len(pre_title_0)] + pre_title + " " + title + " " + post_title + line[title_end+len(post_title_0)+1:]
 
     return line
 
@@ -92,7 +87,7 @@ def make_coloured_list(input_list:list, title_block=False):
         "_": {"to_print": "_", "col": "underscore"}
     }
 
-    void_dict = { #"exclude": "|##|",
+    void_dict = {
        "#": {"to_print":"#", "col":"title_bg"},
        "$": {"to_print":"$", "col":"b_yellow"},
        "|": {"to_print": "|", "col":"yellow"},
@@ -120,8 +115,8 @@ def make_coloured_list(input_list:list, title_block=False):
                 line = col_text_partial(line, symbol=excl, col="deco")
                 line = col_text_partial(line, symbol=exl_2, col="deco")
 
-            elif "=" in line: ## make this a dict.
-                line = col_text_partial(line, symbol="=", col="equals") ## These ones done separately to not mess with the title edges.
+            elif "=" in line:
+                line = col_text_partial(line, symbol="=", col="equals")
             elif "-" in line:
                 line = col_text_partial(line, symbol="-", col="dash")
 
@@ -153,10 +148,9 @@ def print_TUI(tui_linelist):
         sleep(.02)
 
 
-def print_in_text_box(up_lines, text:str="", text_list:list=None, print_console=False, slow_lines=False, slow_char=False): ## Cannot use this with ansi codes as it breaks. Need to either go all in on 'rich' or not.
+def print_in_text_box(up_lines, text:str="", text_list:list=None, print_console=False, slow_lines=False, slow_char=False):
 
-    ## I just gutted this a bit. Might regret that later.
-    # Have now decided to make a new separate function, because this one's too damn fragile.
+
     first_row=None
     last_row=None
     text_block_start_col=(up_lines[0]+3)
@@ -180,37 +174,29 @@ def print_in_text_box(up_lines, text:str="", text_list:list=None, print_console=
             if isinstance(text, str):
                 if len(text) < textblock_width:
                     text = text + (" " * (textblock_width-len(text)))
-            #if slow_char:
-            #    for char in test:
-            #        console.print(char, end='')
-            #        sleep(.08)
-            #        print(f"\033[{row_no};{str(left_textblock_edge)}H{END}")
-            #    print()
-            #else:
-            #    console.print(test)
+
             if slow_lines:
                 sleep(.08)
                 console.print(test)
-                #print(f"\033[{row_no};{str(left_textblock_edge)}H{END}")
         console_text = console.export_text()
         return console_text
 
     if text_list:
         for i, row_no in enumerate(printable_lines):
 
-            slow_char=False # v so turning it off for now
-            if slow_char: ## doesn't work with the coloured text. Neec to colour it here if this is what I want.
+            slow_char=False
+            if slow_char:
                 if len(text_list[i])> 1:
                     for v, char in enumerate(text_list[i]):
                         sleep(.0005)
                         print(f"\033[{int(row_no)};{left_textblock_edge+v}H{char}", end='')
-                        print(f"\033[{row_no};{str(left_textblock_edge)}H{END}") ## having this on, it waits properly. Don't know why it needs it but apparently it does.
+                        print(f"\033[{row_no};{str(left_textblock_edge)}H{END}")
                 else:
                     print(f"\033[{int(row_no)};{left_textblock_edge}H{text_list[i]}", end='')
             else:
                 print(f"\033[{int(row_no)};{left_textblock_edge}H{text_list[i]}", end='')
-                sleep(.05) ### Why is this never triggering. It pauses /before/ printing anything in this section, but not between lines. I don't understand why.
-                print(f"\033[{row_no};{str(left_textblock_edge)}H{END}") ## having this on, it waits properly. Don't know why it needs it but apparently it does.
+                sleep(.05)
+                print(f"\033[{row_no};{str(left_textblock_edge)}H{END}")
         sleep(.2)
         return text_list
 
@@ -303,23 +289,34 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
                 print(f"\033[{int(row)};{left_col}H{title}")#, end='')
                 sleep(speed)
                 print(f"\033[0;0H{END}", end='')
-
         return
 
     def print_inventory(part, inv, datablock, speed=.05):
 
+
+        temp_inv_list = []
         inv_list = []
         if part == "inv_":
             for item in inv:
-                inv_list.append(item.name)
+                if item.name in temp_inv_list:
+                    for i in range(len(temp_inv_list)):
+                        if temp_inv_list[i] == (item.name):
+                            temp_inv_list[i] = str(item.name + " (x2)")
+                else:
+                    temp_inv_list.append(item.name)
+
+        for item in temp_inv_list:
+            if not isinstance(item, str):
+                item = item.name
+            inv_list.append(item)
 
         datablock=prep_datablocks(datablock) ## Want a way to do this accounting for the items in the list. Don't know how to do that yet.
         inv_pos = get_positions(part, datablock)
 
         if len(inv_list) > len(inv_pos):
             print(f"Too many items for {part}.") # Need to actually act on this.
-        i=0
 
+        i=0
         while i < len(inv_pos)-1 and i < len(inv_list)-2: # i don't understand why this has to be -2, but when it was -1 it was recursive. Will look into it more.
             for i, item in enumerate(inv_list):
                 pos = inv_pos[i]
@@ -330,7 +327,6 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
                 print(f"\033[{int(row)};{col}H{coloured}", end='')
                 sleep(speed)
                 print(f"\033[0;0H{END}")
-
         return
 
     def print_command(datablock, speed=.05):
@@ -417,7 +413,6 @@ def add_infobox_data(print_data:bool = False, backgrounds:bool = False, inventor
         inv = infobox_dict[section].get("inv")
         if print_data and inv:
             overprint_part(part, datablock, inv, backgrounds)
-
     return
 
 def advance_list(console_text):
@@ -552,11 +547,9 @@ def print_text_from_bottom_up(input_list:list=None, input_text:str="", get_name=
 def run_tui_intro():
 
     print(HIDE, end='')
-
-
     print("\033[s", end='')
     spaced_linelist = state.ui_layout
-    #print_TUI(spaced_linelist)
+
     coloured_linelist = make_coloured_list(spaced_linelist)
     print_TUI(coloured_linelist)
     player_name=None

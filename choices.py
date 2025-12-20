@@ -28,17 +28,11 @@ carrier_options = {
     "small": [{"pockets": 6}]
     }
 
-#vcarryweight = {
-#    "large": 10,
-#    "medium": 8,
-#    "small": 6
-#}
-
 items_template = {
     "category": {"item": {"name": "", "description": ""}}
     }
 
-currency = random.choice(("dollar", "pound", "yen")) # build it here instead
+currency = random.choice(("dollar", "pound", "yen"))
 paintings = ["a ship in rough seas", "a small farmstead", "a businessman in front of a large window in an office", "a dog, running around in a field of flowers"]
 ##
 """
@@ -136,18 +130,13 @@ weird_loot_table = {
 }
 
 emotion_table = {
-    #"blind": {"weight": 1}, # -1/0 = can see, +1 = blind
+    #"blind": {"weight": 1}, # -1/0 = can see, +1 = blind ## only add later for a reason, don't start with this by default ever
     "tired": {"weight": 1}, # -1 = well rested, +1 = tired
     "hunger": {"weight": 1}, # -1 = full, +1 = hungry
     "sadness": {"weight": 1}, # -1 = happy, +1 = sad
     "overwhelmed": {"weight": 1}, # -1/0 = fine, +1 = overwhelmed
     "encumbered": {"weight": 1} # -1/0 = fine, +1 = encumbered
 }
-
-#git log
-#git shortlog --author="Bastien Montagne" --pretty=format:'%ci | %H' --no-merges -e -n
-
-
 
 loot_table = {
     1: "minor_loot",
@@ -163,35 +152,6 @@ trip_over={"any": ["some poorly lit hazard", "your own feet"],
 
 def smart_capitalise(s: str) -> str:
     return s[0].upper() + s[1:] if s else s
-
-
-def apply_col_to_text(item, colour="green"):
-
-    baseline_format=';'.join([str(4), str(36), str("40")]) ## Add more colours later
-    white_format=';'.join([str(1), str(37), str("40")])
-    red_format=';'.join([str(0), str(31), str("40")])
-    bold_red_format=';'.join([str(1), str(31), str("40")])
-    green_format=';'.join([str(0), str(32), str("40")])
-    bold_green_format=';'.join([str(1), str(32), str("40")])
-
-    BASELINE=f"\x1b[{baseline_format}m"
-    RED=f"\x1b[{red_format}m"
-    END="\x1b[0m"
-    BOLD_RED=f"\x1b[{bold_red_format}m"
-    GRN=f"\x1b[{green_format}m"
-    BOLD_GRN=f"\x1b[{bold_green_format}m"
-    REAL_WHT=f"\x1b[{white_format}m"
-
-    if colour == "red":
-        col=RED
-    elif colour == "green":
-        col=GRN
-    else:
-        col=BASELINE
-
-    col_text = f'{col}{item}{END}'
-
-    return col_text
 
 
 class LootTable:
@@ -216,18 +176,7 @@ class LootTable:
                 for _, data in items.items():
                     building_for_loop(data.items())
             else:
-                building_for_loop(items.items()) # add this for everything, then update if needed.
-                # need to update cardinal, so we have 'found this jar in the east of the graveyard'. I like that better than just 'in the graveyard. May walk it back later.
-
-                ## only for those in location table.
-                    # actually no - should use it for documenting the location where random loot was found, too.
-                #if self.name == "location_loot":
-                #    start_loc = category
-                #else:
-                #    start_loc=None
-                #print(f"add location parent as start_location: item_name: {item_name}, location: {start_loc}")
-                # current_location:
-                #Should add the ability to search a location for something (eg 'I dropped item at the graveyard, will spend time searching specifically. Also general 'looking for clues', related.)
+                building_for_loop(items.items())
 
     def get_full_category(self, selection):
         category = selection
@@ -248,7 +197,6 @@ class LootTable:
         else:
             return "cannot_open"
 
-    #def random_from(self, category: str):
     def random_from(self, selection):
         """Pick a random item name from a category (int or str)."""
         if isinstance(selection, int):
@@ -282,9 +230,10 @@ class LootTable:
         self.by_name[name].update({"text_col":colour})
 
     def remove_from_container(self, name:str):
+        ##TODO: just this whole section
         print("Doesn't do anything yet.")
 
-    def pick_up_test(self, name:str): ## everything in the regular loot table is pick-up-able. This is just for location items currently.
+    def pick_up_test(self, name:str):
         item = self.get_item(name)
         if not item:
             print("No such item.")
@@ -303,32 +252,21 @@ class LootTable:
         if not item:
             return None
         to_set = [name]
-        #print(f"Get location, name: {name}")
-        #print(f"Get location, item: {item}")
         has_children = item.get("children")
-        if has_children: # assumes only one child. Fix this later.
+        if has_children:
             for child in has_children:
                 to_set.append(child)
 
-        #print(f"to set: {to_set}")
         for loot_here in to_set:
             item = self.get_item(loot_here)
-            #print(f"item: {item}")
-            #print(f"loot_here: {loot_here}, type: {type(loot_here)}")
-            #print()
-            #print(f"loot_here get_item: {self.get_item(loot_here)}")
 
             if item["start_location"] == {None:None}:
                 item["start_location"]={location: cardinal}
-                #print(f"Start location was None, now is{item['start_location']}")
             if picked_up:
                 item["current_location"]=({"inventory": "inventory"})
             else:
                 item["current_location"]=({location: cardinal})
-            #print(f"item: {item}")
-            #print(f"item start location: {item["start_location"]}")
         return to_set
-        #exit()
 
 
 def set_choices():
@@ -346,15 +284,3 @@ def initialise_location_loot():
     return loc_loot
 
 loc_loot=initialise_location_loot()
-
-
-
-
-
-#print(loot.describe("plastic bag", caps=True))
-# → A used plastic bag from a grocery store. no holes, at least.
-
-#print(loot.random_from("minor_loot"))
-# → Randomly picks one of the minor_loot items
-#randomloot = loot.random_from("minor_loot")
-#print((loot.describe(randomloot)))

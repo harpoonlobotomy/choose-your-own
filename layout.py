@@ -47,9 +47,6 @@ def space_and_get_cursor_pos(state, input_list, space=True):
     input_list = longer_list
 
     for row, text_line in enumerate(input_list):
-        if len(text_line) < linelength:
-            diff = linelength - len(text_line)
-            text_line = text_line + (" " * diff)
 
         if space:
             text_line = text_line.replace("$", " " * spacing)
@@ -57,8 +54,13 @@ def space_and_get_cursor_pos(state, input_list, space=True):
             for item in replace_dict:
                 text_line = text_line.replace(item, (replace_dict[item]["to_print"] * spacing))
 
-        if len(text_line) < cols:
-            extra_spaces = cols - len(text_line)
+        if row == 0:
+            if len(text_line) < cols:
+                extra_spaces = cols - len(text_line) ## weird way of doing it but it realigns the ui... Otherwise it treats each line individually and breaks the layout by one or two character spaces. Annoyinng...
+                print(f"Extra spaces: {extra_spaces}")
+        if int(extra_spaces/2) + int(extra_spaces/2) != extra_spaces:
+            text_line = (' ' * (int(extra_spaces/2)+1)) + text_line + (' ' * int(extra_spaces/2))
+        else:
             text_line = (' ' * int(extra_spaces/2)) + text_line + (' ' * int(extra_spaces/2))
 
         for symbol in ui_blocks:
@@ -79,7 +81,7 @@ def space_and_get_cursor_pos(state, input_list, space=True):
                 state.text_block_start = (row+3, text_line.find('^')+3)
             else:
                 state.text_block_end = (row-1, text_line.rfind('^')-3)
-            up_lines.append(row) ## and this works. So why do the end lines not work properly?
+            up_lines.append(row)
         if text_line != "":
             spaced_list.append(text_line)
 
@@ -105,10 +107,14 @@ def get_TUI_list(state, tui_lines):
             tui_linelist.append(line.rstrip('\n'))
             if len(line) > linelength:
                 linelength = len(line)-no_of_spacers
+                if not linelength % 2 == 0:
+                    linelength = linelength-1
             counter += 1
 
     cols = state.cols
     spare_cols = cols-linelength
+    if not spare_cols % 2 == 0:
+        spare_cols = spare_cols-1
     spacing=int(spare_cols/no_of_spacers)
 
     if spacing <= 0:
@@ -147,7 +153,6 @@ def get_positions(part, text):
             positions_set.add((i, pos_2))
     positions_set = list(sorted(positions_set))
     setattr(state, attr_name, positions_set)
-    #ui_blocking[f"{part}positions"] = positions_set
 
     return positions_set
 

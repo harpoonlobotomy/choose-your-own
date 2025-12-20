@@ -352,11 +352,32 @@ class LootRegistry:
             return None
         return inst.name
 
+    def get_duplicate_details(self, inst, inventory_list):
+
+        if isinstance(inst, ItemInstance):
+            items = self.instances_by_name(inst.name)
+        else:
+            items = self.instances_by_name(inst) # gets all instances by that name
+
+        if items:
+            dupe_list = []
+            for thing in inventory_list:
+                if thing in items:
+                    dupe_list.append(thing)
+
+            return dupe_list
+        print(f"{inst} not found in instances by name. {type(inst)}")
+
+
+
+
+
+
     def name_col(self, inst: ItemInstance, colour:str):
 
         #if not isinstance(inst, ItemInstance):
         inst.colour=colour
-        print(f"Assigning colour to instance: inst: {inst}, colour: {colour}, inst.colour: {inst.colour}") ## TODO: Maybe this should return the name pre-coloured. Would make sense.
+        #print(f"Assigning colour to instance: inst: {inst}, colour: {colour}, inst.colour: {inst.colour}") ## TODO: Maybe this should return the name pre-coloured. Would make sense.
         return inst.name
 
     def pick_up(self, inst, inventory_list, place=None, direction=None):
