@@ -75,11 +75,6 @@ class LootRegistry:
     # Creation / deletion
     # -------------------------
 
-# func sig from item_instance init, need to match this:
-    #  (self, definition_key, item_def, nicename=None, location=None, cardinal=None, contained_in=None,
-    #
-    #
-    #   def __init__(self, definition_key, item_def, primary_category, description=None, location=None, contained_in=None, item_size=None, container_data=None):
     def create_instance(self, definition_key, attr, counter=None):#nicename, primary_category, is_container, can_pick_up, description, location, contained_in, item_size, container_data):
 
 
@@ -88,8 +83,6 @@ class LootRegistry:
 
 #   Flag items: {'can_pick_up', 'dirty', 'fragile', 'dupe', 'flammable', 'locked', 'weird', 'container', 'can_read', 'can_open'}
 
-        #print(f"definition_key: {definition_key}")
-        #print("attr.description: ", attr["description"])
         if "container" in attr["flags"]:
             container_data = (attr.get("description_no_children"), attr.get("name_children_removed"), attr.get("container_limits"), attr.get("starting_children"))
         else:
@@ -104,8 +97,6 @@ class LootRegistry:
             can_pick_up=True
         else:
             can_pick_up=False
-        ### unpacking attr:
-        #attr["name"], primary_category, is_container, can_pick_up, attr["description"], attr["starting_location"] or None, attr.get("contained_in") or None, attr["item_size"], attr[container_data]
 
         location = attr.get("starting_location")
 
@@ -116,17 +107,7 @@ class LootRegistry:
         if location:
             location, cardinal = next(iter(location.items()))
             self.by_location.setdefault(location, {}).setdefault(cardinal, set()).add(inst)
-            #inst.location = location
-            #print(f"Item location: {inst.id}, {inst.location}")
-            #self.by_location.setdefault(location, set()).add(inst.id)
 
-## original:
-#        if attr.get("loot_type"):
-#            if not self.by_category.get(attr["loot_type"]):
-#                self.by_category[attr["loot_type"]]=set()
-#            self.by_category[attr["loot_type"]].add(inst.id)
-
-## better version:
         loot_type = attr.get("loot_type")
 
         if loot_type:
@@ -140,16 +121,13 @@ class LootRegistry:
             self.by_counter = {counter:inst}
 
             parent_name =attr.get("started_contained_in")
-            #print(f"Parent name: {parent_name}")
             parent_obj_list = self.by_name.get(parent_name)#instances_by_name(self, parent)
             if parent_obj_list:
                 if len(parent_obj_list)==1:
                     for prospective_parent in parent_obj_list:
                         pros_parent_obj=self.instances.get(prospective_parent.id)
-                        #print(f"pros parent obj: {pros_parent_obj}")
                         pros_children = pros_parent_obj.starting_children
                         if inst.name in pros_children:
-                            #print(f"Pros children: {pros_children}")
                             inst.contained_in = pros_parent_obj
                             self.by_container[pros_parent_obj].add(inst) ## idk if this'll work.
                             #for child in pros_children:
@@ -218,7 +196,7 @@ class LootRegistry:
 
                                 #print(f"Added {child_inst.id} to parent: {self.instances_by_container([container_list[0].id])}")
 
-                    parent_id=next(iter(parent_obj_list))
+                    parent=next(iter(parent_obj_list))
                     #print(f"Parent obj list: {parent_obj_list}")
                     #print(f"parent_id: {parent_id}")
                     #self.instance_by_counter(parent_id)
@@ -229,7 +207,7 @@ class LootRegistry:
                         pros_children = pros_parent_obj.starting_children ## starting children is probably just strings at this point... currently I allow for it making one child obj, but not more t han that. Not sufficient...
                         if len(pros_children)==1:
                             if item_name in pros_children:
-                                self.by_container[parent_id].add(child_inst) ## idk if this'll work.
+                                self.by_container[parent].add(child_inst) ## idk if this'll work.
                                 #print(f"Added {child_inst.id} to parent: {self.by_container[parent_id]}")
             #else:
                         #self.by_container[parent_id]
@@ -255,7 +233,7 @@ class LootRegistry:
     # -------------------------
     # Movement
     # -------------------------
-    def move_item(self, inst:ItemInstance, place=None, direction=None, new_container=None, ):
+    def move_item(self, inst:ItemInstance, place=None, direction=None, new_container=None):
 
         old_loc = inst.location
         if old_loc:
@@ -267,23 +245,32 @@ class LootRegistry:
                 if not self.by_location[location][cardinal]:
                     del self.by_location[location][cardinal]
 
-        new_location = {place: direction} if place and direction else None
-        inst.location = new_location
-        inst.contained_in = new_container ## 'inventory' should be a container.
+        if place != None and direction != None:
+            new_location = {place: direction} if place and direction else None
+            inst.location = new_location
 
-        if new_location:
-            if not self.by_location.get(place):
-                temp_place = place.replace("a ", "")
-                if not self.by_location.get(temp_place):
-                    print(f"Count not find location {place}, please check.")
-                else:
-                    place = temp_place
+            if new_location:
                 if not self.by_location.get(place):
-                    self.by_location.setdefault(place, {})#.setdefault(cardinal, set()).add(inst)
-            self.by_location[place].setdefault(direction, set()).add(inst)
+                    temp_place = place.replace("a ", "")
+                    if not self.by_location.get(temp_place):
+                        print(f"Count not find location {place}, please check.")
+                    else:
+                        place = temp_place
+                    if not self.by_location.get(place):
+                        self.by_location.setdefault(place, {})#.setdefault(cardinal, set()).add(inst)
+                self.by_location[place].setdefault(direction, set()).add(inst)
 
+        inst.contained_in = new_container ## 'inventory' should be a container. ## This should remove its container status just because 'new_container' is none by default, so 'move' with zero data added should just remove from container.
 
         ### TODO:: Use this for location descriptions/items. Currently it's all manual, but I should be able to do a version that takes the listed items and presents them automatically.
+
+    def move_from_container_to_inv(self, inst:ItemInstance, inventory):
+
+        parent = inst.contained_in
+        self.by_container[parent].remove(inst)
+        self.move_item(inst)
+        inventory.append(inst)
+
 
 
     # -------------------------
@@ -296,11 +283,6 @@ class LootRegistry:
         return self.instances.get(inst_id)
 
     def instances_at(self, place, direction):
-
-#  Well I played myself. Because now it doesn't find the items in 'a city hotel room'.
-#  You're facing east. Against the wall is a large television, sitting between two decent sized windows overlooking the city. The curtains are drawn.
-#  You can look around more, leave, or try to interact with the environment:
-#  north, south, west or leave
 
         try:
             location = self.by_category[place]
@@ -333,7 +315,7 @@ class LootRegistry:
         return self.by_name.get(definition_key)# if self.by_name.get(definition_key) else None
 
     def instances_by_container(self, container):
-        return [self.instances[i] for i in self.by_container.get(container, set())]
+        return [i for i in self.by_container.get(container, set())]
 
     def instances_by_category(self, category):
         return self.by_category.get(category, set())

@@ -104,7 +104,7 @@ def load_world(relocate=False, rigged=False, new_loc=None):
     if rigged:
         game.time=rig_time
         game.weather=rig_weather
-        if new_loc:
+        if new_loc and relocate:
             game.place=new_loc
         else:
             game.place=rig_place
@@ -114,6 +114,9 @@ def load_world(relocate=False, rigged=False, new_loc=None):
             weatherlist = list(weatherdict.keys())
             game.weather = random.choice(weatherlist)#"fine", "stormy", "thunderstorm", "raining", "cloudy", "perfect", "a heatwave"))
             game.place = random.choice((game.loc_list))#"your home", "the city centre", "a small town", "the nature reserve", "the back alley", "a hospital", "a friend's house", "graveyard"))
+
+    if new_loc:
+        game.place=new_loc
 
     if game.place != None:
         game.last_loc = game.place

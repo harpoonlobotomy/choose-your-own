@@ -852,3 +852,61 @@ Not being able to select the TV is because the actual line is this:
 values: [['north', 'south', 'west'], 'leave', ['\x1b[1;31mwindow\x1b[0m', '\x1b[1;34mTV set\x1b[0m']], clean_values: ['north', 'south', 'west', 'leave', '\x1b[1;31mwindow\x1b[0m', '\x1b[1;34mTV set\x1b[0m']
 
 The cardinals work because they only have their colour applied at print, while the other elements get it applied when the list is cleaned.
+
+
+5.35pm:
+Chosen: (a graveyard)
+
+test: a graveyard
+RETURNING: a graveyard
+You make your way to None. It's midday, the weather is perfect, and you're feeling bit stressed.
+
+Traceback (most recent call last):
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 1047, in <module>
+    test()
+    ~~~~^^
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 1043, in test
+    inner_loop(speed_mode=test_mode)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 966, in inner_loop
+    relocate()
+    ~~~~~~~~^^
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 675, in relocate
+    if places[game.place].visited:
+       ~~~~~~^^^^^^^^^^^^
+KeyError: None
+
+D:\Git_Repos\choose-your-own>
+
+
+5.52pm:
+INVENTORY:
+
+Inv list: ['paperclip', 'paperclip', 'paperclip', 'gardening mag', 'batteries', 'unlabelled cream', 'regional map', 'fish food', 'paperclip', 'paperclip', 'glass jar']
+
+inventory isn't printing properly. Need to fix this one.
+
+5.52pm:
+
+
+Chosen: (glass jar)
+
+Description: It's a gardening mag
+
+Inv list: ['paperclip', 'paperclip', 'paperclip', 'gardening mag', 'batteries', 'unlabelled cream', 'regional map', 'fish food', 'paperclip', 'paperclip', 'glass jar']
+
+
+Ah. It's more broken I thought. Still using the index of named vs the index of not, I imagine. inv_list is the wrong list to be using.
+
+
+5.56
+
+INVENTORY:
+
+True
+
+
+Type the name of an object to examine it, or hit 'enter' to continue.
+
+
+Hm. Not exactly what I was intending on getting back.

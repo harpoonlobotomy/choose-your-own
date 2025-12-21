@@ -24,12 +24,13 @@ def get_inventory_names(inventory_inst_list):
     return inventory_names_list
 
 
-def generate_clean_inventory(inventory_inst_list, will_print = False, coloured = False):
+def generate_clean_inventory(inventory_inst_list, will_print = False, coloured = False, tui_enabled=True):
 
     from tui_update import update_text_box
 
+    no_xval_inventory_names = []
     inv_list = get_inventory_names(inventory_inst_list)
-    print(f"Inv list: {inv_list}")
+    #print(f"Inv list: {inv_list}")
     dupe_items = list()
     checked = set()
 
@@ -43,6 +44,7 @@ def generate_clean_inventory(inventory_inst_list, will_print = False, coloured =
                 checked.add(item_name)
         else:
             inventory_names.append(item_name)
+            no_xval_inventory_names.append(item_name)
 
     second_checked = set()
     for inst_name in checked: # because it's a set, should only be one per item
@@ -55,18 +57,20 @@ def generate_clean_inventory(inventory_inst_list, will_print = False, coloured =
 
     if coloured:
         coloured_list = []
+        coloured_and_spaced = []
         for item_name in inventory_names:
-            coloured_list.append(f"    {assign_colour(item_name)}")
-        if will_print:
-            update_text_box(coloured_list)
-
-    elif print:
-        update_text_box(inventory_names)
+            print(f"Item name: {item_name}, type: {type(item_name)}")
+            coloured_and_spaced.append(f"    {assign_colour(item_name)}")
+            coloured_list.append(f"{assign_colour(item_name)}")
+        if will_print and tui_enabled:
+            update_text_box(coloured_and_spaced)
+        elif will_print:
+            update_text_box(inventory_names, use_TUI=False)
 
 
 #    registry.inst_to_names_dict There's no point in this, because we can just do inst.name. Bleh.
 
-    return inventory_names
+    return inventory_names, no_xval_inventory_names
 
 
 
@@ -175,19 +179,20 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
         if isinstance(item, str):
             if " x" in item:
                 item_temp = item.split(" x")[0]
-                item_instance=registry.instances_by_name(item_temp)
-                if item_instance:
-                    item_temp=item_instance[0]
-                    colour, _, bld = check_instance_col(item_temp)
+                item_instances=registry.instances_by_name(item_temp)
+                if item_instances:
+                    item_reduced=item_instances[0]
+                    colour, _, bld = check_instance_col(item_reduced)
 
             else:
-                item_instance=registry.instances_by_name(item)
-                if item_instance:
-                    item=item_instance[0]
+                item_instances=registry.instances_by_name(item)
+                if item_instances:
+                    item=item_instances[0]
+                    colour, item, bld = check_instance_col(item)
+                    #colour = item.colour
 
         if isinstance(item, ItemInstance):
             colour, item, bld = check_instance_col(item)
-
 
         elif isinstance(colour, (int, float)):
             colour=int(colour)%len(cardinals)
@@ -206,6 +211,16 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
 
     if colour == None:
         print(f"Colour is None. Item: ({item}). Type: ({type(item)})")
+        # This is printing every time an inventory item is found the first time. I've no idea why though. This:
+        #   Colour is None. Item: (moss). Type: (<class 'str'>)
+        #   moss
+        #   Colour is None. Item: (glass jar). Type: (<class 'str'>)
+        #   glass jar
+        #   Colour is None. Item: (headstone). Type: (<class 'str'>)
+        #   headstone
+        #   Colour is None. Item: (dried flowers). Type: (<class 'str'>)
+        #   dried flowers
+        # prints with full colour.
 
     if not_bold:
         bld=False

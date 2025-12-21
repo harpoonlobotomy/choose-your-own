@@ -1,6 +1,8 @@
 
 from time import sleep
 
+from misc_utilities import assign_colour
+
 print("Importing tui_update.py")
 
 END="\x1b[0m"
@@ -101,7 +103,8 @@ def update_text_box(to_print, end=False, edit_list=False, use_TUI=True):
         if to_print:
             if isinstance(to_print, list):
                 for item in to_print:
-                    print(item)
+                    if item != None:
+                        print(assign_colour(item))
             if isinstance(to_print, str):
                 print(to_print)
         return
