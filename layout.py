@@ -56,8 +56,7 @@ def space_and_get_cursor_pos(state, input_list, space=True):
 
         if row == 0:
             if len(text_line) < cols:
-                extra_spaces = cols - len(text_line) ## weird way of doing it but it realigns the ui... Otherwise it treats each line individually and breaks the layout by one or two character spaces. Annoyinng...
-                print(f"Extra spaces: {extra_spaces}")
+                extra_spaces = cols - len(text_line)
         if int(extra_spaces/2) + int(extra_spaces/2) != extra_spaces:
             text_line = (' ' * (int(extra_spaces/2)+1)) + text_line + (' ' * int(extra_spaces/2))
         else:
@@ -70,11 +69,12 @@ def space_and_get_cursor_pos(state, input_list, space=True):
                     column = text_line.find(symbol)
                     setattr(state, attr_name, (row, column))
                 else:
-                    column = text_line.rfind(symbol)
                     attr_name = f"{ui_blocks[symbol]["block_part"]}end"
-                    setattr(state, attr_name, (row, column-1))
+                    column = text_line.rfind(symbol)
+                    setattr(state, attr_name, (row, column))
 
                 text_line = text_line.replace(symbol, " ")
+                attr_name = f"{ui_blocks[symbol]["block_part"]}spacer_count"
 
         if "^" in text_line:
             if not hasattr(state, "text_block_start") or state.text_block_start == None:

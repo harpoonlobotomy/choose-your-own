@@ -3,9 +3,9 @@
 
 import choices
 import env_data
-from misc_utilities import assign_colour, col_list
+from misc_utilities import assign_colour, col_list, switch_the
 from set_up_game import load_world, set_up, init_settings
-from choices import choose, loc_loot
+from choices import choose
 import random
 from locations import run_loc, places, descriptions
 from env_data import placedata_init, p_data
@@ -51,10 +51,11 @@ def do_print(text=None, end=None, edit_list=False):
         text=" "
     slowLines(txt=text, speed=0.1, end=end, edit=edit_list)
 
-def slowWriting(txt, speed=0.001, end=None): # remove a zero to set it to regular speed again.
+def slowWriting(txt, speed=0.001, end=None, edit=False): # remove a zero to set it to regular speed again.
 
-    update_text_box(to_print=txt, end=end)
-    update_text_box(to_print="  ")
+    slowLines(txt, speed, end, edit)
+    #update_text_box(to_print=txt, end=end)
+    update_text_box(to_print="  ", end='')
 
 
 def smart_capitalise(s: str) -> str:
@@ -62,79 +63,141 @@ def smart_capitalise(s: str) -> str:
 
 def separate_loot(item):
 
-    entry = loc_loot.get_item(item)
-    if entry:
-        if entry.get('children'):
-            for child in entry['children']:
+    #potential = registry.instances_at(game.place, game.facing_direction)
+
+    parent = item
+    ## Do we assume 'separate' is 'parent from child' or 'child from parent'? As in, is 'item' parent or child?
+    # Need to pick one as the default, then check for what's available. I assume item will be the parent, so we 'separate vase'. Or, we allow for explicit statements - 'separate_loot(container, child=None)'.
+    #Need to think on it.
+
+
+    #entry = loc_loot.get_item(item)
+    if item:
+        if item.get('children'):
+            for child in item['children']:
                 game.inventory.append(child)
                 do_print(f"{child} separated from {item}")
 
 
-def get_inventory_names():
-    game.inventory_names = []
-    for item in game.inventory:
-        game.inventory_names.append(item.name)
-    return game.inventory_names
+def get_items_at_here(print_list=False):
 
-
-def print_inventory():
-
-    inv_list = get_inventory_names()
-    print(f"Inv list: {inv_list}")
-
-
+    instance_objs_at = (registry.instances_at(switch_the(game.place, replace_with=""), game.facing_direction))
+    do_print(f"Instance objs at: {instance_objs_at}")
     print_list = []
-    for item in inv_list:
-        spaced_item = f"    {assign_colour(item)}"
-        if spaced_item in print_list:
-            for i in range(len(print_list)):
-                if print_list[i] == str(spaced_item):
-                    print_list[i] = str(spaced_item + " (x2)") ## only allows for a single duplicate but will do for the moment
-                    #dupe_list = registry.get_duplicate_details(item) ## not using this yet but want to remember it exists.
+    coloured_list = []
+    if instance_objs_at:
+        for item in instance_objs_at:
+            print_list.append(item.name)
+        coloured_list = col_list(print_list)
+    else:
+        do_print("No instance objects here.")
+
+    if coloured_list:
+        if print_list:
+            slowWriting(coloured_list)
+
+        return coloured_list
+
+
+def get_inventory_names(inventory_inst_list):
+
+    inventory_names_list=list()
+    for item in inventory_inst_list:
+        inventory_names_list.append(item.name)
+
+    ## NOTE: Change: Does not apply to 'game.inventory_names' anymore.
+
+    #registry.inst_to_names_dict = inventory_dict ## stores the indexing of inst to indexing of names.
+
+    return inventory_names_list ## maybe I need to manage inventory in the items script. But it feels more sensible keeping it with player data.... Maybe state? Idk. But I'd like to be able to call this from tui_elements.
+
+
+def generate_clean_inventory(inventory_inst_list, will_print = False, coloured = False):
+
+    inv_list = get_inventory_names(inventory_inst_list)
+    print(f"Inv list: {inv_list}")
+    dupe_items = list()
+    checked = set()
+
+    inventory_names = []
+    for item_name in inv_list:
+        if item_name in inventory_names:
+            if item_name in checked:
+                continue
+            else:
+                checked.add(item_name)
+                    #dupe_items = (registry.get_duplicate_details(inst, game.inventory)) ## if it already exists, add to a side list and carry on.
+                    #checked.add(item_name)
         else:
-            print_list.append(spaced_item)
+            inventory_names.append(item_name)
 
-    do_print(print_list)
+    ### Maybe should just do 'paperclip (1)', 'paperclip (2)'. But if they're truly identical (which at this point they are) that's just taking up space needlessly. Only really applies if you have some reason to pick one or the other.
 
-def from_inventory_name(test):
-    list_index=game.inventory_names.index(test)
+    """
+    Inv list: ['severed tentacle', 'paperclip', 'paperclip', 'paperclip', 'fashion mag', 'fish food', 'regional map', 'batteries', 'paperclip', 'unlabelled cream', 'paperclip']
+    Checked set: `{'paperclip'}
+    Print list: `['severed tentacle', 'paperclip', 'fashion mag', 'fish food', 'regional map', 'batteries', 'unlabelled cream']`
+    Dupe items for paperclip: `[<ItemInstance paperclip (bd4c115d-f2f9-4343-b1b6-0f3d32c989e8)>, <ItemInstance paperclip (70c3d2c6-a34e-4790-b691-71b5a4422139)>, <ItemInstance paperclip (b39a9d0d-c44c-4e15-b0af-f42457789964)>, <ItemInstance paperclip (58aadbca-c34e-47e9-bae1-03e4e02116a7)>, <ItemInstance paperclip (5c13d3b8-343e-4d4d-a65b-42af02113dd9)>]
+    Name count: 5, name_index:
+    ['severed tentacle', 'paperclip x5', 'fashion mag', 'fish food', 'regional map', 'batteries', 'unlabelled cream'] <-- FINALLY.
+    """
+
+    second_checked = set()
+    for inst_name in checked: # because it's a set, should only be one per item
+        dupe_items = (registry.get_duplicate_details(inst_name, game.inventory))
+        if inst_name in second_checked:
+            continue
+        name_index = inventory_names.index(inst_name)
+        inventory_names[name_index] = f"{inst_name} x{len(dupe_items)}"
+        second_checked.add(inst_name)
+
+    #print(print_list)
+    """
+    DO THE COLUR/SPACING AFTER DUPE CHECKING.
+    spaced_item = f"    {assign_colour(item)}"
+
+    """
+    if coloured:
+        coloured_list = []
+        for item_name in inventory_names:
+            coloured_list.append(f"    {assign_colour(item_name)}")
+        if will_print:
+            do_print(coloured_list)
+        #return coloured_list ## should this print colour then return the plain? Idk. Maybe.
+
+
+    elif print:
+        do_print(inventory_names)
+
+    return inventory_names
+
+def from_inventory_name(inst_inventory, inventory_names, test): ### Will no longer work as the indexes don't match.
+
+    list_index=inventory_names.index(test)
     if list_index is not None:
-        test=game.inventory[list_index]
+        test=inst_inventory[list_index]
         return test
 
 def do_inventory():
     done=False
     slowWriting("INVENTORY: ")
     while done == False:
-        print_inventory()
+        inventory_names = generate_clean_inventory(game.inventory, will_print=True, coloured=True)
         do_print("To examine an item more closely, type it here, otherwise hit 'enter' to continue.")
         test=user_input()
-        if not test or test=="" or test==None:
+        if not test or test=="" or test==None or test == "Chosen: ( )":
             done=True
             return test
-        while True:
-            if test and test in game.inventory_names:
-                test=from_inventory_name(test)
-                desc = registry.describe(test, caps=True)
-                if desc and desc != "" and desc != f"[DESCRIBE] No such item: {test}":
-                    slowWriting((f"Description: {assign_colour(desc, "description")}"))
-                else:
-                    do_print(f"Failed to describe from registry. Investigate. Data: {test}")
-                    exit()
-                    desc = loc_loot.describe(test, caps=True)
-                    if desc and desc != "":
-                        if test.colour != None:
-                            colour = test.colour
-                        else:
-                            colour = "description"
-                        slowWriting((f"Description: {assign_colour(desc, colour)}"))
-                    else:
-                        slowWriting(f"Not much to say about the {test}.")
-
-                update_text_box(to_print="  ")
-
+        if test and test in inventory_names:
+            test=from_inventory_name(game.inventory, inventory_names, test)
+            desc = registry.describe(test, caps=True)
+            if desc and desc != "" and desc != f"[DESCRIBE] No such item: {test}":
+                slowWriting((f"Description: {assign_colour(desc, "description")}"))
             else:
-                break
+                slowWriting(f"Not much to say about the {test}.")
+            #update_text_box(to_print="  ")
+        else:
+            break
 
 def god_mode():
 
@@ -177,6 +240,7 @@ def god_mode():
             do_print("Returning to game with changes made.")
             break
 
+
 def user_input():
     text = do_input()
     if text.lower() == "godmode":
@@ -208,21 +272,22 @@ def user_input():
         do_inventory()
         do_print()
         return "inventory_done"
-    if text.lower() == "d":
+    if text.lower() == "d" or text.lower() == "description": ##TODO: make this a function instead of having it here. This is silly.
         loc_data = p_data[game.place]
-        do_print(f"{text}: Describe location.")
-        slowWriting(f"[{smart_capitalise(game.place)}]  {loc_data.overview}")
+        do_print(assign_colour(f"[ Describe location. ]", "yellow"))
+        slowWriting(f"[{assign_colour(smart_capitalise(game.place), 'loc')}]  {loc_data.overview}")
         obj = getattr(p_data[game.place], game.facing_direction)
-        slowWriting(f"  You're facing {game.facing_direction}. {obj}\n")
+        slowWriting(f"You're facing {game.facing_direction}. {obj}\n")
         do_print()
-        do_print(f"{[game.place]}:{places[game.place].description}")#{descriptions[game.place].get('description')}")
-        do_print()
-        text=None # clear text to stop it picking 'dried flowers' after `describe location` runs.
+        do_print(f"{places[game.place].description}")#{descriptions[game.place].get('description')}")
+        do_print(assign_colour("You see a few scattered objects in this area:", "b_white"))
+
+        get_items_at_here()
         return "done"
     if text.lower().startswith("drop "):
-        do_print(f"Text starts with drop: {text}")
+        #do_print(f"Text starts with drop: {text}")
         textparts=text.split()[1:]
-        do_print(f"textparts: {textparts}, len: {len(textparts)}")
+        #do_print(f"textparts: {textparts}, len: {len(textparts)}")
         if len(textparts) > 1:
             textparts = " ".join(textparts[0:])
         else:
@@ -230,11 +295,13 @@ def user_input():
         item = registry.instances_by_name(textparts)
         if item:
             item=item[0]
-            do_print(f"Sending item to drop: {item}")
+            #do_print(f"Sending item to drop: {item}") ## always drops the first. This needs to check for dupes too. Maybe do that internally in item_management. Probably better.
             drop_loot(item)
         return "drop_done"
     if text and text.lower() in ("exit", "quit", "stop", "q"):
         # Should add the option of saving and returning later.
+        ##TODO: Need to work on this. Not urgently, but I'd at least like the setup done so it's an option conceptually; pretty much save everything in game, registry and item_management (or at least the data required to reconstruct). Will be a project in itself. Maybe tomorrow.
+
         do_print("Okay, bye now!")
         exit()
     else:
@@ -387,11 +454,12 @@ def outcomes(state, activity):
     return outcome
 
 def drop_loot(named=None, forced_drop=False):
+
     get_inventory_names()
     if forced_drop:
         test = random.choice((game.inventory))
-        newlist = [x for x in game.inventory if x is not test]
-        game.inventory = newlist
+        _, game.inventory = registry.drop(test, switch_the(game.place,replace_with=""), game.facing_direction, game.inventory)
+        add_infobox_data(inventory=game.inventory)
         return
     if named:
         test=named
@@ -403,20 +471,37 @@ def drop_loot(named=None, forced_drop=False):
     if test in game.inventory_names or isinstance(test, ItemInstance):
         if isinstance(test, ItemInstance):
             item_test=test
-
         else:
             do_print(f"Test in inventory names: {test}")
             item_test=from_inventory_name(test)
 
-        game.inventory.remove(item_test)
-        game.inventory_names.remove(item_test.name)
-        do_print(f"test from inventory name: {test}")
-        slowWriting(f"Dropped {assign_colour(test)}.")
+        if item_test in game.inventory:
+            _, game.inventory = registry.drop(test, switch_the(game.place,replace_with=""), game.facing_direction, game.inventory)
+            game.inventory_names.remove(item_test.name)
+            do_print(f"test from inventory name: {test}")
+            slowWriting(f"Dropped {assign_colour(test)}.")
+        else:
+            do_print(assign_colour("Error: This item was not found in the inventory.", colour="red"))
+
+    # paperclip (x2)
+    # Chosen: (paperclip)
+    # Dropped paperclip.
+    ## automatically just drops one. Wasn't sure if it would, but that's nice. Weird that it places it in a later spot, but I guess it drops the first one, so the second one is suddenly shown in its 'original' position (just before it wasn't shown because it was in the symbolic 2x). So might have to make it remove the last one it finds instead, so the 'x2' just turns into 'paperclip', instead of 'paperclip (x2)' disappearing and a new 'paperclip' appearing elsewhere. Doesn't matter but it'd be better.
+
+    ## ALSO:
+
+    #  Chosen: (drop paperclip)
+    #  Error: This item was not found in the inventory.
+
+#        --  despite the dual paperclips being reduced in the list to a single one, that single one apparently isn't found.
+
+
+    add_infobox_data(print_data=True, inventory=game.inventory, clear_datablock=True) ## clear the inventory window first, then print the new list
 
     slowWriting("Load lightened, you decide to carry on.")
     if game.checks["inventory_asked"] == False:
         slowWriting("[[ Psst. Hey. Type 'secret' for a secret hidden option, otherwise type literally anything else. ]]")
-        game.player["inventory_asked"] = True
+        game.checks["inventory_asked"] = True
         test = user_input()
         if test == "secret":
             test=option("yes", "no", preamble="Hey so... not everyone loves inventory management. So I'll give you the option now - do you want to turn it off and carry without limitation?")
@@ -438,32 +523,32 @@ def drop_loot(named=None, forced_drop=False):
                 do_print("Settings updated. Returning.")
 
     get_inventory_names()
-    do_print()
+    add_infobox_data(inventory=game.inventory)
 
-def switch_the(text, replace_with=""): # remember: if specifying the replace_with string, it must end with a space. Might just add that here actually...
-    if isinstance(text, list):
-        if len(text) == 1:
-            text=text[0]
-            text=text.name
-        else:
-            do_print("Trying to `switch_the`, but text is a list with more than one item.")
-            exit()
-    if isinstance(text, ItemInstance):
-        text=text.name
-    for article in ("a ", "an "):
-        if text.startswith(article):# in text:
-            if replace_with != "":
-                #print(f"replace with isn't blank: `{replace_with}`")
-                if replace_with[-1] != " ":
-                    #print(f"replace with doesn't end with a space: `{replace_with}`")
-                    replace_with = replace_with + " "
-                    #print(f"replace with should now have a space: `{replace_with}`")
-            text = text.replace(article, replace_with) # added 'replace with' so I can specify 'the' if needed. Testing.
-
-
-    if replace_with == "" or replace_with == None: # should only trigger if neither article is in the text. This might need testing.
-        text = "the "+ text # so I can add 'the' in front of a string, even if it doesn't start w 'a' or 'an'.
-    return text
+#def switch_the(text, replace_with=""): # remember: if specifying the replace_with string, it must end with a space. Might just add that here actually...
+#    if isinstance(text, list):
+#        if len(text) == 1:
+#            text=text[0]
+#            text=text.name
+#        else:
+#            do_print("Trying to `switch_the`, but text is a list with more than one item.")
+#            exit()
+#    if isinstance(text, ItemInstance):
+#        text=text.name
+#    for article in ("a ", "an "):
+#        if text.startswith(article):# in text:
+#            if replace_with != "":
+#                #print(f"replace with isn't blank: `{replace_with}`")
+#                if replace_with[-1] != " ":
+#                    #print(f"replace with doesn't end with a space: `{replace_with}`")
+#                    replace_with = replace_with + " "
+#                    #print(f"replace with should now have a space: `{replace_with}`")
+#            text = text.replace(article, replace_with) # added 'replace with' so I can specify 'the' if needed. Testing.
+#
+#
+#    if replace_with == "" or replace_with == None: # should only trigger if neither article is in the text. This might need testing.
+#        text = "the "+ text # so I can add 'the' in front of a string, even if it doesn't start w 'a' or 'an'.
+#    return text
 
 def move_item_any(item):
     game.inventory.append(item)
@@ -476,51 +561,63 @@ def get_loot(value=None, random=True, named="", message:str=None):
     if named != "" and value == None: # don't add value for location items.
         #do_print(f"Named in get_loot, about to go to pick_up_test: `{named}`, type: {type(named)}")
         if isinstance(named, str):
-            item = registry.instances_by_name(named)
-            if isinstance(item, list) and len(item) == 1:
-                item=item[0]
+            items_list = registry.instances_by_name(named)
+            if isinstance(items_list, list) and len(items_list) == 1: ## it'll be this for anything with a default location. The rest only applies to things that are moved or dropped, really. So I can't test it until 'dropped' adds it to the world in a way this script recognises. So I need to change 'describe location' to use registry.by_location, so it recognises dropped items.
+                item=items_list[0]
+            else:
+                for inst in items_list:
+                    if inst not in game.inventory and (inst.location == None or (inst.location != None and inst.location == {game.place: game.facing_direction})):
+                        ## Does not account for items in containers, which do not have a location but are in a container. So maybe if in container, check if that container is in this location.
+                        item_inst=inst
+                    elif inst.contained_in: ## does this need to be hasattr()? Probably.
+                        container = inst.contained_in
+                        if container.location == (game.place, game.facing_direction): ## don't know if this'll work and it only works for one level of parent depth
+                            item_inst=inst
+                if item_inst == None: # if all else fails,
+                    item_inst=item[0]
+
+        # not implemented yet but here for safekeeping. Need to have the description printing respond to it.
+            #        print_list[i] = str(spaced_item + " (x2)") ## only allows for a single duplicate but will do for the moment
+            #        dupe_list = registry.get_duplicate_details(item, game.inventory) ## not using this yet but want to remember it exists.
+            #        print(f"Dupe list: {dupe_list}")
+            #        do_print(f"You have {len(dupe_list)} {item}s.") ### This does work. Not useful here, but works.
+
+
         elif isinstance(named, ItemInstance):
             item = named
-        #do_print(f"item: {item}, type: {type(item)}")
 
-        #pickup_test=loc_loot.pick_up_test(named) #should I test for get_item first? Probably no point. No.
-        #if pickup_test == "No such item.":
-        #    do_print("Not a location object.")
-        #elif pickup_test == "Can pick up":
-        #    #print("Can be picked up. Will let it continue, obj should get picked up.")
-        #    item=named
-        #elif pickup_test == "Cannot pick up": # is a positive failure - it was found, so is a loc item.
-        #    do_print("Cannot be picked up. Print a message about how it can't be picked up. Maybe one per item for variation.")
-        #    return None
         if not item:
             do_print(f"Failed to check pickupability. Count not get item instance. named: {named}.")
 
-        #if not item:
-        #    test_item = loot.get_item(named)
-        #    if test_item:
-        #        do_print("Item found in regular loot tables. Continuing.")
-        #        item=test_item
-        #if loc_loot.pick_up_test(named): # should this be negative or positive? More things to look at but not pick up, or the inverse?
-        #    item = named
-
     elif random:
-        #print(f"value: {value}")
         item = registry.random_from(value)
-        #do_print(f"Item: {item}, type: {type(item)}")
     else:
         do_print("Not random and no name given. This shouldn't happen, but defaulting to random.")
         do_print(f"value: {value}")
         item = registry.random_from(value)
-    if isinstance(item, str):
+    if isinstance(item, str): ## should not be necessary, it'll always be an instance in the new system. Wipe this later.
+        item_inst=None
         item = registry.instances_by_name(named)
-        if isinstance(item, list):# and len(item) == 1: ## always pick first of the list for now
-            item=item[0]
-    #print(f"Item: {item}")
+        if isinstance(item, list): # instead of just picking the first one, get the first one that isn't in inventory, and  either has no location or is at this location.
+            items_list=item
+            for inst in items_list:
+                if inst not in game.inventory and (inst.location == None or (inst.location != None and inst.location == (game.place, game.facing_direction))):
+                    ## Does not account for items in containers, which do not have a location but are in a container. So maybe if in container, check if that container is in this location.
+                    item_inst=inst
+                elif inst.contained_in: ## does this need to be hasattr()?
+                    container = inst.contained_in
+                    if container.location == (game.place, game.facing_direction): ## don't know if this'll work and it only works for one level of parent depth
+                        item_inst=inst
+            if item_inst == None: # if all else fails,
+                item_inst=item[0]
+
+        item = item_inst
+
     if message:
         message = message.replace("[item]", assign_colour(item, None, nicename=registry.nicename(item)))
         message = message.replace("[place]", game.place)
         slowWriting(message)
-    #item = loot.get_item(item)
+
     if item:
         _, game.inventory = registry.pick_up(item, game.inventory, game.place, game.facing_direction) ##
         slowWriting(f"{assign_colour(item)} added to inventory.")
@@ -604,6 +701,7 @@ def relocate(need_sleep=None):
         do_print(f"You decided to stay at {assign_colour(switch_the(game.place, 'the'), 'loc')} a while longer.")
     else:
         slowWriting(f"You make your way to {assign_colour(game.place, 'loc')}. It's {game.time}, the weather is {game.weather}, and you're feeling {game.emotional_summary}.")
+        do_print(f"You're facing {assign_colour(game.facing_direction)}.")
         if places[game.place].visited:
             slowWriting(f"You've been here before... It was {places[game.place].first_weather} the first time you came.")
             if places[game.place].first_weather == game.weather:
@@ -691,16 +789,16 @@ def look_around(status=None):
                 if outcome == 1:
                     slowWriting("OW! You roll your ankle pretty badly.")
                     if len(game.inventory) < 4:
-                        item = get_loot(1, random=True, message=f"It's only a minor injury, sure, but damn it stings. You did find [item] while facefirst in the middle of [place], though.")
+                        get_loot(1, random=True, message=f"It's only a minor injury, sure, but damn it stings. You did find [item] while facefirst in the middle of [place], though.")
                         #slowWriting(f"It's only a minor injury, sure, but damn it stings. You did find {item} while facefirst in the middle of {place}, though.") # don't need these two lines. Need to combine them into just the loot message..
                     if game.w_value:
                         ("You see something shimmer slightly off in a bush, but by the time you hobble over, whatever it was has vanished.")
                 if outcome == 2:
                     hazard = get_hazard()
-                    item = get_loot(1, random=True, message=f"Narrowly avoiding tripping over {hazard}, you find [item]. Better than nothing, but probably all you'll find until there's more light.") # want options for the poorly lit hazard part.
+                    get_loot(1, random=True, message=f"Narrowly avoiding tripping over {hazard}, you find [item]. Better than nothing, but probably all you'll find until there's more light.") # want options for the poorly lit hazard part.
                     # game.carrier_size compared to item.size? Can I be bothered?
                 if outcome in (3,4):
-                    item = get_loot(2, random=True, message=f"Once your eyes adjust a bit, you manage to make out more shapes than you expected - you find [item].")
+                    get_loot(2, random=True, message=f"Once your eyes adjust a bit, you manage to make out more shapes than you expected - you find [item].")
             if test in no:
                 slowWriting("Thinking better of it, you decide to keep the advanced investigations until you have more light. What now, though?")
             test = option("stay", "go", preamble=f"You could stay and sleep in {assign_colour(switch_the(game.place, "the "), 'loc')} until morning, or go somewhere else to spend the wee hours. What do you do?")
@@ -726,26 +824,23 @@ def look_around(status=None):
             slowWriting(f"Using the power of {reason}, you're able to look around {assign_colour(switch_the(game.place, "the "), 'loc')} without too much fear of a tragic demise.")
         obj = getattr(p_data[game.place], game.facing_direction)
         #print(f"\n{obj}\n")
-        do_print(f"\n  You're facing {assign_colour(game.facing_direction)}. {obj}\n") # description
+        do_print(f"\n  You're facing {assign_colour(game.facing_direction)}. {obj}\n")
         if obj == None or obj == "None":
             do_print("This description hasn't been written yet... It should have some ")
         remainders = list(x for x in game.cardinals if x is not game.facing_direction)
         #print(f"Directions to look: {remainders}")
-        potential = choices.location_loot[game.place].get(game.facing_direction)
-        if potential:
-            #print(f"Interactable items: {list(potential.keys())}") # this is not defined per facing_direction. Needs to be.
-        #slowWriting(f"You can look around more, or try to interact with the environment:")
-            potential=list(potential.keys())
-        else:
-            potential=None
+
+        potential = get_items_at_here(print_list=False)
+
         text=None
+
         while not text:
             text=option(remainders, "leave", potential, no_lookup=None, print_all=True, preamble="You can look around more, leave, or try to interact with the environment:")
 
         if text == "leave":
             slowWriting(f"You decide to move on from {assign_colour(switch_the(game.place, "the "), 'loc')}")
             relocate()
-        if text in remainders:
+        if text in remainders: ## this doesn't seem to be working.
             game.facing_direction=text
             look_light("turning") # run it again, just printing the description of where you turned to.
         if text != "" and text is not None:
@@ -766,6 +861,14 @@ def look_around(status=None):
                         do_print(f"{registry.describe(item_entry, caps=True)}")
                         #print("What do you want to do? [Investigate] item, [take] item, [leave] it alone.") # Do I want to list the options like this, or just try to make a megalist of what options may be chosen and work from that?
                         decision=option("investigate", "take", "leave", preamble=f"What do you want to do with {assign_colour(text, switch=True)} - investigate it, take it, or leave it alone?")
+
+## TODO: This needs fixing.
+#To examine an item more closely, type it here, otherwise hit 'enter' to continue.
+#Chosen: (paperclip)
+#What do you want to do? Stay here and look around, or go elsewhere?"
+# An invalid selection (because I haven't fixed the item selection if >0 and >2 yet) but it shouldn't take that as a null entry and continue.
+
+
                         #print(f"text after decision: {text}")
                         #decision=user_input()
                         if decision.lower()=="investigate":
@@ -836,7 +939,7 @@ def describe_loc():
 
     loc_data = p_data[game.place]
     slowWriting(f"You take a moment to take in your surroundings. {loc_data.overview}")
-    test=option(game.cardinals, "go", print_all=True, preamble="Pick a direction to investigate, or go elsewhere?")
+    test=option(game.cardinals, "go elsewhere", print_all=True, preamble="Pick a direction to investigate, or go elsewhere?")
     if test in game.cardinals:
         game.facing_direction = test
         look_around()
@@ -844,15 +947,16 @@ def describe_loc():
         slowWriting(f"You decide to leave {assign_colour(switch_the(game.place, 'the '), 'loc')}")
         relocate()
 
-def inner_loop():
+def inner_loop(speed_mode=False):
 
-    slowWriting(f"You wake up in {assign_colour(game.place, 'loc')}, right around {game.time}. You find have a bizarrely good sense of cardinal directions; how odd.")
     places[game.place].visited = True
     places[game.place].first_weather = game.weather
 
-    slowWriting(f"`{game.playername}`, you think to yourself, `is it weird to be in {assign_colour(game.place, 'loc')} at {game.time}, while it's {game.weather}?`")
-    do_print()
-    describe_loc()
+    if not speed_mode:
+        slowWriting(f"You wake up in {assign_colour(game.place, 'loc')}, right around {game.time}. You find have a bizarrely good sense of cardinal directions; how odd.")
+        slowWriting(f"`{game.playername}`, you think to yourself, `is it weird to be in {assign_colour(game.place, 'loc')} at {game.time}, while it's {game.weather}?`")
+        do_print()
+        describe_loc()
 
     test=option("stay", "go", preamble="What do you want to do? Stay here and look around, or go elsewhere?")
     if test in ("stay, look"):
@@ -914,11 +1018,12 @@ def run():
 import os
 def test():
 
+    test_mode=True
     os.system("cls")
     global game
     game = set_up(weirdness=True, bad_language=True, player_name="A")
 
-    player_name = run_tui_intro()
+    player_name = run_tui_intro(play_intro=False)
 
     if player_name:
         game.playername = player_name
@@ -930,19 +1035,10 @@ def test():
     update_infobox(hp_value=game.player["hp"], name=game.playername, carryweight_value=game.carryweight, location=game.place, weather=game.weather, time_of_day=game.time, day=game.day_number)
     add_infobox_data(print_data = True, inventory=game.inventory)
 
-    col_list(game.inventory)
-    slowWriting("[[ Type 'help' for controls and options. ]]")
-    do_print()
-    inner_loop()
-
-
-    loc_data = p_data[game.place]
-
-    choose_direction:str = ""
-    for item in game.cardinals:
-        choose_direction += (assign_colour(item) + " ")
-    choose_direction+=assign_colour("go")
-
+    if not test_mode:
+        slowWriting("[[ Type 'help' for controls and options. ]]")
+        do_print()
+    inner_loop(speed_mode=test_mode)
 
 os.system("cls")
 time.sleep(1)

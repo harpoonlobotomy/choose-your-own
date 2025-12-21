@@ -115,25 +115,6 @@ def update_text_box(to_print, end=False, edit_list=False):
             cleaned_list.append(entry)
         return list(cleaned_list)
 
-    def split_at_space_before(text, max_len):
-        if len(text) <= max_len:
-            return text, ""
-
-        print("This line is too long")
-        print(f"line is {len(line)}. linelength = {linelength}.")
-        print(line)
-        exit()
-        split_pos = text.rfind(" ", 0, max_len)  # find the last space before max_len
-
-        if split_pos == -1: # no space found before cutoff - do a forced split
-            return text[:max_len], text[max_len:]
-
-        linea = "LINETOOLONG" + text[:split_pos]
-        lineb = "    " + text[split_pos + 1:]
-        if lineb.strip() == "":
-            return text, None
-        return linea, lineb
-
 
     def strip_ansi(text):
         return ANSI_RE.sub("", text)
@@ -167,12 +148,10 @@ def update_text_box(to_print, end=False, edit_list=False):
         return text[:real_pos], f"    " + text[real_pos:].lstrip()
 
 
-
-
     def print_list_to_textbox(print_list):
 
         new_print_items = len(print_list)
-
+        duration = .0001
         empty_list = [" "] * len(printable_lines)
         existing_list=None
         for item in print_list:
@@ -189,12 +168,15 @@ def update_text_box(to_print, end=False, edit_list=False):
                     while len(new_print_list) > len(printable_lines):
                         new_print_list.pop(0)
 
-                if i > (len(printable_lines) - new_print_items):
-                    duration = .02
-                else:
-                    duration = .0001
+                #if i > (len(printable_lines) - new_print_items):
+                #    duration = .02
+                #else:
+                #    duration = .0001
 
                 line = new_print_list[i]
+
+                ## What if I always print line pairs together. So, print i, i+1, skip one, repeat, ending with a single line as needed. Might make it less chopping feeling maybe?
+
 
                 #duration=.005
                 sleep(float(duration))

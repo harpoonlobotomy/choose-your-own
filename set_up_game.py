@@ -49,6 +49,9 @@ def loadout(): # for random starting items, game, etc (could be renamed
     #print(f"Paperclip: {paperclip_list}, type: {type(paperclip_list)}")
 
     _, game.inventory = registry.pick_up(paperclip_list[0], game.inventory)
+    _, game.inventory = registry.pick_up(paperclip_list[0], game.inventory)
+    _, game.inventory = registry.pick_up(paperclip_list[0], game.inventory)
+
     _, game.inventory = registry.pick_up(registry.random_from("magazine"), game.inventory)
     game.carryweight = 12
     #print(f"Game inventory after managizine added: {game.inventory}")
@@ -96,7 +99,7 @@ def load_world(relocate=False, rigged=False, new_loc=None):
     rigged = True#False
     rig_place = "a graveyard"
     rig_weather = "perfect"
-    rig_time = "midnight"
+    rig_time = "midday"
 
     if rigged:
         game.time=rig_time

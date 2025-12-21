@@ -18,7 +18,7 @@ from item_management_2 import ItemInstance, registry
 
 
 
-def switch_the(text, replace_with=""): # remember: if specifying the replace_with string, it must end with a space. Might just add that here actually...
+def switch_the(text, replace_with="the"): # remember: if specifying the replace_with string, it must end with a space. Might just add that here actually...
     if isinstance(text, list):
         if len(text) == 1:
             text=text[0]
@@ -39,7 +39,7 @@ def switch_the(text, replace_with=""): # remember: if specifying the replace_wit
             text = text.replace(article, replace_with) # added 'replace with' so I can specify 'the' if needed. Testing.
 
 
-    if replace_with == "" or replace_with == None: # should only trigger if neither article is in the text. This might need testing.
+    if replace_with == "the": ##Changed this so "replace_with=""' should simply remove the 'a/an'.
         text = "the "+ text # so I can add 'the' in front of a string, even if it doesn't start w 'a' or 'an'.
     return text
 
@@ -171,10 +171,10 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
     coloured_text=Colours.c(item, colour, bg, bold=bld, italics=ita, underline=u_line, invert=invt, no_reset=no_reset)
     return coloured_text
 
-def col_list(list:list=[], colour:str=None):
+def col_list(print_list:list=[], colour:str=None):
     coloured_list=[]
 
-    for i, item in enumerate(list):
+    for i, item in enumerate(print_list):
         if not colour:
             coloured_text = assign_colour(item, i)
         else:

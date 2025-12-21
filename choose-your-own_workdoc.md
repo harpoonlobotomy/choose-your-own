@@ -705,3 +705,10 @@ That, /or/, have everything visible but not 'bold', and just bold it when select
 Also I need to fix the name printing.
 
 
+9.49am 18/12/25
+Going to switch the print statements over to the new rich version. Using the ansi>rich converter for now, will make it native later.
+
+Need to read back through this file to see what todos I've forgotten about.
+
+1.48pm Maybe a database for text entries instead of having them in the script itself. Can reuse them for atmosphere maybe.
+

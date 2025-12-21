@@ -239,7 +239,7 @@ def prep_datablocks(text):
     return new_text
 
 
-def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:bool=False):
+def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:bool=False, clear=False):
 
     from layout import get_positions
 
@@ -252,7 +252,7 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
     inv_format=';'.join([str(1), str(33), str(bg_col)])
     inv_col=f"\x1b[{inv_format}m"
 
-    def print_playerdata(part, inv, datablock, speed=.05):
+    def print_playerdata(part, inv, datablock, speed=.05, clear_datablock=False):
 
         item_list = []
 
@@ -267,12 +267,17 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
         i=0
         item=None
         counter = 0
+        #printed_rows = set()
+
         while i < len(item_pos)-1:
             for i, item in enumerate(item_list):
                 pos = item_pos[i]
                 row_base, col_base = pos
                 row = (row_base + top_row)
                 row=row+1
+                #if row not in printed_rows:
+                    #print(f"\033[{int(row)};{left_col}{blank_line}{END}") # blank the line before printing new. Could just blank the whole thing at once instead... Probably better.
+                    #printed_rows.add(row)
                 if part == "playerdata_":
                     if i in [3, 4]:
                         line = []
@@ -281,21 +286,37 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
                                 line.append(f"{stat}   ")
                         item="".join(line)
                 if part == "worldstate_":
-                    counter = 1 ## Adding this here gets 'day' back. Maybe deleted it some time ago but didn't realise? Not sure. The line alignment is weird, plus/minus ones everywhere.
+                    counter = 1
                 print(f"\033[0;0H{END}", end='')
                 title_str = datablock[i + counter]
-                title_str = title_str.replace("*", " ") ## titles only, no real data.
-                title = f'{header_col}{title_str}{END}' ## Will do the same with inventory later, printing it after the concept of 'carrying things in <carrier>' comes up.
-                print(f"\033[{int(row)};{left_col}H{title}")#, end='')
+                title_str = title_str.replace("*", " ")
+                title = f'{header_col}{title_str}{END}'
+                print(f"\033[{int(row)};{left_col}H{title}")
                 sleep(speed)
                 print(f"\033[0;0H{END}", end='')
+
+        #while row < (len(datablock)-2):
+        #    row = row + 1
+        #    print(f"\033[{int(row)};{left_col}{blank_line}{END}")
         return
 
-    def print_inventory(part, inv, datablock, speed=.05):
 
+    def print_inventory(part, inv, datablock, speed=.05, clear_datablock=False):
 
         temp_inv_list = []
         inv_list = []
+
+        datablock=prep_datablocks(datablock) # Want a way to do this accounting for the items in the list. Don't know how to do that yet.
+        if clear_datablock:
+
+            blank_line = datablock[0].replace("*.", "")
+            blank_line = blank_line[2:] #slightly too long so arbitratily cut 2 off. Need to look into why it's the wrong length. Maybe it's printing too far to the right? Need to turn on backgrounds and test
+
+            for i, _ in enumerate(datablock):
+                row=top_row + i + 1
+                print(f"\033[{row};{left_col}H{blank_line}", END, end='')
+            print(f"\033[{row+1};{left_col}H{blank_line}", END, end='') # one extra in case there was overflow. Shouldn't be needed but overflow isn't explicitly protected against yet.
+
         if part == "inv_":
             for item in inv:
                 if item.name in temp_inv_list:
@@ -310,7 +331,6 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
                 item = item.name
             inv_list.append(item)
 
-        datablock=prep_datablocks(datablock) ## Want a way to do this accounting for the items in the list. Don't know how to do that yet.
         inv_pos = get_positions(part, datablock)
 
         if len(inv_list) > len(inv_pos):
@@ -350,12 +370,11 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
             print(f"\033[0;0H{END}")
             r_counter+=1
 
-    if inv != None: ## This is only command_
+    if inv != None:
         if part == "inv_":
-            print_inventory(part, inv, datablock)
+            print_inventory(part, inv, datablock, clear_datablock=clear)
         else:
-            print_playerdata(part, inv, datablock) # playerdata + worldstate both
-
+            print_playerdata(part, inv, datablock)
     else:
         print_command(datablock)
 
@@ -366,11 +385,11 @@ def print_commands(backgrounds=False):
     overprint_part("commands_", datablock, None, backgrounds)
 
 
-def add_infobox_data(print_data:bool = False, backgrounds:bool = False, inventory:list=None, playerdata:tuple=None, worldstate:list=None, ):
+def add_infobox_data(print_data:bool = False, backgrounds:bool = False, inventory:list=None, playerdata:tuple=None, worldstate:list=None, clear_datablock=False):
 
 
     def clean_player_data(playerdata):
-        game_player, carryweight, name = playerdata # still here, just not being used until I can fix it overwriting the HP
+        game_player, carryweight, name = playerdata
         health = game_player.get("hp")
         short_stats = {
             "tired": game_player.get("tired"),
@@ -386,6 +405,7 @@ def add_infobox_data(print_data:bool = False, backgrounds:bool = False, inventor
 
         pd=list((health, name, carryweight, short_stats, long_stats))
         return pd
+
 
     from datablocks import inv_, worldstate_, playerdata_
     player_inv = None
@@ -412,8 +432,9 @@ def add_infobox_data(print_data:bool = False, backgrounds:bool = False, inventor
         datablock = infobox_dict[section].get("datablock")
         inv = infobox_dict[section].get("inv")
         if print_data and inv:
-            overprint_part(part, datablock, inv, backgrounds)
+            overprint_part(part, datablock, inv, backgrounds, clear=clear_datablock)
     return
+
 
 def advance_list(console_text):
     cleaned_list = []
@@ -544,7 +565,7 @@ def print_text_from_bottom_up(input_list:list=None, input_text:str="", get_name=
         print(f"\033[u{'                                                                             '}", end='')
 
 
-def run_tui_intro():
+def run_tui_intro(play_intro=True):
 
     print(HIDE, end='')
     print("\033[s", end='')
@@ -553,7 +574,7 @@ def run_tui_intro():
     coloured_linelist = make_coloured_list(spaced_linelist)
     print_TUI(coloured_linelist)
     player_name=None
-    print_intro=True
+    print_intro=play_intro
     if print_intro:
         from datablocks import intro
         intro = clean_print_block(state, intro)
