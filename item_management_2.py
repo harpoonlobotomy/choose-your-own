@@ -116,7 +116,8 @@ class LootRegistry:
         if location:
             location, cardinal = next(iter(location.items()))
             self.by_location.setdefault(location, {}).setdefault(cardinal, set()).add(inst)
-            print(f"Item location: {inst.id}, {inst.location}")
+            #inst.location = location
+            #print(f"Item location: {inst.id}, {inst.location}")
             #self.by_location.setdefault(location, set()).add(inst.id)
 
 ## original:
@@ -260,9 +261,9 @@ class LootRegistry:
         if old_loc:
             location, cardinal = next(iter(old_loc.items()))
             if location in self.by_location:
-                if location[cardinal] in self.by_location:
+                if cardinal in self.by_location.get(location):
                             ## syntax is wrong here. location is initialised as #self.by_location.setdefault(location, {}).setdefault(cardinal_key, set()).add(inst)
-                    self.by_location[(location, cardinal)].discard(inst)
+                    self.by_location[location][cardinal].discard(inst)
                 if not self.by_location[location][cardinal]:
                     del self.by_location[location][cardinal]
 
@@ -271,6 +272,14 @@ class LootRegistry:
         inst.contained_in = new_container ## 'inventory' should be a container.
 
         if new_location:
+            if not self.by_location.get(place):
+                temp_place = place.replace("a ", "")
+                if not self.by_location.get(temp_place):
+                    print(f"Count not find location {place}, please check.")
+                else:
+                    place = temp_place
+                if not self.by_location.get(place):
+                    self.by_location.setdefault(place, {})#.setdefault(cardinal, set()).add(inst)
             self.by_location[place].setdefault(direction, set()).add(inst)
 
 
@@ -287,8 +296,36 @@ class LootRegistry:
         return self.instances.get(inst_id)
 
     def instances_at(self, place, direction):
+
+#  Well I played myself. Because now it doesn't find the items in 'a city hotel room'.
+#  You're facing east. Against the wall is a large television, sitting between two decent sized windows overlooking the city. The curtains are drawn.
+#  You can look around more, leave, or try to interact with the environment:
+#  north, south, west or leave
+
+        try:
+            location = self.by_category[place]
+
+        except:
+            if not self.by_category.get(place):
+                if "a " in place:
+                    test_place = place.replace("a ", "") # the combo of these should fix all instances of a_/not a naming. If/when I add and 'an' start to a location name, will need to add 'an ' too.
+                    if self.by_category.get(test_place):
+                        place=test_place
+                if not self.by_category.get(place):
+                    if self.by_category.get("a " + place):
+                        test_place = "a " + place
+                        if self.by_category.get(test_place):
+                            place=test_place
+
+                else:
+                    print(f"Location keys: `{self.by_location}`")
+                    if not self.by_category[place]:
+                        print(f"Location {place} has never had an item, so self.by_location fails. For now, just return.")
+                        exit()
+                        return None
+
         if self.by_location[place].get(direction): # check if the direction has been established yet.
-            instance_list = [i for i in self.by_location[place].get(direction)] # if so, check if there are items there.
+            instance_list:list = [i for i in self.by_location[place].get(direction)] # if so, check if there are items there.
             if instance_list:
                 return instance_list
 
@@ -352,7 +389,7 @@ class LootRegistry:
             return None
         return inst.name
 
-    
+
 
     def get_duplicate_details(self, inst, inventory_list):
 

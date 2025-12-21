@@ -61,7 +61,7 @@ If flags(CONTAINER):
 
 
 """
-
+city = "city hotel room" ## better way of doing it, in case I want to change the names of locations later. Ideally, have this centralised somewhere accessible.
 
 item_defs_dict = {
     "glass jar": {"name": "a glass jar with flowers", "description": f"a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.",
@@ -71,9 +71,9 @@ item_defs_dict = {
     "moss": {"name": "a few moss clumps", "description": "a few clumps of mostly green moss.", "flags":[CAN_PICKUP], "special_traits": MOSS_TRAIT, "item_size": A_FEW_MARBLES, "starting_location": {"graveyard": "east"}}, # will dry up after a few days
     "headstone": {"name":"a carved headstone", "description": "a simple stone headstone, engraved with the name `J.W. Harstott`.", "flags":[DIRTY], "starting_location": {"graveyard": "east"}},
     "TV set": {"name": "a television set", "description": "A decent looking TV set, probably a few years old but appears to be well kept. Currently turned off. This model has a built-in DVD.",
-                    "flags":list(), "starting_location": {"city hotel room": "east"}}, # need to be able to add a DVD to this maybe.
+                    "flags":list(), "starting_location": {city: "east"}}, # need to be able to add a DVD to this maybe.
     "window": {"name":"a window", "description":"a window, facing out of the hotel room and down over the street below. Currently closed.", "flags":[CAN_OPEN, FRAGILE],
-                    "starting_location": {"city hotel room": "east"}},
+                    "starting_location": {city:"east"}},
     "carved stick": {"name": "a spiral-carved stick", "description": "a stick, around 3 feet long, with tight spirals carved around the length except for a 'handle' at the thicker end.",
                     "flags":[CAN_PICKUP], "item_size": BIGGER_THAN_BASKETBALL,  "starting_location": {"forked tree branch": "east"}},
     "paperclip": {"name": "a paperclip", "description": "a humble paperclip.", "flags":[DUPE], "item_size": SMALL_FLAT_THINGS, "loot_type": "starting"},

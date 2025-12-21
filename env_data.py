@@ -148,7 +148,7 @@ class place_data:
                 cardinal_actions = leave_options # use the defaults if none.
 
         if dataset[name].get("descrip"):
-            self.overview = f"{dataset[name]["descrip"]}.\n \n{self.n_desc} to the {assign_colour("north")}. To the {assign_colour("east")} is {self.e_desc}, to the {assign_colour("south")} is {self.s_desc}, and to the {assign_colour("west")} is {self.w_desc}."
+            self.overview = f"{dataset[name]["descrip"]}. \n{self.n_desc} to the {assign_colour("north")}. To the {assign_colour("east")} is {self.e_desc}, to the {assign_colour("south")} is {self.s_desc}, and to the {assign_colour("west")} is {self.w_desc}."
         #def get_cardinal_desc()
 
 def placedata_init():

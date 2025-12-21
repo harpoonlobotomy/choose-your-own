@@ -96,15 +96,18 @@ def calc_emotions():
 def load_world(relocate=False, rigged=False, new_loc=None):
 
     from env_data import weatherdict
-    rigged = True#False
-    rig_place = "a graveyard"
+    rigged =True
+    rig_place = "a city hotel room"#"a graveyard"
     rig_weather = "perfect"
     rig_time = "midday"
 
     if rigged:
         game.time=rig_time
-        game.place=rig_place
         game.weather=rig_weather
+        if new_loc:
+            game.place=new_loc
+        else:
+            game.place=rig_place
     else:
         if not relocate:
             game.time = random.choice(choices.time_of_day) ## should only be random at run start, not relocation.
@@ -239,7 +242,7 @@ class game:
         "play_again": False
     }
     inventory = list()
-    inventory_names = list()
+    #inventory_names = list()
     playername = "Test"
     player = {
         "hp": 5,
@@ -258,6 +261,7 @@ class game:
     if player.get("full"):
         #hunger = not player.get("full")
         player.update({"hungry":player.get("hungry")-1})
+
     emotional_summary = None
 
     place = "home"

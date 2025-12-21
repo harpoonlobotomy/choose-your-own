@@ -95,7 +95,18 @@ def update_infobox(hp_value=None, name=None, carryweight_value=None, location=No
         if value != None:
             print_update(value, pos, base_data, alt_colour=is_alt, min_length=min_length)
 
-def update_text_box(to_print, end=False, edit_list=False):
+def update_text_box(to_print, end=False, edit_list=False, use_TUI=True):
+
+    if not use_TUI:
+        if to_print:
+            if isinstance(to_print, list):
+                for item in to_print:
+                    print(item)
+            if isinstance(to_print, str):
+                print(to_print)
+        return
+
+## NOTE: The 'cut line to size' is faulty. See workdoc.
 
     import re
     ANSI_RE = re.compile(r'\x1b\[[0-9;]*m')
@@ -246,6 +257,8 @@ def update_text_box(to_print, end=False, edit_list=False):
                             temp_list.append(piece)
                     else:
                         temp_list.append(item)
+                elif isinstance(item, list):
+                    temp_list = temp_list+item
                 else:
                     temp_list.append(item)
 
@@ -253,8 +266,10 @@ def update_text_box(to_print, end=False, edit_list=False):
         for line in temp_list:
             if len(line) > linelength:
                 linea, lineb = split_coloured_line(line, linelength)
-                #linea, lineb = split_at_space_before(line, linelength)
                 print_list.append(linea)
+                while len(lineb) > linelength:
+                    linea, lineb = split_coloured_line(lineb, linelength)
+                    print_list.append(linea)
                 print_list.append(lineb)
             else:
                 print_list.append(line)

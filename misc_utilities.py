@@ -15,6 +15,58 @@ Yellow for 'interactable' in description text, maybe?
 from item_management_2 import ItemInstance, registry
 
 
+def get_inventory_names(inventory_inst_list):
+
+    inventory_names_list=list()
+    for item in inventory_inst_list:
+        inventory_names_list.append(item.name)
+
+    return inventory_names_list
+
+
+def generate_clean_inventory(inventory_inst_list, will_print = False, coloured = False):
+
+    from tui_update import update_text_box
+
+    inv_list = get_inventory_names(inventory_inst_list)
+    print(f"Inv list: {inv_list}")
+    dupe_items = list()
+    checked = set()
+
+    inventory_names = []
+    for i, item_name in enumerate(inv_list):
+
+        if item_name in inventory_names:
+            if item_name in checked:
+                continue
+            else:
+                checked.add(item_name)
+        else:
+            inventory_names.append(item_name)
+
+    second_checked = set()
+    for inst_name in checked: # because it's a set, should only be one per item
+        dupe_items = (registry.get_duplicate_details(inst_name, inventory_inst_list))
+        if inst_name in second_checked:
+            continue
+        name_index = inventory_names.index(inst_name)
+        inventory_names[name_index] = f"{inst_name} x{len(dupe_items)}"
+        second_checked.add(inst_name)
+
+    if coloured:
+        coloured_list = []
+        for item_name in inventory_names:
+            coloured_list.append(f"    {assign_colour(item_name)}")
+        if will_print:
+            update_text_box(coloured_list)
+
+    elif print:
+        update_text_box(inventory_names)
+
+
+#    registry.inst_to_names_dict There's no point in this, because we can just do inst.name. Bleh.
+
+    return inventory_names
 
 
 
@@ -95,34 +147,25 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
 
     elif isinstance(item, list):
         item=item[0] #arbitrarily take the first one.
-        #print(f"Item was a list. Now: {item}, type: {type(item)}")
 
     def check_instance_col(item):
         if isinstance(item, ItemInstance):
-            #print(f"Item is an instance: {item}")
             entry:ItemInstance = item
 
             if entry and entry.colour != None:
-                #print("Item found.")
-                #print(f"Tex col is not none. {entry.get(colour)}")
                 colour=entry.colour
                 item=item.name
                 bld=True
-            #if game.inv_colours.get(item):
-            #    text_colour = game.inv_colours.get(item)
             else:
-                #print("Text colour is none, assigning based on counter")
                 colour=cardinals[Colours.colour_counter%len(cardinals)]
                 colour=cardinal_cols[colour]
                 Colours.colour_counter += 1
 
-                item_name = registry.name_col(item, colour)
-                item=item_name # can do this inline, just here for now while testing.
+                item=registry.name_col(item, colour) ## applies the colour the inst, so we later have item.colour.
                 bld=True
             return colour, item, bld
 
     if item in cardinals:
-        #print(f"Item is a cardinal: {item}")
         colour=cardinal_cols[item]
         bld=True
 
@@ -130,8 +173,8 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
 
     elif isinstance(item, str) or isinstance(item, ItemInstance):
         if isinstance(item, str):
-            if "(x2)" in item:
-                item_temp = item.replace(" (x2)", "")
+            if " x" in item:
+                item_temp = item.split(" x")[0]
                 item_instance=registry.instances_by_name(item_temp)
                 if item_instance:
                     item_temp=item_instance[0]
@@ -140,8 +183,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
             else:
                 item_instance=registry.instances_by_name(item)
                 if item_instance:
-                    item=item_instance[0] ## breaks as soon as there's more then one item in inventory.
-
+                    item=item_instance[0]
 
         if isinstance(item, ItemInstance):
             colour, item, bld = check_instance_col(item)
@@ -163,7 +205,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
         item=switch_the(item)
 
     if colour == None:
-        print(f"Colour is None. Item: ({item})")
+        print(f"Colour is None. Item: ({item}). Type: ({type(item)})")
 
     if not_bold:
         bld=False
@@ -175,6 +217,8 @@ def col_list(print_list:list=[], colour:str=None):
     coloured_list=[]
 
     for i, item in enumerate(print_list):
+        if item == None:
+            continue
         if not colour:
             coloured_text = assign_colour(item, i)
         else:

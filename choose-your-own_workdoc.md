@@ -712,3 +712,143 @@ Need to read back through this file to see what todos I've forgotten about.
 
 1.48pm Maybe a database for text entries instead of having them in the script itself. Can reuse them for atmosphere maybe.
 
+
+1.15pm 21/12/25
+Haven't been so good with keeping notes here. Lots of git commits though so maybe that's some compensation. And lots of comments inline.
+
+Currently working on the inventory w/ multiple duplicates. Going okay. Need to get myself a clearer outline of what needs doing though. Maybe one of those workboards with tasks so I don't just keep forgetting the things I realise need doing.
+
+
+2.47pm:
+
+# With the weather cloudy, you decide to look around the west of the forked tree branch.
+# You're facing west. There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble.
+# You can look around more, leave, or try to interact with the environment:
+# north, south, east, leave or
+
+
+   The blank after 'or' is new. Means it's including a blank entry, assumedly for 'potential' (the items at that location) because there are no items there, but it never used to create a blank. I thought it already excluded blank entries. Not sure.
+
+3.43 Okay, fixed that, am onto the next thing.
+
+The 'cut to line length' is failing.
+#
+#     |##|         -|  You take a moment to take in your surroundings. You're in a 'budget' hotel room; small but pleasant enough, at least to sleep in. The sound of traffic tells you you're a couple of floors            |-          |##|
+#     |##|         -|      up at least, and the carpet is well-trod.. There's a queen-size bed, simple but clean looking, to the north. To the east is a television and two decent sized windows overlooking the city, to the south is a door, likely to a bathroom,                                                                                                                                                                                            ty, to the south is a door, l
+#  ikely to a bathroom,Pick a direction to investigate, or go elsewhere?                                                                                                                                           ty, to the south is a door, l
+#  ikely to a bathroom,                                                                                                                                                                                            ty, to the south is a door, l
+#  ikely to a bathroom,    north, south, east, west or go elsewhere                                                                                                                                                ty, to the south is a door, l
+#  ikely to a bathroom,                                                                                                                                                                                            ty, to the south is a door, l
+#  ikely to a bathroom, and to the west is the door out of the room, likely to the hallway.
+
+Not exactly sure why it failed yet. Possibly a list within a list?
+
+The call was slowWriting(f"You take a moment to take in your surroundings. {loc_data.overview}") from main.
+
+3.51pm
+hm.
+#   |##|         -|                                                                                                                                                                                                        |-          |##|
+#   |##|         -|    You're facing north. The bed looks nice enough - nothing fancy, but not a disaster either. Two pillows, a spare blanket at the foot of the bed. There's a small bedside drawer to each              |-          |##|
+#   |##|         -|      side, and a painting above the bed.                                                                                                                                                               |-          |##|
+#   |##|         -|
+
+   Worked this time.
+
+Ah.
+
+#
+#   |##|                    INPUT:  Line split: part a: `[A city hotel room]  You're in a 'budget' hotel room; small but pleasant enough, at least to sleep in. The sound of traffic tells you you're a couple of floors up at least, and the carpet`, partb: `    is well-trod.. There's a queen-size bed, simple but clean looking, to the north. To the east is a television and two decent sized windows overlooking the city, to the south is a door, likely to a bathroom, and to the west is the door out of the room, likely to the hallway.`
+#
+
+Because it's not recursive, if it's more than just one split then fails just slightly later. Okay. Shall make it recursively check B.
+
+Okay, fixed now.
+
+3:57pm
+
+ CURRENT LOCATION: a forked tree branch
+ Location does not update when moving.
+
+Also:
+For some reason it's still not printing the items at the hotel room. Thought it'd be fixed but no.
+And to note: It's not the city that's broken. Graveyard also does not show items anymore. So yeah I just broke it today. Will fix it again.
+
+4:13pm Okay fixed it now.
+
+Back to the other thing.
+
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 1005, in test========================================================================================================================================================
+    do_print()______________________________________________________________________________________________________________________________________________________________________________________________________________________________
+    ~~~~~~~~^^
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 928, in inner_loop
+    slowWriting("You decide to look around a while.")
+    ^^^^^^^^^^^^^
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 887, in look_around
+    else:
+        ^
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 823, in look_light
+TypeError: 'NoneType' object is not subscriptable
+
+Trying to select 'window' from
+ You can look around more, leave, or try to interact with the environment:                                                                                                                             |-          |##|
+   |##|         -|                                                                                                                                                                                                        |-          |##|
+   |##|         -|      north, south, west, leave or TV set, window
+
+If you type 'window' it just repeats it self like you entered an invalid value.
+If you type a number, you get the above error.
+#
+#
+#   |##|         -|                                                                                                                                                                                                        |-          |##|
+#   |##|         -|  TV set                                                                                                                                                                                                |-          |##|
+#   |##|         -|  window                                                                                                                                                                                                |-          |##|
+#   |##|         -|                                                                                                                                                                                                        |-          |##|
+#   |##|         -|  You can look around more, leave, or try to interact with the environment:                                                                                                                             |-          |##|
+#   |##|         -|                                                                                                                                                                                                        |-          |##|
+#   |##|         -|      north, south, west, leave or TV set, window                                                                                                                                                       |-          |##|
+#   |##|         -|                                                                                                                                                                                                        |-          |##|
+#   |##|         -|                                                                                                                                                                                                        |-          |##|
+#   |##|         -|                                                                                                                                                                                                        |-          |##|
+#   |##|         -|  Chosen: (tv set)                                                                                                                                                                                      |-          |##|
+#   |##|         -|                                                                                                                                                                                                        |-          |##|
+#   |##|         -|  You can look around more, leave, or try to interact with the environment:                                                                                                                             |-          |##|
+#   |##|         -|                                                                                                                                                                                                        |-          |##|
+#   |##|         -|      north, south, west, leave or TV set, window                                                                                                                                                       |-          |##|
+#   |##|         -|                                                                                                                                                                                                        |-          |##|
+#   |##|         -|                                                                                                                                                                                                        |-          |##|
+#   |##|         -|                                                                                                                                                                                                        |-          |##|
+#   |##|         -|  Chosen: (window)                                                                                                                                                                                      |-          |##|
+#   |##|         -|                                                                                                                                                                                                        |-          |##|
+#   |##|         -|  You can look around more, leave, or try to interact with the environment:                                                                                                                             |-          |##|
+#   |##|         -|                                                                                                                                                                                                        |-          |##|
+#   |##|         -|      north, south, west, leave or TV set, window                                                                                                                                                       |-          |##|
+#   |##|         -|                                                                                                                                                                                                        |-          |##|
+#   |##|         -|                                                                                                                                                                                                        |-          |##|
+#   |##|         -|                                                                                                                                                                                                        |-          |##|
+#   |##|         -|  Chosen: (5)                                                                                                                                                                                           |-          |##|
+#   |##|         -|                                                                                                                                                                                                        |-          |##|
+#   |##|         -|                                                                                                                                                                                                        |-          |##|
+#   |##|          :========================================================================================================================================================================================================:           |##|
+#   |##|                                                                                                                                                                                                                               |##|
+#   |##|                    INPUT:  Traceback (most recent call last):                                                                                                                                                                 |##|
+#  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 1009, in <module>                                                                                                                                               |##|
+#    time.sleep(1)                                                                                                                                                                                                                    /|##|
+#    ^^^^^^----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|##|
+#  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 1005, in test========================================================================================================================================================
+#    do_print()______________________________________________________________________________________________________________________________________________________________________________________________________________________________
+#    ~~~~~~~~^^
+#  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 928, in inner_loop
+#    slowWriting("You decide to look around a while.")
+#    ^^^^^^^^^^^^^
+#  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 887, in look_around
+#    else:
+#        ^
+#  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 823, in look_light
+#  TypeError: 'NoneType' object is not subscriptable
+#
+
+4:30pm Okay.
+Not being able to select the TV is because the actual line is this:
+
+values: [['north', 'south', 'west'], 'leave', ['\x1b[1;31mwindow\x1b[0m', '\x1b[1;34mTV set\x1b[0m']], clean_values: ['north', 'south', 'west', 'leave', '\x1b[1;31mwindow\x1b[0m', '\x1b[1;34mTV set\x1b[0m']
+
+The cardinals work because they only have their colour applied at print, while the other elements get it applied when the list is cleaned.
