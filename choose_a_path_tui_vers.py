@@ -14,7 +14,7 @@ import time
 
 from item_management_2 import ItemInstance, registry
 
-from tui_elements import run_tui_intro
+
 from tui_elements import add_infobox_data, print_commands
 from tui_update import update_infobox, update_text_box
 
@@ -32,7 +32,7 @@ yes = ["y", "yes"]
 no = ["n", "no", "nope"]
 night = ["midnight", "late evening", "night", "pre-dawn"]
 
-enable_tui=False
+enable_tui=True
 
 def slowLines(txt, speed=0.1, end=None, edit=False):
     if isinstance(txt, str) and txt.strip=="":
@@ -40,25 +40,23 @@ def slowLines(txt, speed=0.1, end=None, edit=False):
     update_text_box(to_print=txt, end=False, edit_list=edit, use_TUI=enable_tui)
     update_text_box(to_print="  ", end=False, use_TUI=enable_tui)
 
-def do_input():
-
-    print(SHOW, end='')
-    print("About to hit do_input edit")
-    text=input()
-    print("Just ended text input.")
-    print(HIDE, end='')
-    do_print(edit_list=True)
-    if text == "" or text == None:
-        slowLines(" ")
-        #update_text_box(to_print=[f" "])
-    else:
-        slowLines(f"{assign_colour(f'Chosen: ({text.strip()})', 'yellow')}")
-    return text
-
 def do_print(text=None, end=None, edit_list=False):
     if text==None:
         text=" "
     slowLines(txt=text, speed=0.1, end=end, edit=edit_list)
+
+def do_input():
+
+    print(SHOW, end='')
+    text=input()
+    do_print(f"{HIDE}")
+    if text == "" or text == None:
+        #slowLines(" ")
+        slowLines(" ")
+    else:
+        slowLines(f"{assign_colour(f'Chosen: ({text.strip()})', 'yellow')}")
+    return text
+
 
 def slowWriting(txt, speed=0.001, end=None, edit=False): # Just keeping this here for now as a way to maintain that once, these calls were different from the line prints.
     slowLines(txt, speed, end, edit)
@@ -1034,7 +1032,7 @@ def test():
     game = set_up(weirdness=True, bad_language=True, player_name="A")
 
     if enable_tui:
-
+        from tui_elements import run_tui_intro
         player_name = run_tui_intro(play_intro=False)
 
         if player_name:

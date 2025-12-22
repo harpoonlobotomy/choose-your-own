@@ -1,4 +1,4 @@
-from layout import state
+
 from tui.colours import Colours
 from misc_utilities import assign_colour
 from time import sleep
@@ -66,6 +66,7 @@ def make_coloured_list(input_list:list, title_block=False):
     if title_block:
         spacing=0
     else:
+        from layout import state
         spacing = state.spacing
 
     new_list=[]
@@ -150,55 +151,56 @@ def print_TUI(tui_linelist):
 
 def print_in_text_box(up_lines, text:str="", text_list:list=None, print_console=False, slow_lines=False, slow_char=False):
 
-
     first_row=None
     last_row=None
-    text_block_start_col=(up_lines[0]+3)
-    _, left_textblock_edge = state.text_block_start
-    _, right_textblock_edge = state.text_block_end
-    textblock_width = right_textblock_edge-left_textblock_edge+1
-    printable_lines = state.printable_lines
 
-    if print_console:
-        from rich.console import Console, Control
-        console = Console(record=True)
-        last_line = len(printable_lines)
-        for i, row_no in enumerate(printable_lines):
-            console.control(Control.move_to(x=left_textblock_edge, y=row_no-1))
-            if i == last_line-1:
-                test=text
-            elif text_list and i!=last_line-1:
-                test=text_list[i]
-            else:
-                test = " "
-            if isinstance(text, str):
-                if len(text) < textblock_width:
-                    text = text + (" " * (textblock_width-len(text)))
+    if text or text_list:
+        if print_console:
+            from rich.console import Console, Control
+            console = Console(record=True)
+            last_line = len(printable_lines)
+            for i, row_no in enumerate(printable_lines):
+                console.control(Control.move_to(x=left_textblock_edge, y=row_no-1))
+                if i == last_line-1:
+                    test=text
+                elif text_list and i!=last_line-1:
+                    test=text_list[i]
+                else:
+                    test = " "
+                if isinstance(text, str):
+                    if len(text) < textblock_width:
+                        text = text + (" " * (textblock_width-len(text)))
 
-            if slow_lines:
-                sleep(.08)
-                console.print(test)
-        console_text = console.export_text()
-        return console_text
+                if slow_lines:
+                    sleep(.08)
+                    console.print(test)
+            console_text = console.export_text()
+            return console_text
 
-    if text_list:
-        for i, row_no in enumerate(printable_lines):
+        if text_list:
+            from layout import state
+            text_block_start_col=(up_lines[0]+3)
+            _, left_textblock_edge = state.text_block_start
+            _, right_textblock_edge = state.text_block_end
+            textblock_width = right_textblock_edge-left_textblock_edge+1
+            printable_lines = state.printable_lines
+            for i, row_no in enumerate(printable_lines):
 
-            slow_char=False
-            if slow_char:
-                if len(text_list[i])> 1:
-                    for v, char in enumerate(text_list[i]):
-                        sleep(.0005)
-                        print(f"\033[{int(row_no)};{left_textblock_edge+v}H{char}", end='')
-                        print(f"\033[{row_no};{str(left_textblock_edge)}H{END}")
+                slow_char=False
+                if slow_char:
+                    if len(text_list[i])> 1:
+                        for v, char in enumerate(text_list[i]):
+                            sleep(.0005)
+                            print(f"\033[{int(row_no)};{left_textblock_edge+v}H{char}", end='')
+                            print(f"\033[{row_no};{str(left_textblock_edge)}H{END}")
+                    else:
+                        print(f"\033[{int(row_no)};{left_textblock_edge}H{text_list[i]}", end='')
                 else:
                     print(f"\033[{int(row_no)};{left_textblock_edge}H{text_list[i]}", end='')
-            else:
-                print(f"\033[{int(row_no)};{left_textblock_edge}H{text_list[i]}", end='')
-                sleep(.05)
-                print(f"\033[{row_no};{str(left_textblock_edge)}H{END}")
-        sleep(.2)
-        return text_list
+                    sleep(.05)
+                    print(f"\033[{row_no};{str(left_textblock_edge)}H{END}")
+            sleep(.2)
+            return text_list
 
     import random
     print_once = False
@@ -230,6 +232,7 @@ def print_in_text_box(up_lines, text:str="", text_list:list=None, print_console=
 
 
 def prep_datablocks(text):
+    from layout import state
     new_text=[]
     for line in text:
         if line == "":
@@ -242,6 +245,7 @@ def prep_datablocks(text):
 def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:bool=False, clear=False):
 
     from layout import get_positions
+    from layout import state
 
     bg_col = 40
     if backgrounds:
@@ -502,6 +506,7 @@ def clean_print_block(state, intro_list=None):
 
 def print_output(text="", print_list=None, slow=False, print_to_console=True, by_char=False):
     print(HIDE, end='')
+    from layout import state
     console_text = print_in_text_box(state.up_lines, text, text_list=print_list, print_console=print_to_console, slow_lines=slow, slow_char=by_char)
     if print_to_console:
         print_list = advance_list(console_text)
@@ -523,7 +528,7 @@ def print_text_from_bottom_up(input_list:list=None, input_text:str="", get_name=
             input_str = Colours.c("Please enter your name:  ", "title_white")
         else:
             input_str=Colours.c("INPUT:  ", "title_white")
-
+        from layout import state
         print(f"\033[{state.input_pos}H{input_str}", end='')
         print("\033[s", end="")
         print(HIDE, end='')
@@ -566,7 +571,7 @@ def print_text_from_bottom_up(input_list:list=None, input_text:str="", get_name=
 
 
 def run_tui_intro(play_intro=True):
-
+    from layout import state
     print(HIDE, end='')
     print("\033[s", end='')
     spaced_linelist = state.ui_layout

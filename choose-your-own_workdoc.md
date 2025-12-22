@@ -910,3 +910,10 @@ Type the name of an object to examine it, or hit 'enter' to continue.
 
 
 Hm. Not exactly what I was intending on getting back.
+
+
+10.48 Just lost a chunk of time thinking I'd screwed something up, but turns out I hadn't. Damn.
+
+
+11.11am, 22/12/25
+Going to take a break for a couple of days to work on a birthday present. Will be back on this soon enough.
