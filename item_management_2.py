@@ -11,7 +11,7 @@ class ItemInstance:
     Represents a single item in the game world or player inventory.
     """
 # definition_key, nicename, description, location, contained_in, item_size, primary_category, container_data)
-    def __init__(self, definition_key, container_data, can_pick_up, item_size, attr, counter):
+    def __init__(self, definition_key, container_data, item_size, attr, counter):
 
         #print(f"definition key: {definition_key}, attr:")
         #print(attr)
@@ -28,16 +28,44 @@ class ItemInstance:
         self.location = (attr.get("starting_location") if not attr.get("contained_in") and not (attr.get("starting_location") == None)
         else None)  # starting location or None
         self.colour = None
-        if can_pick_up:
-            self.item_size=item_size
+
+### FLAGS ###
+ #     INITIAL FLAG MANAGEMENT
 
         self.flags = attr["flags"]      # any runtime flags (open/locked/etc)
 
-        if can_pick_up:
+        if "can_pick_up" in self.flags:
+            self.can_pick_up=True
             self.item_size=item_size
             self.started_contained_in = attr.get("contained_in")  # parent instance id if inside a container
             if self.started_contained_in:
                 self.contained_in=self.started_contained_in
+        else:
+            self.can_pick_up=False
+
+        if "can_open" in self.flags:
+            if "starts_open" in self.flags: # currently nothing uses this, but here to allow for it later.
+                self.is_open = True
+            else:
+                self.is_open = False
+
+        if "can_lock" in self.flags:
+            if not "is_unlocked" in self.flags: # like 'starts_open', currently not used but here for later.
+                self.is_locked = True
+            else:
+                self.is_locked = False
+            self.needs_key = attr.get("key")
+
+        if "can_be_charged" in self.flags:
+            if "is_charged" in self.flags:
+                self.is_charged == True
+            else:
+                self.is_charged == False
+
+        if "print_on_investigate" in attr:
+            self.description_detailed = attr.get("print_on_investigate")
+
+###
 
         if container_data:
             description_no_children, name_children_removed, container_limits, starting_children = container_data
@@ -93,16 +121,12 @@ class LootRegistry:
         else:
             primary_category="loot_type"
 
-        if "can_pick_up" in attr["flags"]:
-            can_pick_up=True
-        else:
-            can_pick_up=False
-
         location = attr.get("starting_location")
 
-        inst = ItemInstance(definition_key, container_data, can_pick_up, attr.get("item_size"), attr, counter)#nicename, primary_category, is_container, can_pick_up, description, location, contained_in, item_size, container_data)
+        inst = ItemInstance(definition_key, container_data, attr.get("item_size"), attr, counter)#nicename, primary_category, is_container, can_pick_up, description, location, contained_in, item_size, container_data)
         self.instances[inst.id] = inst
 
+        self.attributes = attr
         # Index by location
         if location:
             location, cardinal = next(iter(location.items()))
@@ -110,26 +134,31 @@ class LootRegistry:
 
         loot_type = attr.get("loot_type")
 
-        if loot_type:
-            self.by_category.setdefault(loot_type, set()).add(inst)
+        if loot_type: # Works with multiple categories now. So, starting loot also has a value. Currently it's always added, it doesn't remove something from the pool just because it was in the starting loot. May need to reevaluate, but functions okay for now.
+            if isinstance(loot_type, list):
+                for option in loot_type:
+                    self.by_category.setdefault(option, set()).add(inst)
+            else:
+                self.by_category.setdefault(loot_type, set()).add(inst)
 
         if container_data:
             self.by_container.setdefault(inst, set())
 
         # if item starts inside container
         if attr.get("started_contained_in"):
-            self.by_counter = {counter:inst}
+            self.by_counter = {counter:inst} # just need to strip the counter thing, it never helped.
 
             parent_name =attr.get("started_contained_in")
             parent_obj_list = self.by_name.get(parent_name)#instances_by_name(self, parent)
             if parent_obj_list:
                 if len(parent_obj_list)==1:
                     for prospective_parent in parent_obj_list:
-                        pros_parent_obj=self.instances.get(prospective_parent.id)
-                        pros_children = pros_parent_obj.starting_children
+                        #print(f"pros_parent_obj: {prospective_parent}")
+                        #pros_parent_obj=self.instances.get(prospective_parent)
+                        pros_children = prospective_parent.starting_children
                         if inst.name in pros_children:
-                            inst.contained_in = pros_parent_obj
-                            self.by_container[pros_parent_obj].add(inst) ## idk if this'll work.
+                            inst.contained_in = prospective_parent
+                            self.by_container[prospective_parent].add(inst) ## idk if this'll work.
                             #for child in pros_children:
                                 #if child ==
                         #if child.id == inst.id:
@@ -137,11 +166,12 @@ class LootRegistry:
                             #print(f"pros_parent_obj.id: {pros_parent_obj.id}")
                             #print(f"Added {inst.id} to parent {prospective_parent}: {self.by_container[prospective_parent]}")
 
+### This section needs work. It's partially done but needs a rework.
 
-                    #parent_id=next(iter(parent_obj_list))
+                    #parent_inst=next(iter(parent_obj_list))
                     #print(f"Parent id (next): {parent_id}, type: {type(parent_id)}")
-                    #inst.contained_in = parent_id
-                    #self.by_container[parent_id].add(inst.id) ## idk if this'll work.
+                    #inst.contained_in = parent_inst
+                    #self.by_container[parent_inst].add(inst) ## idk if this'll work.
                     #print(f"Added {inst} to parent {pros_parent_obj}: {self.by_container[pros_parent_obj]}")
                 else:
                     for prospective_parent in parent_obj_list:
@@ -284,27 +314,35 @@ class LootRegistry:
 
     def instances_at(self, place, direction):
 
-        try:
-            location = self.by_category[place]
-
-        except:
-            if not self.by_category.get(place):
-                if "a " in place:
-                    test_place = place.replace("a ", "") # the combo of these should fix all instances of a_/not a naming. If/when I add and 'an' start to a location name, will need to add 'an ' too.
-                    if self.by_category.get(test_place):
-                        place=test_place
-                if not self.by_category.get(place):
-                    if self.by_category.get("a " + place):
-                        test_place = "a " + place
-                        if self.by_category.get(test_place):
-                            place=test_place
-
-                else:
-                    print(f"Location keys: `{self.by_location}`")
-                    if not self.by_category[place]:
-                        print(f"Location {place} has never had an item, so self.by_location fails. For now, just return.")
-                        exit()
-                        return None
+        #try:
+        #    test = self.by_location[place]
+#
+        #except:
+        #    if not self.by_category.get(place):
+        #        if "a " in place:
+        #            test_place = place.replace("a ", "") # the combo of these should fix all instances of a_/not a naming. If/when I add and 'an' start to a location name, will need to add 'an ' too.
+        #            if self.by_category.get(test_place): ## wait why the fuck is this 'by category'? Why would a place be in a category???? How this this ever get results at all?
+        #                place=test_place
+        #        if not self.by_category.get(place):
+        #            if self.by_category.get("a " + place):
+        #                test_place = "a " + place
+        #                if self.by_category.get(test_place):
+        #                    place=test_place
+#
+        #        else:
+        #            print(f"Location keys: `{self.by_location}`")
+        #            if not self.by_category[place]:
+        #                print(f"Location {place} has never had an item, so self.by_location fails. For now, just return.")
+        #                exit()
+        #                return None
+        location = self.by_location.get(place)
+        if not location:
+            a_place = "a " + place
+            location = self.by_location.get(a_place)
+        if not location:
+            no_a_place = place.split("a ")[1]
+            print(f"no a place: {no_a_place}")
+            location = self.by_location.get(no_a_place)
 
         if self.by_location[place].get(direction): # check if the direction has been established yet.
             instance_list:list = [i for i in self.by_location[place].get(direction)] # if so, check if there are items there.
@@ -429,6 +467,98 @@ class LootRegistry:
 
         ## Note: I don't understand why we use id everywhere instead of instance itself. The first step of almost every function is getting the instance from the id anyway.
         return inst, inventory_list
+
+    def get_actions_for_item(self, inst, inventory_list):
+        from misc_utilities import from_inventory_name
+        from item_definitions import item_actions
+        if isinstance(inst, ItemInstance):
+            inst_name=inst
+        elif isinstance(inst, str):
+            instance = from_inventory_name(inventory_list, inst)
+            if instance:
+                inst_name = instance.name
+            else:
+                print(f"Inst was str but not in inventory: {inst}")
+                exit()
+        else:
+            print(f"No usable item given for get_actions_for_item: `{inst}`, type: {type(inst)}")
+
+        action_options = []
+        for item in item_actions["from_flags"]:
+            if item in inst.flags:
+                if item == "can_read":
+                    action_options.append("read") # can_read is the only one for now. There's really no need to separate contextual vs not...
+                    # Also I should just have a dict that takes 'can_read' and returns 'read' etc. Eh.
+
+        for potential_action in item_actions["contextual_actions"]:
+            if potential_action in inst.flags:
+                if potential_action == "can_pickup":
+                    if inst not in inventory_list:
+                        action_options.append("pick up")
+                    else:
+                        action_options.append("drop")
+                elif potential_action == "can_open":
+                    if potential_action.is_open: ## TODO: Add 'is_open' flag/make sure it's used when item opened/closed
+                        action_options.append("close")
+                    else:
+                        action_options.append("open")
+                elif potential_action == "can_combine":
+                    requires = inst.flags["combine_with"]
+                    print(f"Item {inst.name} requires: {requires}")
+                    print("item management quitting.")
+                    exit()
+                    if requires in inventory_list:
+                        action_options.append(f"combine") ## do I want to have 'combine with {requires}'? Maybe start with that and later allow 'combine x and y'. Don't want to make the decision for them. Maybe two lots of combine. A general combine option to just test things out, and a second one for prescribed combinations (eg dvd player + dvd)
+                elif potential_action == "flammable":
+                    from set_up_game import game
+                    if game.has_fire: # true if have matches or if near fire (which is why I'm not just using the inventory to check for matches etc)
+                        action_options.append("set alight")
+
+            #self.needs_key = attr.get("key")
+                elif potential_action == "can_lock":
+                    if inst.is_locked: ## TODO: add 'unlocked' state to anything that can be locked. Need explicit active flag management.
+                        lock_action = "unlock"
+                    else:
+                        lock_action = "lock"
+                    key = inst.flags["key"]
+                    if key in inventory_list:
+                        action_options.append(lock_action)
+                    else:
+                        print("Locked but no key. Need to figure out how to deal w this. Maybe a few options depending on the item. If it has an obvious lock vs not etc.")
+                elif potential_action == "can_be_charged":
+                    if "is_charged" not in inst.flags:
+                        inst.is_charged = False
+                    else:
+                        inst.is_charged = True
+
+                    if not inst.is_charged:
+                        charger = inst.flags["charger"]
+                        if charger in inventory_list:
+                            action_options.append(charger)
+
+        if "pick up" not in action_options and "drop" not in action_options:
+            if "loot_type" in self.attributes:
+                if inst in inventory_list:
+                    action_options.append("drop")
+                else:
+                    action_options.append("pick up")
+
+        if "print_on_investigate" in inst.flags:
+            action_options.append("investigate closer")
+
+        if self.by_container.get(inst):
+            if hasattr(inst, "children"):
+                print("Has children, apparently.")
+                print(f"inst.children: {inst.children}")
+                print("instances_by_container():", )
+                children = self.instances_by_container(inst)
+                if children:
+                    for child in children:
+                        action_options.append(f"remove {child.name}")
+
+        return action_options
+
+
 
     def drop(self, inst: ItemInstance, location, direction, inventory_list):
         if inst not in inventory_list:

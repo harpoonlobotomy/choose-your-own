@@ -61,7 +61,8 @@ template2 = { # the full layout, not currently in use.
 template = {
     "a graveyard": {},
     "a city hotel room": {},
-    "a forked tree branch": {}
+    "a forked tree branch": {},
+    "a pile of rocks": {}
 }
 
 class Place: # had a lot of help with this part. Barely understand classes yet.

@@ -15,13 +15,24 @@ Yellow for 'interactable' in description text, maybe?
 from item_management_2 import ItemInstance, registry
 
 
-def get_inventory_names(inventory_inst_list):
+def get_inventory_names(inventory_inst_list) -> list:
 
     inventory_names_list=list()
     for item in inventory_inst_list:
         inventory_names_list.append(item.name)
 
     return inventory_names_list
+
+def from_inventory_name(inst_inventory, test) -> ItemInstance: # works now with no_xval_names to reference beforehand.
+
+    cleaned_name = test.split(" x")[0]
+
+    for inst in inst_inventory:
+        if inst.name == cleaned_name:
+            return inst
+
+    print(f"Could not find inst `{inst}` in inst_inventory.")
+    input()
 
 
 def generate_clean_inventory(inventory_inst_list, will_print = False, coloured = False, tui_enabled=True):
@@ -59,7 +70,6 @@ def generate_clean_inventory(inventory_inst_list, will_print = False, coloured =
         coloured_list = []
         coloured_and_spaced = []
         for item_name in inventory_names:
-            print(f"Item name: {item_name}, type: {type(item_name)}")
             coloured_and_spaced.append(f"    {assign_colour(item_name)}")
             coloured_list.append(f"{assign_colour(item_name)}")
         if will_print and tui_enabled:
@@ -228,7 +238,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
     coloured_text=Colours.c(item, colour, bg, bold=bld, italics=ita, underline=u_line, invert=invt, no_reset=no_reset)
     return coloured_text
 
-def col_list(print_list:list=[], colour:str=None):
+def col_list(print_list:list=[], colour:str=None): ## merge this to the above, to it just deals with lists automatically instead of being a separate call.
     coloured_list=[]
 
     for i, item in enumerate(print_list):

@@ -33,8 +33,8 @@ def print_update(value, pos, base_start, alt_colour=False, min_length=2):
     print(f"\033{END}")
 
 
-def update_infobox(hp_value=None, name=None, carryweight_value=None, location=None, weather=None, time_of_day=None, day=None):
-
+def update_infobox(hp_value=None, name=None, carryweight_value=None, location=None, weather=None, t_o_d=None, day=None):
+    time_of_day = t_o_d
     from layout import state
     getattr(state, "playerdata_start")
     playerdata_base = getattr(state, "playerdata_start")

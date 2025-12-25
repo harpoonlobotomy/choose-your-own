@@ -917,3 +917,93 @@ Hm. Not exactly what I was intending on getting back.
 
 11.11am, 22/12/25
 Going to take a break for a couple of days to work on a birthday present. Will be back on this soon enough.
+
+22.13pm 24.12.26
+
+You can look around more, leave, or try to interact with the environment:
+(north, south, west, leave) or TV set, window
+
+Chosen: (window)
+
+ facing out of the hotel room and down over the street below. Currently closed.
+What do you want to do with the window - investigate it, take it, or leave it alone?
+(investigate, take) or leave
+
+I need to take these interactions from the object flags. Take appears if can_pickup, 'open' appears if 'can_open', etc.
+
+
+25/12/25
+
+Working on getting the 'visible objects' to update within the print function, and it's being a pain.
+
+# You're facing east. Against the wall is a large television, sitting between two decent sized windows overlooking the city. The curtains are drawn.
+#
+# TV set
+# window
+#
+# TV set
+# window
+#
+# TV set
+# window
+#
+# INPUT:  Values: [['north', 'south', 'west'], 'leave']
+#
+#
+# formatted: ['\x1b[1;31mnorth\x1b[0m, \x1b[1;34msouth\x1b[0m, \x1b[1;35mwest\x1b[0m', '\x1b[1;34mleave\x1b[0m', '\x1b[1;31mT\x1b[0m, \x1b[1;34mV\x1b[0m, \x1b[1;36m \x1b[0m, \x1b[1;35ms\x1b[0m, \x1b[1;31me\x1b[0m, \x1b[1;34mt\x1b[0m', '\x1b[1;31mw\x1b[0m, \x1b[1;34mi\x1b[0m, \x1b[1;36mn\x1b[0m, \x1b[1;35md\x1b[0m, \x1b[1;31mo\x1b[0m, \x1b[1;34mw\x1b[0m']
+
+It prints the list three times (regardless of the number of items), then the 'formatted' is the (singular) local items, broken into individual letters.
+
+Originally it added each item three times. :/
+
+
+3.25pm
+okay, fixed that. Now a new weirdness.
+
+Went and got the  carved stick from the forked tree. Picked it up. Went to graveyard and dropped it while looking around. All seemed good. Ignored the 'secret'. Then, when it reprints the 'or interact with the environment':
+
+
+   You can look around more, leave, or try to interact with the environment:
+   north, south, west, leave or glass jar, moss, dried flowers, headstone
+
+   test from inventory name: <ItemInstance carved stick (a68327b5-c221-4b91-a84c-1c479e6b71de)>
+
+   Dropped carved stick.
+
+   Load lightened, you decide to carry on.
+
+   [[ Psst. Hey. Type 'secret' for a secret hidden option, otherwise type literally anything else. ]]
+
+   You can look around more, leave, or try to interact with the environment:
+
+   paperclip, paperclip, paperclip, puzzle mag, car keys, paperclip, paperclip, batteries, unlabelled cream, anxiety meds, regional map, fish food, glass jar or moss, carved stick, headstone, glass jar, dried flowers
+
+
+All of a sudden, it's included the inventory as 'values', when I wasn't printing the inventory.
+
+3.36pm It's because I'd given it hardcoded inventory name values. fixed now.
+
+5.02pm
+Hm.
+
+Actions: ['read', 'drop']
+Values: [['read', 'drop']], type: <class 'list'>
+Colour is None. Item: (read). Type: (<class 'str'>)
+values: [['read', 'drop']], formatted: ['\x1b[31mread\x1b[0m']
+    read
+
+So, why is it not formatting the second word. That's unusual.
+
+Trying to implement the 'item actions'. The actions are coming through correctly as values, but then discarded by the formatter?
+
+
+5.21pm
+Okay. Fixed now. The functions aren't perfect but basically it's implemented and more or less printing properly.
+
+Actions available for glass jar:
+
+    drop, remove dried flowers
+
+both drop and remove dried flowers are generated dynamically based on the item flags. idk why it doesn't have the 'or', but I'll fix that part later. Basic idea works, which is nice.
+
+Currently only when the item is named from the inventory after picking it up. Should probably do it before that, when the option to pick up is given at all.

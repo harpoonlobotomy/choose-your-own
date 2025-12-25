@@ -116,9 +116,20 @@ dataset = {
         "west": "There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble.",
         "west_weird": None,
         "west_actions": None
-        ### 'items' should use the same formatting as 'choices' items, it not actually being stored there. Maybe should be stored there though.
-        #location_items maybe? Have to be separate from the random pool. Maybe better to keep here, but then we lose the class-based inventory/descriptions/etc.
-        # Maybe just the names here, then we get anything else from there. Still less ideal, splitting it like that. Maybe should just have it in 'choices' from the beginning...
+
+    },
+    "a pile of rocks": {
+        "descrip": "Pile of rocks.",
+        "inside": False, "electricity": False, "nature": True,
+        "n_desc": "The",
+        "e_desc": "a",
+        "s_desc": "a",
+        "w_desc": "what",
+        "exitwall": "north",
+        "north": "You",
+        "south": "There",
+        "east": "You",
+        "west": "There"
     }
 }
 #"overview": "{descrip}. {n_desc} to the north. To the east is {e_desc}, to the south is {s_desc}, and to the west is {w_desc}."

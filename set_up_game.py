@@ -273,6 +273,8 @@ class game:
     weather = "fine"
     bad_weather = False
 
+    has_fire = False
+
     facing_direction = "north"
 
     currency = choices.currency

@@ -1,6 +1,6 @@
 
 from tui.colours import Colours
-from misc_utilities import assign_colour
+from misc_utilities import assign_colour, generate_clean_inventory
 from time import sleep
 import os
 
@@ -322,18 +322,7 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
             print(f"\033[{row+1};{left_col}H{blank_line}", END, end='') # one extra in case there was overflow. Shouldn't be needed but overflow isn't explicitly protected against yet.
 
         if part == "inv_":
-            for item in inv:
-                if item.name in temp_inv_list:
-                    for i in range(len(temp_inv_list)):
-                        if temp_inv_list[i] == (item.name):
-                            temp_inv_list[i] = str(item.name + " (x2)")
-                else:
-                    temp_inv_list.append(item.name)
-
-        for item in temp_inv_list:
-            if not isinstance(item, str):
-                item = item.name
-            inv_list.append(item)
+            inv_list = inv
 
         inv_pos = get_positions(part, datablock)
 
@@ -351,6 +340,7 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
                 print(f"\033[{int(row)};{col}H{coloured}", end='')
                 sleep(speed)
                 print(f"\033[0;0H{END}")
+
         return
 
     def print_command(datablock, speed=.05):
@@ -376,6 +366,7 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
 
     if inv != None:
         if part == "inv_":
+            inv, _ = generate_clean_inventory(inv)
             print_inventory(part, inv, datablock, clear_datablock=clear)
         else:
             print_playerdata(part, inv, datablock)
