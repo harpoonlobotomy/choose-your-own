@@ -49,6 +49,9 @@ So if container lists 'smaller_than_apple', anything in that category or below i
 
 ####### CONTAINER LIMIT CATEGORIES ############
 
+
+
+
 SMALL_FLAT_THINGS = "small_flat_things"
 A_FEW_MARBLES = 'a_few_marbles'
 SMALLER_THAN_APPLE = 'smaller_than_apple'
@@ -62,6 +65,15 @@ PANACEA = "panacea" # magical item that does exactly what is needed in the given
 TAKES_BATTERIES = "takes_batteries"
 IS_CHARGED = "is_charged"
 CAN_BE_CHARGED = "is_charged"
+
+container_limit_sizes = {
+    SMALL_FLAT_THINGS: 1,
+    A_FEW_MARBLES: 2,
+    SMALLER_THAN_APPLE: 3,
+    PALM_SIZED: 4,
+    SMALLER_THAN_BASKETBALL: 5,
+    BIGGER_THAN_BASKETBALL: 6
+}
 
 ## INVESTIGATE ITEM:
 ## if CAN_READ: [ "print_on_investigate": paper_scrap_details, ]

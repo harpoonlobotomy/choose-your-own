@@ -97,7 +97,7 @@ def load_world(relocate=False, rigged=False, new_loc=None):
 
     from env_data import weatherdict
     rigged =True
-    rig_place = "a city hotel room"#"a graveyard"
+    rig_place = "a graveyard"#"a city hotel room"#
     rig_weather = "perfect"
     rig_time = "midday"
 

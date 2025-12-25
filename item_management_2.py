@@ -13,12 +13,6 @@ class ItemInstance:
 # definition_key, nicename, description, location, contained_in, item_size, primary_category, container_data)
     def __init__(self, definition_key, container_data, item_size, attr, counter):
 
-        #print(f"definition key: {definition_key}, attr:")
-        #print(attr)
-        ##print(definition_key, nicename, primary_category, is_container, can_pick_up, description, location, contained_in, item_size, container_data)
-        #if primary_category == "starting_location": # optional, use name instead of ID number for unique items. Pros and cons. Will probably cut this later.
-        #    self.id = definition_key
-        #else:
         self.id = str(uuid.uuid4())  # unique per instance
         self.name = definition_key
         self.count_val = counter ## just for setup for matching the children to parents. Probably silly.
@@ -99,6 +93,7 @@ class LootRegistry:
         self.by_container = {}
         self.by_counter = {}
         self.inst_to_names_dict = {}
+        self.is_container = True
     # -------------------------
     # Creation / deletion
     # -------------------------
@@ -142,8 +137,10 @@ class LootRegistry:
                 self.by_category.setdefault(loot_type, set()).add(inst)
 
         if container_data:
+            self.is_container=True
             self.by_container.setdefault(inst, set())
-
+        else:
+            self.is_container=False
         # if item starts inside container
         if attr.get("started_contained_in"):
             self.by_counter = {counter:inst} # just need to strip the counter thing, it never helped.
@@ -264,16 +261,24 @@ class LootRegistry:
     # Movement
     # -------------------------
     def move_item(self, inst:ItemInstance, place=None, direction=None, new_container=None):
+        children = None
+        if self.instances_by_container(inst):
+            children = self.instances_by_container(inst)
 
         old_loc = inst.location
         if old_loc:
             location, cardinal = next(iter(old_loc.items()))
             if location in self.by_location:
                 if cardinal in self.by_location.get(location):
-                            ## syntax is wrong here. location is initialised as #self.by_location.setdefault(location, {}).setdefault(cardinal_key, set()).add(inst)
+                    if children:
+                        for child in children:
+                            self.by_location[location][cardinal].discard(child)
+
                     self.by_location[location][cardinal].discard(inst)
-                if not self.by_location[location][cardinal]:
-                    del self.by_location[location][cardinal]
+
+                    if not self.by_location[location][cardinal]:
+                        del self.by_location[location][cardinal]
+
 
         if place != None and direction != None:
             new_location = {place: direction} if place and direction else None
@@ -290,7 +295,23 @@ class LootRegistry:
                         self.by_location.setdefault(place, {})#.setdefault(cardinal, set()).add(inst)
                 self.by_location[place].setdefault(direction, set()).add(inst)
 
-        inst.contained_in = new_container ## 'inventory' should be a container. ## This should remove its container status just because 'new_container' is none by default, so 'move' with zero data added should just remove from container.
+        if hasattr(inst, "contained_in"):
+#        if inst.contained_in:
+            parent = inst.contained_in
+            if parent:
+            # this errored during a random drop, adding the check.
+                self.by_container[parent].remove(inst)
+       #     if children and children is not None:
+       #         for child in children:
+       #             self.by_container[parent].remove(child)
+
+        inst.contained_in = new_container
+        if new_container:
+            self.by_container[new_container].add(inst)
+  #          if children and children is not None:
+  #              for child in children:
+  #                  self.by_container[new_container].add(child) ## Wait no. They should stay in their current container, iths the container itself being moved. So they stay in a container. It makes it recursive to potentially infinity without checks. Need to rework this but just testing as-is.
+  # ## I don't know ## these all get moved separately because child items are shown separately in the location list. If this changes and you only see the contents when they're separated or being investigated, then these should no longer be moved with their parent.
 
         ### TODO:: Use this for location descriptions/items. Currently it's all manual, but I should be able to do a version that takes the listed items and presents them automatically.
 
@@ -301,6 +322,7 @@ class LootRegistry:
         self.move_item(inst)
         inventory.append(inst)
 
+        return inventory
 
 
     # -------------------------
@@ -387,16 +409,31 @@ class LootRegistry:
 
     def describe(self, inst: ItemInstance, caps=False):
 
+        description = inst.description
+        if "container" in inst.flags:
+            print(f"Container in inst.flags: {inst}")
+            children = self.instances_by_container(inst)
+            print(f"children: {children}")
+            if not children:
+                description = inst.description_no_children # works now. If it's a container with no children, it prints this instead.
+                # still need to make it non-binary but that can happen later. This'll do for now.
+
         """Convenience method to return a formatted description."""
         if caps:
-            description = smart_capitalise(inst.description)
-        else:
-            description = inst.description
+            description = smart_capitalise(description)
+
         if description:
             return description
         return "You see nothing special."
 
     def nicename(self, inst: ItemInstance):
+        if "container" in inst.flags:
+            children = self.instances_by_container(inst)
+            if not children:
+                print(f"no children present. name: {inst.name_children_removed}")
+                return inst.name_children_removed
+
+
         if not inst:
             print("[NICENAME] No such item.")
             return None
@@ -451,7 +488,6 @@ class LootRegistry:
             print("Failed to find inst in pick_up.")
 
         if not "can_pick_up" in inst.flags:
-            print("Item cannot be picked up.")
             return None, inventory_list
 
         if inst in inventory_list:
@@ -460,12 +496,16 @@ class LootRegistry:
             attr = get_item_defs(inst.name)
             inst = self.create_instance(inst.name, attr)
 
+        children = self.instances_by_container(inst)
+        if children:
+            for child in children:
+                self.move_item(child, inst) ## adding inst here should keep it in the container.
+                inventory_list.append(child)
 
-        self.move_item(inst, place, direction)
+        self.move_item(inst) # removed place/direction, because surely if we're picking it up, it shouldn't be moved to where we are....
         inventory_list.append(inst)
-        #print("INVENTORY LIST:: ", inventory_list) ## always add the ID, not instance or name, to the inventory. Make it prinable elsewhere.
 
-        ## Note: I don't understand why we use id everywhere instead of instance itself. The first step of almost every function is getting the instance from the id anyway.
+        self.picked_up_from = {place:direction} # just temporarily, not in use yet. Needs formalising how it's going to work.
         return inst, inventory_list
 
     def get_actions_for_item(self, inst, inventory_list):
@@ -546,15 +586,13 @@ class LootRegistry:
         if "print_on_investigate" in inst.flags:
             action_options.append("investigate closer")
 
-        if self.by_container.get(inst):
-            if hasattr(inst, "children"):
-                print("Has children, apparently.")
-                print(f"inst.children: {inst.children}")
-                print("instances_by_container():", )
-                children = self.instances_by_container(inst)
-                if children:
-                    for child in children:
-                        action_options.append(f"remove {child.name}")
+        if "container" in inst.flags:
+            children = self.instances_by_container(inst)
+            if children:
+                for child in children:
+                    action_options.append(f"remove {child.name}")
+
+            action_options.append("add to") # just the option to add something to this container.
 
         return action_options
 

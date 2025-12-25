@@ -1,6 +1,7 @@
 # loot.name_col(item) == adding col to class
 # assign_colour(text) == to print w colour
 
+import item_definitions
 from misc_utilities import assign_colour, col_list, switch_the, generate_clean_inventory, get_inventory_names, from_inventory_name
 from set_up_game import load_world, set_up, init_settings
 from choices import choose, time_of_day, trip_over, emphasis
@@ -11,7 +12,6 @@ from pprint import pprint
 import time
 
 from item_management_2 import ItemInstance, registry
-
 
 from tui_elements import add_infobox_data, print_commands
 from tui_update import update_infobox, update_text_box
@@ -67,40 +67,37 @@ def separate_loot(child_input=None, parent_input=None): ## should be inside regi
     child = None
     parent = None
     for item in (parent_input, child_input):
-        if item:
+        if item and item is not None:
             if isinstance(item, ItemInstance):
+                if item == parent_input:
+                    parent = item
+                else:
+                    child = item
                 continue
             if isinstance(item, str):
-                items = registry.instances_by_name()
+                print(f"item: {item}")
+                items = registry.instances_by_name(item)
+                print(f"items by name: {items}")
                 for inst in game.inventory:
                     if inst in items:
-                        if item == parent:
+                        if item == parent_input:
                             parent=inst
-                        elif item == child:
+                        elif item == child_input:
                             child = inst
-                        break
+                        continue
 
+    print(f"parent: {parent}, child: {child}")
     if parent and not child:
         children = registry.instances_by_container(parent)
         #or
-        children = parent.children # < Seems much more straightforward. Any downside?
-
+        #children = parent.children # < Seems much more straightforward. Any downside?
+        print(f"children: {children}")
         if children:
             for item in children:
-                registry.move_item(inst=item, place=game.place, direction=game.facing_direction, new_container=None)
-                print("Add children to inventory etc")
-                ## TODO: this
+                game.inventory = registry.move_from_container_to_inv(item, game.inventory)
 
     elif child and not parent:
-        parent = child.contained_in
-
-
-    #entry = loc_loot.get_item(item)
-    if item:
-        if item.get('children'):
-            for child in item['children']:
-                game.inventory.append(child)
-                do_print(f"{child} separated from {item}")
+        game.inventory = registry.move_from_container_to_inv(child, game.inventory)
 
 
 def get_items_at_here(print_list=False, return_coloured=True) -> list:
@@ -110,7 +107,16 @@ def get_items_at_here(print_list=False, return_coloured=True) -> list:
     coloured_list = []
     if instance_objs_at:
         for item in instance_objs_at:
-            to_print_list.append(item.name)
+            if "container" in item.flags:
+                children = registry.instances_by_container(item)
+                if not children: # is currently binary, only allows for 'items or not', not if it held multiple. That's just not implemented for descriptions etc yet.
+                    ## TODO: add the 'check for children before outputting name' thing so it happens automatically instead of doing it here.
+                    item_name = item.name_children_removed
+                    to_print_list.append(item_name)
+                else:
+                    to_print_list.append(item.name)
+            else:
+                to_print_list.append(item.name)
         coloured_list = col_list(to_print_list)
 
     if coloured_list:
@@ -120,12 +126,41 @@ def get_items_at_here(print_list=False, return_coloured=True) -> list:
             return coloured_list
     return to_print_list
 
-def do_action(trial):
+def do_action(trial, inst):
 
     do_print(f"Recieved: {trial}")
     do_print("This is a temp function, a place to direct actions of/between objects. Makes sense to have a central director here.")
     do_print("It's not functional yet though. The game will now continue.")
 
+    if "remove " in trial:
+        child = trial.replace("remove ", "")
+        print(f"Child: {child}")
+        separate_loot(child_input=child, parent_input=inst)
+
+    if "add to" in trial:
+        add_x_to = []
+        print("work in progress")
+        container_size = inst.flags("container_limits")
+        container_size = item_definitions.container_limit_sizes[container_size]
+        for item in game.inventory:
+        ## get items in inventory that are small enough to fit (use item_size)
+            item_size = item.flags["item_size"]
+            item_size = item_definitions.container_limit_sizes[item_size]
+            if item_size < container_size:
+                add_x_to.append(item.name)
+        done=False
+        while not done:
+            test = option(add_x_to, print_all=True)
+            if test == "":
+                done=True
+            if test in add_x_to:
+                print(f"Add {test} to {inst.name}") # doesn't do anything yet, just starting.
+
+
+
+        # currently not tracking how 'full' a container is, so implement that and then check against it.
+        # then list any items that would fit and let user choose from that list, and then add that to the container and remove from open inventory. (though currently, open inventory includes in-container items.)
+        ##TODO ooh. I should stop listing child items in the inventory and just have inventory marked with '<item>*' if it contains something (and the something is known about (so not wallet* if we haven't looked in it yet, etc.))
 
 def item_interaction(inst):
     if isinstance(inst, str):
@@ -139,10 +174,10 @@ def item_interaction(inst):
     if not isinstance(inst, ItemInstance):
         print(f"Is not an instance. Something is wrong. `{inst}`, type: {type(inst)}")
 
-    ## This section should be its own function, 'item_interaction'
+
     desc = registry.describe(inst, caps=True)
     if desc and desc != "" and desc != f"[DESCRIBE] No such item: {inst}":
-        slowWriting((f"Description: {assign_colour(desc, "description")}"))
+        slowWriting((f"Description: {assign_colour(desc, "description")}")) #registry.describe(entry, caps=True
     else:
         slowWriting(f"Not much to say about the {inst}.")
     ## TODO: Need to give the options of what an item can do here. And/or elsewhere, but here's a good place to spell out the item-specific options.
@@ -153,7 +188,9 @@ def item_interaction(inst):
         trial = option(actions, print_all=True, preamble=f"Actions available for {inst.name}: ")
         if trial in actions: ## currently this is case sensitive. Need to fix that.
             # TODO: a 'compare input to options' function that deals with case sensitivity. Put it in misc_utilities so it can be used everywhere.
-            do_action(trial)
+            do_action(trial, inst)
+            break
+        if trial == "" or trial is None:
             break
 
     return trial
@@ -177,8 +214,7 @@ def do_inventory():
             do_print("Continuing.")
             break
         if test and (test in inventory_names or test in no_xval_names):
-            while not trial: ## this 'while trial' is pointless. That 'while' is done internally and serves no purpose here.
-                trial = item_interaction(test)
+            item_interaction(test)
         elif test == "drop_done" or test == "done":
             do_print("Continuing.")
             break
@@ -226,6 +262,19 @@ def god_mode():
         if "done" in text or text == "":
             do_print("Returning to game with changes made.")
             break
+
+def instance_name_in_inventory(inst_name):
+
+    item_entry = registry.instances_by_name(inst_name)
+    if item_entry:
+        if isinstance(item_entry, list):
+            for i, entry in enumerate(item_entry):
+                if item_entry[i] not in game.inventory: ## do not consider items already in inventory for pick up.
+                    entry = item_entry[i]
+    if entry:
+        return entry
+    print(f"Did not find entry for {inst_name}")
+    input()
 
 
 def user_input():
@@ -281,10 +330,8 @@ def user_input():
             textparts = " ".join(textparts[0:])
         else:
             textparts = textparts[0]
-        item = registry.instances_by_name(textparts)
+        item = instance_name_in_inventory(textparts)
         if item:
-            item=item[0]
-            #do_print(f"Sending item to drop: {item}") ## always drops the first. This needs to check for dupes too. Maybe do that internally in item_management. Probably better.
             drop_loot(item)
         return "drop_done"
     if text and text.lower() in ("exit", "quit", "stop", "q"):
@@ -353,8 +400,6 @@ def option(*values, no_lookup=None, print_all=False, none_possible=True, preambl
                 if value is not None:
                     if type(value) == str:
                         clean_values.append(value)
-                        #f value.startswith("\\x1b") or value.startswith("\\033"):
-                            #value = value.strip()--- ### TODO: Replace with regex so the values we're selecting from are the uncoloured versions. I don't know why it's colouring them in advance.
                     elif isinstance(value, ItemInstance):
                         clean_values.append(value.name)
                     else:
@@ -368,18 +413,11 @@ def option(*values, no_lookup=None, print_all=False, none_possible=True, preambl
                 for item in temp_values:
                     clean_values.append(item)
 
-        #print(f"values: {values}, clean_values: {clean_values}")
-
         test=user_input()
-        #print(f"test: {test}")
         if test in ("inventory_done", "description_done", "drop_done"):
-            #if test == "drop_done":
-                #inventory_names = get_inventory_names(game.inventory) ## not sure why this is here.
-                #values=game.inventory ## should this be 'inventory_names'? Or should it be here at all? I guess so, so it can clean them from instances. Though that'll break... Yes. Okay I need to do the get_names here so it maintains the proper integrity of multiples etc.
             continue
         if none_possible and test=="":
             return None
-        #print(f"Test: {test}")
         if not test or test == "":
             if test is None: ## wtf is this bit
                 return None
@@ -411,7 +449,6 @@ def option(*values, no_lookup=None, print_all=False, none_possible=True, preambl
                     returning = v
 
             if returning:
-                #print(f"RETURNING: {returning}")
                 return returning
 
         if test == "stay" and  ("stay here" in values or "stay here" in clean_values):
@@ -425,7 +462,6 @@ def option(*values, no_lookup=None, print_all=False, none_possible=True, preambl
             return yes
 
 def roll_risk(rangemin=None, rangemax=None):
-
 
     min = 1
     max = 20
@@ -472,7 +508,6 @@ def outcomes(state, activity):
             dropped = random.choice((game.inventory))
             places[game.place].items.append(dropped)
         item = dropped
-
     return outcome
 
 def drop_loot(named=None, forced_drop=False):
@@ -482,7 +517,6 @@ def drop_loot(named=None, forced_drop=False):
         _, game.inventory = registry.drop(test, switch_the(game.place,replace_with=""), game.facing_direction, game.inventory)
         if enable_tui:
             add_infobox_data(inventory=game.inventory)
-
         return test
 
     inventory_names = get_inventory_names(game.inventory)
@@ -504,7 +538,6 @@ def drop_loot(named=None, forced_drop=False):
 
         if item_test in game.inventory:
             _, game.inventory = registry.drop(test, switch_the(game.place,replace_with=""), game.facing_direction, game.inventory)
-            #do_print(f"test from inventory name: {test}")
             slowWriting(f"Dropped {assign_colour(test)}.")
         else:
             do_print(assign_colour("Error: This item was not found in the inventory.", colour="red"))
@@ -547,19 +580,17 @@ def get_loot(value=None, random=True, named="", message:str=None):
     if named != "" and value == None: # don't add value for location items.
         #do_print(f"Named in get_loot, about to go to pick_up_test: `{named}`, type: {type(named)}")
         if isinstance(named, str):
-            items_list = registry.instances_by_name(named)
-            if isinstance(items_list, list) and len(items_list) == 1: ## it'll be this for anything with a default location. The rest only applies to things that are moved or dropped, really. So I can't test it until 'dropped' adds it to the world in a way this script recognises. So I need to change 'describe location' to use registry.by_location, so it recognises dropped items.
-                item=items_list[0]
-            else:
-                for inst in items_list:
-                    if inst not in game.inventory and (inst.location == None or (inst.location != None and inst.location == {game.place: game.facing_direction})):
-                        ## Does not account for items in containers, which do not have a location but are in a container. So maybe if in container, check if that container is in this location.
+            items_list = registry.instances_by_name()
+            for inst in items_list:
+                if inst != instance_name_in_inventory(named) and (inst.location == None or (inst.location != None and inst.location == {game.place: game.facing_direction})):
+                    ## Does not account for items in containers, which do not have a location but are in a container. So maybe if in container, check if that container is in this location.
+                    item_inst=inst
+                elif inst.contained_in: ## does this need to be hasattr()? Probably.
+                    container = inst.contained_in
+                    if container.location == {game.place: game.facing_direction}: ## don't know if this'll work and it only works for one level of parent depth
                         item_inst=inst
-                    elif inst.contained_in: ## does this need to be hasattr()? Probably.
-                        container = inst.contained_in
-                        if container.location == (game.place, game.facing_direction): ## don't know if this'll work and it only works for one level of parent depth
-                            item_inst=inst
                 if item_inst == None: # if all else fails,
+                    print(f"Failed to find item too much. Defaulting to item[0], {item[0]}")
                     item_inst=item[0]
 
         # not implemented yet but here for safekeeping. Need to have the description printing respond to it.
@@ -567,7 +598,6 @@ def get_loot(value=None, random=True, named="", message:str=None):
             #        dupe_list = registry.get_duplicate_details(item, game.inventory) ## not using this yet but want to remember it exists.
             #        print(f"Dupe list: {dupe_list}")
             #        do_print(f"You have {len(dupe_list)} {item}s.") ### This does work. Not useful here, but works.
-
 
         elif isinstance(named, ItemInstance):
             item = named
@@ -588,14 +618,13 @@ def get_loot(value=None, random=True, named="", message:str=None):
         slowWriting(message)
 
     if item:
-        item_picked_up, game.inventory = registry.pick_up(item, game.inventory, game.place, game.facing_direction) ##
+        item_picked_up, game.inventory = registry.pick_up(item, game.inventory) ##
         if item_picked_up:
-            slowWriting(f"{assign_colour(item)} added to inventory.") ## Doesn't check if a thing can be picked up. This plays even after "Item cannot be picked up.".
+            slowWriting(f"{assign_colour(item)} added to inventory.")
             if enable_tui:
-
-                add_infobox_data(print_data=True, inventory=game.inventory) ### Not sure exactly why but: TODO:: This print didn't add a new one, instead overwriting the previously added item.
-
-    #move_item_any(item)
+                add_infobox_data(print_data=True, inventory=game.inventory)
+        else:
+            do_print(f"Seems you can't pick up {assign_colour(item, switch=True)}")
 
 ### drop random item if inventory full // not sure if I hate this. ###
     if len(game.inventory) > carryweight:
@@ -605,14 +634,13 @@ def get_loot(value=None, random=True, named="", message:str=None):
         if test in ("ignore", "i"):
             slowWriting("Well alright. You're the one in charge...")
 
-            if game.player["encumbered"]: # 50/50 chance to drop something if already encumbered and choose to ignore
+            if game.player["encumbered"]:
                 outcome = roll_risk()
                 if outcome in (1, 2):
-                    #print(f"Forced to drop something.") #TODO: remove this later.
                     dropped_item = drop_loot(forced_drop=True) # force drop something.
                     if enable_tui:
-                        add_infobox_data(print_data=True, inventory=game.inventory) ## TODO: Need to clear this first, otherwise it overwrites in an awful way. Also set a limiter on how many lines it can write on, even if the inventory is more than that.
-                    do_print("You feel a little lighter all of a sudden...") ## does not add the item to the location yet. Have to do that.
+                        add_infobox_data(print_data=True, inventory=game.inventory)
+                    do_print("You feel a little lighter all of a sudden...")
             if len(game.inventory) > game.carryweight:
                 game.player["encumbered"] = True
             else:
@@ -769,7 +797,6 @@ def look_around(status=None):
                     slowWriting("OW! You roll your ankle pretty badly.")
                     if len(game.inventory) < 4:
                         get_loot(1, random=True, message=f"It's only a minor injury, sure, but damn it stings. You did find [item] while facefirst in the middle of [place], though.")
-                        #slowWriting(f"It's only a minor injury, sure, but damn it stings. You did find {item} while facefirst in the middle of {place}, though.") # don't need these two lines. Need to combine them into just the loot message..
                     if game.w_value:
                         ("You see something shimmer slightly off in a bush, but by the time you hobble over, whatever it was has vanished.")
                 if outcome == 2:
@@ -808,9 +835,8 @@ def look_around(status=None):
             do_print("This description hasn't been written yet... It should have some ")
             exit()
         else:
-            do_print(f"\n  You're facing {assign_colour(game.facing_direction)}. {obj}\n") # so it fails to print exclusively if not obj.
+            do_print(f"\n  You're facing {assign_colour(game.facing_direction)}. {obj}\n")
         remainders = list(x for x in game.cardinals if x is not game.facing_direction)
-        #print(f"Directions to look: {remainders}")
 
         potential = get_items_at_here(print_list=False, return_coloured=False) ## I hate that these are alphabetical now instead of their original order. TODO: see if I can fix?
 
@@ -835,43 +861,28 @@ def look_around(status=None):
 
                 obj = getattr(p_data[game.place], game.facing_direction)
                 item_entry = registry.instances_by_name(text)
-
-                item_entry = item_entry[0] ## TODO: Fix this, it's always defaulting to the first one and it shouldn't, will break dupes when they're introduced.
-                #item_entry = registry.get_item(text)
-                #print(f"item entry: {item_entry}")
                 if item_entry:
-                    do_print(f"{registry.describe(item_entry, caps=True)}")
-                    #print("What do you want to do? [Investigate] item, [take] item, [leave] it alone.") # Do I want to list the options like this, or just try to make a megalist of what options may be chosen and work from that?
+                    if isinstance(item_entry, list):
+                        for i, entry in enumerate(item_entry):
+                            if item_entry[i] not in game.inventory: ## do not consider items already in inventory for pick up.
+                                entry = item_entry[i]
+                    elif isinstance(item_entry, ItemInstance):
+                        entry = item_entry
+                    slowWriting((f"Description: {assign_colour(registry.describe(entry, caps=True), "description")}")) #registry.describe
+
                     decision=option("take", "leave", preamble=f"What do you want to do with {assign_colour(text, switch=True)} - take it, or leave it alone?")
+                    if decision == "":
+                        do_print("Leaving it be.")
+                    if decision and decision is not "" and decision is not None:
+                        if decision.lower()=="investigate": ## this deep nesting is an issue. Withdrawing from here gets you all the way to 'relocate'.
+                            do_print("Nothing here yet.")
+                        elif decision.lower()=="take":
+                            picked_up = get_loot(value=None, random=True, named=entry, message=None)
+                            if not picked_up:
+                                do_print(f"Seems you can't take {assign_colour(text, switch=True)} with you.")
 
-                    #print(f"text after decision: {text}")
-                    #decision=user_input()
-                    if decision.lower()=="investigate":
-
-                        do_print("Nothing here yet.")
-                    elif decision.lower()=="take":
-                        #print(f"text in decision lower == take: {text}")
-                            ## Might have to change how I do this. Currently, flowers + jar are listed separately from each other, but when picked up are one unit.
-                            # Maybe I need to rename the glass jar, if children, glass jar with flowers, otherwise just glass jar when they're separated.
-                        picked_up = get_loot(value=None, random=True, named=text, message=None)
-                        if not picked_up:
-                            do_print(f"Seems you can't take {assign_colour(text, switch=True)} with you.")
-                        #if picked_up:
-                        #    if text not in game.inventory:
-                        #        game.inventory.append(text) # doing this here, so the children aren't added, but are part of the main object.
-                        #    #print(f"To set location: {picked_up}, {assign_colour(game.place, 'loc')}, {game.facing_direction}")
-                        #    set_items:list = loc_loot.set_location(picked_up, game.place, game.facing_direction, picked_up=True) ## I'm dong this inside get loot too. Shouldn't need todo this, it's silly. ## also it breaks if inventory isn't in local loot immediately.
-                        #    for item_name in set_items:
-                        #        #print(f"Full list before: {choices.location_loot[game.place][game.facing_direction]}")
-                        #        #print("testing: choices.location_loot[game.place][game.facing_direction].pop(picked_up)")
-                        #        choices.location_loot[game.place][game.facing_direction].pop(item_name)
-                                #print(f"Full list after: {choices.location_loot[game.place][game.facing_direction]}")
-                        #    do_print("[Find the loot taking function that already exists, make sure the item is removed from the list here.]") # does the current loot table allow for 'already picked up'? I don't think it does. Need to do that.
-                    elif decision.lower()=="leave":
-                        do_print(f"You decide to leave the {assign_colour(text)} where you found it.")
-
-
-
+                        elif decision.lower()=="leave":
+                            do_print(f"You decide to leave the {assign_colour(text)} where you found it.")
                 else:
                     do_print(f"No entry in loc_loot for {item_entry}")
             else:

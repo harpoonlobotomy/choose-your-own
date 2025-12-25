@@ -3,18 +3,13 @@
 
 import random
 
-#import misc_utilities
-#from set_up_game import game
-# letters used: y, n, s, g
-
-
 letters_used = ["y", "n", "s", "l", "e" "g"] # should just check 'is the input 1 letter long and that one letter is the first of one of the options
 
 choose = {
     "yes": ["y", "yes"],
     "no": ["n", "no", "nope"],
-    "stay": ["s", "l", "stay", "look", "look around"],
-    "go": ["g", "e", "go", "elsewhere", "leave"] ## added 'leave', remove if it causes issues.
+    "stay": ["s", "stay", "look around"],
+    "go": ["g", "go", "elsewhere", "leave", "go elsewhere"] ## added 'leave', remove if it causes issues.
     }
 
 emphasis={"low": ["rather", "a bit", "somewhat", "quite"],
@@ -34,100 +29,82 @@ items_template = {
 
 currency = random.choice(("dollar", "pound", "yen"))
 paintings = ["a ship in rough seas", "a small farmstead", "a businessman in front of a large window in an office", "a dog, running around in a field of flowers"]
-##
-"""
-LOOT ATTRIBUTES:
-May be getting out of hand. Might need to be dealt with better than this.
-"name": "a glass jar",
-"description": f"a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.",
-"description_no_children": "a glass jar, now empty aside from some bits of debris.",
-"children": "dried flowers",
-"can_pick_up": True},
 
-In addition, added within the class:
-"open" (if status is open or not, default=False)
-#"in_start_location" (not sure about this one. Functions to define if it's been moved from where it started, but idk if that matters.)
-# have changed the above to
-current_location (far more useful - just tracks where the item is now, either 'inventory' or a location. Need to include the cardinal as well as the game.place.)
-"start_location": start_loc
+#location_loot = {
+#    "inventory": {"inventory":{"inventory":[]}},
+#    "a graveyard": {"east": {"glass jar": {"name": "a glass jar with flowers", "description": f"a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.",
+#                "description_no_children": "a glass jar, now empty aside from some bits of debris.", "children": ["dried flowers"], "can_pick_up": True, "name_children_removed":"a glass jar"},
+#                "dried flowers": {"name": "some dried flowers", "description": "a bunch of old flowers, brittle and pale; certainly not as vibrant as you imagine they once were.", "contained_in": "glass jar", "can_pick_up": True},
+#                "moss": {"name": "a few moss clumps", "description": "a few clumps of mostly green moss.", "can_pick_up": True},
+#                "headstone": {"name":"a carved headstone", "description": "a simple stone headstone, engraved with the name `J.W. Harstott`.", "can_pick_up":False}},
+#                    "north": {"north_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
+#                    "west": {"west_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
+#                    "south":{"south_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}}}, # not separated by facing_direction. Should it be?
+#    "a city hotel room": {"east": {"TV set": {"name": "a television set", "description": "A decent looking TV set, probably a few years old but appears to be well kept. Currently turned off. This model has a built-in DVD.", "can_pick_up": False, "can_open":False}, # need to be able to add a DVD to this maybe.
+#                "window": {"name":"a window", "description":"a window, facing out of the hotel room and down over the street below. Currently closed.", "can_pick_up":False, "can_open":True}},
+#                    "north": {"north_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
+#                    "west": {"west_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
+#                    "south":{"south_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}}}, # need to add an open/closed attrib for this...
+#                # do I want the curtains to be separate? We open the curtains, can look, and can open the window separately? Or maybe the window doesn't open, and we can only open the curtains. The latter I think.
+#    "a forked tree branch": {"east": {"carved stick": {"name": "a spiral-carved stick", "description": "a stick, around 3 feet long, with tight spirals carved around the length except for a 'handle' at the thicker end.", "can_pick_up": True}},
+#                    "north": {"north_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
+#                    "west": {"west_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
+#                    "south":{"south_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}}}
+#                }       # heap of placeholders, one per cardinal per location, just for testing. Will add actual data later. Note: location loot doesn't only include objects to collect, also includes specific decor/environmental
+#
 
-                    """
-
-location_loot = {
-    "inventory": {"inventory":{"inventory":[]}},
-    "a graveyard": {"east": {"glass jar": {"name": "a glass jar with flowers", "description": f"a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.",
-                "description_no_children": "a glass jar, now empty aside from some bits of debris.", "children": ["dried flowers"], "can_pick_up": True, "name_children_removed":"a glass jar"},
-                "dried flowers": {"name": "some dried flowers", "description": "a bunch of old flowers, brittle and pale; certainly not as vibrant as you imagine they once were.", "contained_in": "glass jar", "can_pick_up": True},
-                "moss": {"name": "a few moss clumps", "description": "a few clumps of mostly green moss.", "can_pick_up": True},
-                "headstone": {"name":"a carved headstone", "description": "a simple stone headstone, engraved with the name `J.W. Harstott`.", "can_pick_up":False}},
-                    "north": {"north_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
-                    "west": {"west_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
-                    "south":{"south_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}}}, # not separated by facing_direction. Should it be?
-    "a city hotel room": {"east": {"TV set": {"name": "a television set", "description": "A decent looking TV set, probably a few years old but appears to be well kept. Currently turned off. This model has a built-in DVD.", "can_pick_up": False, "can_open":False}, # need to be able to add a DVD to this maybe.
-                "window": {"name":"a window", "description":"a window, facing out of the hotel room and down over the street below. Currently closed.", "can_pick_up":False, "can_open":True}},
-                    "north": {"north_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
-                    "west": {"west_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
-                    "south":{"south_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}}}, # need to add an open/closed attrib for this...
-                # do I want the curtains to be separate? We open the curtains, can look, and can open the window separately? Or maybe the window doesn't open, and we can only open the curtains. The latter I think.
-    "a forked tree branch": {"east": {"carved stick": {"name": "a spiral-carved stick", "description": "a stick, around 3 feet long, with tight spirals carved around the length except for a 'handle' at the thicker end.", "can_pick_up": True}},
-                    "north": {"north_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
-                    "west": {"west_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}},
-                    "south":{"south_object": {"name": None, "description": None, "children": None, "contained_in": None, "can_open":False, "can_pick_up": True}}}
-                }       # heap of placeholders, one per cardinal per location, just for testing. Will add actual data later. Note: location loot doesn't only include objects to collect, also includes specific decor/environmental
-
-
-standard_loot = {
-    "guaranteed": {"paperclip": {"name": "a paperclip", "description": "a humble paperclip."}},
-    "mags": {"puzzle mag": {"name": "a puzzle magazine", "description": "none yet"},
-            "fashion mag": {"name": "a fashion magazine", "description": "none yet"},
-            "gardening mag": {"name": "a gardening magazine", "description": "none yet"},
-            "mail order catalogue": {"name": "a mail order catalogue", "description": "none yet"}
-            },
-    "starting": {"car keys": {"name": "a set of car keys", "description": "none yet"},
-                 "fish food": {"name": "a jar of fish food", "description": "none yet"},
-                 "anxiety meds": {"name": "a bottle of anxiety meds", "description": "none yet"},
-                 "regional map": {"name": "a regional map", "description": "none yet"},
-                 "unlabelled cream": {"name": "an unlabelled cream", "description": "none yet"},
-                 "batteries": {"name": "a set of batteries", "description": "none yet"}
-                 },
-    "minor_loot": {"costume jewellery": {"name": "a bit of costume jewellery", "description": "Pretty but probably not too expensive. Gold metal with dark red gems."},
-                   "plastic bag": {"name": "a sturdy plastic bag", "description": "a used plastic bag from a grocery store. No holes, at least."},
-                   "pretty rock": {"name": "a pretty rock", "description": "A particularly pretty rock. A nice colour and texture, pleasant to hold."},
-                   "damp newspaper": {"name": "a damp newspaper", "description": "A damp newspaper from about a week ago."},
-                  },
-    "medium_loot": {f"5 {currency} note": {"name": f"a 5 {currency} note", "description": "A small amount of legal tender. Could be useful if you find a shop."},
-                 "paper scrap with number": {"name": "a scrap of paper with a phone-number written on it", "description": "A small scrap of torn, off-white paper with a hand-scrawled phone number written on it"}
-                  },
-    "great_loot": {"mobile phone": {"name": "a mobile phone", "description": "A mobile phone. You don't think it's yours. Doesn't seem to have a charge."},
-                 "wallet": {"name": "a wallet, with cash", "description": f"A worn leather wallet with around 30 {currency} inside. No identification or cards."},
-                  },
-    "special_loot": {"the exact thing": {"name": "the exact thing you've been needing", "description": "It's the exact thing you need for the thing you need it for. But only once."}},
-        "weird": {"severed tentacle": {"name": "a severed tentacle", "description":"none yet"}, "second thing": {"other": "next"}
-              }
-    }
+#standard_loot = {
+#    "guaranteed": {"paperclip": {"name": "a paperclip", "description": "a humble paperclip."}},
+#    "mags": {"puzzle mag": {"name": "a puzzle magazine", "description": "none yet"},
+#            "fashion mag": {"name": "a fashion magazine", "description": "none yet"},
+#            "gardening mag": {"name": "a gardening magazine", "description": "none yet"},
+#            "mail order catalogue": {"name": "a mail order catalogue", "description": "none yet"}
+#            },
+#    "starting": {"car keys": {"name": "a set of car keys", "description": "none yet"},
+#                 "fish food": {"name": "a jar of fish food", "description": "none yet"},
+#                 "anxiety meds": {"name": "a bottle of anxiety meds", "description": "none yet"},
+#                 "regional map": {"name": "a regional map", "description": "none yet"},
+#                 "unlabelled cream": {"name": "an unlabelled cream", "description": "none yet"},
+#                 "batteries": {"name": "a set of batteries", "description": "none yet"}
+#                 },
+#    "minor_loot": {"costume jewellery": {"name": "a bit of costume jewellery", "description": "Pretty but probably not too expensive. Gold metal with dark red gems."},
+#                   "plastic bag": {"name": "a sturdy plastic bag", "description": "a used plastic bag from a grocery store. No holes, at least."},
+#                   "pretty rock": {"name": "a pretty rock", "description": "A particularly pretty rock. A nice colour and texture, pleasant to hold."},
+#                   "damp newspaper": {"name": "a damp newspaper", "description": "A damp newspaper from about a week ago."},
+#                  },
+#    "medium_loot": {f"5 {currency} note": {"name": f"a 5 {currency} note", "description": "A small amount of legal tender. Could be useful if you find a shop."},
+#                 "paper scrap with number": {"name": "a scrap of paper with a phone-number written on it", "description": "A small scrap of torn, off-white paper with a hand-scrawled phone number written on it"}
+#                  },
+#    "great_loot": {"mobile phone": {"name": "a mobile phone", "description": "A mobile phone. You don't think it's yours. Doesn't seem to have a charge."},
+#                 "wallet": {"name": "a wallet, with cash", "description": f"A worn leather wallet with around 30 {currency} inside. No identification or cards."},
+#                  },
+#    "special_loot": {"the exact thing": {"name": "the exact thing you've been needing", "description": "It's the exact thing you need for the thing you need it for. But only once."}},
+#        "weird": {"severed tentacle": {"name": "a severed tentacle", "description":"none yet"}, "second thing": {"other": "next"}
+#              }
+#    }
 
 time_of_day = ["pre-dawn", "early morning", "mid-morning", "late morning", "midday", "early afternoon", "late afternoon", "evening", "late evening", "late night", "midnight", "2am"]
 
-starting = ["car keys", "fish food", "anxiety meds", "regional map", "unlabelled cream", "batteries"]
-
-mag = ("puzzle", "fashion", "gardening", "mail order")
-minor_loot = ["a sturdy plastic bag", "a bit of costume jewellery", "a pretty rock", "a damp newspaper"]
-medium_loot = [f"a 5 {currency} note", "a scrap of paper with a phone-number written on it"]
-great_loot = ["a mobile phone", "a wallet, with cash"]
-special_loot = ["the exact thing you've been needing"]
-
-
-weird_minor_loot = ["a sturdy plastic bag", "a bit of costume jewellery", "a cracked carved gem", "a burned book"]
-weird_medium_loot = [f"a unusual 5 {currency} note", "a broken metal mask"]
-weird_great_loot = ["a scroll with illegible writing", "a bloodied wallet, with equally bloodied cash"]
-weird_special_loot = ["the exact thing you've been needing"]
-
-weird_loot_table = {
-    1: weird_minor_loot,
-    2: weird_medium_loot,
-    3: weird_great_loot,
-    4: weird_special_loot
-}
+#starting = ["car keys", "fish food", "anxiety meds", "regional map", "unlabelled cream", "batteries"]
+#
+#mag = ("puzzle", "fashion", "gardening", "mail order")
+#minor_loot = ["a sturdy plastic bag", "a bit of costume jewellery", "a pretty rock", "a damp newspaper"]
+#medium_loot = [f"a 5 {currency} note", "a scrap of paper with a phone-number written on it"]
+#great_loot = ["a mobile phone", "a wallet, with cash"]
+#special_loot = ["the exact thing you've been needing"]
+#
+#
+#weird_minor_loot = ["a sturdy plastic bag", "a bit of costume jewellery", "a cracked carved gem", "a burned book"]
+#weird_medium_loot = [f"a unusual 5 {currency} note", "a broken metal mask"]
+#weird_great_loot = ["a scroll with illegible writing", "a bloodied wallet, with equally bloodied cash"]
+#weird_special_loot = ["the exact thing you've been needing"]
+#
+#weird_loot_table = {
+#    1: weird_minor_loot,
+#    2: weird_medium_loot,
+#    3: weird_great_loot,
+#    4: weird_special_loot
+#}
 
 emotion_table = {
     #"blind": {"weight": 1}, # -1/0 = can see, +1 = blind ## only add later for a reason, don't start with this by default ever
@@ -138,12 +115,12 @@ emotion_table = {
     "encumbered": {"weight": 1} # -1/0 = fine, +1 = encumbered
 }
 
-loot_table = {
-    1: "minor_loot",
-    2: "medium_loot",
-    3: "great_loot",
-    4: "special_loot"
-}
+#loot_table = {
+#    1: "minor_loot",
+#    2: "medium_loot",
+#    3: "great_loot",
+#    4: "special_loot"
+#}
 
 trip_over={"any": ["some poorly lit hazard", "your own feet"],
            "outside": ["a small pile of debris"],
@@ -196,15 +173,6 @@ class LootTable:
             return "can_be_opened"
         else:
             return "cannot_open"
-
-    def random_from(self, selection):
-        """Pick a random item name from a category (int or str)."""
-        if isinstance(selection, int):
-            category = loot_table[selection]
-        else:
-            category = selection
-        items = list(self.by_category.get(category, {}).keys())
-        return random.choice(items) if items else None
 
     def describe(self, name: str, caps=False):
         """Convenience method to return a formatted description."""
@@ -270,17 +238,17 @@ class LootTable:
 
 
 def set_choices():
-    loot = LootTable(standard_loot, name="Standard")
+    #loot = LootTable(standard_loot, name="Standard")
     carrier_size = random.choice((list(carrier_options.keys())))
     carrier_dict = random.choice((carrier_options[carrier_size]))
     for k, v in carrier_dict.items():
         carrier, carryweight = k, v
-    return loot, carrier, carryweight
+    return carrier, carryweight
 
-loot, carrier, carryweight = set_choices()
+carrier, carryweight = set_choices()
 
-def initialise_location_loot():
-    loc_loot=LootTable(location_loot, name="location_loot")
-    return loc_loot
-
-loc_loot=initialise_location_loot()
+#def initialise_location_loot():
+#    loc_loot=LootTable(location_loot, name="location_loot")
+#    return loc_loot
+#
+#loc_loot=initialise_location_loot()
