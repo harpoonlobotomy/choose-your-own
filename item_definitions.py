@@ -191,7 +191,7 @@ def get_item_defs(item_name=None):
                         item_data["current_location"] = None
             description = attr["description"]
             if description == "none yet":
-                attr["description"] = f"It's a {item}"
+                attr["description"] = f"It's {item_data["name"]}"
 
     return item_defs_dict
 

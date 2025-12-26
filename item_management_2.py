@@ -262,10 +262,12 @@ class LootRegistry:
     # -------------------------
     # Movement
     # -------------------------
-    def move_item(self, inst:ItemInstance, place=None, direction=None, new_container=None):
+    def move_item(self, inst:ItemInstance, place=None, direction=None, new_container=None, old_container=None):
         #children = None
         #if self.instances_by_container(inst):
         #    children = self.instances_by_container(inst)
+
+        ## REMOVE FROM ORIGINAL LOCATION ##
 
         old_loc = inst.location
         if old_loc:
@@ -281,8 +283,7 @@ class LootRegistry:
                     if not self.by_location[location][cardinal]:
                         del self.by_location[location][cardinal]
 
-
-        ## I want to add a 'picked up from'. Not implemented yet though.
+        ## MOVE TO NEW LOCATION IF PROVIDED
 
         if place != None and direction != None:
             new_location = {place: direction} if place and direction else None
@@ -299,19 +300,34 @@ class LootRegistry:
                         self.by_location.setdefault(place, {})#.setdefault(cardinal, set()).add(inst)
                 self.by_location[place].setdefault(direction, set()).add(inst)
 
-        if hasattr(inst, "contained_in"):
-#        if inst.contained_in:
-            parent = inst.contained_in
-            if parent:
-            # this errored during a random drop, adding the check.
-                self.by_container[parent].remove(inst)
+
        #     if children and children is not None:
        #         for child in children:
        #             self.by_container[parent].remove(child)
 
-        inst.contained_in = new_container
-        if new_container: ## does not remove from inventory/location here.
-            self.by_container[new_container].add(inst)
+
+        if old_container or new_container:
+            return_text = []
+            if hasattr(inst, "contained_in"): ## if a new container, remove from the old one, then add to the new.
+                if old_container != None:
+                    parent = old_container
+                else:
+                    parent = inst.contained_in
+                if parent:
+                    #print(f"Parent: {parent}")
+                    #print(f"inst: {inst}")
+                    #print("self.by_container[parent]: ", self.by_container[parent])
+                # this errored during a random drop, adding the check.
+                    self.by_container[parent].remove(inst)
+                    inst.contained_in = None
+                    return_text.append((f"Item `[child]` removed from old container `[parent]`", inst, parent))
+                if new_container:
+                    inst.contained_in = new_container
+                    self.by_container[new_container].add(inst)
+                    return_text.append((f"Added [child] to new container [new_container]", inst, new_container))
+            if return_text:
+                return return_text
+#        if inst.contained_in:
   #          if children and children is not None:
   #              for child in children:
   #                  self.by_container[new_container].add(child) ## Wait no. They should stay in their current container, iths the container itself being moved. So they stay in a container. It makes it recursive to potentially infinity without checks. Need to rework this but just testing as-is.
@@ -319,14 +335,15 @@ class LootRegistry:
 
         ### TODO:: Use this for location descriptions/items. Currently it's all manual, but I should be able to do a version that takes the listed items and presents them automatically.
 
-    def move_from_container_to_inv(self, inst:ItemInstance, inventory):
+        ## I want to add a 'picked up from'. Not implemented yet though.
 
-        parent = inst.contained_in
-        self.by_container[parent].remove(inst)
-        self.move_item(inst)
+    def move_from_container_to_inv(self, inst:ItemInstance, inventory:list, parent:ItemInstance=None) -> list:
+
+        if parent == None:
+            parent = inst.contained_in
+        result = self.move_item(inst, old_container=parent)
         inventory.append(inst)
-
-        return inventory
+        return inventory, result
 
 
     # -------------------------
@@ -362,18 +379,18 @@ class LootRegistry:
         #                exit()
         #                return None
         location = self.by_location.get(place)
-        print(f"location by default: location: {location}, raw place: {place}")
+        #print(f"location by default: location: {location}, raw place: {place}")
         if not location:
             no_a_place = place.split("a ")[1]
-            print(f"no a place: {no_a_place}")
+            #print(f"no a place: {no_a_place}")
             location = self.by_location.get(no_a_place)
             if location:
                 place = no_a_place
-            print(f"location from no a place: {location}")
+            #print(f"location from no a place: {location}")
             if not location:
                 a_place = "a " + place
                 location = self.by_location.get(a_place)
-                print(f"Location with a place: {location}, a_place: {a_place}")
+                #print(f"Location with a place: {location}, a_place: {a_place}")
                 if location:
                     place = a_place
 
@@ -422,9 +439,9 @@ class LootRegistry:
 
         description = inst.description
         if "container" in inst.flags:
-            print(f"Container in inst.flags: {inst}")
+            #print(f"Container in inst.flags: {inst}")
             children = self.instances_by_container(inst)
-            print(f"children: {children}")
+            #print(f"children: {children}")
             if not children:
                 description = inst.description_no_children # works now. If it's a container with no children, it prints this instead.
                 # still need to make it non-binary but that can happen later. This'll do for now.
@@ -519,7 +536,8 @@ class LootRegistry:
         self.picked_up_from = {place:direction} # just temporarily, not in use yet. Needs formalising how it's going to work.
         return inst, inventory_list
 
-    def get_actions_for_item(self, inst, inventory_list):
+    def get_actions_for_item(self, inst, inventory_list, has_children=None, has_multiple=None):
+
         from misc_utilities import from_inventory_name
         from item_definitions import item_actions
         if isinstance(inst, ItemInstance):
@@ -597,12 +615,20 @@ class LootRegistry:
         if "print_on_investigate" in inst.flags:
             action_options.append("investigate closer")
 
-        if "container" in inst.flags:
-            children = self.instances_by_container(inst)
-            if children:
-                for child in children:
-                    action_options.append(f"remove {child.name}")
+        children = None
+        if has_children:
+            children = has_children
+        else:
+            #print(f"has_children from sender func: {has_children}") # backup check in case the first isn't included. Streamline it later for less fallback alternatives.
+            if "container" in inst.flags:
+                children = self.instances_by_container(inst)
 
+        if children:
+            #print(f"children after checking inst.flags: {children}")
+            for child in children:
+                action_options.append(f"remove {child.name}")
+
+        if "container" in inst.flags or children != None:
             action_options.append("add to") # just the option to add something to this container.
 
         return action_options
@@ -659,9 +685,6 @@ def get_all_flags():
                     flag_items.add(item)
     print(f"all attr flags: {all_attr_flags}")
     print(f"Flag items: {flag_items}")
-    #(self, definition_key, item_def, nicename=None, description=None, location=None, contained_in=None, item_size=None, is_container=None, container_data=None)
-    ## Just pass through attr here, figure out he details internally. Saves me having to change the func sig 100 times.
-    #registry.create_instance("glass_jar", vase_def, location=("graveyard", "east"))
 
 get_flags=False
 if get_flags:
@@ -672,29 +695,8 @@ def initialise_registry():
     from item_definitions import get_item_defs
     counter=0
     for item_name, attr in get_item_defs().items():
-        registry.create_instance(item_name, attr, counter)#attr["name"], primary_category, is_container, can_pick_up, attr["description"], attr["starting_location"] or None, attr.get("contained_in") or None, attr["item_size"], container_data)
+        registry.create_instance(item_name, attr, counter)
         counter+=1
-
-    #print("FULL by_location:", registry.by_location)
-#
-    #exit()
-    #counter=0
-    #for item_name, attr in get_item_defs().items():
-    #    registry.update_containers(item_name, attr, counter)
-    #    counter+=1
-
-# This section is meant for adding children to containers after all instances are created, but it doesn't work yet.
-   #for item_name, attr in get_item_defs().items():
-   #    for flag in attr["flags"]:
-   #        if flag == "container":
-   #            instance = registry.instances_by_name(item_name)
-   #            for thing in instance:
-   #                #print(f"Thing: {thing}")
-   #                container_instances = registry.instances_by_container(thing.id)
-   #                #print("Container instances: ", container_instances)
-
-    #print("FULL by_container:", registry.by_container)
-    #print("FULL by_category:", registry.by_category)
 
 
 if __name__ == "__main__":

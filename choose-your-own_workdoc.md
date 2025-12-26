@@ -1108,3 +1108,202 @@ dried flowers
 glass jar*
 
 the car keys are now in the glass jar, as indicated by the asterisk. Will fail if you try to access it because I haven't done anything on the next state to deal with said asterisk, but progress. Car keys no longer in inventory, glass jar notes children. It's a start.
+
+2.03pm
+Slowly progressing.
+Trying to get the children to work properly with action_items, to give a list of children to be removed.
+The list is working, but now it fails to find the child in the parent, after finding the child in the parent...
+
+# items by name: [<ItemInstance dried flowers (6db6e4a4-f2f2-41a7-8c9c-791e2ed08c2f)>]
+# parent: <ItemInstance glass jar (605e2705-508a-4281-ae63-3c734b82eb48)>, child: None
+# children: [<ItemInstance dried flowers (6db6e4a4-f2f2-41a7-8c9c-791e2ed08c2f)>]
+# Parent_manual (inst.contained_in): <ItemInstance glass jar (605e2705-508a-4281-ae63-3c734b82eb48)>
+# Parent from external: <ItemInstance glass jar (605e2705-508a-4281-ae63-3c734b82eb48)>
+# Traceback (most recent call last):
+#  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 1104, in <module>
+#    test()
+#    ~~~~^^
+#  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 1100, in test
+#    inner_loop(speed_mode=test_mode)
+#    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+#  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 1011, in inner_loop
+#    look_around()
+#    ~~~~~~~~~~~^^
+#  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 970, in look_around
+#    look_light("skip_intro")
+#    ~~~~~~~~~~^^^^^^^^^^^^^^
+#  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 952, in look_light
+#    relocate()
+#    ~~~~~~~~^^
+#  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 749, in relocate
+#    new_location = option(options, print_all=True, preamble="Please pick your destination:")
+#  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 470, in option
+#    test=user_input()
+#  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 364, in user_input
+#    do_inventory()
+#    ~~~~~~~~~~~~^^
+#  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 271, in do_inventory
+#    item_interaction(test, inventory_names, no_xval_names)
+#    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 244, in item_interaction
+#    do_action(trial, inst)
+#    ~~~~~~~~~^^^^^^^^^^^^^
+#  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 177, in do_action
+#    separate_loot(child_input=child, parent_input=parent)
+#    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 97, in separate_loot
+#    game.inventory = registry.move_from_container_to_inv(item, game.inventory, parent)
+#                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#  File "D:\Git_Repos\choose-your-own\item_management_2.py", line 330, in move_from_container_to_inv
+#    self.move_item(inst)
+#    ~~~~~~~~~~~~~~^^^^^^
+#  File "D:\Git_Repos\choose-your-own\item_management_2.py", line 307, in move_item
+#    self.by_container[parent].remove(inst)
+#    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+#KeyError: <ItemInstance dried flowers (6db6e4a4-f2f2-41a7-8c9c-791e2ed08c2f)>
+
+
+2.13pm Think I fixed that one, it was removing from parent in the 'move_from_container_to_inv' func then trying to do it again in the move_item func. Moved it to only the move_item func, which is called by move_from_container_to_inv anyway.
+
+Now:
+i
+
+
+Chosen: (i)
+
+
+
+INVENTORY:
+
+Traceback (most recent call last):
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 1111, in <module>
+    test()
+    ~~~~^^
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 1107, in test
+    inner_loop(speed_mode=test_mode)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 1018, in inner_loop
+    look_around()
+    ~~~~~~~~~~~^^
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 977, in look_around
+    look_light("skip_intro")
+    ~~~~~~~~~~^^^^^^^^^^^^^^
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 948, in look_light
+    look_light("turning") # run it again, just printing the description of where you turned to.
+    ~~~~~~~~~~^^^^^^^^^^^
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 959, in look_light
+    relocate()
+    ~~~~~~~~^^
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 756, in relocate
+    new_location = option(options, print_all=True, preamble="Please pick your destination:")
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 477, in option
+    test=user_input()
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 371, in user_input
+    do_inventory()
+    ~~~~~~~~~~~~^^
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 264, in do_inventory
+    inventory_names, no_xval_names = generate_clean_inventory(game.inventory, will_print=True, coloured=True, tui_enabled=enable_tui)
+                                     ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Git_Repos\choose-your-own\misc_utilities.py", line 77, in generate_clean_inventory
+    has_parent, child_inst = is_item_in_container(inventory_inst_list, item_name)
+    ^^^^^^^^^^^^^^^^^^^^^^
+TypeError: cannot unpack non-iterable NoneType object
+
+Not have that one before. Not sure how/why it failed. I can see why it returned what it did, if it didn't find a container item
+
+
+2.50pm That issue is solved, but it's still not updating the inventory properly after separating an item. It claims to... but doesn't.
+
+
+Also I just got this error:
+#  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 937, in look_light
+#    relocate()
+#    ~~~~~~~~^^
+#  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 767, in relocate
+#    do_print(places[game.place].same_weather)
+#             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# AttributeError: 'Place' object has no attribute 'same_weather'
+
+which is new...
+
+
+3.03pm
+Okay so back to the item issue.
+
+# Game.inventory after item_interaction: [<ItemInstance severed tentacle (2115f579-33c8-4ecd-b095-05e3f4b99c19)>, <ItemInstance paperclip (15023f68-1856-493d-9ed6-ea1b21618dd6)>, <ItemInstance paperclip (90c17bd7-ae6f-4dae-98a8-e5a2a7186c69)>, <ItemInstance paperclip (5a34c84f-41e2-4eda-a475-019036637731)>, <ItemInstance paperclip (69b75cbe-1889-498d-92c7-5a311be7f253)>, <ItemInstance unlabelled cream (712ac3fe-686f-4d8c-b7f7-74ba3b2f2bf0)>, <ItemInstance car keys (5a5cc69a-b213-421b-972a-c8e9c7e145fb)>, <ItemInstance regional map (fd0dbf0b-1bba-4d50-bbc8-0c353fa19986)>, <ItemInstance paperclip (92e62a35-2992-4a70-9de8-ecd7e2e02311)>, <ItemInstance batteries (566dfbd8-e0b1-4e0e-8e2e-ce48a0afde13)>, <ItemInstance paperclip (b9261437-4671-4187-a83a-053d09c11750)>, <ItemInstance glass jar (2e6a640a-83dd-4871-bdf3-1db3bd7729df)>, <ItemInstance dried flowers (08a80e24-bf1c-4fec-a66c-a007ec20044f)>]
+# severed tentacle
+# paperclip x6
+# unlabelled cream
+# car keys
+# regional map
+# batteries
+# glass jar
+# inventory names: ['severed tentacle', 'paperclip x6', 'unlabelled cream', 'car keys', 'regional map', 'batteries', 'glass jar']
+
+The dried flowers are being added to the inventory as they should. But, they're not being printed in inventory names.
+
+Potential reasons why:
+phantom 'in_container' flag on dried flowers
+old inv list data
+
+# In generate clean inventory: has_parent: <ItemInstance glass jar (cff9d972-f6d2-4b6f-90e2-63e996e93f02)>, child_inst: <ItemInstance dried flowers (70dd1a3f-58a8-4648-a3a8-b1055e249af6)>
+
+Okay, was the first one.
+
+3.09 okay, fixed.
+
+3.41
+So the inventory works nicely now. Automatically updates the status of container objects with ...* if it's holding something, does not add the child to inventory unless separated from parent, dynamically adds <remove <item>> and <add to> options for container objects.
+
+
+4.03pm
+# Item `dried flowers` removed from old container `glass jar`
+#
+# Actions available for glass jar:
+
+TODO: I want to set a colour for item interactions like this. Currently I'm using yellow as I do for descriptions (but currently not bolded) but idk if i like it. The colours are generally pretty bad tbh, I need to set some defaults outside the starting 16 options. Need a proper palette.
+
+But the inventory thing I've been working on today does seem to work properly now.
+
+
+So, next issue:
+
+#  Description: A humble paperclip.
+#
+#  You currently have 5 paperclips
+#
+#  Actions available for paperclip:
+#
+#      drop
+#
+#  drop
+#
+#
+#  Chosen: (drop)
+#
+#  Traceback (most recent call last):
+#    File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 1170, in <module>
+#      test()
+#      ~~~~^^
+#    File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 1166, in test
+#      inner_loop(speed_mode=test_mode)
+#      ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+#    File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 1069, in inner_loop
+#      test=option("stay here", "go elsewhere", preamble="What do you want to do? Stay here and look around, or go elsewhere?")
+#    File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 531, in option
+#      test=user_input()
+#    File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 425, in user_input
+#      do_inventory()
+#      ~~~~~~~~~~~~^^
+#    File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 331, in do_inventory
+#      trial = item_interaction(test, inventory_names, no_xval_names)
+#    File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 300, in item_interaction
+#      actions = registry.get_actions_for_item(inst, game.inventory)
+#    File "D:\Git_Repos\choose-your-own\item_management_2.py", line 610, in get_actions_for_item
+#      if inst in inventory_list:
+#         ^^^^^^^^^^^^^^^^^^^^^^
+#  TypeError: argument of type 'NoneType' is not iterable
+#
+
+
+Oh wait, I know why. I wiped game.inventory accidentally by not finishing the 

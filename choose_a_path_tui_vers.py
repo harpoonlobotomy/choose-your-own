@@ -66,39 +66,83 @@ def separate_loot(child_input=None, parent_input=None): ## should be inside regi
 
     child = None
     parent = None
-    for item in (parent_input, child_input):
-        if item and item is not None:
-            if isinstance(item, ItemInstance):
-                if item == parent_input:
-                    parent = item
-                else:
-                    child = item
-                continue
-            if isinstance(item, str):
-                print(f"item: {item}")
-                items = registry.instances_by_name(item)
-                print(f"items by name: {items}")
-                for inst in game.inventory:
-                    if inst in items:
-                        if item == parent_input:
-                            parent=inst
-                        elif item == child_input:
-                            child = inst
-                        continue
 
-    print(f"parent: {parent}, child: {child}")
+    def clean_separation_result(result, to_print=False):
+
+        if not result:
+            print("No result in clean_separation_result")
+            return
+        if not isinstance(result, list):
+            print(f"Expecting a list of 'result'. Result is type {type(result)}. Contents: {result}")
+            return
+
+        results_len = len(result)
+        for result_set in result:
+            string = result_set[0]
+            split_string = string.split("[")
+            joint_split=[]
+            for item in split_string:
+                if item != "" and item != None:
+                    splits = item.split("]")
+                    for split_item in splits:
+                        if split_item != "" and split_item != None:
+                            joint_split.append(split_item)
+
+            #print(joint_split)
+            child = result_set[1]
+            parent = result_set[2]
+
+            coloured_list = []
+
+            for i, item in enumerate(joint_split):
+                if item == "child":
+                    item = assign_colour(child)#, caps=True)
+                elif item == "parent" or item == "new_container":
+                    item = assign_colour(parent)
+                else:
+                    item = assign_colour(item, colour="yellow")
+
+                coloured_list.append(item)
+            coloured_list = "".join(coloured_list)
+            do_print(coloured_list)
+            #string = assign_colour(item=string, colour="yellow")
+            #string = string.replace(f"[child]", assign_colour(child, caps=True))
+            #string = string.replace("[parent]", assign_colour(parent))
+            #string = string.replace("[new_container]", assign_colour(parent))
+            #string = assign_colour(item="Items separated: ", colour="yellow") + string
+            #do_print(string)
+#        print(f"results len: {results_len}")
+
+
+    #print(f"child_input: {child_input}, parent_input: {parent_input}")
+    if child_input and isinstance(child_input, ItemInstance):
+        child = child_input
+
+    if parent_input and isinstance(parent_input, ItemInstance):
+        parent = parent_input
+
+    #print(f"parent: {parent}, child: {child}")
     if parent and not child:
         children = registry.instances_by_container(parent)
         #or
         #children = parent.children # < Seems much more straightforward. Any downside?
-        print(f"children: {children}")
+        #print(f"children: {children}")
         if children:
             for item in children:
-                game.inventory = registry.move_from_container_to_inv(item, game.inventory)
+                game.inventory, result = registry.move_from_container_to_inv(item, game.inventory, parent)
 
-    elif child and not parent:
-        game.inventory = registry.move_from_container_to_inv(child, game.inventory)
+    else:
+        game.inventory, result = registry.move_from_container_to_inv(child, game.inventory, parent)
 
+
+    clean_separation_result(result, to_print=True)
+    #  return strings:
+#   (f"[child] removed from old container [parent]", inst, parent)
+#   (f"Added [child] to new container [new_container]", inst, new_container)
+
+
+    #print(f"game.inventory: {game.inventory}")
+    return game.inventory, result
 
 def get_items_at_here(print_list=False, return_coloured=True) -> list:
 
@@ -155,23 +199,41 @@ def add_item_to_container(container:ItemInstance):
             if test == "" or test == None:
                 done=True
             if test in inv_list:
-                instance = from_inventory_name(add_x_to, test)
+                instance = from_inventory_name(test, add_x_to)
                 print(f"Add {instance.name} to {container.name}") # doesn't do anything yet, just starting.
                 registry.move_item(instance, new_container=container)
 
 
 def do_action(trial, inst):
 
-    do_print(f"Recieved: {trial}")
-    do_print("This is a temp function, a place to direct actions of/between objects. Makes sense to have a central director here.")
-    do_print("It's not functional yet though. The game will now continue.")
+    #do_print(f"Recieved: {trial}")
 
+    #do_print(f"Inst: {inst}")
     if "remove " in trial:
-        child = trial.replace("remove ", "")
-        print(f"Child: {child}")
-        separate_loot(child_input=child, parent_input=inst)
 
-    if "add to" in trial:
+        if isinstance(inst,str):
+            parent = from_inventory_name(inst)
+
+        elif isinstance(inst,ItemInstance):
+            parent = inst
+        else:
+            parent=None
+
+        child = trial.replace("remove ", "")
+        #print(f"Child to separate from parent in do_action: {child} // parent: {parent}")
+        inventory, result = separate_loot(child_input=child, parent_input=parent)
+
+        #if result:
+        #    do_print(result)
+        return inventory
+       # items by name: [<ItemInstance dried flowers (6db6e4a4-f2f2-41a7-8c9c-791e2ed08c2f)>]
+       # parent: <ItemInstance glass jar (605e2705-508a-4281-ae63-3c734b82eb48)>, child: None
+       # children: [<ItemInstance dried flowers (6db6e4a4-f2f2-41a7-8c9c-791e2ed08c2f)>]
+       # Parent_manual (inst.contained_in): <ItemInstance glass jar (605e2705-508a-4281-ae63-3c734b82eb48)>
+       # Parent from external: <ItemInstance glass jar (605e2705-508a-4281-ae63-3c734b82eb48)>
+
+
+    elif "add to" in trial:
 
         add_item_to_container(inst)
 
@@ -179,34 +241,79 @@ def do_action(trial, inst):
         # then list any items that would fit and let user choose from that list, and then add that to the container and remove from open inventory. (though currently, open inventory includes in-container items.)
         ##TODO ooh. I should stop listing child items in the inventory and just have inventory marked with '<item>*' if it contains something (and the something is known about (so not wallet* if we haven't looked in it yet, etc.))
 
-def item_interaction(inst):
+    elif "drop" in trial:
+        drop_loot(named=inst)
+
+    elif "pick up" in trial:
+        print("Add pick up here, just use the func in registry.")
+
+    else:
+        print(f"No routing found for {trial} for {inst}")
+        exit()
+
+
+def item_interaction(inst:str, inventory_names:list=None, no_xval_names:list=None): # item already in inventory.
+
+# inventory_names, no_xval_names = generate_clean_inventory
+
     if isinstance(inst, str):
-        test=from_inventory_name(game.inventory, inst)
+        test=from_inventory_name(inst, game.inventory)
         if test:
             inst=test
         else:
             test = registry.instances_by_name(inst)[0]
             if test:
                 inst=test
+
     if not isinstance(inst, ItemInstance):
         print(f"Is not an instance. Something is wrong. `{inst}`, type: {type(inst)}")
-
+        exit()
 
     desc = registry.describe(inst, caps=True)
     if desc and desc != "" and desc != f"[DESCRIBE] No such item: {inst}":
         slowWriting((f"Description: {assign_colour(desc, "description")}")) #registry.describe(entry, caps=True
     else:
         slowWriting(f"Not much to say about the {inst}.")
-    ## TODO: Need to give the options of what an item can do here. And/or elsewhere, but here's a good place to spell out the item-specific options.
 
-    actions = registry.get_actions_for_item(inst, game.inventory)
-    trial = None
+    children_val = False
+    multiple_val = False
+
+    if inventory_names != None and no_xval_names != None:
+        special_names = list(set(inventory_names) - set(no_xval_names)) ## this works. Gives me just the special ones.
+
+        for item in special_names:
+            if "*" in item:
+                item_name = item.replace("*","")
+                test_inst = from_inventory_name(item_name, game.inventory)
+                if test_inst == inst: ## there is a better way of doing it than this but it should do for now, else it prints for any special item whether it was selected or not.
+                    children = registry.instances_by_container(inst)
+                    #coloured_list = col_list(children)
+                    #do_print(f"{switch_the(inst.name)} contains {children}")
+                    children_val=children
+            if " x" in item:
+                item_name, x_val = item.split()
+                if item_name == inst.name:
+                    x_val = x_val.replace("x","")
+                    do_print(f"You currently have {x_val} {item_name}s") # hardcoded simple plural, will upgrade it later.
+                    multiple_val = x_val
+
+    ### TODO: Possibly if >1 (or >2) children, make the action 'remove item', with submenu of children, instead of a big long list. Not necessary at this point at all but worth thinking about.
+
+    #has_children=False, has_multiple=False
+    actions = registry.get_actions_for_item(inst, game.inventory, has_children=children_val, has_multiple=multiple_val)
+
     while True:
-        trial = option(actions, print_all=True, preamble=f"Actions available for {inst.name}: ")
+        trial = None
+        trial = option(actions, print_all=True, preamble=f"{assign_colour("Actions available for ", "yellow")}{assign_colour(inst)}: ")
         if trial in actions: ## currently this is case sensitive. Need to fix that.
             # TODO: a 'compare input to options' function that deals with case sensitivity. Put it in misc_utilities so it can be used everywhere.
-            do_action(trial, inst)
-            break
+            test_inventory = do_action(trial, inst) ## added so I don't accidentally wipe game.inventory if something fails.
+            if test_inventory != None:
+                game.inventory = test_inventory
+            actions = registry.get_actions_for_item(inst, game.inventory)
+            #print(f"Actions after taking action: {actions}")
+            #print(f"inventory after taking action: {game.inventory}")
+
         if trial == "" or trial is None:
             break
 
@@ -215,23 +322,27 @@ def item_interaction(inst):
 
 def do_inventory():
     done=False
-    trial = False
     slowWriting("INVENTORY: ")
     while done == False:
-        test_raw=None
         test=None
+        inventory_names = no_xval_names = None
         inventory_names, no_xval_names = generate_clean_inventory(game.inventory, will_print=True, coloured=True, tui_enabled=enable_tui)
+        #print(f"inventory names: {inventory_names}")
         do_print(" ")
         do_print("Type the name of an object to examine it, or hit 'enter' to continue.")
 
-        test_raw=user_input()
-        if test_raw:
-            test = test_raw.split(" x")[0]
+        test=user_input()
+        #if test_raw:
+        #    test = test_raw.split(" x")[0] ## test raw is doing nothing because these extra bits are never typed. ffs.
+        #    test = test_raw.replace("*","")
+        #    print(f"test: {test}")
+        #    print(f"test_raw: {test_raw}")
         if not test or test=="" or test==None:
             do_print("Continuing.")
             break
         if test and (test in inventory_names or test in no_xval_names):
-            item_interaction(test)
+            trial = item_interaction(test, inventory_names, no_xval_names)
+            #print(f"Game.inventory after item_interaction: {game.inventory}")
         elif test == "drop_done" or test == "done":
             do_print("Continuing.")
             break
@@ -364,7 +475,7 @@ def option(*values, no_lookup=None, print_all=False, none_possible=True, preambl
 
     values = [v for v in values if v is not None]
     option_chosen = False
-    print(f"Values: {values}, type: {type(values)}")
+    #print(f"Values: {values}, type: {type(values)}")
 
     def get_formatted(values):
         if inventory:
@@ -536,7 +647,7 @@ def drop_loot(named=None, forced_drop=False):
             add_infobox_data(inventory=game.inventory)
         return test
 
-    inventory_names, no_x_val_list = generate_clean_inventory()
+    inventory_names, no_x_val_list = generate_clean_inventory(game.inventory, tui_enabled=enable_tui)
     #inventory_names = get_inventory_names(game.inventory)
 
     if named:
@@ -546,16 +657,18 @@ def drop_loot(named=None, forced_drop=False):
             slowWriting("You don't have anything to drop!")
             return
         test = option(inventory_names, print_all=True, preamble="[Type the name of the object you want to leave behind]", inventory=True)
-
-    if test in inventory_names:
+    inst_test=None
+    if isinstance(test, ItemInstance):
+        inst_test = test
+    elif test in inventory_names:
         do_print(f"Test in inventory names: {test}")
         inst_test=from_inventory_name(test)
 
-        if inst_test:
-            _, game.inventory = registry.drop(test, switch_the(game.place,replace_with=""), game.facing_direction, game.inventory)
-            slowWriting(f"Dropped {assign_colour(test)}.")
-        else:
-            do_print(assign_colour("Error: This item was not found in the inventory.", colour="red"))
+    if inst_test:
+        _, game.inventory = registry.drop(test, switch_the(game.place,replace_with=""), game.facing_direction, game.inventory)
+        slowWriting(f"Dropped {assign_colour(test)}.")
+    else:
+        do_print(assign_colour("Error: This item was not found in the inventory.", colour="red"))
 
     if enable_tui:
         add_infobox_data(print_data=True, inventory=game.inventory, clear_datablock=True)
@@ -725,7 +838,7 @@ def relocate(need_sleep=None):
         if places[game.place].visited:
             slowWriting(f"You've been here before... It was {places[game.place].first_weather} the first time you came.")
             if places[game.place].first_weather == game.weather:
-                do_print(places[game.place].same_weather)
+                do_print(weatherdict[game.place].same_weather)
         else:
             places[game.place].visited = True # maybe a counter instead of a bool. Maybe returning x times means something. No idea what. Probably not.
             places[game.place].first_weather = current_weather
@@ -784,11 +897,12 @@ def the_nighttime():
     slowWriting("And/or wild animals if sleeping outside, and/or people, and/or ghosts/monster vibes if weird.")
     new_day()
 
-def location_item_interaction(item_name):
+def location_item_interaction(item_name, local_items=None):
 
     item_entry = registry.instances_by_name(item_name)
     if item_entry:
-        local_items = registry.instances_at(game.place, game.facing_direction)
+        if local_items==None:
+            local_items = registry.instances_at(game.place, game.facing_direction)
         for item in item_entry:
             if item in local_items and item not in game.inventory:
                 ### TODO: and item not in container that is in inventory
@@ -1051,6 +1165,11 @@ def test():
         update_infobox(hp_value=game.player["hp"], name=game.playername, carryweight_value=game.carryweight, location=game.place, weather=game.weather, t_o_d=game.time, day=game.day_number)
 
         add_infobox_data(print_data = True, inventory=game.inventory)
+
+    ## have it picked up already.
+    game.carryweight += 5
+    inst = registry.instances_by_name("glass jar")
+    _, game.inventory = registry.pick_up(inst, game.inventory)
 
     #for _ in range(10):
     #    add_rocks()

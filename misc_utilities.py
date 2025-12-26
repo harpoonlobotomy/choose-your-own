@@ -15,6 +15,10 @@ Yellow for 'interactable' in description text, maybe?
 from item_management_2 import ItemInstance, registry
 
 
+def smart_capitalise(s: str) -> str:
+    return s[0].upper() + s[1:] if s else s
+
+
 def get_inventory_names(inventory_inst_list) -> list:
 
     inventory_names_list=list()
@@ -23,9 +27,13 @@ def get_inventory_names(inventory_inst_list) -> list:
 
     return inventory_names_list
 
-def from_inventory_name(inst_inventory:list, test:str) -> ItemInstance: # works now with no_xval_names to reference beforehand.
+def from_inventory_name(test:str, inst_inventory:list=None) -> ItemInstance: # works now with no_xval_names to reference beforehand.
+    if inst_inventory == None:
+        from set_up_game import game ## might break
+        inst_inventory = game.inventory
 
     cleaned_name = test.split(" x")[0]
+    cleaned_name = test.replace("*", "")
 
     for inst in inst_inventory:
         if inst.name == cleaned_name:
@@ -40,7 +48,7 @@ def is_item_in_container(inventory_list, item):
     if isinstance(item, ItemInstance):
         inst = item
     elif isinstance(item, str):
-        inst = from_inventory_name(inventory_list, item)
+        inst = from_inventory_name(item, inventory_list)
 
     if inst == None:
         print(f"Failed to get instance for {item}, type: {type(item)}")
@@ -48,7 +56,7 @@ def is_item_in_container(inventory_list, item):
     if hasattr(inst, "contained_in"):
         container = inst.contained_in
         return container, inst
-
+    return None, None
 
 def generate_clean_inventory(inventory_inst_list, will_print = False, coloured = False, tui_enabled=True):
 
@@ -71,13 +79,14 @@ def generate_clean_inventory(inventory_inst_list, will_print = False, coloured =
         else:
             # check if it's a child:
             has_parent, child_inst = is_item_in_container(inventory_inst_list, item_name)
+            #print(f"In generate clean inventory: has_parent: {has_parent}, child_inst: {child_inst}")
             if not has_parent:
                 # check if it's a parent:
-                inst = from_inventory_name(inventory_inst_list, item_name)
+                inst = from_inventory_name(item_name, inventory_inst_list)
                 children = registry.instances_by_container(inst)
                 if children:
                     inventory_names.append(item_name+"*") ## add to inventory with asterisk if has children inside.
-                    no_xval_inventory_names.append(item_name+"*")
+                    no_xval_inventory_names.append(item_name) ## this one stays clean for input reference
                 else:
                     inventory_names.append(item_name) ## add to inventory if item does not have a parent(container)
                     no_xval_inventory_names.append(item_name)
@@ -142,7 +151,7 @@ cardinal_cols = {
     "west": "magenta"
 }
 
-def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=False, not_bold=False):
+def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=False, not_bold=False, caps=False):
 
     from tui.colours import Colours
 
@@ -209,7 +218,6 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
         bld=True
 
 
-
     elif isinstance(item, str) or isinstance(item, ItemInstance):
         if isinstance(item, str):
             if " x" in item:
@@ -219,6 +227,11 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
                     item_reduced=item_instances[0]
                     colour, _, bld = check_instance_col(item_reduced)
 
+            elif "*" in item:
+                item_temp = item.replace("*", "")
+                item_instance = from_inventory_name(item_temp, None)
+                if item_instance:
+                    colour, _, bld = check_instance_col(item_instance)
             else:
                 item_instances=registry.instances_by_name(item)
                 if item_instances:
@@ -243,6 +256,8 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
         item=nicename
     if switch:
         item=switch_the(item)
+    if caps:
+        item = smart_capitalise(item)
 
     if colour == None:
         print(f"Colour is None. Item: ({item}). Type: ({type(item)})")
