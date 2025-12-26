@@ -1007,3 +1007,89 @@ Actions available for glass jar:
 both drop and remove dried flowers are generated dynamically based on the item flags. idk why it doesn't have the 'or', but I'll fix that part later. Basic idea works, which is nice.
 
 Currently only when the item is named from the inventory after picking it up. Should probably do it before that, when the option to pick up is given at all.
+
+
+11.38am 26/12/25
+
+
+    north, south, west, leave or moss, glass jar, dried flowers, headstone
+
+g
+
+
+Chosen: (g)
+
+Container in inst.flags: <ItemInstance glass jar (05b758d6-2c8a-4068-ae64-80790f6d38dc)>
+children: [<ItemInstance dried flowers (4e29c044-cdad-416c-b765-8ec429abddeb)>]
+Description: A glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.
+
+Values: ['take', 'leave'], type: <class 'list'>
+What do you want to do with the glass jar - take it, or leave it alone?
+
+    take or leave
+
+t
+
+
+Chosen: (t)
+
+glass jar added to inventory.
+
+
+
+no children present. name: a glass jar
+Values: ['drop', 'ignore'], type: <class 'list'>
+It looks like you're already carrying too much. If you want to pick up the glass jar, you might need to drop something - or you can try to carry it all.
+
+    drop or ignore
+
+ignore
+
+
+Chosen: (ignore)
+
+Well alright. You're the one in charge...
+
+You feel a little lighter all of a sudden...
+
+
+... [returned to graveyard]
+
+Values: [['north', 'south', 'west'], 'leave'], type: <class 'list'>
+You can look around more, leave, or try to interact with the environment:
+
+    north, south, west, leave or moss, a glass jar, headstone
+
+glass jar
+
+Chosen: (glass jar)
+
+No entry in loc_loot for None
+
+So, when dropped it uses the name, not the item def key.
+
+Well, when dropped it drops the instance. So it's getting the name when fetching the list.
+
+But that failure is coming from an error, here:
+
+                item_entry = registry.instances_by_name(text)
+                if item_entry:
+
+
+So it was picked up, correctly named in the inventory, force dropped and had the wrong name in the location items.
+
+So when dropped, for some reason it's using inst.nicename instead of inst.name. And I don't know why.
+
+Drop func in item_management just assigns inst, not .name or .nicename.
+
+
+OOOOOh.
+
+It's because of this:
+
+"name_children_removed":"a glass jar"
+
+So where it should give name (with or without children), it's giving the child-free version of nicename.
+
+
+So yes. name_children_removed should never be called from the main script, only ever via the nicename func in item man, where it's done automatically after checking for children.

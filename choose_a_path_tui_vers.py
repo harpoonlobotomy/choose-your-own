@@ -107,16 +107,17 @@ def get_items_at_here(print_list=False, return_coloured=True) -> list:
     coloured_list = []
     if instance_objs_at:
         for item in instance_objs_at:
-            if "container" in item.flags:
-                children = registry.instances_by_container(item)
-                if not children: # is currently binary, only allows for 'items or not', not if it held multiple. That's just not implemented for descriptions etc yet.
-                    ## TODO: add the 'check for children before outputting name' thing so it happens automatically instead of doing it here.
-                    item_name = item.name_children_removed
-                    to_print_list.append(item_name)
-                else:
-                    to_print_list.append(item.name)
-            else:
-                to_print_list.append(item.name)
+            # !! this list should only use name, not nicename (or the childfree variant, name_children_removed). Use this elsewhere.
+            #if "container" in item.flags:
+            #    children = registry.instances_by_container(item)
+            #    if not children: # is currently binary, only allows for 'items or not', not if it held multiple. That's just not implemented for descriptions etc yet.
+            #        ## TODO: add the 'check for children before outputting name' thing so it happens automatically instead of doing it here.
+            #        item_name = item.name_children_removed
+            #        to_print_list.append(item_name)
+            #    else:
+            #        to_print_list.append(item.name)
+            #else:
+            to_print_list.append(item.name)
         coloured_list = col_list(to_print_list)
 
     if coloured_list:
@@ -125,6 +126,39 @@ def get_items_at_here(print_list=False, return_coloured=True) -> list:
         if return_coloured:
             return coloured_list
     return to_print_list
+
+def add_item_to_container(container:ItemInstance):
+
+
+
+    if "container" in container.flags:
+        container_size = container.container_limits
+        container_size = item_definitions.container_limit_sizes[container_size]
+
+        def get_suitable_items(): ## This currently includes things that are /inside the container already/. I really need to stop listing those in the open inventory.
+            add_x_to = []
+            for item in game.inventory:
+            ## get items in inventory that are small enough to fit (use item_size)
+                item_size = item.item_size
+                item_size = item_definitions.container_limit_sizes[item_size]
+                if item_size < container_size:
+                    print(f"Item size {item}, {item_size}, < container size {container.name}, container_size: {container_size}")
+                    add_x_to.append(item)
+                    inv_list, _ = generate_clean_inventory(add_x_to)
+                    print(f"INV LIST: {inv_list}")
+            return inv_list, add_x_to
+
+        done=False
+        while not done:
+            inv_list, add_x_to = get_suitable_items()
+            test = option(inv_list, print_all=True)
+            if test == "" or test == None:
+                done=True
+            if test in inv_list:
+                instance = from_inventory_name(add_x_to, test)
+                print(f"Add {instance.name} to {container.name}") # doesn't do anything yet, just starting.
+                registry.move_item(instance, new_container=container)
+
 
 def do_action(trial, inst):
 
@@ -138,25 +172,8 @@ def do_action(trial, inst):
         separate_loot(child_input=child, parent_input=inst)
 
     if "add to" in trial:
-        add_x_to = []
-        print("work in progress")
-        container_size = inst.flags("container_limits")
-        container_size = item_definitions.container_limit_sizes[container_size]
-        for item in game.inventory:
-        ## get items in inventory that are small enough to fit (use item_size)
-            item_size = item.flags["item_size"]
-            item_size = item_definitions.container_limit_sizes[item_size]
-            if item_size < container_size:
-                add_x_to.append(item.name)
-        done=False
-        while not done:
-            test = option(add_x_to, print_all=True)
-            if test == "":
-                done=True
-            if test in add_x_to:
-                print(f"Add {test} to {inst.name}") # doesn't do anything yet, just starting.
 
-
+        add_item_to_container(inst)
 
         # currently not tracking how 'full' a container is, so implement that and then check against it.
         # then list any items that would fit and let user choose from that list, and then add that to the container and remove from open inventory. (though currently, open inventory includes in-container items.)
@@ -873,7 +890,7 @@ def look_around(status=None):
                     decision=option("take", "leave", preamble=f"What do you want to do with {assign_colour(text, switch=True)} - take it, or leave it alone?")
                     if decision == "":
                         do_print("Leaving it be.")
-                    if decision and decision is not "" and decision is not None:
+                    if decision and decision != "" and decision is not None:
                         if decision.lower()=="investigate": ## this deep nesting is an issue. Withdrawing from here gets you all the way to 'relocate'.
                             do_print("Nothing here yet.")
                         elif decision.lower()=="take":

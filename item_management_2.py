@@ -98,8 +98,7 @@ class LootRegistry:
     # Creation / deletion
     # -------------------------
 
-    def create_instance(self, definition_key, attr, counter=None):#nicename, primary_category, is_container, can_pick_up, description, location, contained_in, item_size, container_data):
-
+    def create_instance(self, definition_key, attr, counter=None):
 
 #### ALL ATTRS + FLAGS IN ALL CURRENT ITEMS:
 #   all attr flags: {'flags', 'name', 'description', 'container_limits', 'description_no_children', 'name_children_removed', 'item_size', 'starting_children', 'special_traits', 'started_contained_in', 'starting_location', 'loot_type'}
@@ -279,6 +278,8 @@ class LootRegistry:
                     if not self.by_location[location][cardinal]:
                         del self.by_location[location][cardinal]
 
+
+        ## I want to add a 'picked up from'. Not implemented yet though.
 
         if place != None and direction != None:
             new_location = {place: direction} if place and direction else None
