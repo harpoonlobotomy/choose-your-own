@@ -23,7 +23,7 @@ def get_inventory_names(inventory_inst_list) -> list:
 
     return inventory_names_list
 
-def from_inventory_name(inst_inventory, test) -> ItemInstance: # works now with no_xval_names to reference beforehand.
+def from_inventory_name(inst_inventory:list, test:str) -> ItemInstance: # works now with no_xval_names to reference beforehand.
 
     cleaned_name = test.split(" x")[0]
 
@@ -33,6 +33,21 @@ def from_inventory_name(inst_inventory, test) -> ItemInstance: # works now with 
 
     print(f"Could not find inst `{inst}` in inst_inventory.")
     input()
+
+def is_item_in_container(inventory_list, item):
+
+    inst = None
+    if isinstance(item, ItemInstance):
+        inst = item
+    elif isinstance(item, str):
+        inst = from_inventory_name(inventory_list, item)
+
+    if inst == None:
+        print(f"Failed to get instance for {item}, type: {type(item)}")
+        exit()
+    if hasattr(inst, "contained_in"):
+        container = inst.contained_in
+        return container, inst
 
 
 def generate_clean_inventory(inventory_inst_list, will_print = False, coloured = False, tui_enabled=True):
@@ -54,8 +69,18 @@ def generate_clean_inventory(inventory_inst_list, will_print = False, coloured =
             else:
                 checked.add(item_name)
         else:
-            inventory_names.append(item_name)
-            no_xval_inventory_names.append(item_name)
+            # check if it's a child:
+            has_parent, child_inst = is_item_in_container(inventory_inst_list, item_name)
+            if not has_parent:
+                # check if it's a parent:
+                inst = from_inventory_name(inventory_inst_list, item_name)
+                children = registry.instances_by_container(inst)
+                if children:
+                    inventory_names.append(item_name+"*") ## add to inventory with asterisk if has children inside.
+                    no_xval_inventory_names.append(item_name+"*")
+                else:
+                    inventory_names.append(item_name) ## add to inventory if item does not have a parent(container)
+                    no_xval_inventory_names.append(item_name)
 
     second_checked = set()
     for inst_name in checked: # because it's a set, should only be one per item

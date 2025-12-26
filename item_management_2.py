@@ -18,9 +18,8 @@ class ItemInstance:
         self.count_val = counter ## just for setup for matching the children to parents. Probably silly.
         self.nicename=attr["name"]
         self.description = attr["description"]
-        self.starting_location = attr.get("starting_location")     # dict (game.place: cardinal) or None
-        self.location = (attr.get("starting_location") if not attr.get("contained_in") and not (attr.get("starting_location") == None)
-        else None)  # starting location or None
+        self.starting_location = attr.get("starting_location")  # not used. Need to implement as the 'was originally encountered here' usecase.   # dict (game.place: cardinal) or None
+        self.location = (attr.get("starting_location") if attr.get("starting_location") != None and not attr.get("contained_in") else None)  # starting location or None -- always none if 'contained_in'.
         self.colour = None
 
 ### FLAGS ###
@@ -121,10 +120,6 @@ class LootRegistry:
         self.instances[inst.id] = inst
 
         self.attributes = attr
-        # Index by location
-        if location:
-            location, cardinal = next(iter(location.items()))
-            self.by_location.setdefault(location, {}).setdefault(cardinal, set()).add(inst)
 
         loot_type = attr.get("loot_type")
 
@@ -188,6 +183,14 @@ class LootRegistry:
             #print(f" After adding children to containers:  ", self.by_container[pros_parent_obj])
 
         #print("FULL by_container:", registry.by_container)
+
+        # Index by location ## Do this at the end, so can check container status - if in a container, don't add it to the location. Let it be in the container exclusively.
+        if location:
+            if not hasattr(inst, "contained_in"):
+            #if not inst.contained_in: # should only exclude things currently in containers.
+                location, cardinal = next(iter(location.items()))
+                self.by_location.setdefault(location, {}).setdefault(cardinal, set()).add(inst)
+
         # Index by name
         self.by_name.setdefault(definition_key, list()).append(inst)
 
@@ -260,18 +263,18 @@ class LootRegistry:
     # Movement
     # -------------------------
     def move_item(self, inst:ItemInstance, place=None, direction=None, new_container=None):
-        children = None
-        if self.instances_by_container(inst):
-            children = self.instances_by_container(inst)
+        #children = None
+        #if self.instances_by_container(inst):
+        #    children = self.instances_by_container(inst)
 
         old_loc = inst.location
         if old_loc:
             location, cardinal = next(iter(old_loc.items()))
             if location in self.by_location:
                 if cardinal in self.by_location.get(location):
-                    if children:
-                        for child in children:
-                            self.by_location[location][cardinal].discard(child)
+                    #if children: ## blocking this out because there should not be children at locations once I'm done.
+                    #    for child in children:
+                    #        self.by_location[location][cardinal].discard(child)
 
                     self.by_location[location][cardinal].discard(inst)
 
@@ -307,7 +310,7 @@ class LootRegistry:
        #             self.by_container[parent].remove(child)
 
         inst.contained_in = new_container
-        if new_container:
+        if new_container: ## does not remove from inventory/location here.
             self.by_container[new_container].add(inst)
   #          if children and children is not None:
   #              for child in children:
@@ -359,13 +362,20 @@ class LootRegistry:
         #                exit()
         #                return None
         location = self.by_location.get(place)
-        if not location:
-            a_place = "a " + place
-            location = self.by_location.get(a_place)
+        print(f"location by default: location: {location}, raw place: {place}")
         if not location:
             no_a_place = place.split("a ")[1]
             print(f"no a place: {no_a_place}")
             location = self.by_location.get(no_a_place)
+            if location:
+                place = no_a_place
+            print(f"location from no a place: {location}")
+            if not location:
+                a_place = "a " + place
+                location = self.by_location.get(a_place)
+                print(f"Location with a place: {location}, a_place: {a_place}")
+                if location:
+                    place = a_place
 
         if self.by_location[place].get(direction): # check if the direction has been established yet.
             instance_list:list = [i for i in self.by_location[place].get(direction)] # if so, check if there are items there.
@@ -376,7 +386,7 @@ class LootRegistry:
         return self.by_name.get(definition_key)# if self.by_name.get(definition_key) else None
 
     def instances_by_container(self, container):
-        return [i for i in self.by_container.get(container, set())]
+        return [i for i in self.by_container.get(container, list())]
 
     def instances_by_category(self, category):
         return self.by_category.get(category, set())
@@ -497,11 +507,11 @@ class LootRegistry:
             attr = get_item_defs(inst.name)
             inst = self.create_instance(inst.name, attr)
 
-        children = self.instances_by_container(inst)
-        if children:
-            for child in children:
-                self.move_item(child, inst) ## adding inst here should keep it in the container.
-                inventory_list.append(child)
+        #children = self.instances_by_container(inst) ## item just stays in the container if the container moves. Don't need any of this.
+        #if children:
+        #    for child in children:
+        #        self.move_item(child, inst) ## adding inst here should keep it in the container.
+                #inventory_list.append(child)
 
         self.move_item(inst) # removed place/direction, because surely if we're picking it up, it shouldn't be moved to where we are....
         inventory_list.append(inst)
@@ -601,7 +611,7 @@ class LootRegistry:
 
     def drop(self, inst: ItemInstance, location, direction, inventory_list):
         if inst not in inventory_list:
-            return None
+            return None, inventory_list
         inventory_list.remove(inst)
         self.move_item(inst, place=location, direction=direction)
         return inst, inventory_list

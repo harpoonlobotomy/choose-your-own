@@ -536,7 +536,8 @@ def drop_loot(named=None, forced_drop=False):
             add_infobox_data(inventory=game.inventory)
         return test
 
-    inventory_names = get_inventory_names(game.inventory)
+    inventory_names, no_x_val_list = generate_clean_inventory()
+    #inventory_names = get_inventory_names(game.inventory)
 
     if named:
         test=named
@@ -546,14 +547,11 @@ def drop_loot(named=None, forced_drop=False):
             return
         test = option(inventory_names, print_all=True, preamble="[Type the name of the object you want to leave behind]", inventory=True)
 
-    if test in inventory_names or isinstance(test, ItemInstance):
-        if isinstance(test, ItemInstance):
-            item_test=test
-        else:
-            do_print(f"Test in inventory names: {test}")
-            item_test=from_inventory_name(test)
+    if test in inventory_names:
+        do_print(f"Test in inventory names: {test}")
+        inst_test=from_inventory_name(test)
 
-        if item_test in game.inventory:
+        if inst_test:
             _, game.inventory = registry.drop(test, switch_the(game.place,replace_with=""), game.facing_direction, game.inventory)
             slowWriting(f"Dropped {assign_colour(test)}.")
         else:
@@ -786,6 +784,34 @@ def the_nighttime():
     slowWriting("And/or wild animals if sleeping outside, and/or people, and/or ghosts/monster vibes if weird.")
     new_day()
 
+def location_item_interaction(item_name):
+
+    item_entry = registry.instances_by_name(item_name)
+    if item_entry:
+        local_items = registry.instances_at(game.place, game.facing_direction)
+        for item in item_entry:
+            if item in local_items and item not in game.inventory:
+                ### TODO: and item not in container that is in inventory
+                entry = item
+
+        slowWriting((f"Description: {assign_colour(registry.describe(entry, caps=True), "description")}"))
+
+        decision=option("take", "leave", preamble=f"What do you want to do with {assign_colour(item_name, switch=True)} - take it, or leave it alone?")
+        if decision == "":
+            do_print("Leaving it be.")
+        if decision and decision != "" and decision is not None:
+            if decision.lower()=="investigate": ## this deep nesting is an issue. Withdrawing from here gets you all the way to 'relocate'.
+                do_print("Nothing here yet.")
+            elif decision.lower()=="take":
+                picked_up = get_loot(value=None, random=True, named=entry, message=None)
+                if not picked_up:
+                    do_print(f"Seems you can't take {assign_colour(item_name, switch=True)} with you.")
+
+            elif decision.lower()=="leave":
+                do_print(f"You decide to leave the {assign_colour(item_name)} where you found it.")
+    else:
+        do_print(f"No entry found for {item_entry}")
+
 def look_around(status=None):
     item = None
     place = game.place
@@ -838,6 +864,8 @@ def look_around(status=None):
         else:
             slowWriting("Using your torch, you see things. Probably. I haven't written this yet. How do you have a torch?!?")
 
+
+
     def look_light(skip_intro = False, reason=None):
         skip_intro=skip_intro
         if reason == "turning" or reason == "skip_intro":
@@ -874,34 +902,10 @@ def look_around(status=None):
                 remainders = list(x for x in game.cardinals if x is not game.facing_direction)
                 look_light("turning") # run it again, just printing the description of where you turned to.
 
-            if get_items_at_here(print_list=False, return_coloured=False) and text in get_items_at_here(print_list=False, return_coloured=False): # have changed this, it may be broken
+            local_items = get_items_at_here(print_list=False, return_coloured=False)
+            if local_items and text in local_items: # have changed this, it may be broken
+                location_item_interaction(text)
 
-                obj = getattr(p_data[game.place], game.facing_direction)
-                item_entry = registry.instances_by_name(text)
-                if item_entry:
-                    if isinstance(item_entry, list):
-                        for i, entry in enumerate(item_entry):
-                            if item_entry[i] not in game.inventory: ## do not consider items already in inventory for pick up.
-                                entry = item_entry[i]
-                    elif isinstance(item_entry, ItemInstance):
-                        entry = item_entry
-                    slowWriting((f"Description: {assign_colour(registry.describe(entry, caps=True), "description")}")) #registry.describe
-
-                    decision=option("take", "leave", preamble=f"What do you want to do with {assign_colour(text, switch=True)} - take it, or leave it alone?")
-                    if decision == "":
-                        do_print("Leaving it be.")
-                    if decision and decision != "" and decision is not None:
-                        if decision.lower()=="investigate": ## this deep nesting is an issue. Withdrawing from here gets you all the way to 'relocate'.
-                            do_print("Nothing here yet.")
-                        elif decision.lower()=="take":
-                            picked_up = get_loot(value=None, random=True, named=entry, message=None)
-                            if not picked_up:
-                                do_print(f"Seems you can't take {assign_colour(text, switch=True)} with you.")
-
-                        elif decision.lower()=="leave":
-                            do_print(f"You decide to leave the {assign_colour(text)} where you found it.")
-                else:
-                    do_print(f"No entry in loc_loot for {item_entry}")
             else:
                 do_print(f"Could not find what you're looking for. The options: {potential}")
 

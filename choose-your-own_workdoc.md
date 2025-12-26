@@ -1093,3 +1093,18 @@ So where it should give name (with or without children), it's giving the child-f
 
 
 So yes. name_children_removed should never be called from the main script, only ever via the nicename func in item man, where it's done automatically after checking for children.
+
+
+12.46pm
+okay, progress.
+
+paperclip x4
+fashion mag
+anxiety meds
+regional map
+fish food
+batteries
+dried flowers
+glass jar*
+
+the car keys are now in the glass jar, as indicated by the asterisk. Will fail if you try to access it because I haven't done anything on the next state to deal with said asterisk, but progress. Car keys no longer in inventory, glass jar notes children. It's a start.
