@@ -1,24 +1,18 @@
 
 import uuid
 
-
-def smart_capitalise(s: str) -> str:
-    return s[0].upper() + s[1:] if s else s
-
-
 class ItemInstance:
     """
     Represents a single item in the game world or player inventory.
     """
 # definition_key, nicename, description, location, contained_in, item_size, primary_category, container_data)
-    def __init__(self, definition_key, container_data, item_size, attr, counter):
+    def __init__(self, definition_key:str, container_data:list, item_size:str, attr:dict):
 
         self.id = str(uuid.uuid4())  # unique per instance
         self.name = definition_key
-        self.count_val = counter ## just for setup for matching the children to parents. Probably silly.
         self.nicename=attr["name"]
         self.description = attr["description"]
-        self.starting_location = attr.get("starting_location")  # not used. Need to implement as the 'was originally encountered here' usecase.   # dict (game.place: cardinal) or None
+        self.starting_location = attr.get("starting_location")  # switching over to make this the 'discovered at' attr.
         self.location = (attr.get("starting_location") if attr.get("starting_location") != None and not attr.get("contained_in") else None)  # starting location or None -- always none if 'contained_in'.
         self.colour = None
 
@@ -33,6 +27,8 @@ class ItemInstance:
             self.started_contained_in = attr.get("contained_in")  # parent instance id if inside a container
             if self.started_contained_in:
                 self.contained_in=self.started_contained_in
+            else:
+                self.contained_in=None
         else:
             self.can_pick_up=False
 
@@ -66,13 +62,9 @@ class ItemInstance:
             self.name_children_removed=name_children_removed
             self.container_limits=container_limits
             if starting_children:
-                children_w_counter=[]
-                for child in starting_children:
-                    children_w_counter.append((child, counter))
 
-            self.starting_children = starting_children ### This just adds the string name, not the id like it needs to.
-            self.children = (list()) ## Maybe we create all instances first, then add 'children' afterwards, otherwise they won't be initialised yet.
-
+                self.starting_children = starting_children ### This just adds the string name, not the id like it needs to.
+            self.children = (list()) ## Maybe we create all instances first, then add 'children' afterwards, otherwise they won't be initialised yet. Currently this works because I've listed the parents first in the item defs.
 
     def __repr__(self):
         return f"<ItemInstance {self.name} ({self.id})>"
@@ -90,33 +82,27 @@ class LootRegistry:
         self.by_name = {}        # definition_key -> set of instance IDs
         self.by_category = {}        # category (loot value) -> set of instance IDs
         self.by_container = {}
-        self.by_counter = {}
         self.inst_to_names_dict = {}
-        self.is_container = True
+        self.is_container = True ## This must be wrong. idk. I tried something else earlier and it didn't work.
     # -------------------------
     # Creation / deletion
     # -------------------------
 
-    def create_instance(self, definition_key, attr, counter=None):
-
-#### ALL ATTRS + FLAGS IN ALL CURRENT ITEMS:
-#   all attr flags: {'flags', 'name', 'description', 'container_limits', 'description_no_children', 'name_children_removed', 'item_size', 'starting_children', 'special_traits', 'started_contained_in', 'starting_location', 'loot_type'}
-
-#   Flag items: {'can_pick_up', 'dirty', 'fragile', 'dupe', 'flammable', 'locked', 'weird', 'container', 'can_read', 'can_open'}
+    def create_instance(self, definition_key, attr):
 
         if "container" in attr["flags"]:
             container_data = (attr.get("description_no_children"), attr.get("name_children_removed"), attr.get("container_limits"), attr.get("starting_children"))
         else:
             container_data=None
 
-        if "starting_location" in attr:
-            primary_category="starting_location"
-        else:
-            primary_category="loot_type"
+#        if "starting_location" in attr:
+#            primary_category="starting_location"
+#        else:
+#            primary_category="loot_type"
 
         location = attr.get("starting_location")
 
-        inst = ItemInstance(definition_key, container_data, attr.get("item_size"), attr, counter)#nicename, primary_category, is_container, can_pick_up, description, location, contained_in, item_size, container_data)
+        inst = ItemInstance(definition_key, container_data, attr.get("item_size"), attr)#nicename, primary_category, is_container, can_pick_up, description, location, contained_in, item_size, container_data)
         self.instances[inst.id] = inst
 
         self.attributes = attr
@@ -124,6 +110,7 @@ class LootRegistry:
         loot_type = attr.get("loot_type")
 
         if loot_type: # Works with multiple categories now. So, starting loot also has a value. Currently it's always added, it doesn't remove something from the pool just because it was in the starting loot. May need to reevaluate, but functions okay for now.
+
             if isinstance(loot_type, list):
                 for option in loot_type:
                     self.by_category.setdefault(option, set()).add(inst)
@@ -135,59 +122,25 @@ class LootRegistry:
             self.by_container.setdefault(inst, set())
         else:
             self.is_container=False
-        # if item starts inside container
+
         if attr.get("started_contained_in"):
-            self.by_counter = {counter:inst} # just need to strip the counter thing, it never helped.
 
             parent_name =attr.get("started_contained_in")
-            parent_obj_list = self.by_name.get(parent_name)#instances_by_name(self, parent)
+            parent_obj_list = self.instances_by_name(parent_name) # TODO: I've cut a lot of the comments from this section. Still needs a rework though.
             if parent_obj_list:
-                if len(parent_obj_list)==1:
-                    for prospective_parent in parent_obj_list:
-                        #print(f"pros_parent_obj: {prospective_parent}")
-                        #pros_parent_obj=self.instances.get(prospective_parent)
-                        pros_children = prospective_parent.starting_children
-                        if inst.name in pros_children:
+                for prospective_parent in parent_obj_list:
+                    pros_children = prospective_parent.starting_children
+                    if inst.name in pros_children:
+                        if not inst in self.instances_by_container(prospective_parent):
                             inst.contained_in = prospective_parent
-                            self.by_container[prospective_parent].add(inst) ## idk if this'll work.
-                            #for child in pros_children:
-                                #if child ==
-                        #if child.id == inst.id:
-                            #print(f"prospective parent: {prospective_parent}, type: {type(prospective_parent)} ")
-                            #print(f"pros_parent_obj.id: {pros_parent_obj.id}")
-                            #print(f"Added {inst.id} to parent {prospective_parent}: {self.by_container[prospective_parent]}")
-
-### This section needs work. It's partially done but needs a rework.
-
-                    #parent_inst=next(iter(parent_obj_list))
-                    #print(f"Parent id (next): {parent_id}, type: {type(parent_id)}")
-                    #inst.contained_in = parent_inst
-                    #self.by_container[parent_inst].add(inst) ## idk if this'll work.
-                    #print(f"Added {inst} to parent {pros_parent_obj}: {self.by_container[pros_parent_obj]}")
-                else:
-                    for prospective_parent in parent_obj_list:
-                        #print("Prospective parent:  ", prospective_parent)
-                        pros_parent_obj=self.instances.get(prospective_parent.id)
-                        pros_children = pros_parent_obj.starting_children
-
-### TODO: NEED TO DO SOMETHING HERE.
-
-                        #if pros_children:
-                        #    for child in pros_children:
-                        #        print(child)
-
-                        #self.by_container[parent_id]
-                    #print(f"Child `{inst}` does not have a parent object (expecting {parent_name})")
-
-            #print(f"Container obj: {pros_parent_obj}")
-            #print(f" After adding children to containers:  ", self.by_container[pros_parent_obj])
-
-        #print("FULL by_container:", registry.by_container)
+                            self.by_container[prospective_parent].add(inst)
+                        else:
+                            continue # if already there, try another prospective parent. Don't know if this'll work on not yet.
 
         # Index by location ## Do this at the end, so can check container status - if in a container, don't add it to the location. Let it be in the container exclusively.
+
         if location:
-            if not hasattr(inst, "contained_in"):
-            #if not inst.contained_in: # should only exclude things currently in containers.
+            if not hasattr(inst, "contained_in") or inst.contained_in == None:
                 location, cardinal = next(iter(location.items()))
                 self.by_location.setdefault(location, {}).setdefault(cardinal, set()).add(inst)
 
@@ -195,53 +148,6 @@ class LootRegistry:
         self.by_name.setdefault(definition_key, list()).append(inst)
 
         return inst
-
-    def update_containers(self, item_name, attr, counter2):
-        #child_inst = self.instance_by_counter(counter2)
-
-        # if item starts inside container
-        if attr.get("started_contained_in"):
-            child_inst = self.by_counter[counter2]
-            parent_name =attr.get("started_contained_in")
-            #print(f"Parent name: {parent_name}")
-            parent_obj_list = self.by_name.get(parent_name)#instances_by_name(self, parent)
-            if parent_obj_list:
-                if len(parent_obj_list)==1:
-                    for prospective_parent in parent_obj_list:
-                        pros_parent_obj=self.instances.get(prospective_parent)
-
-                        #print(f"pros parent obj: {pros_parent_obj}")
-                        #print(f"pros parent obj id: {pros_parent_obj.id}, type: {type(pros_parent_obj.id)}")
-                        #pros_children = pros_parent_obj.starting_children
-                        if pros_children:
-                            #print(f"Pros children: {pros_children}")
-                            for child in pros_children:
-                                #print("Child: ", child)
-                                #if child.id == inst.id:
-                                child_inst.contained_in = pros_parent_obj
-                                container_list = self.instances_by_container(pros_parent_obj) ## idk if this'll work.
-                                #print(f"container list: {container_list}, type: {type(container_list)}")
-                                container_list.add(child.inst)
-
-                                #print(f"Added {child_inst.id} to parent: {self.instances_by_container([container_list[0].id])}")
-
-                    parent=next(iter(parent_obj_list))
-                    #print(f"Parent obj list: {parent_obj_list}")
-                    #print(f"parent_id: {parent_id}")
-                    #self.instance_by_counter(parent_id)
-                    #self.instance_by_container(parent_id)
-                else:
-                    for prospective_parent in parent_obj_list:
-                        pros_parent_obj=self.instances.get(prospective_parent) ## changed these from obj.id to just  obj to match the others. This is largely untested
-                        pros_children = pros_parent_obj.starting_children ## starting children is probably just strings at this point... currently I allow for it making one child obj, but not more t han that. Not sufficient...
-                        if len(pros_children)==1:
-                            if item_name in pros_children:
-                                self.by_container[parent].add(child_inst) ## idk if this'll work.
-                                #print(f"Added {child_inst.id} to parent: {self.by_container[parent_id]}")
-            #else:
-                        #self.by_container[parent_id]
-                #print(f"Child `{child_inst.id}` does not have a parent object (expecting {parent_name})")
-
 
 
     def delete_instance(self, inst: ItemInstance):
@@ -262,10 +168,7 @@ class LootRegistry:
     # -------------------------
     # Movement
     # -------------------------
-    def move_item(self, inst:ItemInstance, place=None, direction=None, new_container=None, old_container=None):
-        #children = None
-        #if self.instances_by_container(inst):
-        #    children = self.instances_by_container(inst)
+    def move_item(self, inst:ItemInstance, place:str=None, direction:str=None, new_container:ItemInstance=None, old_container:ItemInstance=None)->list:
 
         ## REMOVE FROM ORIGINAL LOCATION ##
 
@@ -274,10 +177,6 @@ class LootRegistry:
             location, cardinal = next(iter(old_loc.items()))
             if location in self.by_location:
                 if cardinal in self.by_location.get(location):
-                    #if children: ## blocking this out because there should not be children at locations once I'm done.
-                    #    for child in children:
-                    #        self.by_location[location][cardinal].discard(child)
-
                     self.by_location[location][cardinal].discard(inst)
 
                     if not self.by_location[location][cardinal]:
@@ -297,14 +196,8 @@ class LootRegistry:
                     else:
                         place = temp_place
                     if not self.by_location.get(place):
-                        self.by_location.setdefault(place, {})#.setdefault(cardinal, set()).add(inst)
+                        self.by_location.setdefault(place, {})
                 self.by_location[place].setdefault(direction, set()).add(inst)
-
-
-       #     if children and children is not None:
-       #         for child in children:
-       #             self.by_container[parent].remove(child)
-
 
         if old_container or new_container:
             return_text = []
@@ -314,13 +207,11 @@ class LootRegistry:
                 else:
                     parent = inst.contained_in
                 if parent:
-                    #print(f"Parent: {parent}")
-                    #print(f"inst: {inst}")
-                    #print("self.by_container[parent]: ", self.by_container[parent])
-                # this errored during a random drop, adding the check.
                     self.by_container[parent].remove(inst)
                     inst.contained_in = None
                     return_text.append((f"Item `[child]` removed from old container `[parent]`", inst, parent))
+
+        ## Should this be one tab over? Probably. Otherwise it'll fail if the obj was not previously contained, no?
                 if new_container:
                     inst.contained_in = new_container
                     self.by_container[new_container].add(inst)
@@ -337,7 +228,7 @@ class LootRegistry:
 
         ## I want to add a 'picked up from'. Not implemented yet though.
 
-    def move_from_container_to_inv(self, inst:ItemInstance, inventory:list, parent:ItemInstance=None) -> list:
+    def move_from_container_to_inv(self, inst:ItemInstance, inventory:list, parent:ItemInstance=None) -> tuple[list,list]:
 
         if parent == None:
             parent = inst.contained_in
@@ -349,67 +240,44 @@ class LootRegistry:
     # -------------------------
     # Lookup
     # -------------------------
-    def get_instance_from_id(self, inst_id):
+    def get_instance_from_id(self, inst_id:str)->ItemInstance:
         return self.instances.get(inst_id)
 
-    def get_item(self, inst_id): # is a dupe of the previous, but I have this all througout the existing script so may change to it and remove get_instance later. One or the other, but for the moment, both.
-        return self.instances.get(inst_id)
 
-    def instances_at(self, place, direction):
+    def instances_by_location(self, place:str, direction:str)->list:
 
-        #try:
-        #    test = self.by_location[place]
-#
-        #except:
-        #    if not self.by_category.get(place):
-        #        if "a " in place:
-        #            test_place = place.replace("a ", "") # the combo of these should fix all instances of a_/not a naming. If/when I add and 'an' start to a location name, will need to add 'an ' too.
-        #            if self.by_category.get(test_place): ## wait why the fuck is this 'by category'? Why would a place be in a category???? How this this ever get results at all?
-        #                place=test_place
-        #        if not self.by_category.get(place):
-        #            if self.by_category.get("a " + place):
-        #                test_place = "a " + place
-        #                if self.by_category.get(test_place):
-        #                    place=test_place
-#
-        #        else:
-        #            print(f"Location keys: `{self.by_location}`")
-        #            if not self.by_category[place]:
-        #                print(f"Location {place} has never had an item, so self.by_location fails. For now, just return.")
-        #                exit()
-        #                return None
         location = self.by_location.get(place)
-        #print(f"location by default: location: {location}, raw place: {place}")
+        #print(f"location by default: {location}, raw place: {place}")
+
         if not location:
-            no_a_place = place.split("a ")[1]
-            #print(f"no a place: {no_a_place}")
-            location = self.by_location.get(no_a_place)
-            if location:
-                place = no_a_place
-            #print(f"location from no a place: {location}")
-            if not location:
+            if place.startswith("a "):
+                no_a_place = place.split("a ")[1]
+                location = self.by_location.get(no_a_place)
+                if location:
+                    place = no_a_place
+
+            else:
                 a_place = "a " + place
+                #print(f"a place: {a_place}")
                 location = self.by_location.get(a_place)
-                #print(f"Location with a place: {location}, a_place: {a_place}")
+                #print(f"location: {location}")
                 if location:
                     place = a_place
-
+        #print(f"places: {self.by_location}")
+        #print(f"place: {place}")
         if self.by_location[place].get(direction): # check if the direction has been established yet.
             instance_list:list = [i for i in self.by_location[place].get(direction)] # if so, check if there are items there.
             if instance_list:
                 return instance_list
 
-    def instances_by_name(self, definition_key):
+    def instances_by_name(self, definition_key:str)->list:
         return self.by_name.get(definition_key)# if self.by_name.get(definition_key) else None
 
-    def instances_by_container(self, container):
+    def instances_by_container(self, container:ItemInstance)->list:
         return [i for i in self.by_container.get(container, list())]
 
     def instances_by_category(self, category):
         return self.by_category.get(category, set())
-
-    def instance_by_counter(self, counter_val):
-        [self.instances[i] for i in self.by_counter[counter_val]]
 
     # -------------------------
     # Helpers
@@ -417,7 +285,7 @@ class LootRegistry:
 ## From choices.py
     #def random_from(self, category: str):
 
-    def random_from(self, selection):
+    def random_from(self, selection:int|str)->list:
         import random
         loot_table = {
             1: "minor_loot",   ## Keeping this here temporarily until I update it properly.
@@ -435,7 +303,7 @@ class LootRegistry:
 
         return random.choice(items)# if items else "No Items (RANDOM_FROM)"
 
-    def describe(self, inst: ItemInstance, caps=False):
+    def describe(self, inst: ItemInstance, caps=False)->str:
 
         description = inst.description
         if "container" in inst.flags:
@@ -448,6 +316,7 @@ class LootRegistry:
 
         """Convenience method to return a formatted description."""
         if caps:
+            from misc_utilities import smart_capitalise
             description = smart_capitalise(description)
 
         if description:
@@ -460,7 +329,6 @@ class LootRegistry:
             if not children:
                 print(f"no children present. name: {inst.name_children_removed}")
                 return inst.name_children_removed
-
 
         if not inst:
             print("[NICENAME] No such item.")
@@ -481,7 +349,7 @@ class LootRegistry:
         if isinstance(inst, ItemInstance):
             items = self.instances_by_name(inst.name)
         else:
-            items = self.instances_by_name(inst) # gets all instances by that name (here, inst:str)
+            items = self.instances_by_name(inst)
 
         if items:
             dupe_list = []
@@ -493,22 +361,27 @@ class LootRegistry:
         print(f"{inst} not found in instances by name. {type(inst)}")
 
 
-    def name_col(self, inst: ItemInstance, colour:str):
+    def register_name_colour(self, inst:ItemInstance, colour:str)->str:
 
-        #if not isinstance(inst, ItemInstance):
         inst.colour=colour
-        #print(f"Assigning colour to instance: inst: {inst}, colour: {colour}, inst.colour: {inst.colour}") ## TODO: Maybe this should return the name pre-coloured. Would make sense.
+
         return inst.name
 
-    def pick_up(self, inst, inventory_list, place=None, direction=None): ### could store place/direction in state
+    def pick_up(self, inst:str|ItemInstance, inventory_list, place=None, direction=None) -> tuple[ItemInstance, list]:
 
         if isinstance(inst, set) or isinstance(inst, list):
             inst=inst[0]
-        #print(f"Pick_up: inst: {inst}, type: {type(inst)}")
+
         if not isinstance(inst, ItemInstance):
             item_list = self.instances_by_name(inst)
-            inst = item_list[0] # arbitrarily pick the first one
-            #print(f"pick_up id list: {item_list}")
+            if item_list and place != None:
+                local_items = self.instances_by_location(place, direction)
+                for item in item_list:
+                    if item in local_items:
+                        inst = item
+                        break
+            else:
+                inst = item_list[0]
             if not item_list:
                 inst=self.get_instance_from_id(self, inst)
 
@@ -524,16 +397,11 @@ class LootRegistry:
             attr = get_item_defs(inst.name)
             inst = self.create_instance(inst.name, attr)
 
-        #children = self.instances_by_container(inst) ## item just stays in the container if the container moves. Don't need any of this.
-        #if children:
-        #    for child in children:
-        #        self.move_item(child, inst) ## adding inst here should keep it in the container.
-                #inventory_list.append(child)
-
-        self.move_item(inst) # removed place/direction, because surely if we're picking it up, it shouldn't be moved to where we are....
+        self.move_item(inst)
         inventory_list.append(inst)
 
-        self.picked_up_from = {place:direction} # just temporarily, not in use yet. Needs formalising how it's going to work.
+        self.starting_location = {place:direction} # just temporarily, not in use yet. Needs formalising how it's going to work.
+
         return inst, inventory_list
 
     def get_actions_for_item(self, inst, inventory_list, has_children=None, has_multiple=None):
@@ -573,7 +441,10 @@ class LootRegistry:
                         action_options.append("open")
                 elif potential_action == "can_combine":
                     requires = inst.flags["combine_with"]
-                    print(f"Item {inst.name} requires: {requires}")
+                    if isinstance(requires, list):
+                        print(f"item {inst.name} can combine with: {requires} (list)")
+                    else:
+                        print(f"Item {inst.name} requires: {requires}")
                     print("item management quitting.")
                     exit()
                     if requires in inventory_list:
@@ -596,12 +467,12 @@ class LootRegistry:
                         print("Locked but no key. Need to figure out how to deal w this. Maybe a few options depending on the item. If it has an obvious lock vs not etc.")
                 elif potential_action == "can_be_charged":
                     if "is_charged" not in inst.flags:
-                        inst.is_charged = False
+                        inst.flags["is_charged"] = False
                     else:
-                        inst.is_charged = True
+                        inst.flags["is_charged"] = True
 
-                    if not inst.is_charged:
-                        charger = inst.flags["charger"]
+                    if not inst.flags["is_charged"]:
+                        charger = inst.flags["charger"] ## This is scrappy. Needs going over again.
                         if charger in inventory_list:
                             action_options.append(charger)
 
@@ -693,10 +564,9 @@ if get_flags:
 
 def initialise_registry():
     from item_definitions import get_item_defs
-    counter=0
+
     for item_name, attr in get_item_defs().items():
-        registry.create_instance(item_name, attr, counter)
-        counter+=1
+        registry.create_instance(item_name, attr)
 
 
 if __name__ == "__main__":

@@ -32,8 +32,11 @@ def from_inventory_name(test:str, inst_inventory:list=None) -> ItemInstance: # w
         from set_up_game import game ## might break
         inst_inventory = game.inventory
 
-    cleaned_name = test.split(" x")[0]
-    cleaned_name = test.replace("*", "")
+    if " x"  in test or "*" in test:
+        cleaned_name = test.split(" x")[0]
+        cleaned_name = test.replace("*", "")
+    else:
+        cleaned_name = test
 
     for inst in inst_inventory:
         if inst.name == cleaned_name:
@@ -45,9 +48,9 @@ def from_inventory_name(test:str, inst_inventory:list=None) -> ItemInstance: # w
 def is_item_in_container(inventory_list, item):
 
     inst = None
-    if isinstance(item, ItemInstance):
+    if isinstance(item, ItemInstance) and item != None:
         inst = item
-    elif isinstance(item, str):
+    elif isinstance(item, str) and item != None:
         inst = from_inventory_name(item, inventory_list)
 
     if inst == None:
@@ -64,7 +67,6 @@ def generate_clean_inventory(inventory_inst_list, will_print = False, coloured =
 
     no_xval_inventory_names = []
     inv_list = get_inventory_names(inventory_inst_list)
-    #print(f"Inv list: {inv_list}")
     dupe_items = list()
     checked = set()
 
@@ -118,7 +120,8 @@ def generate_clean_inventory(inventory_inst_list, will_print = False, coloured =
 
 
 
-def switch_the(text, replace_with="the"): # remember: if specifying the replace_with string, it must end with a space. Might just add that here actually...
+def switch_the(text:str|ItemInstance|list, replace_with:str="the")->str:
+
     if isinstance(text, list):
         if len(text) == 1:
             text=text[0]
@@ -128,19 +131,16 @@ def switch_the(text, replace_with="the"): # remember: if specifying the replace_
             exit()
     if isinstance(text, ItemInstance):
         text=text.name
+
     for article in ("a ", "an "):
         if text.startswith(article):# in text:
             if replace_with != "":
-                #print(f"replace with isn't blank: `{replace_with}`")
                 if replace_with[-1] != " ":
-                    #print(f"replace with doesn't end with a space: `{replace_with}`")
                     replace_with = replace_with + " "
-                    #print(f"replace with should now have a space: `{replace_with}`")
-            text = text.replace(article, replace_with) # added 'replace with' so I can specify 'the' if needed. Testing.
+            text = text.replace(article, replace_with)
 
-
-    if replace_with == "the": ##Changed this so "replace_with=""' should simply remove the 'a/an'.
-        text = "the "+ text # so I can add 'the' in front of a string, even if it doesn't start w 'a' or 'an'.
+    if replace_with == "the":
+        text = "the "+ text
     return text
 
 
@@ -209,7 +209,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
                 colour=cardinal_cols[colour]
                 Colours.colour_counter += 1
 
-                item=registry.name_col(item, colour) ## applies the colour the inst, so we later have item.colour.
+                item=registry.register_name_colour(item, colour) ## applies the colour the inst, so we later have item.colour.
                 bld=True
             return colour, item, bld
 
@@ -259,8 +259,8 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
     if caps:
         item = smart_capitalise(item)
 
-    if colour == None:
-        print(f"Colour is None. Item: ({item}). Type: ({type(item)})")
+    #if colour == None:
+        #print(f"Colour is None. Item: ({item}). Type: ({type(item)})")
         # This is printing every time an inventory item is found the first time. I've no idea why though. This:
         #   Colour is None. Item: (moss). Type: (<class 'str'>)
         #   moss
@@ -278,7 +278,124 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
     coloured_text=Colours.c(item, colour, bg, bold=bld, italics=ita, underline=u_line, invert=invt, no_reset=no_reset)
     return coloured_text
 
-def col_list(print_list:list=[], colour:str=None): ## merge this to the above, to it just deals with lists automatically instead of being a separate call.
+def assign_colour2(item:ItemInstance|str, colour:str=None, *, nicename:str=None, switch=False, no_reset=False, not_bold=False, caps=False)->str: ## tried to change some things, broke it. Stored here for later investigation.
+
+    from tui.colours import Colours
+
+    bg = None
+    bld = ita = u_line = invt = False
+
+    specials = ("location", "loc", "description", "title_bg", "title", "deco", "hash", "title_white", "equals", "underscore")
+    cardinals=["north", "south", "east", "west"]
+    Colours.colour_counter = Colours.colour_counter%len(cardinals)
+
+    if colour and isinstance(colour, str):
+        if "b_" in colour:
+            bld=True
+            colour=colour.strip("b_")
+        if "u_" in colour:
+            u_line=True
+            colour=colour.strip("u_")
+        if "i_" in colour:
+            ita=True
+            colour=colour.strip("i_")
+
+        bold_special = ["title", "deco", "description", "title_white"]
+
+        if colour in specials:
+            if "loc" in colour:
+                colour="green" # set 'loc' in colours.C instead of hardcoding the actual colours here. Only code here for bold, or if the colour named is inaccurate.
+            if colour == "title_bg":
+                colour="black"
+                bg="green"
+            if colour == "equals":
+                u_line=True
+                bg="blue"
+            if colour == "hash":
+                bg="blue"
+            if colour == "title_white":
+                colour="white"
+            if colour in bold_special:
+                bld=True
+            if colour == "title":
+                bld=True
+
+    elif isinstance(item, list):
+        item=item[0] #arbitrarily take the first one.
+
+    def check_instance_col(item:ItemInstance|str)->tuple:
+
+        if isinstance(item, ItemInstance):
+            entry:ItemInstance = item
+            if entry and entry.colour != None:
+                colour=entry.colour
+                item=item.name
+                bld=True
+            else:
+                colour=cardinals[Colours.colour_counter%len(cardinals)]
+                colour=cardinal_cols[colour]
+                Colours.colour_counter += 1
+
+                item=registry.register_name_colour(item, colour) ## applies the colour the inst, so we later have item.colour.
+                bld=True
+            return colour, item, bld
+
+    if item in cardinals:
+        colour=cardinal_cols[item]
+        bld=True
+
+
+    elif isinstance(item, str) or isinstance(item, ItemInstance):
+        item_temp = None
+        if isinstance(item, str):
+            if " x" in item:
+                item_temp = item.split(" x")[0]
+
+            elif "*" in item:
+                item_temp = item.replace("*", "")
+
+            if item_temp != None:
+                item_instance = from_inventory_name(item_temp, None)
+                colour, _, bld = check_instance_col(item_instance)
+
+            else:
+                item_instance = from_inventory_name(item, None)
+                if item_instance == None:
+                    item_instances=registry.instances_by_name(item)
+                    if item_instances:
+                        item=item_instances[0]
+                else:
+                    if item != None and isinstance(item, ItemInstance):
+                        print(f"Item instance: {item_instance}")
+                        colour, item, bld = check_instance_col(item_instance)
+
+        elif isinstance(item, ItemInstance):
+            colour, item, bld = check_instance_col(item)
+
+        if isinstance(colour, (int, float)):
+            colour=int(colour)%len(cardinals)
+            colour=cardinals[int(colour)]
+
+            colour=cardinal_cols[colour]
+            bld=True
+
+    if nicename:
+        item=nicename
+    if switch:
+        item=switch_the(item)
+    if caps:
+        item = smart_capitalise(item)
+
+    if colour == None:
+        print(f"Colour is None. Item: ({item}). Type: ({type(item)})")
+
+    if not_bold:
+        bld=False
+
+    coloured_text=Colours.c(item, colour, bg, bold=bld, italics=ita, underline=u_line, invert=invt, no_reset=no_reset)
+    return coloured_text
+
+def col_list(print_list:list=[], colour:str=None)->list: ## merge this to the above, to it just deals with lists automatically instead of being a separate call.
     coloured_list=[]
 
     for i, item in enumerate(print_list):

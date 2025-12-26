@@ -78,17 +78,24 @@ container_limit_sizes = {
 ## INVESTIGATE ITEM:
 ## if CAN_READ: [ "print_on_investigate": paper_scrap_details, ]
 # ' is_tested' - varying data based on roll. Else, straight print without checking for roll state.
-paper_scrap_details = {"is_tested": True, "failure": "The last three digits are 487, but the rest are illegible.", "success": "It takes you a moment, but the number on the paper is `07148 718 487'. No name, though.", "crit": "The number is `07148 718 487. Looking closely, you can see a watermark on the paper, barely visible - `Vista Continental West`. Do you know that name?"}
+
+detail_data = { # should tie this into the class directly. Will leave it here for now, flagging hard.
+
 # failure = <10, success = 10-19, crit = 20.
+"paper_scrap_details": {"is_tested": True, "failure": "The last three digits are 487, but the rest are illegible.", "success": "It takes you a moment, but the number on the paper is `07148 718 487'. No name, though.", "crit": "The number is `07148 718 487. Looking closely, you can see a watermark on the paper, barely visible - `Vista Continental West`. Do you know that name?"},
 
-puzzle_mag_details = {"is_tested":False, "print_str": "A puzzle magazine. Looks like someone had a bit of a go at one of the Sudoku pages but gave up. Could be a nice way to wait out a couple of hours if you ever wanted to."}
-fashion_mag_details = {"is_tested":False, "print_str": "A glamourous fashion magazine, looks like it's a couple of years old. Not much immediate value to it, but if you wanted to kill some time it'd probably be servicable enough."}
-gardening_mag_details = {"is_tested":False, "print_str": "A gardening magazine, featuring the latest popular varieties and a think-piece on the Organic vs Not debate. Could be a decent way to wait out a couple of hours if you ever wanted to."}
-mail_order_catalogue_details = {"is_tested":False, "print_str": "A mail order catalogue, with the reciever's address sticker ripped off. Clothes, homegoods, toys, gadgets - could be a nice way to wait out a couple of hours if you ever wanted to."}
+"puzzle_mag_details": {"is_tested":False, "print_str": "A puzzle magazine. Looks like someone had a bit of a go at one of the Sudoku pages but gave up. Could be a nice way to wait out a couple of hours if you ever wanted to."},
 
-regional_map_details = {"is_tested":True, "failure": "Despite always knowing which way is north, this map is utterly confounding to you.", "success": "A pretty detailed map of the local area. Could be good for finding new places to go should you have a destination in mind."}
+"fashion_mag_details": {"is_tested":False, "print_str": "A glamourous fashion magazine, looks like it's a couple of years old. Not much immediate value to it, but if you wanted to kill some time it'd probably be servicable enough."},
 
-damp_newspaper = {"is_tested":True, "failure": "Despite your best efforts, the newspaper is practically disintegrating in your hands. You make out something about an event in ballroom, but nothing beyond that..", "success": "After carefully dabbing off as much of the mucky water and debris as you can, you find the front page is a story about the swearing in of a new regional governor, apparenly fraught with controversy.", "crit": "Something about a named official and a contraversy from years ago where a young man went missing in suspicious circumstances."} ## no idea where this would go, but I need some placeholder text so here it is.
+"gardening_mag_details": {"is_tested":False, "print_str": "A gardening magazine, featuring the latest popular varieties and a think-piece on the Organic vs Not debate. Could be a decent way to wait out a couple of hours if you ever wanted to."},
+
+"mail_order_catalogue_details": {"is_tested":False, "print_str": "A mail order catalogue, with the reciever's address sticker ripped off. Clothes, homegoods, toys, gadgets - could be a nice way to wait out a couple of hours if you ever wanted to."},
+
+"regional_map_details": {"is_tested":True, "failure": "Despite always knowing which way is north, this map is utterly confounding to you.", "success": "A pretty detailed map of the local area. Could be good for finding new places to go should you have a destination in mind."},
+
+"damp_newspaper": {"is_tested":True, "failure": "Despite your best efforts, the newspaper is practically disintegrating in your hands. You make out something about an event in ballroom, but nothing beyond that..", "success": "After carefully dabbing off as much of the mucky water and debris as you can, you find the front page is a story about the swearing in of a new regional governor, apparenly fraught with controversy.", "crit": "Something about a named official and a contraversy from years ago where a young man went missing in suspicious circumstances."} ## no idea where this would go, but I need some placeholder text so here it is.
+}
 ## Need to track no of days/nights. Should already be doing this.
 
 ##  "starting_children": ["dried flowers"] -- changed to 'starting_children', so it's used in init but not picked up by default children checks. May not be necessary.
@@ -115,15 +122,16 @@ SECONDARY RULES:
 
 """
 
+graveyard = "graveyard"
 city = "city hotel room" ## better way of doing it, in case I want to change the names of locations later. Ideally, have this centralised somewhere accessible.
 
 item_defs_dict = {
     "glass jar": {"name": "a glass jar with flowers", "description": f"a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.",
-                    "description_no_children": "a glass jar, now empty aside from some bits of debris.", "starting_children": ["dried flowers"], "name_children_removed":"a glass jar", "flags":[CAN_PICKUP, CONTAINER, DIRTY], "container_limits": SMALLER_THAN_APPLE, "item_size": SMALLER_THAN_BASKETBALL, "starting_location": {"graveyard": "east"}},
+                    "description_no_children": "a glass jar, now empty aside from some bits of debris.", "starting_children": ["dried flowers"], "name_children_removed":"a glass jar", "flags":[CAN_PICKUP, CONTAINER, DIRTY], "container_limits": SMALLER_THAN_APPLE, "item_size": SMALLER_THAN_BASKETBALL, "starting_location": {graveyard: "east"}},
     "dried flowers": {"name": "some dried flowers", "description": "a bunch of old flowers, brittle and pale; certainly not as vibrant as you imagine they once were.", "started_contained_in": "glass jar",
-                    "flags":[CAN_PICKUP, FLAMMABLE], CAN_REMOVE_FROM:"glass jar", "item_size": SMALLER_THAN_APPLE, "starting_location": {"graveyard": "east"}},
-    "moss": {"name": "a few moss clumps", "description": "a few clumps of mostly green moss.", "flags":[CAN_PICKUP], "special_traits": MOSS_TRAIT, "item_size": A_FEW_MARBLES, "starting_location": {"graveyard": "east"}}, # moss trait: will dry up after a few days
-    "headstone": {"name":"a carved headstone", "description": "a simple stone headstone, engraved with the name `J.W. Harstott`.", "flags":[DIRTY], "starting_location": {"graveyard": "east"}},
+                    "flags":[CAN_PICKUP, FLAMMABLE], CAN_REMOVE_FROM:"glass jar", "item_size": SMALLER_THAN_APPLE, "starting_location": {graveyard: "east"}},
+    "moss": {"name": "a few moss clumps", "description": "a few clumps of mostly green moss.", "flags":[CAN_PICKUP], "special_traits": MOSS_TRAIT, "item_size": A_FEW_MARBLES, "starting_location": {graveyard: "east"}}, # moss trait: will dry up after a few days
+    "headstone": {"name":"a carved headstone", "description": "a simple stone headstone, engraved with the name `J.W. Harstott`.", "flags":[DIRTY], "starting_location": {graveyard: "east"}},
     "TV set": {"name": "a television set", "description": "A decent looking TV set, probably a few years old but appears to be well kept. Currently turned off. This model has a built-in DVD player.",
                     "flags":[CAN_COMBINE], COMBINE_WITH: "DVD", "starting_location": {city: "east"}}, # need to be able to add a DVD to this maybe.
     "window": {"name":"a window", "description":"a window, facing out of the hotel room and down over the street below. Currently closed.", "flags":[CAN_OPEN, FRAGILE],
@@ -136,7 +144,7 @@ item_defs_dict = {
     "fashion mag": {"name": "a fashion magazine", "description": "none yet", "flags":list(), "item_size": SMALLER_THAN_BASKETBALL, "loot_type": "magazine"}, # maybe a teen girl quiz
     "gardening mag": {"name": "a gardening magazine", "description": "none yet", "flags":list(), "item_size": SMALLER_THAN_BASKETBALL, "loot_type": "magazine"},
     "mail order catalogue": {"name": "a mail order catalogue", "description": "none yet", "flags":list(), "item_size": SMALLER_THAN_BASKETBALL, "loot_type": "magazine"},
-    "car keys": {"name": "a set of car keys", "description": "none yet","flags":[CAN_COMBINE], COMBINE_WITH: "blue_car",  "item_size": A_FEW_MARBLES, "loot_type": "starting"},
+    "car keys": {"name": "a set of car keys", "description": "none yet","flags":[CAN_COMBINE, TAKES_BATTERIES], COMBINE_WITH: ["blue_car", "batteries"],  "item_size": A_FEW_MARBLES, "loot_type": "starting"},
     "fish food": {"name": "a jar of fish food", "description": "none yet", "flags":[CAN_COMBINE], COMBINE_WITH: ["fish_tank, river"], "item_size": A_FEW_MARBLES, "loot_type": "starting"},
     "anxiety meds": {"name": "a bottle of anxiety meds", "description": "none yet", "flags":list(), "item_size": A_FEW_MARBLES, "loot_type": "starting"},
     "regional map": {"name": "a regional map", "description": "none yet", "flags":list(CAN_READ), "item_size": SMALLER_THAN_APPLE, "loot_type": "starting"},
@@ -148,7 +156,7 @@ item_defs_dict = {
     "damp newspaper": {"name": "a damp newspaper", "description": "A damp newspaper from about a week ago.", "flags":[CAN_READ, FLAMMABLE], "item_size": SMALLER_THAN_BASKETBALL, "loot_type": "minor_loot"}, # maybe not flammable - it'll take a while
     f"5 {currency} note": {"name": f"a 5 {currency} note", "description": "A small amount of legal tender. Could be useful if you find a shop.", "flags":[FLAMMABLE, DUPE], "item_size": SMALL_FLAT_THINGS, "loot_type": "medium_loot"},
     "paper scrap with number": {"name": "a scrap of paper with a number written on it", "description": "A small scrap of torn, off-white paper with a hand-scrawled phone number written on it.",
-                    "flags":[CAN_READ, FLAMMABLE], "item_size": SMALL_FLAT_THINGS, "print_on_investigate": paper_scrap_details, "loot_type": "medium_loot"},
+                    "flags":[CAN_READ, FLAMMABLE], "item_size": SMALL_FLAT_THINGS, "print_on_investigate": True, "loot_type": "medium_loot"},
     "mobile phone": {"name": "a mobile phone", "description": "A mobile phone. You don't think it's yours. Doesn't seem to have a charge.", "flags":[FRAGILE, LOCKED, CAN_LOCK, CAN_BE_CHARGED], KEY:"mobile_passcode", "item_size": PALM_SIZED, "loot_type": "great_loot"},
     "wallet": {"name": "a wallet, with cash", "description": f"A worn leather wallet with around 30 {currency} inside. No identification or cards.", "flags":[CAN_OPEN, CONTAINER], "container_limits": SMALL_FLAT_THINGS, "item_size": PALM_SIZED, "loot_type": "great_loot"},
     "the exact thing": {"name": "the exact thing you've been needing", "description": "It's the exact thing you need for the thing you need it for. But only once.", "flags":list(PANACEA), "item_size": SMALL_FLAT_THINGS, "loot_type": "special_loot"},
