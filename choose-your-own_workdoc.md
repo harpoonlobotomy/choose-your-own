@@ -1306,4 +1306,38 @@ So, next issue:
 #
 
 
-Oh wait, I know why. I wiped game.inventory accidentally by not finishing the 
+Oh wait, I know why. I wiped game.inventory accidentally by not finishing the next section. Fixed now.
+
+
+2.09pm 27.12.25
+#    Chosen: (add to)
+#
+#    Choose an object to put inside the glass jar or hit enter when done:
+#
+#        paperclip x5, anxiety meds, batteries, fish food
+#
+#    paperclip
+#
+#
+#    Chosen: (paperclip)
+#
+#    Choose an object to put inside the glass jar or hit enter when done:
+#
+#        paperclip x5, anxiety meds, batteries, fish food
+#
+#    anxiety meds
+#
+#
+#    Chosen: (anxiety meds)
+#
+#    Added anxiety meds to glass jar
+#
+#    Choose an object to put inside the glass jar or hit enter when done:
+#
+#        paperclip x5, batteries, fish food
+#
+
+The 'add to' selection doesn't account for multiples correctly. I need to shift the 'check for multiples' to something more reusable and central.
+
+
+3.26pm Have set up 'compare_input_to_options in misc_utilities, which should help with above and some other usecases too. Intent is to set it up any time user input needs to be checked against option lists, with output tailored to minimum noise but with the required usability. Having a check after the compare func is an additional step, but being able to check 'if this null/instance/(float|int)/str' to get what 'kind' of metadata is involved with clear steps therafter feels nicer than returning 6 different pieces of information and checking against them all, with the endless item_name, _, _, _, _, etc.

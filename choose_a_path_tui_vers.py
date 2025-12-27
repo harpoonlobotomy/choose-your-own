@@ -1,16 +1,17 @@
 # loot.name_col(item) == adding col to class
 # assign_colour(text) == to print w colour
 
-import item_definitions
-import item_management_2
-from misc_utilities import assign_colour, col_list, switch_the, generate_clean_inventory, get_inventory_names, from_inventory_name
+from os import system
+from pprint import pprint
+from time import sleep
+import random
+
+from misc_utilities import assign_colour, col_list, switch_the, generate_clean_inventory, get_inventory_names, from_inventory_name, check_name, print_type
 from set_up_game import load_world, set_up, init_settings
 from choices import choose, time_of_day, trip_over, emphasis
-import random
-from locations import run_loc, places
-from env_data import placedata_init, p_data, weatherdict
-from pprint import pprint
-import time
+from env_data import p_data, weatherdict
+from locations import places
+from item_definitions import container_limit_sizes, detail_data
 
 from item_management_2 import ItemInstance, registry
 
@@ -159,14 +160,14 @@ def add_item_to_container(container:ItemInstance):
 
     if "container" in container.flags:
         container_size = container.container_limits
-        container_size = item_definitions.container_limit_sizes[container_size]
+        container_size = container_limit_sizes[container_size]
 
         def get_suitable_items():
             add_x_to = []
             for item in game.inventory:
             ## get items in inventory that are small enough to fit (use item_size)
                 item_size = item.item_size
-                item_size = item_definitions.container_limit_sizes[item_size]
+                item_size = container_limit_sizes[item_size]
                 if item_size < container_size:
                     #print(f"Item size {item}, {item_size}, < container size {container.name}, container_size: {container_size}")
                     add_x_to.append(item)
@@ -226,7 +227,6 @@ def do_action(trial:str, inst:ItemInstance|str)->list:
 
         details = inst.name + "_details"
         details = details.replace(" ", "_")
-        from item_definitions import detail_data
         details_data = detail_data.get(details)
         if details_data:
             if details_data.get("is_tested"):
@@ -276,22 +276,17 @@ def item_interaction(inst:str, inventory_names:list=None, no_xval_names:list=Non
 
     if inventory_names != None and no_xval_names != None:
         special_names = list(set(inventory_names) - set(no_xval_names))
-
         for item in special_names:
-            if "*" in item:
-                item_name = item.replace("*","")
-                test_inst = from_inventory_name(item_name, game.inventory)
-                if test_inst == inst: ## there is a better way of doing it than this but it should do for now, else it prints for any special item whether it was selected or not.
-                    children = registry.instances_by_container(inst)
-                    #coloured_list = col_list(children)
-                    #do_print(f"{switch_the(inst.name)} contains {children}")
-                    children_val=children
-            if " x" in item:
-                item_name, x_val = item.split()
-                if item_name == inst.name:
-                    x_val = x_val.replace("x","")
-                    do_print(f"You currently have {x_val} {item_name}s") # hardcoded simple plural, will upgrade it later.
-                    multiple_val = x_val
+            plain_name, name_type = check_name(item)
+            if name_type == 1:
+                test_inst = from_inventory_name(plain_name, game.inventory)
+                if test_inst == inst:
+                    children_val = registry.instances_by_container(inst)
+
+            elif name_type > 1:
+                if plain_name == inst.name:
+                    multiple_val = name_type
+                    do_print(f"You currently have {multiple_val} {plain_name}s") # hardcoded simple plural 's', will upgrade it later.
 
     ### TODO: Possibly if >1 (or >2) children, make the action 'remove item', with submenu of children, instead of a big long list. Not necessary at this point at all but worth thinking about.
 
@@ -1100,29 +1095,6 @@ def intro():
     do_print("Type the words in parentheses, or select by number")
     do_print("    eg: for [[  (stay) or (go))  ]], '1' would choose 'stay'.")
 
-def run():
-
-    do_print("\n \n")
-    global game
-    run_loc()
-    placedata_init()
-    rigged=True
-    if rigged:
-        playernm = "Testbot"
-    else:
-        intro()
-        do_print()
-        slowWriting("What's your name?")
-        playernm = do_input()
-    game = set_up(weirdness=True, bad_language=True, player_name=playernm)
-    col_list(game.inventory)
-
-    do_print()
-    slowWriting("[[ Type 'help' for controls and options. ]]")
-    do_print()
-    inner_loop()
-
-#run() # uncomment me to actually play again.
 
 def add_rocks():
     rock, game.inventory = registry.pick_up("pretty rock", game.inventory)
@@ -1130,13 +1102,22 @@ def add_rocks():
     print(f"Rock description: {rock.description}")
     print(f"Proper description: {registry.describe(rock, caps=True)}")
 
-import os
-def test():
+def run():
+
+    system("cls")
 
     test_mode=True
-    os.system("cls")
+    if test_mode:
+        playernm = "Testbot"
+    else:
+        intro()
+        do_print()
+        slowWriting("What's your name?")
+        playernm = do_input()
     global game
-    game = set_up(weirdness=True, bad_language=True, player_name="A")
+    game = set_up(weirdness=True, bad_language=True, player_name=playernm)
+
+    system("cls")
 
     if enable_tui:
         from tui_elements import run_tui_intro
@@ -1153,21 +1134,25 @@ def test():
 
         add_infobox_data(print_data = True, inventory=game.inventory)
 
-    ## to have it picked up already.
-    game.carryweight += 5
-    inst = registry.instances_by_name("glass jar")
-    _, game.inventory = registry.pick_up(inst, game.inventory)
-
-    #for _ in range(10):
-    #    add_rocks()
-    #exit()
+    ## Add glass jar to inventory for container tests
+    #game.carryweight += 5
+    #inst = registry.instances_by_name("glass jar")
+    #_, game.inventory = registry.pick_up(inst, game.inventory)
 
     if not test_mode:
         slowWriting("[[ Type 'help' for controls and options. ]]")
         do_print()
+
+    from misc_utilities import compare_input_to_options
+    outcome, alignment = compare_input_to_options(game.inventory, game.player, input="paperclip")
+    outcome_ref = alignment.get(outcome)
+    print(f"outcome: {outcome}, alignment: {outcome_ref}")
+    ## Okay. So this gives me an instance obj not just from inventory, but from the available options. I really like this.
+
+    exit()
     inner_loop(speed_mode=test_mode)
 
-os.system("cls")
-time.sleep(1)
-test()
+system("cls")
+sleep(1)
+run()
 

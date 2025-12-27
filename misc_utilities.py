@@ -14,9 +14,40 @@ Yellow for 'interactable' in description text, maybe?
 """
 from item_management_2 import ItemInstance, registry
 
+cardinal_cols = {
+    "north": "red",
+    "south": "blue",
+    "east": "cyan",
+    "west": "magenta"
+}
+
 
 def smart_capitalise(s: str) -> str:
     return s[0].upper() + s[1:] if s else s
+
+special_type = {
+    "name": 0,
+    "container": 1,
+    "plural": 2
+}
+
+def check_name(item_name):
+
+    if "*" in item_name:
+        plain_name = item_name.replace("*", "")
+        name_type = special_type["container"] # Trying to figure out the best way to do this. Need to be able to reliably indicate the outcome of the test. So, if name_type == None/0, that's a pretty clear indicator.
+        # But - Do I have a triple each time, to account for outputting the count of items for plurals? Or do I just use the plural value as the output, so >1 == plural, with the value being the actual value of the plural. Maybe that one.
+
+    elif " x" in item_name:
+        plain_name = item_name.split(" x")[0]
+        plural_val = item_name.split(" x")[1]
+        name_type = int(plural_val)
+
+    else:
+        plain_name = item_name
+        name_type = special_type["name"]
+
+    return plain_name, name_type
 
 
 def get_inventory_names(inventory_inst_list) -> list:
@@ -27,16 +58,12 @@ def get_inventory_names(inventory_inst_list) -> list:
 
     return inventory_names_list
 
-def from_inventory_name(test:str, inst_inventory:list=None) -> ItemInstance: # works now with no_xval_names to reference beforehand.
+def from_inventory_name(test:str, inst_inventory:list=None) -> ItemInstance:
     if inst_inventory == None:
         from set_up_game import game ## might break
         inst_inventory = game.inventory
 
-    if " x"  in test or "*" in test:
-        cleaned_name = test.split(" x")[0]
-        cleaned_name = test.replace("*", "")
-    else:
-        cleaned_name = test
+    cleaned_name,_ = check_name(test)
 
     for inst in inst_inventory:
         if inst.name == cleaned_name:
@@ -113,12 +140,7 @@ def generate_clean_inventory(inventory_inst_list, will_print = False, coloured =
         elif will_print:
             update_text_box(inventory_names, use_TUI=False)
 
-
-#    registry.inst_to_names_dict There's no point in this, because we can just do inst.name. Bleh.
-
     return inventory_names, no_xval_inventory_names
-
-
 
 def switch_the(text:str|ItemInstance|list, replace_with:str="the")->str:
 
@@ -142,14 +164,6 @@ def switch_the(text:str|ItemInstance|list, replace_with:str="the")->str:
     if replace_with == "the":
         text = "the "+ text
     return text
-
-
-cardinal_cols = {
-    "north": "red",
-    "south": "blue",
-    "east": "cyan",
-    "west": "magenta"
-}
 
 def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=False, not_bold=False, caps=False):
 
@@ -209,7 +223,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
                 colour=cardinal_cols[colour]
                 Colours.colour_counter += 1
 
-                item=registry.register_name_colour(item, colour) ## applies the colour the inst, so we later have item.colour.
+                item=registry.register_name_colour(item, colour)
                 bld=True
             return colour, item, bld
 
@@ -220,18 +234,12 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
 
     elif isinstance(item, str) or isinstance(item, ItemInstance):
         if isinstance(item, str):
-            if " x" in item:
-                item_temp = item.split(" x")[0]
-                item_instances=registry.instances_by_name(item_temp)
-                if item_instances:
-                    item_reduced=item_instances[0]
-                    colour, _, bld = check_instance_col(item_reduced)
 
-            elif "*" in item:
-                item_temp = item.replace("*", "")
-                item_instance = from_inventory_name(item_temp, None)
-                if item_instance:
-                    colour, _, bld = check_instance_col(item_instance)
+            plain_name, val = check_name()
+            if val > 0:
+                item_instance = from_inventory_name(plain_name, None)
+                colour, _, bld = check_instance_col(item_instance)
+
             else:
                 item_instances=registry.instances_by_name(item)
                 if item_instances:
@@ -239,7 +247,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
                     colour, item, bld = check_instance_col(item)
                     #colour = item.colour
 
-        if isinstance(item, ItemInstance):
+        elif isinstance(item, ItemInstance): # changed to elif. Hoping it stops the weird 'colour == none despite me printing in the right colour' issue.
             colour, item, bld = check_instance_col(item)
 
         elif isinstance(colour, (int, float)):
@@ -261,16 +269,6 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
 
     #if colour == None:
         #print(f"Colour is None. Item: ({item}). Type: ({type(item)})")
-        # This is printing every time an inventory item is found the first time. I've no idea why though. This:
-        #   Colour is None. Item: (moss). Type: (<class 'str'>)
-        #   moss
-        #   Colour is None. Item: (glass jar). Type: (<class 'str'>)
-        #   glass jar
-        #   Colour is None. Item: (headstone). Type: (<class 'str'>)
-        #   headstone
-        #   Colour is None. Item: (dried flowers). Type: (<class 'str'>)
-        #   dried flowers
-        # prints with full colour.
 
     if not_bold:
         bld=False
@@ -407,3 +405,89 @@ def col_list(print_list:list=[], colour:str=None)->list: ## merge this to the ab
             coloured_text = assign_colour(item, colour)
         coloured_list.append(coloured_text)
     return coloured_list
+
+def compare_input_to_options(*options, input, inventory:list=None, use_last=False):
+
+    cleaned_options = []
+
+
+
+    for item in options:
+        if isinstance(item, (set|list|dict)):
+            if isinstance(item, set|list):
+                for subitem in item:
+                    if isinstance(subitem, (list|set)):
+                        for subsubitem in subitem:
+                            cleaned_options.append(subsubitem)
+                    else:
+                        cleaned_options.append(subitem)
+            elif isinstance(item, dict):
+                for subitem in list(item.keys()):
+                    cleaned_options.append(subitem)
+
+    if inventory != None:
+        for item in inventory:
+            if item not in cleaned_options:
+                cleaned_options.append(item)
+
+    str_only_options = []
+    alignment = {}
+
+    for i, item in enumerate(cleaned_options):
+        if isinstance(item, ItemInstance):
+            str_only_options.append(str(item.name))
+            if alignment.get(item.name) and not use_last: ## only add an alignment for the first one unless drop (or some other case where we want to use the last instance found instead of the first)
+                continue
+            else:
+                alignment[item.name] = {item}
+        elif isinstance(item, (str|float|int)):
+            if isinstance(item, str):
+                cleaned_name, name_type = check_name(item) ## do this here instead of when checking in main script, maybe. Would make sense if I can make it work.
+                alignment[cleaned_name] = {name_type}
+                str_only_options.append(str(cleaned_name))
+            else:
+                str_only_options.append(str(item))
+        else:
+            print("Item in compare_input_to_options is not an accepted type:")
+            print(f"Item: {item}, type: {type(item)}")
+
+    lower_cleaned = [i.lower() for i in str_only_options]#  if isinstance(i, str)]
+
+    if input.lower() in lower_cleaned:
+        idx = lower_cleaned.index(input.lower())
+        found_selection = str_only_options[idx]
+        return found_selection, alignment
+
+"""
+So to use 'alignment':
+if an instance was an option, we have the entry
+"8: {"anxiety meds": iteminstance .....}
+
+The number is only there to allow for multiple entries (eg 'paperclip'. though I guess aside from dropping we always want the first one. Would be better without the enumerator... Hm.)
+
+Okay so now:
+
+"anxiety meds": <iteminstance etc>
+
+alignment.get(found_selection)
+returns
+for instance:
+    the instance object
+
+for fancy string:
+    if container, "int(1)" (maybe it's a float, but it's 1 either way)
+    if plural, "int(val)" where val is the plural value.
+
+if alignment.get(found_selection) returns nothing, then it was a straight match with only potentially capitalisation differences.
+
+"""
+
+
+def print_type(item, exit=False, disabled=False):
+
+    if disabled:
+        return
+
+    print(f"Item: {item}, type: {type(item)}")
+    if exit:
+        exit()
