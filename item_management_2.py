@@ -138,7 +138,6 @@ class LootRegistry:
                             continue # if already there, try another prospective parent. Don't know if this'll work on not yet.
 
         # Index by location ## Do this at the end, so can check container status - if in a container, don't add it to the location. Let it be in the container exclusively.
-
         if location:
             if not hasattr(inst, "contained_in") or inst.contained_in == None:
                 location, cardinal = next(iter(location.items()))
@@ -179,8 +178,8 @@ class LootRegistry:
                 if cardinal in self.by_location.get(location):
                     self.by_location[location][cardinal].discard(inst)
 
-                    if not self.by_location[location][cardinal]:
-                        del self.by_location[location][cardinal]
+                 #   if not self.by_location[location][cardinal]: ## I really don't like this. It's going to break searches instead of just returning none.
+                 #       del self.by_location[location][cardinal]
 
         ## MOVE TO NEW LOCATION IF PROVIDED
 
@@ -191,9 +190,7 @@ class LootRegistry:
             if new_location:
                 if not self.by_location.get(place):
                     temp_place = place.replace("a ", "")
-                    if not self.by_location.get(temp_place):
-                        print(f"Count not find location {place}, please check.")
-                    else:
+                    if self.by_location.get(temp_place):
                         place = temp_place
                     if not self.by_location.get(place):
                         self.by_location.setdefault(place, {})
@@ -246,15 +243,14 @@ class LootRegistry:
 
     def instances_by_location(self, place:str, direction:str)->list:
 
-        location = self.by_location.get(place)
+        location = self.by_location.get(place) ## always expects 'not `a ` version of name.' ### PREVIOUS COMMENT IS A LIE. SOMETIMES IT EXPECTS THE A_ VERSION. oR AT LEAST THAT'S WHAT IT GETS. This is entirely my own fault, I knew this would happen.
         #print(f"location by default: {location}, raw place: {place}")
-
-        if not location:
-            if place.startswith("a "):
-                no_a_place = place.split("a ")[1]
-                location = self.by_location.get(no_a_place)
-                if location:
-                    place = no_a_place
+        #print("self.by_location:: ", self.by_location)
+        if place.startswith("a "):
+            no_a_place = place.split("a ")[1]
+            location = self.by_location.get(no_a_place)
+            if location:
+                place = no_a_place
 
             else:
                 a_place = "a " + place
@@ -265,10 +261,19 @@ class LootRegistry:
                     place = a_place
         #print(f"places: {self.by_location}")
         #print(f"place: {place}")
-        if self.by_location[place].get(direction): # check if the direction has been established yet.
-            instance_list:list = [i for i in self.by_location[place].get(direction)] # if so, check if there are items there.
-            if instance_list:
-                return instance_list
+        if direction != "all":
+            if self.by_location[place].get(direction): # check if the direction has been established yet.
+                instance_list:list = [i for i in self.by_location[place].get(direction)] # if so, check if there are items there.
+                if instance_list:
+                    return instance_list
+        else:
+            compiled_list = []
+            for direction in ["north", "east", "south", "west"]:
+                if self.by_location[place].get(direction):
+                    instance_list:list = [i for i in self.by_location[place].get(direction)] # if so, check if there are items there.
+                    if instance_list:
+                        compiled_list += instance_list
+            return compiled_list
 
     def instances_by_name(self, definition_key:str)->list:
         return self.by_name.get(definition_key)# if self.by_name.get(definition_key) else None
@@ -513,6 +518,12 @@ class LootRegistry:
         self.move_item(inst, place=location, direction=direction)
         return inst, inventory_list
 
+    def complete_location_dict(self):
+        from env_data import dataset
+        from misc_utilities import cardinal_cols
+        for location in list(dataset.keys()):
+            for direction in list(cardinal_cols.keys()):
+                self.by_location.setdefault(location, {}).setdefault(direction, set())
 
 # setup
 registry = LootRegistry()
@@ -564,7 +575,7 @@ if get_flags:
 
 def initialise_registry():
     from item_definitions import get_item_defs
-
+    registry.complete_location_dict()
     for item_name, attr in get_item_defs().items():
         registry.create_instance(item_name, attr)
 

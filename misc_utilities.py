@@ -1,3 +1,4 @@
+from __future__ import annotations
 ## utilities to be used by any script at any point
 
 
@@ -151,8 +152,12 @@ def switch_the(text:str|ItemInstance|list, replace_with:str="the")->str:
         else:
             print("Trying to `switch_the`, but text is a list with more than one item.")
             exit()
+
     if isinstance(text, ItemInstance):
         text=text.name
+
+    if replace_with == "a ":
+        text = text.replace("the ", "a ")
 
     for article in ("a ", "an "):
         if text.startswith(article):# in text:
@@ -163,6 +168,7 @@ def switch_the(text:str|ItemInstance|list, replace_with:str="the")->str:
 
     if replace_with == "the":
         text = "the "+ text
+
     return text
 
 def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=False, not_bold=False, caps=False):
@@ -192,6 +198,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
         if colour in specials:
             if "loc" in colour:
                 colour="green" # set 'loc' in colours.C instead of hardcoding the actual colours here. Only code here for bold, or if the colour named is inaccurate.
+                bld=True
             if colour == "title_bg":
                 colour="black"
                 bg="green"
@@ -235,7 +242,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
     elif isinstance(item, str) or isinstance(item, ItemInstance):
         if isinstance(item, str):
 
-            plain_name, val = check_name()
+            plain_name, val = check_name(item)
             if val > 0:
                 item_instance = from_inventory_name(plain_name, None)
                 colour, _, bld = check_instance_col(item_instance)
@@ -247,7 +254,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
                     colour, item, bld = check_instance_col(item)
                     #colour = item.colour
 
-        elif isinstance(item, ItemInstance): # changed to elif. Hoping it stops the weird 'colour == none despite me printing in the right colour' issue.
+        if isinstance(item, ItemInstance): # changing to elif breaks non-instance colours entirely.
             colour, item, bld = check_instance_col(item)
 
         elif isinstance(colour, (int, float)):
@@ -256,9 +263,6 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
 
             colour=cardinal_cols[colour]
             bld=True
-        #else:
-        #    print(f"Item not in cardinals and not an instance: {item}") #### ## triggers on locations, possible other things too.
-        # This whole thing needs redoing so I'm not going to focus on it too much for now.
 
     if nicename:
         item=nicename
@@ -266,6 +270,12 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
         item=switch_the(item)
     if caps:
         item = smart_capitalise(item)
+
+    #if colour == None:
+    #    colour=cardinals[Colours.colour_counter%len(cardinals)]
+    #    colour=cardinal_cols[colour]
+    #    Colours.colour_counter += 1
+    #    bld=True
 
     #if colour == None:
         #print(f"Colour is None. Item: ({item}). Type: ({type(item)})")
@@ -406,24 +416,23 @@ def col_list(print_list:list=[], colour:str=None)->list: ## merge this to the ab
         coloured_list.append(coloured_text)
     return coloured_list
 
-def compare_input_to_options(*options, input, inventory:list=None, use_last=False):
+def compare_input_to_options(*options, input:str, inventory:list=None, use_last=False)->tuple[(str|None)|dict]:
 
     cleaned_options = []
 
-
-
-    for item in options:
-        if isinstance(item, (set|list|dict)):
-            if isinstance(item, set|list):
-                for subitem in item:
-                    if isinstance(subitem, (list|set)):
-                        for subsubitem in subitem:
-                            cleaned_options.append(subsubitem)
-                    else:
+    if isinstance(options, list):
+        for item in options:
+            if isinstance(item, (set|list|dict)):
+                if isinstance(item, set|list):
+                    for subitem in item:
+                        if isinstance(subitem, (list|set)):
+                            for subsubitem in subitem:
+                                cleaned_options.append(subsubitem)
+                        else:
+                            cleaned_options.append(subitem)
+                elif isinstance(item, dict):
+                    for subitem in list(item.keys()):
                         cleaned_options.append(subitem)
-            elif isinstance(item, dict):
-                for subitem in list(item.keys()):
-                    cleaned_options.append(subitem)
 
     if inventory != None:
         for item in inventory:
@@ -433,17 +442,22 @@ def compare_input_to_options(*options, input, inventory:list=None, use_last=Fals
     str_only_options = []
     alignment = {}
 
-    for i, item in enumerate(cleaned_options):
+    for item in cleaned_options:
         if isinstance(item, ItemInstance):
             str_only_options.append(str(item.name))
             if alignment.get(item.name) and not use_last: ## only add an alignment for the first one unless drop (or some other case where we want to use the last instance found instead of the first)
                 continue
             else:
-                alignment[item.name] = {item}
+                alignment.setdefault(item.name, {}).update({"instance":item})
+                #alignment[item.name].setdefault({"instance":item})
         elif isinstance(item, (str|float|int)):
             if isinstance(item, str):
                 cleaned_name, name_type = check_name(item) ## do this here instead of when checking in main script, maybe. Would make sense if I can make it work.
-                alignment[cleaned_name] = {name_type}
+# self.by_location.setdefault(location, {}).setdefault(cardinal, set()).add(inst)
+                if alignment.get(item) and not use_last:
+                        continue
+                else:
+                    alignment.setdefault(cleaned_name, {}).update({"name_type":name_type})
                 str_only_options.append(str(cleaned_name))
             else:
                 str_only_options.append(str(item))
@@ -453,10 +467,18 @@ def compare_input_to_options(*options, input, inventory:list=None, use_last=Fals
 
     lower_cleaned = [i.lower() for i in str_only_options]#  if isinstance(i, str)]
 
-    if input.lower() in lower_cleaned:
+    if isinstance(input, (list|set)):
+        input = input[0]
+    if input == None:
+        return None, alignment
+    elif input.lower() in lower_cleaned:
         idx = lower_cleaned.index(input.lower())
         found_selection = str_only_options[idx]
         return found_selection, alignment
+    else:
+        print(f"No match found for {input}.")
+        return None, alignment
+
 
 """
 So to use 'alignment':

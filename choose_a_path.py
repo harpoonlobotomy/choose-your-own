@@ -8,7 +8,7 @@ from set_up_game import load_world, set_up, init_settings
 from choices import choose, loc_loot
 import random
 from locations import run_loc, places, descriptions
-from env_data import placedata_init, p_data
+from env_data import placedata_init, places
 from pprint import pprint
 
 from item_management_2 import ItemInstance, registry
@@ -178,10 +178,10 @@ def user_input():
         print()
         return "inventory_done"
     if text.lower() == "d":
-        loc_data = p_data[game.place]
+        loc_data = places[game.place]
         print(f"{text}: Describe location.")
         slowWriting(f"[{smart_capitalise(game.place)}]  {loc_data.overview}")
-        obj = getattr(p_data[game.place], game.facing_direction)
+        obj = getattr(places[game.place], game.facing_direction)
         slowWriting(f"  You're facing {game.facing_direction}. {obj}\n")
         print()
 #        print(f"{[game.place]}:{places[game.place].description}")#{descriptions[game.place].get('description')}")
@@ -552,7 +552,7 @@ def have_a_rest():
     look_around()
 
 def get_hazard():
-    inside = getattr(p_data[game.place], "inside")
+    inside = getattr(places[game.place], "inside")
     if inside:
         options = choices.trip_over["any"] + choices.trip_over["inside"]
     else:
@@ -616,7 +616,7 @@ def relocate(need_sleep=None):
         look_around()
 
 def sleep_outside():
-    if getattr(p_data[game.place], "nature"):
+    if getattr(places[game.place], "nature"):
         slowWriting("You decide to spend a night outside in nature.")
     else:
         slowWriting(f"You decide to spend a night outside in {assign_colour(switch_the(game.place, "the "), 'loc')}.")
@@ -715,7 +715,7 @@ def look_around(status=None):
             reason = "the sun"
         if skip_intro==False: # if there are no other reason to skip intro, can just combine the above into one 'if/else'.
             slowWriting(f"Using the power of {reason}, you're able to look around {assign_colour(switch_the(game.place, "the "), 'loc')} without too much fear of a tragic demise.")
-        obj = getattr(p_data[game.place], game.facing_direction)
+        obj = getattr(places[game.place], game.facing_direction)
         #print(f"\n{obj}\n")
         print(f"\n  You're facing {assign_colour(game.facing_direction)}. {obj}\n") # description
         if obj == None or obj == "None":
@@ -802,7 +802,7 @@ def look_around(status=None):
 
 ## ==== Actual start here ===
 
-    inside = getattr(p_data[game.place], "inside")
+    inside = getattr(places[game.place], "inside")
     if inside:
         add_text="outside " # just so it says 'with the weather outside raining, instead of 'with the weather raining'. Either way it's a poorly constructed sentence though.
     else:
@@ -832,7 +832,7 @@ def new_day():
 
 def describe_loc():
     ## Needs to also describe weather here.
-    loc_data = p_data[game.place]
+    loc_data = places[game.place]
     slowWriting(f"You take a moment to take in your surroundings. {loc_data.overview}")
     test=option(game.cardinals, "go", print_all=True, preamble="Pick a direction to investigate, or go elsewhere?")
     if test in game.cardinals:

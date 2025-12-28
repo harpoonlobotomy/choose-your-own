@@ -206,7 +206,7 @@ def update_text_box(to_print, end=False, edit_list=False, use_TUI=True):
                 setattr(state, attr_name, new_print_list)
 
     if end==True:
-        print(HIDE, end='')
+        print(HIDE, end='') ## This is weird and makes no sense. Also currently in the main run it's literally always false. Need to check what this is used for if anything.
         print(to_print, end='')
 
     if edit_list: # to change the last line, eg changing the input text to 'chosen'
@@ -279,9 +279,6 @@ def update_text_box(to_print, end=False, edit_list=False, use_TUI=True):
 
 
         print_list_to_textbox(print_list)
-        #for i, item in enumerate(print_list):
-
-
 
     b_white_format=';'.join([str(1), str(37), str(40)])
     B_WHITE=f"\x1b[{b_white_format}m"

@@ -2,7 +2,7 @@
 
 ## Rules: One direction is always the exit.
 
-from locations import places
+#from locations import places
 from misc_utilities import assign_colour
 
 # a little section for weather. This is a weird, environment-data file. idk.
@@ -54,7 +54,7 @@ leave_options = str("'leave', 'stay', preamble='Do you want to leave, or stay?'"
 dataset = {
     ## Could roll for descriptions. Not always different, but would be interesting. Functionally a perception check.
     # I could do stats... like, for looking for things etc. Actual perception checks, instead of mostly luck based.
-    "a city hotel room": {"descrip": "You're in a 'budget' hotel room; small but pleasant enough, at least to sleep in. The sound of traffic tells you you're a couple of floors up at least, and the carpet is well-trod.", "inside":True,
+    "a city hotel room": {"descrip": "You're in a 'budget' hotel room; small but pleasant enough, at least to sleep in. The sound of traffic tells you you're a couple of floors up at least, and the carpet is well-trod", "inside":True,
             "electricity": True, "nature": False,
             "n_desc": "There's a queen-size bed, simple but clean looking,",
             "e_desc": "a television and two decent sized windows overlooking the city",
@@ -138,6 +138,9 @@ class place_data:
 
     def __init__(self, name):
         self.name = name
+        self.visited = False
+        self.first_weather = None
+        self.description = dataset.get(name, {}).get("descrip")
 
         for attr, value in dataset.get(name, {}).items():
             #print(f"name: {name}, attr: {attr}, value: {value}")
@@ -159,19 +162,22 @@ class place_data:
                 cardinal_actions = leave_options # use the defaults if none.
 
         if dataset[name].get("descrip"):
-            self.overview = f"{dataset[name]["descrip"]}. \n{self.n_desc} to the {assign_colour("north")}. To the {assign_colour("east")} is {self.e_desc}, to the {assign_colour("south")} is {self.s_desc}, and to the {assign_colour("west")} is {self.w_desc}."
+            self.overview = f"{dataset[name]["descrip"]}.{"\033[0m"} \n{self.n_desc} to the {assign_colour("north")}. To the {assign_colour("east")} is {self.e_desc}, to the {assign_colour("south")} is {self.s_desc}, and to the {assign_colour("west")} is {self.w_desc}."
         #def get_cardinal_desc()
 
+    def visit(self):
+        self.visited = True
+
 def placedata_init():
-    p_data = {}
-    for name in places.keys():
+    places = {}
+    for name in dataset.keys():
         place = place_data(name)
-        p_data[name] = place
-    return p_data
+        places[name] = place
+    return places
 
 #from locations import run_loc
 #from pprint import pprint
 #places = run_loc()
-p_data = placedata_init()
+places = placedata_init()
 
 #print(p_data["a graveyard"].north)

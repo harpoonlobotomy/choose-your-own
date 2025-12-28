@@ -2,8 +2,9 @@
 
 import random
 from item_management_2 import initialise_registry, registry
-import locations
+#import locations
 import choices
+import misc_utilities
 
 
 """
@@ -94,7 +95,6 @@ def calc_emotions():
         return "doing quite well"
 
 def load_world(relocate=False, rigged=False, new_loc=None):
-
     from env_data import weatherdict
     rigged =True
     rig_place = "a graveyard"#"a city hotel room"#
@@ -115,6 +115,7 @@ def load_world(relocate=False, rigged=False, new_loc=None):
             game.weather = random.choice(weatherlist)#"fine", "stormy", "thunderstorm", "raining", "cloudy", "perfect", "a heatwave"))
             game.place = random.choice((game.loc_list))#"your home", "the city centre", "a small town", "the nature reserve", "the back alley", "a hospital", "a friend's house", "graveyard"))
 
+    #print(f"loc_list: {loc_list}")
     if new_loc:
         game.place=new_loc
 
@@ -219,7 +220,7 @@ def set_up(weirdness, bad_language, player_name): # skip straight to init_game t
     game.weirdness = weirdness
     game.bad_language = bad_language
     game.playername = player_name
-    game.facing_direction = random.choice(("north", "east", "south", "west"))
+    game.facing_direction = random.choice(list(misc_utilities.cardinal_cols.keys()))
     game.painting = random.choice(choices.paintings) # new, testing. Only needed for city hotel room at present. May update later if more locations. Nice to have semi-randomised location aspects.
     #print(f"game.painting: {game.painting}")
     init_game()
@@ -282,7 +283,9 @@ class game:
     carryweight = choices.carryweight
     painting = "a ship in rough seas"
     cardinals = ["north", "south", "east", "west"]
-    loc_list = list(locations.descriptions.keys())
+
+    from env_data import dataset
+    loc_list = list(dataset.keys())
     day_number=1
 
     last_loc = "a graveyard" # just here to keep the persistence if things get distracted during a scene change

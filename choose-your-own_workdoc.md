@@ -1341,3 +1341,289 @@ The 'add to' selection doesn't account for multiples correctly. I need to shift 
 
 
 3.26pm Have set up 'compare_input_to_options in misc_utilities, which should help with above and some other usecases too. Intent is to set it up any time user input needs to be checked against option lists, with output tailored to minimum noise but with the required usability. Having a check after the compare func is an additional step, but being able to check 'if this null/instance/(float|int)/str' to get what 'kind' of metadata is involved with clear steps therafter feels nicer than returning 6 different pieces of information and checking against them all, with the endless item_name, _, _, _, _, etc.
+
+
+In practice:
+
+    outcome, alignment = compare_input_to_options(game.inventory, game.player, input="paperclip")
+    outcome_ref = alignment.get(outcome)
+    print(f"outcome: {outcome}, alignment: {outcome_ref}")
+
+# [<ItemInstance severed tentacle (9429d103-3e5a-4a3e-9f1a-18edb8529dba)>, <ItemInstance paperclip (0bf9f141-9d84-4f9e-8ea1-ef52560cf53b)>, <ItemInstance paperclip (cba0ebbb-dd0b-447b-a81c-133e10aa8eb5)>, <ItemInstance paperclip (cc6d5a2c-2738-40f3-895d-3a1014d7a815)>, <ItemInstance fashion mag (e5718a73-063f-4286-8513-3b345f37594a)>, <ItemInstance fish food (6c3f6283-9ee4-4f10-ab8c-a27129b6e6b6)>, <ItemInstance paperclip (69f0c8ee-6862-4853-986d-8556b5f12031)>, <ItemInstance regional map (c1aeeec5-cc29-45bd-95bc-ec5c56f33454)>, <ItemInstance paperclip (7c530b89-d3dc-4c97-9762-403f73a067e8)>, <ItemInstance paperclip (01f4d086-acfd-4370-9e67-f4aa7ac9766a)>]
+# outcome: paperclip, alignment: {<ItemInstance paperclip (0bf9f141-9d84-4f9e-8ea1-ef52560cf53b)>}
+
+Returns the first paperclip, provided with just 'paperclip' input.
+
+
+With 'use last' on:
+
+[<ItemInstance paperclip (5e77a4e6-81c0-4c9b-8fb4-71d3a0fb5dfc)>, <ItemInstance paperclip (70782774-62b9-4ce6-bb6a-29fd2193a983)>, <ItemInstance paperclip (be761953-3186-49fd-acb4-83ab946012b1)>, <ItemInstance fashion mag (e6d4c204-10b6-4cdc-b9f1-cff04a1e615c)>, <ItemInstance car keys (bed5ea45-2256-406b-85b2-4f9882c566b0)>, <ItemInstance anxiety meds (772f0f04-8f41-4ef1-b52a-d97066625f36)>, <ItemInstance paperclip (48abc0ba-c645-4369-9f6c-b500ea636245)>, <ItemInstance unlabelled cream (328c7002-8f59-47a8-93ce-72b5e1bcd7d6)>, <ItemInstance fish food (73e7f5fd-6aec-4dee-94f0-58b3f8e18e68)>, <ItemInstance paperclip (c78af0e0-654c-4d41-9c46-2649621743bf)>, <ItemInstance batteries (71a0c01f-6ced-4305-bc0d-6e2ef6f51b26)>]
+outcome: paperclip, alignment: {<ItemInstance paperclip (c78af0e0-654c-4d41-9c46-2649621743bf)>}
+
+Returns last as expected.
+
+Hmmmm.
+But using the cleaned list (with x5 etc), it ruturns
+
+outcome: paperclip, alignment: {6}
+
+where the plural val has superceded the instance val.
+
+So yes. It's one or the other - if I feed it the actual inventory, it returns instance correctly. If i feed it the cleaned inventory (which is just strings), it returns plural/etc. Which is to be expected, it's not doing the interal checks against the inventory databank.
+
+
+3.48pm:
+
+[<ItemInstance paperclip (e85b3c2c-bc47-4e56-92dd-8de0d047839a)>, <ItemInstance paperclip (3d87fa86-6ed3-4b95-8365-d8f7159f7b44)>, <ItemInstance paperclip (c3cc3b7f-a762-48e1-ac7c-3bbe3576ce2e)>, <ItemInstance gardening mag (705f455f-3736-478f-ba0b-ef7e80968fd4)>, <ItemInstance anxiety meds (03b36466-adbd-4483-8ebb-a50379af67c0)>, <ItemInstance car keys (8c1972db-3f3b-45fb-a627-2c12e080d274)>, <ItemInstance paperclip (928a7501-58dc-4e16-a6b5-4157ae63b3a2)>, <ItemInstance paperclip (0952747d-876b-4136-a566-a8cb9bbdf6fe)>, <ItemInstance fish food (c55223b4-76e1-48f3-9ee4-f7de8e722085)>]
+outcome: paperclip, alignment: {'name_type': 5, 'instance': <ItemInstance paperclip (0952747d-876b-4136-a566-a8cb9bbdf6fe)>}
+
+Okay. One mor step, but now it carries both the name_type data if reevant and instance data if relevant.
+
+
+So, this:
+
+    from misc_utilities import compare_input_to_options
+    clean_list, _ = generate_clean_inventory(game.inventory, tui_enabled=enable_tui)
+    outcome, alignment = compare_input_to_options(clean_list, game.player, input="fashion mag", inventory=game.inventory, use_last=True)
+    outcome_ref = alignment.get(outcome)
+    print(f"outcome: {outcome}, alignment: {outcome_ref}")
+
+gets you this:
+
+outcome: fashion mag, alignment: {'name_type': 0, 'instance': <ItemInstance fashion mag (54e7ba14-8aaf-4e53-bf76-4f48c94d1d34)>}
+
+Yeah I'm happy with that. Whther you get name_type, instance or both depending it on what  you feed into it, but I think that's a pretty solid setup. The interface from str input > instances is significant, and I feel better about having this as a main component of the 'option selected' engine. (Not really an engine, but it sounded good.)
+
+
+5:42pm
+Okay, updated the item identification: 'drop' now uses the new system, taking the inputted instance (as chosen by 'paperclip>drop'), but grabs the last instance and drops that. This means the inventory colours are consistent, as it drops the 'hidden' paperclip, not the first in the list. Subtle but nice.
+
+
+Hm. Issue though: After they're dropped, the items lose their colour. When 'dropped x', they had their own colours. But once they're on the ground in the inventory list, they have the default colour (red), matching the first one found. So the ones on the ground default to red. Not sure if that's a matter of the inv print or if the items have lost the colour attr.
+
+5:47pm
+Okay, so have tested:
+
+north, east, west, leave or paperclip, paperclip, paperclip, paperclip <- all paperclips are red
+
+What do you want to do with the paperclip - take it, or leave it alone? <-- paperclip is red
+
+Chosen: (take)
+
+paperclip added to inventory. <- paperclip is cyan, as it was originally.
+
+So the instance retains its colour, but it's not utilised when the obj is on the ground.
+
+5.54pm
+Fixed. Now it retains the instance color regardless of whether it's in the inventory or not.
+Only exception is:
+
+
+You can look around more, leave, or try to interact with the environment:
+
+    north, south, east, leave or paperclip, paperclip  <- purple, red
+
+paperclip
+
+
+Chosen: (paperclip)
+
+Description: A humble paperclip.
+
+What do you want to do with the paperclip - take it, or leave it alone?  <-- red
+
+    take or leave
+
+take
+
+
+Chosen: (take)
+
+paperclip added to inventory.  <-- purple
+
+You can look around more, leave, or try to interact with the environment:
+
+    north, south, east, leave or paperclip   <-- red
+
+
+So it shows purple, red. The 'chosen' is the last one. But the one it chooses is the first. I would expect it to always be taking the first one's colour, given that's the one it defaults to - typing the name it picks the first. But for some reason,
+What do you want to do with the paperclip <-- this one is taking red. I assume it's the colour of hte first paperclip in the inventory, so it's the first that it comes across when searching by name, but it can correctly identify the colour in the next step. So I just need to specify slightly sooner.
+
+
+6.03pm Okay, seems to be fixed now. It still picks items from the local items at a seemingly random order, but the colours are consistent
+
+
+5.03pm 28/12/25
+
+Working on null-entry user input and print spacing. There are weird bunches of spacing that I need to identify, so I'm going to add markers to print lines.
+
+#  You can look around more, leave, or try to interact with the environment:
+#
+#      south, east, west or leave
+#
+#
+#
+#
+#  (Chosen: <NONE> [do_input])
+#
+#  (Chosen: <NONE>) [look_light]
+#
+#  You can look around more, leave, or try to interact with the environment:
+#
+#      south, east, west or leave
+
+Notes
+
+5.54pm
+okay have fixed some of it. Added the 'none' print in user_input, and whether it adds a line or not is dependent on whether the TUI is in use or not, because when not TUI it needs a line added.
+
+    -|  Chosen: (i)
+   |-          |##|
+   |-          |##|
+   |-          |##|
+   INVENTORY:
+   |-          |##|
+
+Still three lines beween choosing 'i' and the inventory being printed. Need to check why.
+
+6.09pm
+Added a basic CLI arg to the main script so I can turn the tui on/off between runs without editing the script. Should have done that ages ago.
+
+Chosen: (i)
+
+
+
+INVENTORY:
+
+non-tui has 3 blank lines between 'i' and INVENTORY too. Looking into that now.
+
+
+Fixed it. Had to remove a single do_print. It always adds 3 for some reason.
+
+Am moving do_print to a different
+
+New bug: if in settings you type a not-number, you get:
+
+# To change text speed, enter a number (0.1 to 2), or hit enter to continue with current speed (1.2). Default is (1)
+# [Default test printing speed is 1. 0.1 is very slow, 2 is very fast.]
+# d
+# Please enter a number between 0.1 and 2, or hit 'enter' to keep default.
+# Traceback (most recent call last):
+# ...
+#     if new_text_speed:
+#        ^^^^^^^^^^^^^^
+# UnboundLocalError: cannot access local variable 'new_text_speed' where it is not associated with a value
+
+So I need to fix that.
+
+7.37pm
+Tangent: Think I just removed the last remaining parts of 'location.py' from the main script, have put them into env_data instead. visited etc is all in env_data now.
+env_data no longer requires location.py for its base resource
+
+
+7.40pm
+#   File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 542, in get_formatted
+#     temp_values = registry.instances_by_location(game.place, game.facing_direction)
+#   File "D:\Git_Repos\choose-your-own\item_management_2.py", line 266, in instances_by_location
+#     if self.by_location[place].get(direction): # check if the direction has been established yet.
+#        ~~~~~~~~~~~~~~~~^^^^^^^
+# KeyError: 'a forked tree branch'
+Dammit. Still this.
+> fixed now.
+
+
+Also this:
+
+# It looks like you're already carrying too much. If you want to pick up the glass jar with flowers, you might need to drop something - or you can try to carry it all.
+#
+#     drop or ignore
+#
+# Chosen: (drop)
+#
+# You decide to look in your inventory and figure out what you don't need.
+#
+# [Type the name of the object you want to leave behind]
+#
+#     severed tentacle, paperclip, paperclip, gardening mag, batteries, paperclip, regional map, car keys, anxiety meds, unlabelled cream, fish food, paperclip, carved stick, glass jar
+#
+# Chosen: (glass jar)
+#
+> # Error: This item (`glass jar`) was not found in the inventory. #<<--- why not though?? Look into it tomorrow.
+#
+# Load lightened, you decide to carry on.
+#
+# [[ Psst. Hey. Type 'secret' for a secret hidden option, otherwise type literally anything else. ]]
+
+--------
+
+Ugh the spacing is so inconsistent:
+
+# Chosen: (east)
+# <## one line gap here.>
+# You're already facing east
+#
+# Do you want to stay here or move on?
+#
+#     stay here, move on
+#
+# Chosen: (stay)
+#
+# < two line gap here>
+#   You're facing east. You see a variety of headstones, most quite worn and decorated by clumps of moss. There's a glass jar being used as a vase in front of one of the headstones, dried flowers left long ago.
+#
+#
+# You can look around more, leave, or try to interact with the environment:
+#
+
+Just noting this here so I don't forget:
+
+# ------
+#
+#   File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 485, in user_input
+#     do_print(f"{places[game.place].description}")#{descriptions[game.place].get('description')}")
+#                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# AttributeError: 'place_data' object has no attribute 'description'
+>    Fixed this now. 8:25pm.
+
+
+--------------
+
+# Chosen: (n)
+
+# Traceback (most recent call last):
+...
+#   File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 1081, in look_light
+#     checked_str, _ = compare_input_to_options(options, input=text)
+#                      ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+#   File "D:\Git_Repos\choose-your-own\misc_utilities.py", line 471, in compare_input_to_options
+#     elif input.lower() in lower_cleaned:
+#          ^^^^^^^^^^^
+# AttributeError: 'list' object has no attribute 'lower'
+
+
+8.40pm
+
+You can look around more, leave, or try to interact with the environment:
+
+    south, east, west or leave
+
+Chosen: (n)
+
+Do you want to stay here or move on?
+
+    stay here, move on
+
+Chosen: (n)
+
+Text from stay here or move on: ['n', 'no', 'nope']. type: <class 'list'>
+No match found for n.
+Unfortunately I haven't written anything here yet so this'll just repeat for now.
+
+You're facing north. You think you could leave through the large wrought-iron gates to the north. They're imposing but run-down; this graveyard doesn't get as much love as it could.
+
+
+
+Because 'n' defaults to 'no', you can't try to look north if you're already looking north by typing 'n', but you can with all other letters. I need to add a 'prefer cardinals' option, so if there's a n/s/e/w optionset, it chooses from those first instead of defaulting to 'no' (even if technically north isn't currently an option.)
+Or I guess I could just always make all four cardinals an option, but that feels worse. Idk.
+
+Need to test today's changes with the TUI tomorrow. See how much I broke in the migraine.
