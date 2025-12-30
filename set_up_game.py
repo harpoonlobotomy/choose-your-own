@@ -33,9 +33,6 @@ def test_for_weird():
 
 def set_inventory():
 
-
-    #print(f"Registry after initialise: {registry.instances}")
-    #print(f"weird value: {game.w_value}")
     if game.w_value != 0:
         registry.pick_up("severed tentacle", game.inventory)
         #print(f"back after item management: game.inventory :: {game.inventory}")
@@ -47,12 +44,11 @@ def loadout(): # for random starting items, game, etc (could be renamed
     ##
 #        something like this being used maybe  , exclude_none=True
     paperclip_list = registry.instances_by_name("paperclip")
-    #print(f"Paperclip: {paperclip_list}, type: {type(paperclip_list)}")
 
     _, game.inventory = registry.pick_up(paperclip_list[0], game.inventory)
-    _, game.inventory = registry.pick_up(paperclip_list[0], game.inventory)
-    _, game.inventory = registry.pick_up(paperclip_list[0], game.inventory)
-
+    #_, game.inventory = registry.pick_up(paperclip_list[0], game.inventory) ## duped because I was testing the plural inventory system.
+    #_, game.inventory = registry.pick_up(paperclip_list[0], game.inventory)
+#
     _, game.inventory = registry.pick_up(registry.random_from("magazine"), game.inventory)
     game.carryweight = 12
     #print(f"Game inventory after managizine added: {game.inventory}")
@@ -70,14 +66,13 @@ def loadout(): # for random starting items, game, etc (could be renamed
                 continue
             _, game.inventory = registry.pick_up(item, game.inventory)
 
-    hp = random.randrange(4, 8)
-    game.player.update({"hp":hp})
-    game.emotional_summary = calc_emotions()
-
 def calc_emotions():
     counter = 0
 
     for attr in choices.emotion_table:
+        if attr == "encumbered":
+            game.player[attr] = 0
+            continue
         val = random.randint(-1,1)
         game.player[attr] = int(val)
         if game.player[attr] > 0:
@@ -127,41 +122,51 @@ def load_world(relocate=False, rigged=False, new_loc=None):
     return game.place
 
 def set_text_speed():
-    print("[Default test printing speed is 1. 0.1 is very slow, 2 is very fast.]")
+    from misc_utilities import do_print, do_input
+    do_print("[Default test printing speed is 1. 0.1 is very slow, 2 is very fast.]")
+    new_text_speed = 0
     while True:
-        text=input()
-        if text=="":
-            print("Keeping current text speed.")
+        text=do_input()
+        if text is None or text == "":
+            do_print("No new value entered, keeping current text speed. \n")
             return
         try:
-            new_text_speed=float(text)
+            text=float(text)
+            if isinstance(text, float):
+                new_text_speed = text
         except:
-            print("Please enter a number between 0.1 and 2, or hit 'enter' to keep default.")
+            pass
+
         if new_text_speed:
             if 0.1<=new_text_speed<=2:
                 return new_text_speed
-            else:
-                print("Please enter a text speed between 0.1 and 2.0")
+
+        do_print(f"Please enter a text speed between 0.1 and 2.0, or 'enter' to keep current default ({game.text_speed}).")
 
 def set_luck():
-    print("Note: The game is calibrated to the default luck value (1). Reducing this value makes the game harder, while increasing the value makes it easier.")
-    print("Please enter the luck value (from 0.1 to 2):")
+    from misc_utilities import do_print, do_input
+    do_print("Note: The game is calibrated to the default luck value (1). Reducing this value makes the game harder, while increasing it the value makes it easier.")
+    do_print("Please enter the luck value (from 0.1 to 2):")
+    new_luck_value=0
     while True:
-        text=input()
+        text=do_input()
         if text=="":
-            print("Keeping current luck value.")
+            do_print("Keeping current luck value.")
             return
         try:
             new_luck=float(text)
+            if isinstance(new_luck, float):
+                new_luck_value = new_luck
         except:
-            print("Please enter a number between 0.1 and 2, or hit 'enter' to keep default.")
-        if new_luck:
-            if 0.1<=new_luck<=2:
-                return new_luck
-            else:
-                print("Please enter a luck value between 0.1 and 2.0")
+            pass
+        if new_luck_value:
+            if 0.1<=new_luck_value<=2:
+                return new_luck_value
+
+        do_print(f"Please enter a luck value between 0.1 and 2.0 or 'enter' to keep current default ({game.luck}).")
 
 def init_settings(manual=False):
+    from misc_utilities import do_print
     need_update=False
     import json
     with open("settings.json") as f:
@@ -173,39 +178,35 @@ def init_settings(manual=False):
         game.loop=data["loop"]
     else:
         if not manual:
-            print("First time setup:")
-        print(f"To change text speed, enter a number (0.1 to 2), or hit enter to continue with current speed ({game.text_speed}). Default is (1)")
+            do_print("First time setup:")
+
+        do_print(f"   To change text speed, enter a number (0.1 to 2), or hit enter to continue with current speed ({game.text_speed}). Default is (1)")
         new_speed=set_text_speed()
         if new_speed != None and new_speed != game.text_speed:
             game.text_speed=new_speed
             data["text_speed"]=new_speed # note: don't forget to write to the json again.
             need_update=True
-        print(f"Text speed set to {game.text_speed}. To change luck value, enter a number (0.1 to 2), or hit enter to continue with current luck value ({game.luck}). Default is (1).")
+            do_print(f"     Text speed set to {game.text_speed}.")
+        do_print(f"   To change luck value, enter a number (0.1 to 2), or hit enter to continue with current luck value ({game.luck}). Default is (1).")
         new_luck=set_luck()
         if new_luck != None and new_luck != game.luck: ## need a version of this that works for in-game setings update too.
             game.luck=new_luck
             data["luck"]=new_luck
             need_update=True # not needed here as we have to update the initialised setting regardless, else it'll run this every time..
-        print(f"Luck value set to {game.luck}.")
+            do_print(f"     Luck value set to {game.luck}.")
         if not manual:
-            print("These settings can be changed later by typing 'settings' in-game.")
+            do_print("     These settings can be changed later by typing 'settings' in-game.")
         data["initialised"] = True
         if (manual and need_update) or not manual: #not sure if this is right.
             with open("settings.json", "w+") as f:
                 json.dump(data, f)
-            print("Settings updated. Returning.")
-
-
-
+        do_print("  Settings updated. Returning.")
 
 
 def init_game():
 
-    for attr in ["blind", "tired", "full", "hungry", "sad", "overwhelmed"]: # options to be randomised at gamestart
-        game.player.update({attr: random.choice((True, False))})
-        if game.player["full"]:
-            game.player["hungry"] = game.player["hungry"]-1
-
+    game.player.update({"hp":random.randrange(4, 8)})
+    game.emotional_summary = calc_emotions()
 
     init_settings()
     test_for_weird()
@@ -250,12 +251,6 @@ class game:
     playername = "Test"
     player = {
         "hp": 5,
-        "tired": 0,
-        "full": 0,
-        "hungry":1,
-        "sad": 0,
-        "overwhelmed": 0,
-        "encumbered": 0,
         "blind": False,
         "in love":False,
         "inventory_management": True,
@@ -263,8 +258,7 @@ class game:
         }
 
     if player.get("full"):
-        #hunger = not player.get("full")
-        player.update({"hungry":player.get("hungry")-1})
+        player.update({"hungry":-1})
 
     emotional_summary = None
 

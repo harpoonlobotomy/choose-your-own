@@ -1,5 +1,4 @@
-# choices - static dicts etc used as reference.
-## ' volume' is now 'carryweight', need to make sure it's changed everywhere.
+# choices - static lists/dicts etc used as reference.
 
 import random
 
@@ -15,7 +14,7 @@ choose = {
 emphasis={"low": ["rather", "a bit", "somewhat", "quite"],
           "high": ["very", "uncharacteristically", "really quite", "extremely"]}
 
-looking_intro=["You take a moment to take in your surroundings.", ""]
+looking_intro=["You take a moment to take in your surroundings.", ""] ## why the hell is this a list? I guess I was intending to have a few variations.
 
 carrier_options = {
     "large": [{"backpack": 10}],
@@ -28,17 +27,25 @@ items_template = {
     }
 
 currency = random.choice(("dollar", "pound", "yen"))
+
 paintings = ["a ship in rough seas", "a small farmstead", "a businessman in front of a large window in an office", "a dog, running around in a field of flowers"]
 
 time_of_day = ["pre-dawn", "early morning", "mid-morning", "late morning", "midday", "early afternoon", "late afternoon", "evening", "late evening", "late night", "midnight", "2am"]
 
+night = ["midnight", "late evening", "late night", "2am"]
+
+## How to best align 'night' to 'time of day'.
+#   options:
+    #   dict: {pre-dawn: {"night"=False}}
+    #   two lists as I have it now, works but means if you edit the t_o_d you have to edit the night entry too.
+
 emotion_table = {
     #"blind": {"weight": 1}, # -1/0 = can see, +1 = blind ## only add later for a reason, don't start with this by default ever
-    "tired": {"weight": 1}, # -1 = well rested, +1 = tired
+    "tiredness": {"weight": 1}, # -1 = well rested, +1 = tired
     "hunger": {"weight": 1}, # -1 = full, +1 = hungry
     "sadness": {"weight": 1}, # -1 = happy, +1 = sad
     "overwhelmed": {"weight": 1}, # -1/0 = fine, +1 = overwhelmed
-    "encumbered": {"weight": 1} # -1/0 = fine, +1 = encumbered
+    "encumbered": {"weight": 0} # -1/0 = fine, +1 = encumbered
 }
 
 trip_over={"any": ["some poorly lit hazard", "your own feet"],

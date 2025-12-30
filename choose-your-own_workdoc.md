@@ -1627,3 +1627,349 @@ Because 'n' defaults to 'no', you can't try to look north if you're already look
 Or I guess I could just always make all four cardinals an option, but that feels worse. Idk.
 
 Need to test today's changes with the TUI tomorrow. See how much I broke in the migraine.
+
+
+1.36pm 29/12/15
+
+So. Just moved a bunch of things to misc_utilities and rearranged things. Just testing, and for some reason now I have this:
+
+#   You can look around more, leave, or try to interact with the environment:
+#
+#       north, south, west, leave or glass jar, headstone, headstone, moss, moss, glass jar
+
+added a print line:
+# Instance objs at: [<ItemInstance glass jar (d5911675-3d14-4a0c-9de4-9a18c999160c)>, <ItemInstance moss (6d9c11a1-9190-4ccd-a790-2fc62cbeb870)>, <ItemInstance headstone (6f1d510c-548a-45f0-a669-73b972bae407)>, <ItemInstance moss (860dbac2-3707-4dda-bf81-c880309c6383)>, <ItemInstance headstone (5c67a7b3-b7d3-4371-a4f9-162b7de8caf0)>, <ItemInstance glass jar (0f75c659-0a37-44c2-b07a-b32c1a7ffc51)>]
+# Local items: ['glass jar', 'moss', 'headstone', 'moss', 'headstone', 'glass jar']
+
+Okay so it's not a print issue, it's actually duplicating the instances.
+
+
+1.51pm okay, have looked into it.
+
+Importing choose_a_path_tui_vers.py
+Init in item instance is running now. glass jar
+
+importing choose_a_path is what triggers it to run again. It doesn't trigger
+
+1.55pm
+okay so it was specifically
+
+def update_text_box(to_print, edit_list=False, use_TUI=True):
+
+    #from choose_a_path_tui_vers import enable_tui
+
+in tui_update, it seems.
+
+
+Okay so I fixed that, it was because run() was out in the open. Have moved a few things around and added a config file to store tui enablement in. Seems to be doing the job.
+
+2.54pm
+New issue:
+
+cleaned_options: []
+No match found for stay here in options (['stay here', 'move on'],). lower_cleaned: [].
+
+For some reason this is not adding those options to the list when it really should be. Just need to fix the options section but I've no idea why it broke when it was working before.
+
+Okay I wasn't including tuples, that's why. Okay.
+
+3.46pm
+    Player data: {'hp': 4, 'tired': 1, 'full': False, 'hungry': True, 'sad': False, 'overwhelmed': 0, 'encumbered': 1, 'blind': False, 'in love': False, 'inventory_management': True, 'inventory_asked': False, 'hunger': 1, 'sadness': -1}
+
+So hungry and hunger are different things - hunger is in emotion_table in choices.py, hunger in in game.player.
+
+
+-----------
+
+
+4:14pm
+
+#
+# Actions available for glass jar:
+#
+#     drop, remove dried flowers, add to or continue
+#
+# Chosen: (drop)
+#
+# Dropped glass jar.
+#
+# Load lightened, you decide to carry on.
+#
+# [[ Psst. Hey. Type 'secret' for a secret hidden option, otherwise type literally anything else. ]]
+#
+# (Chosen: <NONE>)
+#
+# INVENTORY:
+#
+# severed tentacle
+# paperclip x2
+# mail order catalogue
+# car keys
+# anxiety meds
+# fish food
+# regional map
+# batteries
+#
+#
+# Type the name of an object to examine it, or hit 'enter' to continue.
+#
+# (Chosen: <NONE>)
+#
+# Continuing.
+#
+# You can look around more, leave, or try to interact with the environment:
+#
+#     north, south, west, leave or moss, headstone, glass jar
+#
+# Chosen: (glass jar)
+#
+# Do you want to stay here or move on?
+#
+#     stay here or move on
+
+
+
+
+Hm.
+So  what it's meant to do is
+
+
+# You can look around more, leave, or try to interact with the environment:
+#
+#     north, south, west, leave or moss, headstone, glass jar
+#
+# Chosen: (glass jar)
+#
+# Description: A glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.
+#
+# What do you want to do with the glass jar - take it, or leave it alone?
+#
+#     take or leave
+#
+# Chosen: (take)
+#
+# glass jar added to inventory.
+#
+# You can look around more, leave, or try to interact with the environment:
+#
+#     north, south, west, leave or moss, headstone
+#
+# (Chosen: <NONE>)
+
+
+Which it did earlier in this exact session, directly before. So why is the input not being routed correctly?
+
+4.18pm Okay, fixed it. It was getting local_items too early, so didn't register it as a match when it was just recently dropped.
+
+Going to add some logging I think. Full routing logging, so I can trace the process per-function.
+
+
+5:26pm
+INVENTORY:
+
+paperclip x2
+fashion mag
+regional map
+car keys
+anxiety meds
+batteries
+unlabelled cream
+fish food
+carved stick
+glass jar*
+moss
+
+
+Type the name of an object to examine it, or hit 'enter' to continue.
+
+Chosen: (glass jar)
+
+Description: A glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.
+
+
+Actions available for glass jar:
+
+    drop, remove dried flowers, add to or continue
+
+Chosen: (r)
+
+Item `dried flowers` removed from old container `glass jar`
+
+
+Actions available for glass jar:
+
+    pick up, add to or continue
+
+Chosen: (p)
+
+
+Actions available for glass jar:
+
+    drop, add to or continue
+
+(Chosen: <NONE>)
+
+INVENTORY:
+
+dried flowers
+glass jar
+
+
+Type the name of an object to examine it, or hit 'enter' to continue.
+
+(Chosen: <NONE>)
+
+Continuing.
+
+You can look around more, leave, or try to interact with the environment:
+
+    north, south, west, leave or headstone
+
+Chosen: (stats)
+
+    weird: [True]. location: [a graveyard]. time: [midday]. weather: [perfect]. checks: {'inventory_asked': False, 'inventory_on': False, 'play_again': False}
+
+    inventory: ['dried flowers', 'glass jar'], inventory weight: [2], carryweight: [12]
+
+    Player data: {'hp': 4, 'blind': False, 'in love': False, 'inventory_management': True, 'inventory_asked': False, 'tiredness': 0, 'hunger': -1, 'sadness': 0, 'overwhelmed': 0, 'encumbered': 0}
+
+
+
+apparently reintroduced an inventory-wipe in some of my changes today. Will sort it out shortly.
+
+More testing:
+
+So it's the removal for some reason, I think.  After removing the flowers from the glass jar, I have dropped everything except the dried flowers.
+
+Will fix.
+
+6.48 seems to be fixed now. Was not providing the inventory list after moving the separate function to utility script, so it was rewriting with an empty list.
+
+
+6.55pm
+Hm. Odd.
+((FILE: item_management_2.py. FN: instances_by_location. LINE: 253))
+place: a graveyard
+direction: east
+You can look around more, leave, or try to interact with the environment:
+
+    north, south, west, leave or moss, glass jar, headstone
+
+So it says local items isn't 'None', because it if was it wouldn't have hit this else.
+<deleted a bunch of logs. Can't remember what the problem was now.>
+
+
+7.16pm
+Next thing:
+values: (['paperclip x2', 'anxiety meds', 'car keys', 'fish food', 'batteries'],)
+Choose an object to put inside the glass jar or hit enter when done:
+
+    paperclip x2, anxiety meds, car keys, fish food or batteries
+
+Chosen: (car keys)
+
+((FILE: misc_utilities.py. FN: compare_input_to_options. LINE: 72))
+input: car keys
+
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 121, in add_item_to_container
+    instance = outcome_ref["instance"]
+               ~~~~~~~~~~~^^^^^^^^^^^^
+KeyError: 'instance'
+
+D:\Git_Repos\choose-your-own>python choose_a_path_tui_vers.py anything
+
+
+
+Okay so I fixed that, but:
+
+Actions available for glass jar:
+values: (['drop', 'remove batteries', 'remove dried flowers', 'remove car keys', 'add to', 'continue'],)
+
+Actions available for glass jar:
+
+    drop, remove batteries, remove dried flowers, remove car keys, add to or continue
+
+Chosen: (remove dried flowers)
+
+Item `car keys` removed from old container `glass jar`
+
+Actions available for glass jar:
+
+    drop, add to or continue
+
+Removed dried flowers, and yet, everything is removed.
+
+<fixed that, and then:>
+severed tentacle
+paperclip x2
+mail order catalogue
+anxiety meds
+unlabelled cream
+car keys x2
+regional map
+batteries x2
+glass jar
+dried flowers
+
+batteries, glass jar and dried flowers.
+Somehow we ended up with 2x batteries and 2x car keys in the inv, not sure how that happened.
+
+Probably too tired for this today. I did get some problems solved but it's slow going.
+
+
+7.35pm Okay so I fixed the last one, but now:
+
+<deleted a huge swath of logging. tl;dr the inventory was broken when you dropped things.>
+
+It's a mismatch between the inv being renewed and not.
+
+Thought I fixed it but it's doing this now... Somewhere, it's mixing up what it should be doing .Because yeah, it's in there, promise.
+
+
+The traceback:
+
+test: car keys
+inst_inventory: [<ItemInstance paperclip (c83a9b22-786e-4210-8c1e-cdc664473938)>, <ItemInstance mail order catalogue (e7279221-0186-47c4-86a3-8c87dcea2425)>, <ItemInstance regional map (7763fbd7-93d8-4e34-b91f-7a58bb6263d2)>, <ItemInstance anxiety meds (46334570-ed55-40b9-baa9-cd57a83b2877)>, <ItemInstance paperclip (22b2069b-27fc-443d-bd1f-1725fdd95846)>, <ItemInstance unlabelled cream (fa1cebe9-d0ba-4530-9165-c1b30320a0a4)>, <ItemInstance fish food (72827239-f90f-4c6c-b0ed-920d4e92fb7d)>, <ItemInstance glass jar (9489cf96-783b-49e5-92f5-dba9a060ac38)>]
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 1204, in <module>
+    run()
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 1188, in run
+    inner_loop(speed_mode=test_mode)
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 1100, in inner_loop
+    look_around()
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 1056, in look_around
+    look_light("skip_intro")
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 1003, in look_light
+    text=option(remainders, "leave", no_lookup=None, print_all=True, preamble="You can look around more, leave, or try to interact with the environment:", look_around=local_items, return_any=True)
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 508, in option
+    test=user_input()
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 391, in user_input
+    do_inventory()
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 298, in do_inventory
+    trial = item_interaction(test, inventory_names, no_xval_names)
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 269, in item_interaction
+    test_inventory = do_action(match, inst) ## added so I don't accidentally wipe game.inventory if something fails.
+  File "D:\Git_Repos\choose-your-own\choose_a_path_tui_vers.py", line 158, in do_action
+    child = from_inventory_name(child)
+  File "D:\Git_Repos\choose-your-own\misc_utilities.py", line 238, in from_inventory_name
+    logging_fn(inspect.currentframe(), traceback=True)
+None
+Could not find inst `<ItemInstance glass jar (9489cf96-783b-49e5-92f5-dba9a060ac38)>` in inst_inventory.
+
+
+So... inst_inventory is right there. Idk why it can't find it...
+
+Ahhh, okay. So, it's failing now beause I told it to remove items from the inventoy when they were added to a container, but it's still checking against the inventory to get the item instance. Okay. that's fixable. Just need to get the instance obj from the children of parent, instead of inv list, because we're already accessing the parent obj. So should be simple enough.
+
+8.27pm okay I think that's fixed.
+
+Next:
+
+# Dropped batteries.
+#
+# Load lightened, you decide to carry on.
+
+batteries are dropped but not found at the location.
+
+Okay, fixed that now too.
+
+Briefly tried to get logging set up again and I'm so goddamn tired I can't think. It's not that it's hard, I just can't deal today. Support was a mess and I got no sleep and I'm wrecked, really wrecked.

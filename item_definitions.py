@@ -92,9 +92,9 @@ detail_data = { # should tie this into the class directly. Will leave it here fo
 
 "mail_order_catalogue_details": {"is_tested":False, "print_str": "A mail order catalogue, with the reciever's address sticker ripped off. Clothes, homegoods, toys, gadgets - could be a nice way to wait out a couple of hours if you ever wanted to."},
 
-"regional_map_details": {"is_tested":True, "failure": "Despite always knowing which way is north, this map is utterly confounding to you.", "success": "A pretty detailed map of the local area. Could be good for finding new places to go should you have a destination in mind."},
+"regional_map_details": {"is_tested":True, 1: "Despite always knowing which way is north, this map is utterly confounding to you.", 3: "A pretty detailed map of the local area. Could be good for finding new places to go should you have a destination in mind."},
 
-"damp_newspaper": {"is_tested":True, "failure": "Despite your best efforts, the newspaper is practically disintegrating in your hands. You make out something about an event in ballroom, but nothing beyond that..", "success": "After carefully dabbing off as much of the mucky water and debris as you can, you find the front page is a story about the swearing in of a new regional governor, apparenly fraught with controversy.", "crit": "Something about a named official and a contraversy from years ago where a young man went missing in suspicious circumstances."} ## no idea where this would go, but I need some placeholder text so here it is.
+"damp_newspaper": {"is_tested":True, 1: "Despite your best efforts, the newspaper is practically disintegrating in your hands. You make out something about an event in ballroom, but nothing beyond that..", 3: "After carefully dabbing off as much of the mucky water and debris as you can, you find the front page is a story about the swearing in of a new regional governor, apparenly fraught with controversy.", 4: "Something about a named official and a contraversy from years ago where a young man went missing in suspicious circumstances."} ## no idea where this would go, but I need some placeholder text so here it is.
 }
 ## Need to track no of days/nights. Should already be doing this.
 
@@ -147,7 +147,7 @@ item_defs_dict = {
     "car keys": {"name": "a set of car keys", "description": "none yet","flags":[CAN_COMBINE, TAKES_BATTERIES], COMBINE_WITH: ["blue_car", "batteries"],  "item_size": A_FEW_MARBLES, "loot_type": "starting"},
     "fish food": {"name": "a jar of fish food", "description": "none yet", "flags":[CAN_COMBINE], COMBINE_WITH: ["fish_tank, river"], "item_size": A_FEW_MARBLES, "loot_type": "starting"},
     "anxiety meds": {"name": "a bottle of anxiety meds", "description": "none yet", "flags":list(), "item_size": A_FEW_MARBLES, "loot_type": "starting"},
-    "regional map": {"name": "a regional map", "description": "none yet", "flags":list(CAN_READ), "item_size": SMALLER_THAN_APPLE, "loot_type": "starting"},
+    "regional map": {"name": "a regional map", "description": "none yet", "flags":[CAN_READ, ""], "item_size": SMALLER_THAN_APPLE, "loot_type": "starting"},
     "unlabelled cream": {"name": "an unlabelled cream", "description": "none yet", "flags":list(), "item_size": SMALLER_THAN_APPLE, "loot_type": "starting"}, ## any item not used during starting should be put onto a value list so it can be found later.
     "batteries": {"name": "a set of batteries", "description": "none yet", "flags":list(DUPE), "item_size": A_FEW_MARBLES, "loot_type": ["starting", "medium_loot"]}, ## need to allow for lists
     "costume jewellery": {"name": "a bit of costume jewellery", "description": "Pretty but probably not too expensive. Gold metal with dark red gems.", "flags":[FRAGILE], "item_size": A_FEW_MARBLES, "loot_type": "minor_loot"},

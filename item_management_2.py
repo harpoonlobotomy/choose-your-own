@@ -1,13 +1,15 @@
 
+#from time import sleep
 import uuid
+from logger import logging_fn
 
 class ItemInstance:
     """
     Represents a single item in the game world or player inventory.
     """
-# definition_key, nicename, description, location, contained_in, item_size, primary_category, container_data)
-    def __init__(self, definition_key:str, container_data:list, item_size:str, attr:dict):
 
+    def __init__(self, definition_key:str, container_data:list, item_size:str, attr:dict):
+        #print(f"Init in item instance is running now. {definition_key}")
         self.id = str(uuid.uuid4())  # unique per instance
         self.name = definition_key
         self.nicename=attr["name"]
@@ -77,6 +79,9 @@ class LootRegistry:
     """
 
     def __init__(self):
+        #print(f"Init in lootregistry is running now.") ## it only seems to be running once.
+        #sleep(1)
+
         self.instances = {}      # id -> ItemInstance
         self.by_location = {}    # (place, direction) -> set of instance IDs
         self.by_name = {}        # definition_key -> set of instance IDs
@@ -89,6 +94,7 @@ class LootRegistry:
     # -------------------------
 
     def create_instance(self, definition_key, attr):
+        logging_fn()
 
         if "container" in attr["flags"]:
             container_data = (attr.get("description_no_children"), attr.get("name_children_removed"), attr.get("container_limits"), attr.get("starting_children"))
@@ -168,6 +174,7 @@ class LootRegistry:
     # Movement
     # -------------------------
     def move_item(self, inst:ItemInstance, place:str=None, direction:str=None, new_container:ItemInstance=None, old_container:ItemInstance=None)->list:
+        logging_fn()
 
         ## REMOVE FROM ORIGINAL LOCATION ##
 
@@ -226,7 +233,7 @@ class LootRegistry:
         ## I want to add a 'picked up from'. Not implemented yet though.
 
     def move_from_container_to_inv(self, inst:ItemInstance, inventory:list, parent:ItemInstance=None) -> tuple[list,list]:
-
+        logging_fn()
         if parent == None:
             parent = inst.contained_in
         result = self.move_item(inst, old_container=parent)
@@ -238,10 +245,14 @@ class LootRegistry:
     # Lookup
     # -------------------------
     def get_instance_from_id(self, inst_id:str)->ItemInstance:
+        logging_fn()
         return self.instances.get(inst_id)
 
 
     def instances_by_location(self, place:str, direction:str)->list:
+        logging_fn()
+
+        instance_list = []
 
         location = self.by_location.get(place) ## always expects 'not `a ` version of name.' ### PREVIOUS COMMENT IS A LIE. SOMETIMES IT EXPECTS THE A_ VERSION. oR AT LEAST THAT'S WHAT IT GETS. This is entirely my own fault, I knew this would happen.
         #print(f"location by default: {location}, raw place: {place}")
@@ -264,8 +275,10 @@ class LootRegistry:
         if direction != "all":
             if self.by_location[place].get(direction): # check if the direction has been established yet.
                 instance_list:list = [i for i in self.by_location[place].get(direction)] # if so, check if there are items there.
-                if instance_list:
-                    return instance_list
+                #if instance_list:
+                    #print(f"Instance list: {instance_list}")
+                    #sleep(1)
+                return instance_list
         else:
             compiled_list = []
             for direction in ["north", "east", "south", "west"]:
@@ -276,12 +289,15 @@ class LootRegistry:
             return compiled_list
 
     def instances_by_name(self, definition_key:str)->list:
+        #logging_fn()
         return self.by_name.get(definition_key)# if self.by_name.get(definition_key) else None
 
     def instances_by_container(self, container:ItemInstance)->list:
+        logging_fn()
         return [i for i in self.by_container.get(container, list())]
 
     def instances_by_category(self, category):
+        logging_fn()
         return self.by_category.get(category, set())
 
     # -------------------------
@@ -291,6 +307,7 @@ class LootRegistry:
     #def random_from(self, category: str):
 
     def random_from(self, selection:int|str)->list:
+        logging_fn()
         import random
         loot_table = {
             1: "minor_loot",   ## Keeping this here temporarily until I update it properly.
@@ -309,6 +326,7 @@ class LootRegistry:
         return random.choice(items)# if items else "No Items (RANDOM_FROM)"
 
     def describe(self, inst: ItemInstance, caps=False)->str:
+        logging_fn()
 
         description = inst.description
         if "container" in inst.flags:
@@ -329,6 +347,7 @@ class LootRegistry:
         return "You see nothing special."
 
     def nicename(self, inst: ItemInstance):
+        logging_fn()
         if "container" in inst.flags:
             children = self.instances_by_container(inst)
             if not children:
@@ -341,6 +360,7 @@ class LootRegistry:
         return inst.nicename
 
     def get_name(self, inst: ItemInstance):
+        logging_fn()
 
         if not inst:
             print("[GET_NAME] No such item.")
@@ -350,6 +370,7 @@ class LootRegistry:
 
 
     def get_duplicate_details(self, inst, inventory_list):
+        #logging_fn()
 
         if isinstance(inst, ItemInstance):
             items = self.instances_by_name(inst.name)
@@ -367,12 +388,14 @@ class LootRegistry:
 
 
     def register_name_colour(self, inst:ItemInstance, colour:str)->str:
+        logging_fn()
 
         inst.colour=colour
 
         return inst.name
 
     def pick_up(self, inst:str|ItemInstance, inventory_list, place=None, direction=None) -> tuple[ItemInstance, list]:
+        logging_fn()
 
         if isinstance(inst, set) or isinstance(inst, list):
             inst=inst[0]
@@ -410,6 +433,7 @@ class LootRegistry:
         return inst, inventory_list
 
     def get_actions_for_item(self, inst, inventory_list, has_children=None, has_multiple=None):
+        logging_fn()
 
         from misc_utilities import from_inventory_name
         from item_definitions import item_actions
@@ -507,18 +531,22 @@ class LootRegistry:
         if "container" in inst.flags or children != None:
             action_options.append("add to") # just the option to add something to this container.
 
+        action_options.append("continue")
         return action_options
 
 
-
     def drop(self, inst: ItemInstance, location, direction, inventory_list):
+        logging_fn()
+        print("inventory_list")
         if inst not in inventory_list:
             return None, inventory_list
         inventory_list.remove(inst)
+        print("inventory_list")
         self.move_item(inst, place=location, direction=direction)
         return inst, inventory_list
 
     def complete_location_dict(self):
+        logging_fn()
         from env_data import dataset
         from misc_utilities import cardinal_cols
         for location in list(dataset.keys()):
@@ -529,32 +557,7 @@ class LootRegistry:
 registry = LootRegistry()
 inventory = []
 
-## create some items
-#vase_def = {
-#    "name": "glass jar with flowers",
-#    "description": "A glass jar holding dried flowers.",
-#    "starting_children": ["flowers_001"],
-#    "flags": ["CONTAINER", "CAN_PICKUP"]
-#}
-#vase = registry.create_instance("glass_jar", vase_def, location=("graveyard", "east"))
-#
-## create location object
-#graveyard_east = Location("graveyard_east")
-#graveyard_east.add_item(vase.id)
-#
-## pick up
-#registry.pick_up(vase.id, inventory) ## Thinking of holding the player inventory here, and getting it from here when needed, instead of holding it in the main game class.
-#graveyard_east.remove_item(vase.id)
-#
-## drop
-#registry.drop(vase.id, ("graveyard", "east"), inventory)
-#graveyard_east.add_item(vase.id)
-#
-## look around
-#for inst in registry.instances_at("graveyard", "east"):
-#    print(f"You see {inst.definition_key} at the location.")
-#
-#
+
 def get_all_flags():
     all_attr_flags=set()
     flag_items=set()
@@ -576,8 +579,10 @@ if get_flags:
 def initialise_registry():
     from item_definitions import get_item_defs
     registry.complete_location_dict()
+    #print("Running initialise registry.")
     for item_name, attr in get_item_defs().items():
         registry.create_instance(item_name, attr)
+    repr(registry)
 
 
 if __name__ == "__main__":
