@@ -1,9 +1,7 @@
 
 from time import sleep
 
-from misc_utilities import assign_colour
-
-print("Importing tui_update.py")
+#print("Importing tui_update.py")
 
 END="\x1b[0m"
 RESET = "\033[0m"
@@ -97,9 +95,14 @@ def update_infobox(hp_value=None, name=None, carryweight_value=None, location=No
         if value != None:
             print_update(value, pos, base_data, alt_colour=is_alt, min_length=min_length)
 
-def update_text_box(to_print, end=False, edit_list=False, use_TUI=True):
+def update_text_box(to_print, edit_list=False):
 
-    if not use_TUI:
+    import config
+    from misc_utilities import assign_colour
+    enable_tui = config.enable_tui
+
+    #use_TUI = enable_tui ## don't bother sending this via update_text_box, just get it directly
+    if not enable_tui:
         if to_print:
             if isinstance(to_print, list):
                 for item in to_print:
@@ -204,10 +207,6 @@ def update_text_box(to_print, end=False, edit_list=False, use_TUI=True):
                 new_print_list = advance_list(new_print_list)
                 attr_name = "existing_list"
                 setattr(state, attr_name, new_print_list)
-
-    if end==True:
-        print(HIDE, end='') ## This is weird and makes no sense. Also currently in the main run it's literally always false. Need to check what this is used for if anything.
-        print(to_print, end='')
 
     if edit_list: # to change the last line, eg changing the input text to 'chosen'
         if not to_print:

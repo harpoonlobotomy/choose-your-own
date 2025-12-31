@@ -1973,3 +1973,27 @@ batteries are dropped but not found at the location.
 Okay, fixed that now too.
 
 Briefly tried to get logging set up again and I'm so goddamn tired I can't think. It's not that it's hard, I just can't deal today. Support was a mess and I got no sleep and I'm wrecked, really wrecked.
+
+10.04am, 30/12/25
+
+Spent a few hours last night reading https://intfiction.org/t/rez-v1-7-0-open-source-tool-for-creating-non-linear-games-if/. Far more complex than what I'm capable of but interesting nonetheless.
+
+I'm curious about using an existing interacting-fiction engine but can't find many comparisons between them that tell me anything useful. I downloaded Inform 7, and while it has obvious potential the structure of it is maddening to me. Didn't help that I couldn't make any progress at all on the most basic example 'game' they have, I have to assume there are genre conventions I needed to know but it wasn't a great start. (You start in a garden, looking at a hut. I couldn't look at/enter/examine/open/anything else the hut, either by using its full name or just 'hut' or 'the hut'. Literally googled how to progress. In the end i had to type 'in' or 'inside', with nothing else added, and that put me in the hut.) I just don't think that game works how I think about things.
+
+But yes. While I'm not really considering using Rez (though it is more in line with what I'm doing personally, the point is that I'm enjoying making it myself), it has given me the idea of verb-objects. So, instead of giving the options (["stay", "go"]), the options would be '[stay_obj, go_obj]', and those objects would contain themselves the allowable variations, instead of them being processed by the input fn. So if an instance can be dropped, it would trigger the 'drop_obj', etc.
+
+So, using 'drop' as the example -
+
+Currently, 'drop' is just a string, and added to the actions by 'can_pick_up' and 'in_inventory' being true.
+
+If it was an obj, it would contain information, such as:
+    the instance that triggered it
+    which strings are acceptable as input (less viable for 'drop' but for eg: 'hit', 'punch', 'assault' for "attack")
+
+8.29pm Spent a couple of hours today figuring out a UI in godot. Don't think I'm going to do the game in it, but was interesting nonetheless. Also my 'd' key is dying. Damnit.
+
+9.59pm
+Have written up a very basic verb registry. Not close to usable yet, but it's something. Works in basic testing, will identify the verb object and the location name from "go to the graveyard".
+
+
+Not done here, but instead of testing the words themselves first, maybe we identify the format first - based on length, then null words, we figure out which verbs it /could/ be, and check those, instead of checking every single verb every time. Might be a false benefit though if it means we end up checking repeatedly. Idk. Just a thought. Too tired. Have a cold or something it turns out so I'm braindead.
