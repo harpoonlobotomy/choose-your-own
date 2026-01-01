@@ -212,7 +212,7 @@ def clean_separation_result(result:list, to_print=False):
 
 ### INVENTORY LIST MANAGEMENT (possible all should be in item_management instead, but keeping here for now.)
 
-def get_inventory_names(inventory_inst_list) -> list:
+def get_inst_list_names(inventory_inst_list) -> list:
     logging_fn()
     inventory_names_list=list()
     for item in inventory_inst_list:
@@ -262,7 +262,7 @@ def generate_clean_inventory(inventory_inst_list, will_print = False, coloured =
     tui_enabled = enable_tui
 
     no_xval_inventory_names = []
-    inv_list = get_inventory_names(inventory_inst_list)
+    inv_list = get_inst_list_names(inventory_inst_list)
     dupe_items = list()
     checked = set()
 

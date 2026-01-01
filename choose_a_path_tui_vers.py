@@ -2,7 +2,7 @@ from os import system
 from time import sleep
 import random
 
-from misc_utilities import assign_colour, col_list, switch_the, generate_clean_inventory, get_inventory_names, from_inventory_name, check_name, print_type, compare_input_to_options, smart_capitalise, do_print, do_input
+from misc_utilities import assign_colour, col_list, switch_the, generate_clean_inventory, get_inst_list_names, from_inventory_name, check_name, print_type, compare_input_to_options, smart_capitalise, do_print, do_input
 
 from set_up_game import load_world, set_up, init_settings
 from choices import choose, time_of_day, night, trip_over, emphasis
@@ -388,7 +388,7 @@ def user_input():
         return "done"
     if text.lower() == "stats":
         do_print(f"    weird: [{game.weirdness}]. location: [{assign_colour(game.place, 'loc')}]. time: [{game.time}]. weather: [{game.weather}]. checks: {game.checks}")
-        inventory_names = get_inventory_names(game.inventory)
+        inventory_names = get_inst_list_names(game.inventory)
         do_print(f"    inventory: {inventory_names}, inventory weight: [{len(inventory_names)}], carryweight: [{game.carryweight}]")
         do_print(f"    Player data: {game.player}")
         do_print()

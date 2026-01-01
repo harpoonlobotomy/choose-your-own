@@ -1997,3 +1997,29 @@ Have written up a very basic verb registry. Not close to usable yet, but it's so
 
 
 Not done here, but instead of testing the words themselves first, maybe we identify the format first - based on length, then null words, we figure out which verbs it /could/ be, and check those, instead of checking every single verb every time. Might be a false benefit though if it means we end up checking repeatedly. Idk. Just a thought. Too tired. Have a cold or something it turns out so I'm braindead.
+
+9.07pm 1/1/26
+
+working on the verbRegistry some more.
+
+Briefly had this issue:
+
+TOKENS: [Token(text='go', kind={'noun', 'verb'}), Token(text='to', kind={'null', 'direction'}), Token(text='the', kind={'null'}), Token(text='graveyard', kind={'location'})]
+verb, format keys: Token(text='go', kind={'noun', 'verb'}), set()
+confirmed verb: None
+
+TOKENS: [Token(text='go', kind={'verb', 'noun'}), Token(text='to', kind={'null', 'direction'}), Token(text='the', kind={'null'}), Token(text='graveyard', kind={'location'})]
+verb, format keys: Token(text='go', kind={'verb', 'noun'}), {('verb', 'direction', 'location')}
+confirmed verb: <__main__.VerbInstance object at 0x000001F9790F1FD0>
+
+Where it would only recognise the first 'kind', and if the first 'kind' wasn't the verb, it'd fail. I need to implement format_options, where it generates potential format keys for each variation (so "noun (null) location" and "verb (null) location", then check if any/all of the options are viable formats. Then it takes any viable candidates forward to the next stage, instead of arbitrarily deciding which of the potential kinds are canonical.)
+
+Tomorrow, though. Nearly no sleep last night so I need rest. But, it does work -
+
+#    verbs.input_str_parser("go to the graveyard")
+#    from set_up_game import game, set_up ## might break
+#    set_up(weirdness=True, bad_language=True, player_name="Testing")
+#    verbs.input_str_parser("pick up the paperclip", inventory=game.inventory)
+#
+
+Both of those successfully find the verb-instance-obj they should, including the conversion of 'pick up' to 'take'. (That conversion is done very roughly at present but I have a thought in mind to do it in a much better way, tomorrow.)
