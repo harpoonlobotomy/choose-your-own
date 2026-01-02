@@ -25,8 +25,9 @@ direction = "direction"
 #    "verb_noun_noun": f"{verb} o{null} {noun} {null} o{null} {noun}"
 #}
 cardinals = ["north", "east", "south", "west"]
-directions = ["down", "up", "left", "right", "away", "toward", "towards", "closer", "further", "to", "against", "across"]
+directions = ["down", "up", "left", "right", "away", "toward", "towards", "closer", "further", "to", "against", "across", "at", "in"]
 
+semantics = ["with"]
 directions = directions + cardinals
 
 
@@ -37,9 +38,11 @@ formats = {
     "verb_dir_loc": (verb, direction, location), # go to graveyard
     "verb_sem_loc": (verb, sem, location), # throw ball up
     "verb_noun_noun": (verb, noun, noun), # can't think of any examples.
+    "verb_dir_noun": (verb, direction, noun), # 'look at watch'
     "verb_noun_dir": (verb, noun, direction), # throw ball up
     "verb_noun_dir_noun": (verb, noun, direction, noun), # push chest towards door
-    "verb_noun_sem_noun": (verb, noun, sem, noun)
+    "verb_noun_sem_noun": (verb, noun, sem, noun),
+    "verb_dir_noun_sem_noun": (verb, direction, noun, sem, noun)
 }
 
 ### 'sem' == semantic operators, eg 'with' in 'combine x with y'.
@@ -49,9 +52,11 @@ verb_loc = formats["verb_loc"]
 verb_noun_noun = formats["verb_noun_noun"]
 verb_dir_loc = formats["verb_dir_loc"]
 verb_sem_loc = formats["verb_sem_loc"]
+verb_dir_noun = formats["verb_dir_noun"]
 verb_noun_dir = formats["verb_noun_dir"]
 verb_noun_dir_noun = formats["verb_noun_dir_noun"]
 verb_noun_sem_noun = formats["verb_noun_sem_noun"]
+verb_dir_noun_sem_noun = formats["verb_dir_noun_sem_noun"]
 
 ## Note: Need to figure out how I'm getting noun-objects in here. Like, 'magnifying glass' is 1 noun, but two words. Need to figure that out.
 
@@ -83,9 +88,9 @@ verb_defs_dict = {
     "open": {"alt_words": ["pry", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun]},
     "break": {"alt_words": ["smash", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun]},
     "take": {"alt_words": ["pick up", "get", "pick"], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun]}, # take ball, take ball from bag
-    "put": {"alt_words": ["place", "leave"], "allowed_null": ["on", "in", "inside"], "formats": [verb_noun_dir, verb_noun_sem_noun]}, # put paper down, put paper on table ## using 'leave' here might be tricky. But I want to allow for 'leave church' and 'leave pamphlet on table' both.
+    "put": {"alt_words": ["place", "leave"], "allowed_null": ["on", "in", "inside"], "formats": [verb_noun_dir, verb_noun_sem_noun, verb_noun_dir_noun]}, # put paper down, put paper on table ## using 'leave' here might be tricky. But I want to allow for 'leave church' and 'leave pamphlet on table' both.
     "eat": {"alt_words": ["consume", "drink"], "allowed_null": None, "formats": [verb_noun]},
-    "look": {"alt_words": ["watch", "observe", "investigate", "examine"], "allowed_null": ["at", "to", "with"],  "formats": [verb_only, verb_noun, verb_noun_sem_noun]}, # look, look at book, look at book with magnifying glass
+    "look": {"alt_words": ["watch", "observe", "investigate", "examine"], "allowed_null": ["at", "to", "with"],  "formats": [verb_only, verb_noun, verb_noun_sem_noun, verb_noun_dir_noun, verb_dir_noun, verb_dir_noun_sem_noun]}, # look, look at book, look at book with magnifying glass
     "set": {"alt_words": [""], "allowed_null": None, "formats": [verb_noun_dir, verb_noun_sem_noun], "distinction": {"second_noun":"fire", "new_verb":"burn", "else_verb":"put"}} ## not implemented, just an idea. 'if fire is the second noun, the correct verb to use is 'burn', else the verb is 'put'. So 'set' is not its own thing, just a membrane/signpost.
     }
 
