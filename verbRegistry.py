@@ -7,8 +7,41 @@ from typing import Optional
 class Token:
     text: str
     kind: str              # 'verb', 'noun', 'semantic', 'null'
-    canonical: Optional[str] = None  # normalized form for verbs/semantics
-# turning off canonical for the moment.
+    options: set ## for alt_names where there may be more than one option
+    canonical: str = None  # normalized form for verbs/semantics
+
+
+    def token_role_options(token):
+            kinds = set(token.kind)
+
+            # pure optional null
+            if kinds == {"null"}:
+                return [None]
+
+            # null + other roles → optional
+            if "null" in kinds:
+                return [k for k in kinds if k != "null"] + [None]
+
+            # normal token
+            return list(kinds)
+
+    def determine_formats(self, tokens):
+        sequences = [[]]
+
+        for token in tokens:
+            options = self.token_role_options(token)
+            new_sequences = []
+
+            for seq in sequences:
+                for opt in options:
+                    if opt is None:
+                        new_sequences.append(seq)
+                    else:
+                        new_sequences.append(seq + [opt])
+
+            sequences = new_sequences
+
+        return [tuple(seq) for seq in sequences if seq]
 
 class Parser:
     def tokenize(self, text): ...
@@ -64,7 +97,7 @@ class VerbRegistry:
             if alt_words:
                 if self.by_alt_words.get(alt_words): ## does not work if alt words aren't exclusive.
                     print(f"Alt words {alt_words} already exists.")
-                self.by_alt_words[alt_words] = inst
+                self.by_alt_words.setdefault(alt_words, set()).add(inst)
         for item in attr["formats"]:
             self.by_format.setdefault(item, list()).append(inst.name)
 
@@ -110,6 +143,7 @@ class VerbRegistry:
 
         print(f"Cleaned parts: {cleaned_parts}")
     """
+
     def get_key_parts(self, input_str, location = None,  inventory = None):
 
         parts = input_str.split()
@@ -127,12 +161,14 @@ class VerbRegistry:
         if inventory:
             from misc_utilities import get_inst_list_names
             inventory = get_inst_list_names(inventory)
-            print(f"inventory: {inventory}")
+            #print(f"inventory: {inventory}")
 
         tokens = []
-        for i, word in enumerate(parts):
+        for idx, word in enumerate(parts):
             kinds = set()
-            text = None
+            options = set()
+            canonical = None
+
             potential_match=False
 
             initial = self.list_null_words | set(directions) | set(loc_options)
@@ -140,37 +176,42 @@ class VerbRegistry:
             if word in initial or f"a {word}" in initial:
                 if word in self.list_null_words:
                     kinds.add("null")
-                    text = word
+                    canonical = word
                     potential_match=True
 
-                if word == "up" and i == 1: ## temporarily doing this for 'pick up x'
+                if word == "up" and idx == 1: ## temporarily doing this for 'pick up x'
                     if parts[0] == "pick":
-                        print("pick up")
+                        #print("pick up")
                         kinds.add("null")
-                        text = word
+                        canonical = word
                 else:
                     if word in directions:
                         kinds.add("direction")
-                        text = word
+                        canonical = word
                         potential_match=True
 
                     if word in loc_options or f"a {word}" in loc_options:
                         kinds.add("location")
-                        text = word
+                        canonical = word
                         potential_match=True
 
             else:
                 if word in self.all_verbs:
                     word_name=None
-                    print(f"Word: {word}")
-                    if not self.by_name.get(word):
-                        if self.by_alt_words.get(word):
-                            word_name = self.by_alt_words[word]
-                            word_name = word_name.name
                     kinds.add("verb")
+                    #print(f"Word: {word}")
+                    if not self.by_name.get(word):
+                        if self.by_alt_words.get(word): ## this second check shouldn't be necessary, if it's in all_words and not by_name then it has to be in alt_words. Will leave it here for now but need to remove the redundancy later.
+                #original  #word_name = self.by_alt_words[word] ## Want to try having multiple verbs, in case there are more than one option (can then test multiples in the 'format sequence' options (so if it could be 'set on fire' or 'place down', we can allow for the structures of both.))
+                            word_names = self.by_alt_words[word]
+                            for word_name in word_names:
+                                options.add(word_name.name)
+
                     if word_name == None:
                         word_name = word
-                    text = word_name
+                    print(f"Length of options: {len(options)}")
+                    if (options and len(options) == 1) or not options:
+                        canonical = word_name
                     potential_match=True
 
                 #if word in self.all_adjectives: ## Would be good to implement this at some point, but for now we'll call them all leftovers 'nouns'
@@ -179,20 +220,20 @@ class VerbRegistry:
 
                 if inventory and word in inventory:
                     kinds.add("noun")
-                    text = word
+                    canonical = word
                     potential_match=True
 
                 if location and word in item_names: ## so nouns only come from inventory (if inventory provided) and/or locational objects (if location provided). So 'red car' will only count 'car' as a token and omit 'red'.
                     kinds.add("noun")
-                    text = word
+                    canonical = word
 
                 #if not value.get("noun"):
                 #    kinds.add("noun")
                 #    value["noun"] = word
                 ## Does not account for two word items. Needs to.
 
-            tokens.append(Token(word, kinds, text))
-        print(f"Tokens: {tokens}")
+            tokens.append(Token(word, kinds, options, canonical))
+        #print(f"Tokens: {tokens}")
         return tokens
 
         if not potential_match:
@@ -227,9 +268,7 @@ class VerbRegistry:
         for token in tokens:
             if "verb" in token.kind:
                 #print(f"Token: {token}")
-                if isinstance(token.canonical, VerbInstance):
-                    verb = token.canonical
-                else:
+
                     verb = token
             if 'null' in token.kind:
                 if len(token.kind)>1:
@@ -242,8 +281,8 @@ class VerbRegistry:
                 #if primary_type:
                 #    format_parts.append(primary_type.pop())
                 #format_parts.append(token.kind.pop())
-        print(f"Format parts: {format_parts}")
-        print(f"Verb: {verb}")
+        #print(f"Format parts: {format_parts}")
+        #print(f"Verb: {verb}")
         from verb_definitions import formats
 
         potential_formats = set()
@@ -253,31 +292,108 @@ class VerbRegistry:
 
         return verb, potential_formats
 
-    def find_by_format(self, verb, format_keys):
 
+    def find_by_format(self, verb_token, format_keys):
 
         for format_key in format_keys:
-            print(f"Format key: {format_key}, type: {type(format_key)}")
-            print(f"self.by_format: {self.by_format}")
+            #print(f"Format key: {format_key}, type: {type(format_key)}")
+            #print(f"self.by_format: {self.by_format}")
 
             items = self.by_format.get(format_key)
             print(f"Items: {items}")
-            print(f"verb: {verb}")
-            #print("by alt words: ", self.by_alt_words.get(verb.text))
-            if items and verb.canonical in items:
+            print(f"verb: {verb_token}")
+            print(dir(verb_token))
+            #print(f"verb.name: {verb_token.name}")
+            print("by alt words: ", self.by_alt_words.get(verb_token.canonical))
+            if items and verb_token.canonical in items:
                 #print(f"Verb in items: {verb}")
-                verb_obj = self.by_name.get(verb.canonical)[0]
+                verb_obj = self.by_name.get(verb_token.canonical)[0]
                 if not verb_obj:
-                    verb_obj = self.by_alt_words.get(verb.canonical)[0]
-                print(f"verb_obj: {verb_obj}")
-                print("verb_obj.name: ", verb_obj.name)
+                    verb_obj = self.by_alt_words.get(verb_token.canonical)[0]
+                #print(f"verb_obj: {verb_obj}")
+                #print("verb_obj.name: ", verb_obj.name)
                 return verb_obj
 
-    def input_str_parser(self, input_str, location=None, inventory=None):
+
+    """
+### Not tested at all yet. Worth trying tomorrow. ## old version
+    def token_role_options(token):
+        kinds = set(token.kind)
+
+        # optional null: can be skipped
+        if "null" in kinds and len(kinds) == 1:
+            return [[]]
+
+        # null + other roles → optional filler
+        if "null" in kinds:
+            return [[k] for k in kinds if k != "null"] + [[]]
+
+        # normal token
+        return [[k] for k in kinds]
+
+eg
+watch (verb|noun)        → [['verb'], ['noun']]
+the (null)               → [[]]
+to (null|semantic)       → [['semantic'], []]
+graveyard (location)     → [['location']]
+
+
+    def determine_formats(tokens):
+        sequences = [[]]
+
+        for token in tokens:
+            options = token_role_options(token)
+            new_sequences = []
+
+            for seq in sequences:
+                for opt in options:
+                    new_sequences.append(seq + opt)
+
+            sequences = new_sequences
+
+        # remove empty sequences if desired
+        return [tuple(seq) for seq in sequences if seq]
+
+eg
+Input:
+
+tokens = [
+    Token("pick", {"verb", "noun"}),
+    Token("up", {"null"}),
+    Token("paperclip", {"noun"}),
+]
+
+Output:
+
+[
+    ('verb', 'noun'),
+    ('noun', 'noun'),
+]
+
+eg
+
+ tokens = [
+    Token("give", {"verb"}),
+    Token("watch", {"verb", "noun"}),
+    Token("to", {"semantic", "null"}),
+    Token("dog", {"noun"}),
+]
+Output:
+
+
+Copy code
+[
+    ('verb', 'verb', 'semantic', 'noun'),
+    ('verb', 'noun', 'semantic', 'noun'),
+    ('verb', 'verb', 'noun'),
+    ('verb', 'noun', 'noun'),
+]
+    """
+
+    def input_parser(self, input_str, location=None, inventory=None):
         tokens = self.get_key_parts(input_str, location, inventory)
-        print(f"Tokens: {tokens}")
+        print(f"Tokens at start: {tokens}") # here because determine_format previously altered the tokens themselves, that is fixed now but keeping in case.
         verb, format_keys = self.determine_format(tokens)
-        print(f"Tokens: {tokens}")
         confirmed_verb = self.find_by_format(verb, format_keys)
 
         print("At end: ")
@@ -289,8 +405,6 @@ class VerbRegistry:
     # -------------
 
 verbs = VerbRegistry()
-inventory = []
-
 
 def initialise_registry():
     from verb_definitions import get_verb_defs, allowed_null
@@ -305,20 +419,23 @@ def initialise_registry():
                     #print(f"Word in null words: {word}")
                     verbs.list_null_words.add(word)
 
-#            verbs.list_null_words.add(i for i in attr["null_words"])
-    #repr(verbs)
 
-initialise_registry()
-#print("verbs: ")
-#print(verbs.by_name)
-#print("verbs by alt_words:")
-#print(verbs.by_alt_words)
+if __name__ == "__main__":
+    initialise_registry()
+    #print("verbs: ")
+    #print(verbs.by_name)
+    #print("verbs by alt_words:")
+    #print(verbs.by_alt_words)
+    #print("go to the museum")
+    #verbs.match_format("go to the museum")
 
-#print("go to the museum")
-
-#verbs.match_format("go to the museum")
-
-verbs.input_str_parser("go to the graveyard")
-from set_up_game import game, set_up ## might break
-set_up(weirdness=True, bad_language=True, player_name="Testing")
-verbs.input_str_parser("pick up the paperclip", inventory=game.inventory)
+    test=True
+    if test:
+        test_str = "go to the graveyard"
+        verbs.input_parser(test_str)
+        print(test_str)
+        from set_up_game import game, set_up ## might break
+        set_up(weirdness=True, bad_language=True, player_name="Testing")
+        test_str = "pick up the paperclip"
+        print(test_str)
+        verbs.input_parser(test_str, inventory=game.inventory)
