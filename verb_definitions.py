@@ -25,10 +25,17 @@ direction = "direction"
 #    "verb_noun_noun": f"{verb} o{null} {noun} {null} o{null} {noun}"
 #}
 cardinals = ["north", "east", "south", "west"]
-directions = ["down", "up", "left", "right", "away", "toward", "towards", "closer", "further", "to", "against", "across", "at", "in"]
+directions = ["down", "up", "left", "right", "away", "toward", "towards", "closer", "further", "to", "against", "across", "at", "in", "on", "from", "inside", "away"]
+## "in front of"?? Need to be able to cope with that.
 
 semantics = ["with"]
 directions = directions + cardinals
+
+positional_dict = {
+    "in": {"alts": ["inside", "within"]},
+    "on": {"alts": ["atop", "onto"]},
+    "against": {"alts": ["leant", "leaning on"]}
+    }
 
 
 formats = {
@@ -60,7 +67,11 @@ verb_dir_noun_sem_noun = formats["verb_dir_noun_sem_noun"]
 
 ## Note: Need to figure out how I'm getting noun-objects in here. Like, 'magnifying glass' is 1 noun, but two words. Need to figure that out.
 
-allowed_null = set(('and', 'with', 'to', 'the', 'at', 'plus', 'a', 'an', 'from', 'out', 'of', 'on', 'against')) ### Note: There may be more than one viable semantic when only one is required. That's fine.
+allowed_null = set(('and', 'with', 'to', 'the', 'at', 'plus', 'a', 'an', 'from', 'out', 'of', 'on')) ### Note: There may be more than one viable semantic when only one is required. That's fine.
+
+#What about something like 'away from', eg 'move papers away from fire'. Need a mechanism to check #if 'away', is next part 'fire', and treat 'away from' as its own direction.
+# I know it's sprawling but it'll keep things viable without having to add a hundred options for each /noun/ if they're added at the verb le
+
 # So if it expects 'verb noun sem noun'
 # and the input is
 # take flowers from in the vase
@@ -73,25 +84,27 @@ allowed_null = set(('and', 'with', 'to', 'the', 'at', 'plus', 'a', 'an', 'from',
 # if no 'allowed_null', all null = allowed.
 
 verb_defs_dict = {
+    ## NOTE: Allowed_null is not used at present. All nulls are treated as equal, and all sem/loc/dirs are treated as viable in all cases. Will need to change this later but for now it works alright.
     "go": {"alt_words":["go to", "approach"], "allowed_null": None, "formats": [verb_loc, verb_dir_loc]},
     "leave": {"alt_words": ["depart", ""], "allowed_null": None, "formats": [verb_only, verb_loc]},
     "combine": {"alt_words": ["mix", "add"], "allowed_null": None, "formats": [verb_noun_sem_noun]},
     "separate": {"alt_words": ["remove", "get"], "allowed_null": None, "formats": [verb_noun_sem_noun]},
     "throw": {"alt_words": ["chuck", "lob"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_sem_noun]}, # throw ball down, throw ball at tree
     "push": {"alt_words": ["shove", "move", "pull"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun]},
-    "drop": {"alt_words": ["discard", ""], "allowed_null": None, "formats": [verb_noun]},
-    "open": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun]},
+    "drop": {"alt_words": ["discard", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_noun]},
     "read": {"alt_words": ["examine", ""], "allowed_null": None, "formats": [verb_noun]}, ## Two nouns have 'examine'. Maybe make 'read' its own specific thing instead of referring 'examine' here. idk.
     "burn": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun], "inventory_check": "fire_source"},
     "lock": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun], "inventory_check": "key"},
     "unlock": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun_sem_noun], "inventory_check": "key"},
     "open": {"alt_words": ["pry", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun]},
+    "close": {"alt_words": ["barricade", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun]},
     "break": {"alt_words": ["smash", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun]},
-    "take": {"alt_words": ["pick up", "get", "pick"], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun]}, # take ball, take ball from bag
+    "take": {"alt_words": ["pick up", "get", "pick"], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_dir_noun]}, # take ball, take ball from bag
     "put": {"alt_words": ["place", "leave"], "allowed_null": ["on", "in", "inside"], "formats": [verb_noun_dir, verb_noun_sem_noun, verb_noun_dir_noun]}, # put paper down, put paper on table ## using 'leave' here might be tricky. But I want to allow for 'leave church' and 'leave pamphlet on table' both.
     "eat": {"alt_words": ["consume", "drink"], "allowed_null": None, "formats": [verb_noun]},
     "look": {"alt_words": ["watch", "observe", "investigate", "examine"], "allowed_null": ["at", "to", "with"],  "formats": [verb_only, verb_noun, verb_noun_sem_noun, verb_noun_dir_noun, verb_dir_noun, verb_dir_noun_sem_noun]}, # look, look at book, look at book with magnifying glass
-    "set": {"alt_words": [""], "allowed_null": None, "formats": [verb_noun_dir, verb_noun_sem_noun], "distinction": {"second_noun":"fire", "new_verb":"burn", "else_verb":"put"}} ## not implemented, just an idea. 'if fire is the second noun, the correct verb to use is 'burn', else the verb is 'put'. So 'set' is not its own thing, just a membrane/signpost.
+    "set": {"alt_words": [""], "allowed_null": None, "formats": [verb_noun_dir, verb_noun_sem_noun], "distinction": {"second_noun":"fire", "new_verb":"burn", "else_verb":"put"}}, ## not implemented, just an idea. 'if fire is the second noun, the correct verb to use is 'burn', else the verb is 'put'. So 'set' is not its own thing, just a membrane/signpost.
+    "move": {"alt_words": ["shift"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun]}
     }
 
 ### how to deal with two-part 'word phrases' (eg 'pick up')? Initial thought, just use the first word and check the second (so 'pick up the book', 'pick' is the verb, and we check it's 'pick up' once 'pick' is identified to make sure it's right. Though that might not even be necessary, 'pick' isn't exactly its own separate verb)
@@ -114,14 +127,12 @@ def get_verb_defs(verb_name=None):
     verb_set=set()
     if verb_name:
         attr=verb_defs_dict.get(verb_name)
-        return attr
+        return attr, None
     else:
         for verb, attr in verb_defs_dict.items():
             verb_set.add(verb)
             for alt_name in attr["alt_words"]:
                 if alt_name:
                     verb_set.add(alt_name)
-        #    #print(f"verb: {verb}, attr: {attr}")
-        #    verb_data = verb_defs_dict[verb]
 
         return verb_defs_dict, verb_set ## Just a strait up set of all the verbs, nothing else.
