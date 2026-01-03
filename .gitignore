@@ -211,3 +211,6 @@ todo_manager.py
 choose_todo_list.csv
 testing_specific_funcs.py
 plot_ideas.md
+planned restructure.md
+main_test.py
+print_tui_test.py

@@ -7,7 +7,6 @@ from misc_utilities import assign_colour, col_list, switch_the, generate_clean_i
 from set_up_game import load_world, set_up, init_settings
 from choices import choose, time_of_day, night, trip_over, emphasis
 from env_data import places, weatherdict
-#from locations import places
 
 from item_definitions import container_limit_sizes, detail_data
 from item_management_2 import ItemInstance, registry
@@ -627,7 +626,7 @@ def drop_loot(named:ItemInstance|str=None, forced_drop=False)->str:
         return test
 
     inventory_names, _ = generate_clean_inventory(game.inventory)
-    #inventory_names = get_inventory_names(game.inventory)
+    #inventory_names = get_inst_list_names(game.inventory)
 
     if len(game.inventory) < 1:
         slowWriting("You don't have anything to drop!")
