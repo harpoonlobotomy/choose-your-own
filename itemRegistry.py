@@ -17,6 +17,7 @@ class ItemInstance:
         self.starting_location = attr.get("starting_location")  # switching over to make this the 'discovered at' attr.
         self.location = (attr.get("starting_location") if attr.get("starting_location") != None and not attr.get("contained_in") else None)  # starting location or None -- always none if 'contained_in'.
         self.colour = None
+        self.verb_actions = set()
 
 ### FLAGS ###
  #     INITIAL FLAG MANAGEMENT
@@ -25,6 +26,7 @@ class ItemInstance:
 
         if "can_pick_up" in self.flags:
             self.can_pick_up=True
+            self.verb_actions.add("can_pick_up")
             self.item_size=item_size
             self.started_contained_in = attr.get("contained_in")  # parent instance id if inside a container
             if self.started_contained_in:
@@ -35,12 +37,14 @@ class ItemInstance:
             self.can_pick_up=False
 
         if "can_open" in self.flags:
+            self.verb_actions.add("can_open")
             if "starts_open" in self.flags: # currently nothing uses this, but here to allow for it later.
                 self.is_open = True
             else:
                 self.is_open = False
 
         if "can_lock" in self.flags:
+            self.verb_actions.add("can_lock")
             if not "is_unlocked" in self.flags: # like 'starts_open', currently not used but here for later.
                 self.is_locked = True
             else:
@@ -48,17 +52,20 @@ class ItemInstance:
             self.needs_key = attr.get("key")
 
         if "can_be_charged" in self.flags:
+            self.verb_actions.add("can_charge")
             if "is_charged" in self.flags:
-                self.is_charged == True
+                self.is_charged = True
             else:
-                self.is_charged == False
+                self.is_charged = False
 
         if "print_on_investigate" in attr:
+            self.verb_actions.add("print_on_investigate")
             self.description_detailed = attr.get("print_on_investigate")
 
 ###
 
         if container_data:
+            self.verb_actions.add("is_container")
             description_no_children, name_children_removed, container_limits, starting_children = container_data
             self.description_no_children = description_no_children
             self.name_children_removed=name_children_removed
@@ -435,6 +442,7 @@ class LootRegistry:
     def get_actions_for_item(self, inst, inventory_list, has_children=None, has_multiple=None):
         logging_fn()
 
+        inventory_list = []
         from misc_utilities import from_inventory_name
         from item_definitions import item_actions
         if isinstance(inst, ItemInstance):
@@ -450,25 +458,22 @@ class LootRegistry:
             print(f"No usable item given for get_actions_for_item: `{inst}`, type: {type(inst)}")
 
         action_options = []
-        for item in item_actions["from_flags"]:
+        for item in item_actions:
             if item in inst.flags:
                 if item == "can_read":
                     action_options.append("read") # can_read is the only one for now. There's really no need to separate contextual vs not...
                     # Also I should just have a dict that takes 'can_read' and returns 'read' etc. Eh.
-
-        for potential_action in item_actions["contextual_actions"]:
-            if potential_action in inst.flags:
-                if potential_action == "can_pickup":
+                if item == "can_pickup":
                     if inst not in inventory_list:
                         action_options.append("pick up")
                     else:
                         action_options.append("drop")
-                elif potential_action == "can_open":
-                    if potential_action.is_open: ## TODO: Add 'is_open' flag/make sure it's used when item opened/closed
+                elif item == "can_open":
+                    if item.is_open: ## TODO: Add 'is_open' flag/make sure it's used when item opened/closed
                         action_options.append("close")
                     else:
                         action_options.append("open")
-                elif potential_action == "can_combine":
+                elif item == "can_combine":
                     requires = inst.flags["combine_with"]
                     if isinstance(requires, list):
                         print(f"item {inst.name} can combine with: {requires} (list)")
@@ -478,13 +483,13 @@ class LootRegistry:
                     exit()
                     if requires in inventory_list:
                         action_options.append(f"combine") ## do I want to have 'combine with {requires}'? Maybe start with that and later allow 'combine x and y'. Don't want to make the decision for them. Maybe two lots of combine. A general combine option to just test things out, and a second one for prescribed combinations (eg dvd player + dvd)
-                elif potential_action == "flammable":
+                elif item == "flammable":
                     from set_up_game import game
                     if game.has_fire: # true if have matches or if near fire (which is why I'm not just using the inventory to check for matches etc)
                         action_options.append("set alight")
 
             #self.needs_key = attr.get("key")
-                elif potential_action == "can_lock":
+                elif item == "can_lock":
                     if inst.is_locked: ## TODO: add 'unlocked' state to anything that can be locked. Need explicit active flag management.
                         lock_action = "unlock"
                     else:
@@ -494,7 +499,7 @@ class LootRegistry:
                         action_options.append(lock_action)
                     else:
                         print("Locked but no key. Need to figure out how to deal w this. Maybe a few options depending on the item. If it has an obvious lock vs not etc.")
-                elif potential_action == "can_be_charged":
+                elif item == "can_be_charged":
                     if "is_charged" not in inst.flags:
                         inst.flags["is_charged"] = False
                     else:
@@ -552,6 +557,14 @@ class LootRegistry:
         for location in list(dataset.keys()):
             for direction in list(cardinal_cols.keys()):
                 self.by_location.setdefault(location, {}).setdefault(direction, set())
+
+    def get_action_flags_from_name(self, name):
+        print(f"get flag for this name: {name}")
+        inst = self.instances_by_name(name)
+        print(f"Inst: {inst}")
+        flag_actions = inst[0].verb_actions
+        print(f"flag actions: {flag_actions}")
+        return inst
 
 # setup
 registry = LootRegistry()

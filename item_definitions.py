@@ -35,7 +35,28 @@ CAN_REMOVE_FROM = "can_remove_from" ## not sure about this. Serves the same purp
 # 'fragile' just means it can be broken. Context's required for breaking are not yet defined.
 ## if 'loot_type', is a random draw. else is from a location.
 
-item_actions = {"from_flags": [CAN_READ], "contextual_actions": [{CAN_PICKUP: "not_in_inventory"}, {CAN_OPEN: "is_not_open"}, {CAN_COMBINE: "requires_item"}, {FLAMMABLE: "has_fire"}, {LOCKED:"needs_key"}]} ## 'has_fire' = player state, whether matches or it as a location with viable fire source.
+## DOING STUFF WITH INVENTORY. This section is just thinking aloud. Not implemented at all.
+
+item_actions = [
+    CAN_PICKUP,
+    CONTAINER,
+    FLAMMABLE,
+    DIRTY,
+    LOCKED,
+    CAN_LOCK,
+    FRAGILE,
+    CAN_OPEN,
+    CAN_READ,
+    CAN_COMBINE,
+    WEIRD,
+    DUPE,
+    IS_CHILD,
+    COMBINE_WITH,
+    CAN_REMOVE_FROM
+    ]
+
+
+#item_actions = {"from_flags": [CAN_READ], "contextual_actions": [{CAN_PICKUP: "not_in_inventory"}, {CAN_OPEN: "is_not_open"}, {CAN_COMBINE: "requires_item"}, {FLAMMABLE: "has_fire"}, {LOCKED:"needs_key"}]} ## 'has_fire' = player state, whether matches or it as a location with viable fire source.
 
 """
 Need to figure out how to define 'container limits' ' possible values.
@@ -163,11 +184,6 @@ item_defs_dict = {
     "the exact thing": {"name": "the exact thing you've been needing", "description": "It's the exact thing you need for the thing you need it for. But only once.", "flags":list(PANACEA), "item_size": SMALL_FLAT_THINGS, "loot_type": "special_loot"},
     "severed tentacle": {"name": "a severed tentacle", "description":"none yet", "flags":[WEIRD], "item_size": SMALLER_THAN_BASKETBALL, "loot_type": "weird"}
     }
-
-
-## DOING STUFF WITH INVENTORY. This section is just thinking aloud. Not implemented at all.
-
-item_actions = {"from_flags": [CAN_READ], "contextual_actions": [{CAN_PICKUP: "not_in_inventory"}, {CAN_OPEN: "is_not_open"}, {CAN_COMBINE: "requires_item"}, {FLAMMABLE: "has_fire"}, {LOCKED:"needs_key"}]} ## 'has_fire' = player state, whether matches or it as a location with viable fire source.
 
 
 def get_item_defs(item_name=None):

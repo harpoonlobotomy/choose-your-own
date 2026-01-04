@@ -1,13 +1,20 @@
-#verb_definitions.py
 
-
-from itemRegistry import ItemInstance
-#from verbRegistry import VerbInstance
 
 #null = "[null]"
 #verb = "[verb]"
 #location = "[location]"
 #noun = "[noun]"
+
+
+meta_verbs = { ## Added to work with specific user inputs. Not sure how to implement it yet, but will figure it out. Just a placeholder for now.
+    "inventory": {"alt_words": ""},
+    "help": {"alt_words": ""},
+    "settings": {"alt_words": ""},
+    "stats": {"alt_words": ""},
+    "godmode": {"alt_words": ""},
+    "quit": {"alt_words": ""}
+}
+
 
 null = "null"
 verb = "verb"
@@ -39,7 +46,7 @@ positional_dict = {
 
 
 formats = {
-    "verb_only": (verb),
+    "verb_only": (verb,),
     "verb_noun": (verb, noun),
     "verb_loc": (verb, location),
     "verb_dir_loc": (verb, direction, location), # go to graveyard
@@ -86,10 +93,10 @@ allowed_null = set(('and', 'with', 'to', 'the', 'at', 'plus', 'a', 'an', 'from',
 verb_defs_dict = {
     ## NOTE: Allowed_null is not used at present. All nulls are treated as equal, and all sem/loc/dirs are treated as viable in all cases. Will need to change this later but for now it works alright.
     "go": {"alt_words":["go to", "approach"], "allowed_null": None, "formats": [verb_loc, verb_dir_loc]},
-    "leave": {"alt_words": ["depart", ""], "allowed_null": None, "formats": [verb_only, verb_loc]},
+    "leave": {"alt_words": ["depart", ""], "allowed_null": None, "formats": [verb_only, verb_loc, verb_noun_dir_noun]},
     "combine": {"alt_words": ["mix", "add"], "allowed_null": None, "formats": [verb_noun_sem_noun]},
     "separate": {"alt_words": ["remove", "get"], "allowed_null": None, "formats": [verb_noun_sem_noun]},
-    "throw": {"alt_words": ["chuck", "lob"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_sem_noun]}, # throw ball down, throw ball at tree
+    "throw": {"alt_words": ["chuck", "lob"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_sem_noun, verb_noun_dir_noun]}, # throw ball down, throw ball at tree
     "push": {"alt_words": ["shove", "move", "pull"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun]},
     "drop": {"alt_words": ["discard", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_noun]},
     "read": {"alt_words": ["examine", ""], "allowed_null": None, "formats": [verb_noun]}, ## Two nouns have 'examine'. Maybe make 'read' its own specific thing instead of referring 'examine' here. idk.
@@ -104,7 +111,8 @@ verb_defs_dict = {
     "eat": {"alt_words": ["consume", "drink"], "allowed_null": None, "formats": [verb_noun]},
     "look": {"alt_words": ["watch", "observe", "investigate", "examine"], "allowed_null": ["at", "to", "with"],  "formats": [verb_only, verb_noun, verb_noun_sem_noun, verb_noun_dir_noun, verb_dir_noun, verb_dir_noun_sem_noun]}, # look, look at book, look at book with magnifying glass
     "set": {"alt_words": [""], "allowed_null": None, "formats": [verb_noun_dir, verb_noun_sem_noun], "distinction": {"second_noun":"fire", "new_verb":"burn", "else_verb":"put"}}, ## not implemented, just an idea. 'if fire is the second noun, the correct verb to use is 'burn', else the verb is 'put'. So 'set' is not its own thing, just a membrane/signpost.
-    "move": {"alt_words": ["shift"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun]}
+    "move": {"alt_words": ["shift"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun]},
+    "clean": {"alt_words": ["wipe"], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun]}
     }
 
 ### how to deal with two-part 'word phrases' (eg 'pick up')? Initial thought, just use the first word and check the second (so 'pick up the book', 'pick' is the verb, and we check it's 'pick up' once 'pick' is identified to make sure it's right. Though that might not even be necessary, 'pick' isn't exactly its own separate verb)

@@ -1,3 +1,5 @@
+## Going to rename this one to make it 'string_parser' or similar. The verbs don't live here, the string is just tokenised and formalised using the wordlists.
+
 import uuid
 
 from dataclasses import dataclass
@@ -256,7 +258,9 @@ class Parser:
             if token.kind == {"null"} or token.kind == set(): ## simplify this later.
                 continue
 
-            reformed_dict[token_count] = token.canonical
+            #print(f"Token.kind: {token.kind}")
+            #print(f"Token.canonical: {token.canonical}")
+            reformed_dict[token_count] = {list(token.kind)[0]: token.canonical}
             #print(f"Token text: {token.text}")
             #rint(f"Token text: {token.canonical}")
             token_count += 1
@@ -333,7 +337,7 @@ class Parser:
 
         return None, format_key
 
-    def reform_str(confirmed_verb, tokens, format_key):
+    def reform_str(confirmed_verb, tokens, format_key, return_all_parts=True):
 
         reformed_list = []
 
@@ -345,15 +349,25 @@ class Parser:
         for i, part in enumerate(format_key):
             if part == "verb" and not isinstance(confirmed_verb, str): ## TODO: Remove this later, this is just for format testing so I can type 'verb' instead of having to actually have real formats set up. No idea why though, guess I kinda just thought of it decided to put it in. No improvement over just using things that exist. Eh..
                 reformed_list.append(confirmed_verb.name)
+                confirmed_verb = confirmed_verb.name
             else:
+                #print("confirmed_verb: ",confirmed_verb)
                 reformed_list.append(reformed_dict[i])
 
+        if return_all_parts:
+            for idx, kind in reformed_dict.items():
+                for k, v in kind.items():
+                    if k == "verb":
+                        reformed_dict[idx][k]=confirmed_verb
+
+            #reformed_dict[]
+            return format_key, reformed_dict
         return reformed_list
 
 
 
     def input_parser(self, input_str, location=None, inventory=None, items=None): # temporarily adding 'items' just so I can test with any item from the item dict without having to add to inventory/location first. Purely for testing convenience.
-        confirmed_verb=None
+        confirmed_verb = None
         reformed_list = None
         tokens = self.tokenise(input_str, location, inventory, items)
 
@@ -379,8 +393,10 @@ class Parser:
                             confirmed_verb_numbers += 1
                             #print(f"confirmed verb: {confirmed_verb}")
                             #print(f"confirmed verb name: {confirmed_verb.name}")
-                            reformed_list = self.reform_str(confirmed_verb, tokens, format_key)
+                            reformed_list = self.reform_str(confirmed_verb, tokens, format_key, return_all_parts=True) # if return_all_parts, returns parts not string, for verb_membrane.
+                            format_key, reformed_dict = reformed_list
                             test_print(f"Reformed list: {reformed_list}", print_true=True)
+                            return reformed_dict#, format_key ## for now we stop if we find one.
                             #break # stop once verb is found
 
         #print(f"correct length sequences: {sequence_of_length}")
@@ -424,6 +440,7 @@ if __name__ == "__main__":
 
 
     test=True
+    action_test=True
     if test:
 
         from set_up_game import game, set_up ## might break
@@ -434,10 +451,27 @@ if __name__ == "__main__":
         for word in plural_word_names:
             plural_word_dict[word] = tuple(word.split())
 
-        test_str_list = ["go to the graveyard", "pick up the paperclip", "watch the watch", "look at watch", "put batteries in wallet", "look at batteries with wallet", "watch watch with watch", "pick up red wallet", "drop batteries in jar", "take paper scrap", "get paper scrap with number from jar", "get paper scrap from jar", "GET PAPER SCRAP FROM JAR", "place the batteries on the jar"]
+        if action_test:
+            test_str_list = ["go to the graveyard", "pick up the paperclip", "put batteries in wallet", "GET PAPER SCRAP FROM JAR", "place the batteries on the jar"]
+        else:
+            test_str_list = ["go to the graveyard", "pick up the paperclip", "watch the watch", "look at watch", "put batteries in wallet", "look at batteries with wallet", "watch watch with watch", "pick up red wallet", "drop batteries in jar", "take paper scrap", "get paper scrap with number from jar", "get paper scrap from jar", "GET PAPER SCRAP FROM JAR", "place the batteries on the jar"]
         #test_str_list = ["verb noun dir noun"]
 
         for item in test_str_list:
             test_str = item
             test_print(f"\nTEST STRING: `{test_str}`", print_true=True)
-            Parser.input_parser(Parser, test_str, inventory=game.inventory, items=list(item_defs_dict.keys()))
+            reformed_dict = Parser.input_parser(Parser, test_str, inventory=game.inventory, items=list(item_defs_dict.keys()))
+
+            if action_test:
+
+                #result_dict:
+
+
+
+                from verb_membrane import initialise_registry, v_actions
+                initialise_registry()
+
+                #verb_name, reformed_dict, format, tokens = parser_output
+                v_actions.route_verbs(reformed_dict)
+            #'winning format: ('verb', 'noun', 'direction', 'noun')
+            #Reformed list: ('put', ('verb', 'noun', 'direction', 'noun'), {0: 'place', 1: 'batteries', 2: 'on', 3: 'glass jar'}, [Token(idx=0, text='place', kind={'verb'}, canonical='place'), Token(idx=1, text='the', kind={'null'}, canonical='the'), Token(idx=2, text='batteries', kind={'noun'}, canonical='batteries'), Token(idx=3, text='on', kind={'null', 'direction'}, canonical='on'), Token(idx=4, text='the', kind={'null'}, canonical='the'), Token(idx=5, text='jar', kind={'noun'}, canonical='glass jar')])'
