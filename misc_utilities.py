@@ -257,7 +257,7 @@ def is_item_in_container(inventory_list, item):
 
 def generate_clean_inventory(inventory_inst_list, will_print = False, coloured = False):
 
-    from tui_update import update_text_box
+    from tui.tui_update import update_text_box
     from config import enable_tui
     tui_enabled = enable_tui
 
@@ -512,7 +512,7 @@ def print_type(item, exit=False, disabled=False):
 
 def do_print(text=None, end=None, do_edit_list=False, print_func=None):
 
-    from tui_update import update_text_box
+    from tui.tui_update import update_text_box
 
     if text==None:
         text=" "
