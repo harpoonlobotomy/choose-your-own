@@ -12,18 +12,18 @@ logging_config = {
  ## this whole thing is stupid.
 #I'm so tired. So fucking tired.
 
-item_man = "item_management_2.py",
+item_man = "itemRegistry.py",
 item_defs = "item_definitions.py",
 places = "env_data.py",
 utilities = "misc_utilities.py",
 set_up_game = "set_up_game.py",
-colour_class = "colours.py",
+colour_class = "tui/colours.py",
 choices = "choices.py",
 main_script = "choose_a_path_tui_vers.py"
 
-layout = "layout.py",
-tui_elements = "tui_elements.py",
-tui_update = "tui_update.py",
+layout = "tui/layout.py",
+tui_elements = "tui/tui_elements.py",
+tui_update = "tui/tui_update.py",
 
 scripts_list = [item_man, item_defs, layout, places, utilities, set_up_game, tui_elements, tui_update, colour_class, choices, main_script]
 
@@ -67,7 +67,7 @@ def logging_fn(traceback=False, category=None):
     if logging_config["function_logging"]:
         functionname = frame.f_code.co_name
         filename = frame.f_code.co_filename
-        #if logging_config["ignore_item_man"] and filename == "item_management_2.py":
+        #if logging_config["ignore_item_man"] and filename == "itemRegistry.py":
 
         lineno = frame.f_lineno
 
@@ -79,7 +79,7 @@ def logging_fn(traceback=False, category=None):
         args = inspect.getargvalues(frame)
         #print(f"Args: {args}")
         #
-        # Args: ArgInfo(args=['self'], varargs=None, keywords=None, locals={'self': <item_management_2.LootRegistry object at 0x000002493DAD9E80>})
+        # Args: ArgInfo(args=['self'], varargs=None, keywords=None, locals={'self': <itemRegistry.LootRegistry object at 0x000002493DAD9E80>})
         arg = args.args
         var = args.varargs
         kw = args.keywords

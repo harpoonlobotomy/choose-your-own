@@ -79,7 +79,7 @@ class Parser:
 
         if location:
             place, facing = location
-            from item_management_2 import registry
+            from itemRegistry import registry
             item_instances = registry.instances_by_location(place, facing) #### Can get this from the game, or pull it from location instances directly like this. Ideally though I think there should be an inbetween layer that handles 'requests for location items' to deal with 'what the player knows', 'what the lighting is', etc. But for testing this is okay.
             from misc_utilities import get_inst_list_names
             item_names = get_inst_list_names(item_instances)
