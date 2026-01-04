@@ -1,7 +1,7 @@
 # Choose your own adventure
 
 import random
-from item_management_2 import initialise_registry, registry
+from itemRegistry import initialise_registry, registry
 #import locations
 import choices
 import misc_utilities

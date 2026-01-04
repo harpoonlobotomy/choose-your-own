@@ -1,4 +1,4 @@
-from item_management_2 import ItemInstance, registry
+from itemRegistry import ItemInstance, registry
 from logger import logging_fn
 
 ## utilities to be used by any script at any point

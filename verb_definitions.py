@@ -1,7 +1,7 @@
 #verb_definitions.py
 
 
-from item_management_2 import ItemInstance
+from itemRegistry import ItemInstance
 #from verbRegistry import VerbInstance
 
 #null = "[null]"

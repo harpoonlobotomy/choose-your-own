@@ -8,7 +8,7 @@ from choices import choose, time_of_day, night, trip_over, emphasis
 from env_data import places, weatherdict
 
 from item_definitions import container_limit_sizes, detail_data
-from item_management_2 import ItemInstance, registry
+from itemRegistry import ItemInstance, registry
 
 from tui.tui_elements import add_infobox_data, print_commands
 from tui.tui_update import update_infobox
