@@ -1,5 +1,4 @@
 from os import system
-from time import sleep
 import random
 
 from misc_utilities import assign_colour, col_list, switch_the, generate_clean_inventory, get_inst_list_names, from_inventory_name, check_name, print_type, compare_input_to_options, smart_capitalise, do_print, do_input
@@ -11,8 +10,8 @@ from env_data import places, weatherdict
 from item_definitions import container_limit_sizes, detail_data
 from item_management_2 import ItemInstance, registry
 
-from tui_elements import add_infobox_data, print_commands
-from tui_update import update_infobox
+from tui.tui_elements import add_infobox_data, print_commands
+from tui.tui_update import update_infobox
 
 from logger import logging_fn
 
@@ -24,7 +23,6 @@ run_again = False
 yes = ["y", "yes"]
 no = ["n", "no", "nope"]
 
-#enable_tui=True
 clear_screen = False
 
 def do_clearscreen():
@@ -90,7 +88,6 @@ def add_item_to_container(container:ItemInstance):
             add_x_to = []
             inv_list = []
             for item in game.inventory:
-            ## get items in inventory that are small enough to fit (use item_size)
                 item_size = item.item_size
                 item_size = container_limit_sizes[item_size]
                 if item_size < container_size:
@@ -886,7 +883,7 @@ def the_nighttime():
     slowWriting("And/or wild animals if sleeping outside, and/or people, and/or ghosts/monster vibes if weird.")
     new_day()
 
-def location_item_interaction(item_name): ## Removed 'local_items' as it was retrieving names, not instances.
+def location_item_interaction(item_name):
     logging_fn()
 
     item_entry = registry.instances_by_name(item_name)
@@ -988,7 +985,7 @@ def look_around(status=None):
             skip_intro=True
         elif reason == None:
             reason = "the sun"
-        if skip_intro==False: # if there are no other reason to skip intro, can just combine the above into one 'if/else'.
+        if skip_intro==False:
             slowWriting(f"Using the power of {reason}, you're able to look around {assign_colour(switch_the(game.place, "the "), 'loc')} without too much fear of a tragic demise.")
         while True:
             obj = getattr(places[game.place], game.facing_direction)
@@ -1013,8 +1010,6 @@ def look_around(status=None):
                         slowWriting(f"You decide to move on from {assign_colour(switch_the(game.place, "the "), 'loc')}")
                         relocate()
 
-                    #from misc_utilities import cardinals
-
                     if text in game.cardinals or text[:1] in [i[:1] for i in game.cardinals]:
                         if text in remainders:
                             game.facing_direction=text
@@ -1032,7 +1027,6 @@ def look_around(status=None):
                     #do_print(f"Could not find what you're looking for. The options: {potential}")
             options = ["stay here", "move on"]
             text = option(options, no_lookup=None, print_all=True, preamble="Do you want to stay here or move on?")
-            #print(f"Text from stay here or move on: {text}. type: {type(text)}")
             checked_str, _ = compare_input_to_options(options, input=text)
             if checked_str == "stay here":
                 continue
@@ -1158,7 +1152,7 @@ def run():
     do_clearscreen()
 
     if enable_tui:
-        from tui_elements import run_tui_intro
+        from tui.tui_elements import run_tui_intro
         player_name = run_tui_intro(play_intro=False)
 
         if player_name:
@@ -1181,16 +1175,6 @@ def run():
         slowWriting("[[ Type 'help' for controls and options. ]]")
         do_print()
 
-
-        #place_data = getattr(places, "place")
-        #print(f"Visited: {places.place.visited}")
-    #print(game.inventory)
-    #clean_list, no_xval = generate_clean_inventory(game.inventory, tui_enabled=enable_tui)
-    #outcome, alignment = compare_input_to_options(clean_list, game.player, input="fashion mag", inventory=game.inventory, use_last=True)
-    #outcome_ref = alignment.get(outcome)
-    #print(f"outcome: {outcome}, alignment: {outcome_ref}")
-#
-    #exit()
     inner_loop(speed_mode=test_mode)
 
 if __name__ == "__main__":

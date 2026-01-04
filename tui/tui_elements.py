@@ -66,7 +66,7 @@ def make_coloured_list(input_list:list, title_block=False):
     if title_block:
         spacing=0
     else:
-        from layout import state
+        from tui.layout import state
         spacing = state.spacing
 
     new_list=[]
@@ -178,7 +178,7 @@ def print_in_text_box(up_lines, text:str="", text_list:list=None, print_console=
             return console_text
 
         if text_list:
-            from layout import state
+            from tui.layout import state
             text_block_start_col=(up_lines[0]+3)
             _, left_textblock_edge = state.text_block_start
             _, right_textblock_edge = state.text_block_end
@@ -232,7 +232,7 @@ def print_in_text_box(up_lines, text:str="", text_list:list=None, print_console=
 
 
 def prep_datablocks(text):
-    from layout import state
+    from tui.layout import state
     new_text=[]
     for line in text:
         if line == "":
@@ -244,8 +244,8 @@ def prep_datablocks(text):
 
 def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:bool=False, clear=False):
 
-    from layout import get_positions
-    from layout import state
+    from tui.layout import get_positions
+    from tui.layout import state
 
     bg_col = 40
     if backgrounds:
@@ -375,7 +375,7 @@ def overprint_part(part:str="", datablock:list=None, inv:list=None, backgrounds:
 
 
 def print_commands(backgrounds=False):
-    from datablocks import commands_
+    from tui.datablocks import commands_
     datablock=prep_datablocks(commands_)
     overprint_part("commands_", datablock, None, backgrounds)
 
@@ -402,7 +402,7 @@ def add_infobox_data(print_data:bool = False, backgrounds:bool = False, inventor
         return pd
 
 
-    from datablocks import inv_, worldstate_, playerdata_
+    from tui.datablocks import inv_, worldstate_, playerdata_
     player_inv = None
     if playerdata:
         player_inv = clean_player_data(playerdata)
@@ -497,7 +497,7 @@ def clean_print_block(state, intro_list=None):
 
 def print_output(text="", print_list=None, slow=False, print_to_console=True, by_char=False):
     print(HIDE, end='')
-    from layout import state
+    from tui.layout import state
     console_text = print_in_text_box(state.up_lines, text, text_list=print_list, print_console=print_to_console, slow_lines=slow, slow_char=by_char)
     if print_to_console:
         print_list = advance_list(console_text)
@@ -519,7 +519,7 @@ def print_text_from_bottom_up(input_list:list=None, input_text:str="", get_name=
             input_str = Colours.c("Please enter your name:  ", "title_white")
         else:
             input_str=Colours.c("INPUT:  ", "title_white")
-        from layout import state
+        from tui.layout import state
         print(f"\033[{state.input_pos}H{input_str}", end='')
         print("\033[s", end="")
         print(HIDE, end='')
@@ -562,7 +562,7 @@ def print_text_from_bottom_up(input_list:list=None, input_text:str="", get_name=
 
 
 def run_tui_intro(play_intro=True):
-    from layout import state
+    from tui.layout import state
     print(HIDE, end='')
     print("\033[s", end='')
     spaced_linelist = state.ui_layout
@@ -572,7 +572,7 @@ def run_tui_intro(play_intro=True):
     player_name=None
     print_intro=play_intro
     if print_intro:
-        from datablocks import intro
+        from tui.datablocks import intro
         intro = clean_print_block(state, intro)
         intro = make_coloured_list(intro, title_block=True)
         print_output(text="", print_list=intro, slow=True, print_to_console=False, by_char=True)

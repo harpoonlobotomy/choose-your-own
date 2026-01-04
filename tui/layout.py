@@ -1,6 +1,6 @@
 #layout.py
 
-tui_lines = "screen_draft_expanding.txt"
+tui_lines = "tui/screen_draft_expanding.txt"
 
 def calculate_layout(state):
     import shutil

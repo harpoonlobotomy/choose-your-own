@@ -33,7 +33,7 @@ def print_update(value, pos, base_start, alt_colour=False, min_length=2):
 
 def update_infobox(hp_value=None, name=None, carryweight_value=None, location=None, weather=None, t_o_d=None, day=None):
     time_of_day = t_o_d
-    from layout import state
+    from tui.layout import state
     getattr(state, "playerdata_start")
     playerdata_base = getattr(state, "playerdata_start")
     worldstate_base = getattr(state, "worldstate_start")
@@ -117,7 +117,7 @@ def update_text_box(to_print, edit_list=False):
     import re
     ANSI_RE = re.compile(r'\x1b\[[0-9;]*m')
 
-    from layout import state
+    from tui.layout import state
 
     linelength = state.linelength
     blank_str = " " * linelength
