@@ -5,7 +5,7 @@
 
 #Maybe I should move this section into the verbRegistry, and then direct it to this script which just holds the verb actions themselves, not the registry.
 # idk I like the idea of the verb-word-objects being different from the verb-action-objects. One's grammatical, one's an action-driver. With the third that is actually a list of functions for specific verbs.
-
+from itemRegistry import registry
 
 class VerbActions:
 
@@ -23,7 +23,7 @@ class VerbActions:
                 f_parts_dict[idx]=format_element
             #print(f_parts_dict)
         self.format_parts = f_parts_dict
-        #print(list(self.format_parts))
+        print(list(self.format_parts))
         #print(f"Attr: {attr}")
         for subject, content in attr.items():
             if subject not in ("alt_words", "formats"):
@@ -45,12 +45,12 @@ class VerbActionsRegistry:
 
     def create_verb_action(self, verb_key:str, attr:dict, formats:set)->VerbActions:
 
+        self.name = verb_key
         action = VerbActions(verb_key, attr, formats)
         self.verb_actions = action
         #print(f"Action: {dir(action)}")
         #'format_parts', 'formats', 'name', 'other'
 
-        self.name = verb_key
         self.by_name[verb_key] = action # not sure if this is the best way.
         self.formats = formats
         self.by_item = set() ## assign verbs to items, eg 'pick up' etc.
@@ -68,15 +68,25 @@ class VerbActionsRegistry:
 
     def route_verbs(self, reformed_dict):
 
+        noun_inst=None
         for entry in reformed_dict.values():
             for name, content in entry.items():
                 if name == "verb":
                     verb_name = content
+                if name == "noun":
+                    noun_inst=registry.instances_by_name(content)
+
 
         #"format", "Reformed list", "Tokens"
+        print(f"Verb name: {verb_name}")
         verb_inst = self.get_action_from_name(verb_name)
+        #print(f"Verb inst: {verb_inst}")
         from verb_actions import router
-        router(verb_name, verb_inst, reformed_dict)
+        if noun_inst:
+            for noun in noun_inst:
+                router(noun, verb_inst, reformed_dict)
+        else:
+            router(noun_inst, verb_inst, reformed_dict)
         return
 
 v_actions = VerbActionsRegistry()
@@ -107,16 +117,17 @@ def initialise_registry():
         v_actions.create_verb_action(key, needed_parts, format_items)
     #print(list(format_items))
 
-from itemRegistry import initialise_registry as item_reg
-from itemRegistry import registry
-item_reg()
-initialise_registry()
+if __name__ == "__main__":
+    from itemRegistry import initialise_registry as item_reg
+    from itemRegistry import registry
+    item_reg()
+    initialise_registry()
 
-str_dict = {0: {'verb': 'put'}, 1: {'noun': 'batteries'}, 2: {'null': 'on'}, 3: {'noun': 'glass jar'}}
-verb_name = "put"
-## Current list of item action flags.
-from verb_actions import router
-verb_instance = v_actions.get_action_from_name(verb_name)
-#print(f"verb_inst: {verb_instance}")
-router(verb_name=verb_name, noun_inst=registry.instances_by_name("glass jar")[0], verb_inst = verb_instance, reformed_dict=str_dict)
-['can_pick_up', 'container', 'flammable', 'dirty', 'locked', 'can_lock', 'fragile', 'can_open', 'can_read', 'can_combine', 'weird', 'dupe', 'is_child', 'combine_with', 'can_remove_from']
+    str_dict = {0: {'verb': 'put'}, 1: {'noun': 'batteries'}, 2: {'null': 'on'}, 3: {'noun': 'glass jar'}}
+    verb_name = "put"
+    ## Current list of item action flags.
+    from verb_actions import router
+    verb_instance = v_actions.get_action_from_name(verb_name)
+    #print(f"verb_inst: {verb_instance}")
+    router(noun_inst=registry.instances_by_name("glass jar")[0], verb_inst = verb_instance, reformed_dict=str_dict)
+    ['can_pick_up', 'container', 'flammable', 'dirty', 'locked', 'can_lock', 'fragile', 'can_open', 'can_read', 'can_combine', 'weird', 'dupe', 'is_child', 'combine_with', 'can_remove_from']

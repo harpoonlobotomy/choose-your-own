@@ -43,7 +43,10 @@ def put(noun, ):
 
 
 
-def drop():
+def drop(noun_name):
+
+    print(f"Noun name: {noun_name}")
+    print("This is the drop function.")
     """ ## from itemRegistry:
 
     def drop(self, inst: ItemInstance, location, direction, inventory_list):
@@ -61,18 +64,23 @@ def drop():
 def get():
     print()
 
+def put(noun_name):
+    print("This is the noun_name in 'def put():")
+    print(f"        **[[{noun_name}]]**")
+
 def burn():
     print()
 
 def check_noun_actions(noun_inst, verb_inst):
 
-    #print(f"Verb inst name: {verb_inst.name}")
-    #print(f"noun inst actions: {noun_inst.verb_actions}")
+    print(f"Verb inst name: {verb_inst.name}")
+    print(f"noun inst actions: {noun_inst.verb_actions}")
     #if verb_inst.name in noun_inst[0].verb_actions:
     for action in noun_inst.verb_actions:
-        if verb_inst.name in flag_actions[action]:
-            print(f"Verb inst name in flag_actions for noun: ({noun_inst.name}): {verb_inst.name}")
-
+        if flag_actions.get(action):
+            if verb_inst.name in flag_actions[action]:
+                print(f"{action}: Verb inst name in flag_actions for noun: ({noun_inst.name}): {verb_inst.name}")
+                return noun_inst.name
         #print(f"Verb name is in noun list: {verb_inst.name}")
     #print(f"Noun for checking: {noun}")
     #formats_for_verb = verb_inst.formats
@@ -97,53 +105,65 @@ def check_noun_actions(noun_inst, verb_inst):
 
 
 
-def router(verb_name, noun_inst=None, verb_inst=None, reformed_dict={}):
+def router(noun_inst=None, verb_inst=None, reformed_dict={}):
 
     noun_insts = []
     inst_dict = {}
 
-    if not (noun_inst and verb_inst):
-        for idx, v in reformed_dict.items():
-            print("Missing at least one part.")
-            print(f"noun_inst: {noun_inst}, verb inst: {verb_inst}")
-            print(f"Index: {idx}, v: {v}")
-            for kind, content in reformed_dict[idx].items():
-                inst_dict[idx] = content
-                print(f"kind: {kind}, content: {content}")
-                if kind == "verb" and verb_inst == None:
-                    from verb_membrane import v_actions
-                    verb_inst = v_actions.get_action_from_name(content)
-                if kind == "noun":
-                    noun_insts.append(content)
-    else:
-        print("Not missing any bits.")
-        noun_insts.append(noun_inst)
+    #if not (noun_inst and verb_inst):
+    for idx, v in reformed_dict.items():
+        #print("Missing at least one part.")
+        #print(f"noun_inst: {noun_inst}, verb inst: {verb_inst}")
+        print(f"Index: {idx}, v: {v}")
+        for kind, content in reformed_dict[idx].items():
+            inst_dict[idx] = content
+            print(f"kind: {kind}, content: {content}")
+            if kind == "verb" and verb_inst == None:
+                from verb_membrane import v_actions
+                verb_inst = v_actions.get_action_from_name(content)
+            if kind == "noun":
+                noun_insts.append(content)
+    #else:
+    #    print("Not missing any bits.")
+    #    print(f"noun: {noun_inst}, verb: {verb_inst}")
+    #    noun_insts.append(noun_inst)
 
     from item_definitions import item_defs_dict
     inventory =list(item_defs_dict.keys())
 
+    if noun_insts:
+        for noun in noun_insts:
+            print(f"Noun in noun_insts: {noun}")
+            from itemRegistry import registry
+            if isinstance(noun, str):
+                noun_inst = registry.instances_by_name(noun)[0]
+            elif isinstance(noun, ItemInstance):
+                noun_inst = noun
+            #inst_dict[idx] = noun_inst
 
-    for noun in noun_insts:
-        from itemRegistry import registry
-        if isinstance(noun, str):
-            noun_inst = registry.instances_by_name(noun)[0]
-        elif isinstance(noun, ItemInstance):
-            noun_inst = noun
-        #inst_dict[idx] = noun_inst
+            #print(f"Noun inst: {noun_inst}, type: {type(noun_inst)}")
+            ## can use this (that I forgot I set up previously apparently?)
+           #    actions_from_registry = registry.get_actions_for_item(noun_inst, inventory)
 
-        ## can use this (that I forgot I set up previously apparently?)
-        actions_from_registry = registry.get_actions_for_item(noun_inst, inventory)
-
-        ## And there was a second way but I can't think of it. Too tired.
-        ## Oh it was this:
-         #print(f"noun inst actions: {noun_inst.verb_actions}") <--
-         # slightly different lists, need to remove one of them or it's going to be confusing as hell later, if it isn't already.
+            ## And there was a second way but I can't think of it. Too tired.
+            ## Oh it was this:
+            #print(f"noun inst actions: {noun_inst.verb_actions}") <--
+            # slightly different lists, need to remove one of them or it's going to be confusing as hell later, if it isn't already.
 
 
-#        print(f"Actions from registry: {actions_from_registry}")
-#        print(f"noun inst: {noun}, verb inst: {verb_inst}")
-        check_noun_actions(noun_inst, verb_inst)
+    #        print(f"Actions from registry: {actions_from_registry}")
+    #        print(f"noun inst: {noun}, verb inst: {verb_inst}")
+            noun_name = check_noun_actions(noun_inst, verb_inst)
 #
+            function_dict = {
+                "drop": drop,
+                "put": put
+            }
+
+            if noun_name:
+                func = function_dict[verb_inst.name]
+
+                func(noun_name)
 #from item_definitions import item_actions
 #for item in item_actions:
     #print(f'"{item}": "",')

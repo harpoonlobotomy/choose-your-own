@@ -7,6 +7,15 @@ from typing import Optional
 
 null_adjectives = True
 
+
+def get_noun_inst(noun_name):
+    print()
+
+
+def prepare_output(dict):
+    print()
+
+
 def test_print(input, print_true=False):
     #print(f"Input {input}, print_true: {print_true}")
     if print_true:
@@ -31,7 +40,7 @@ class VerbInstance:
         self.kind = None
         self.alt_words=attr["alt_words"]
         self.null_words = attr["allowed_null"]
-        self.format = attr.get("format")
+        self.formats = attr.get("formats")
         self.distinction = attr.get("distinction") if attr.get("distinction") else None
         self.colour = None
 
@@ -237,22 +246,28 @@ class Parser:
             # normal token
             return list(kinds)
 
-    def get_viable_verbs(token):
+    def get_viable_verb(token):
         word = token.text
         viable_verbs = set()
+        viable_instances = set()
         #print(f"Word: {word}")
         if verbs.by_name.get(word):
             viable_verbs.add(word)
+            viable_instances.add(verbs.by_name.get(word)[0])
         else:
             if verbs.by_alt_words.get(word):
-                word_names = verbs.by_alt_words[word]
-                for word_name in word_names:
-                    viable_verbs.add(word_name.name)
-        return viable_verbs
+                alt_instances = verbs.by_alt_words[word]
+                for alt_inst in alt_instances:
+                    viable_verbs.add(alt_inst.name)
+                    viable_instances.add(alt_inst) ## the advantage of this is that if we have a verb with two very different interpretations (eg 'set on fire' and 'set down', we can differentiate later. But it's very very messy. That should be done inside 'set' if needed.)
+
+        # for now will leave this be, but really it should just resolve to a string and an instance (or really, just the instance. There should never be multiple verbs of the same name.)
+        return viable_verbs, viable_instances
 
     def get_non_null_tokens(tokens) -> tuple[dict, int]:
         reformed_dict = {}
         token_count = 0
+        cleaned_tokens = []
         for token in tokens:
             #print(f"Token kind: {token.kind}")
             if token.kind == {"null"} or token.kind == set(): ## simplify this later.
@@ -261,9 +276,11 @@ class Parser:
             #print(f"Token.kind: {token.kind}")
             #print(f"Token.canonical: {token.canonical}")
             reformed_dict[token_count] = {list(token.kind)[0]: token.canonical}
-            #print(f"Token text: {token.text}")
+            print(f"Token text: {token.text}")
+            print(f"Token dir: {dir(token)}")
             #rint(f"Token text: {token.canonical}")
             token_count += 1
+
         return reformed_dict, token_count
 
     def get_sequences_from_tokens(tokens) -> list:
@@ -276,15 +293,9 @@ class Parser:
             options = Parser.token_role_options(token)
             #print(f"Options: {options}")
             if "verb" in options:
-                if token.canonical == "verb":
+                verb_options, verb_instances = Parser.get_viable_verb(token)
 
-                    verb_options.add("verb")
-                    force_false_verb=True
-                else:
-                    verb_options = Parser.get_viable_verbs(token)
-
-            ## If 'dir' in token, note. If next token is also dir, check if it's the first part of a two part (eg 'away from', 'up against', etc. If so, then treat it as only one dir, omit the second, and make sure the combined-dir is the token-text instead.)
-            ## Actually could do this in the tokeniser stage, like I have with verbs. Mm. Really should, actually. Okay, marked as a TODO.
+            ### could check here what the length of acceptable formats are for the viable verb (which will only be one, I'll make sure of it going forward, makes too much mess otherwise) and limit it to those.
 
             new_sequences = []
 
@@ -297,8 +308,10 @@ class Parser:
                         new_sequences.append(seq + [opt])
 
             sequences = new_sequences
-        test_print(f"Sequences: {sequences}")#, print_true=True)
-        test_print(f"Verb options: {verb_options}")#, print_true=True)
+        test_print(f"Sequences: {sequences}", print_true=True)
+        test_print(f"Verb options: {verb_options}", print_true=True)
+        print(f"len verb_options: {len(verb_options)}")
+        print(f"Verb instances: {verb_instances}")
         viable_sequences = []
         for seq in sequences:
             if seq:
@@ -311,9 +324,9 @@ class Parser:
         #print("total potential sequences: ", len(sequences))
         #print("viable sequences: ", len(viable_sequences))
         #print(f"verb_options: {verb_options}")
-        return [tuple(seq) for seq in viable_sequences if seq], verb_options
+        return [tuple(seq) for seq in viable_sequences if seq], verb_instances
 
-    def resolve_verb(tokens, verb_name, format_key) -> VerbInstance:
+    def resolve_verb(tokens, verb_name, format_key) -> tuple[VerbInstance|str]:
 
         #print(f"Format key: {format_key}")
         items = verbs.by_format.get(format_key) # gets verb names that match the format key
@@ -364,6 +377,19 @@ class Parser:
             return format_key, reformed_dict
         return reformed_list
 
+    def build_dict(confirmed_verb, tokens, format_key, return_all_parts=True):
+
+        ## 'if only one verb in format_key' <- should implement.
+        reformed_dict, token_count = Parser.get_non_null_tokens(tokens)
+
+        if return_all_parts:
+            for idx, kind in reformed_dict.items():
+                for k, v in kind.items():
+                    if k == "verb":
+                        reformed_dict[idx][k]=confirmed_verb
+
+            return format_key, reformed_dict
+
 
 
     def input_parser(self, input_str, location=None, inventory=None, items=None): # temporarily adding 'items' just so I can test with any item from the item dict without having to add to inventory/location first. Purely for testing convenience.
@@ -371,7 +397,7 @@ class Parser:
         reformed_list = None
         tokens = self.tokenise(input_str, location, inventory, items)
 
-        sequences, verb_options = self.get_sequences_from_tokens(tokens)
+        sequences, verb_instances = self.get_sequences_from_tokens(tokens)
         #print(f"Len sequences: {len(sequences)}")
         #print(f"Sequences: {sequences}")
         #print(f"Verb options: {verb_options}")
@@ -384,19 +410,20 @@ class Parser:
                 #print(f"Len sequence: {len(sequence)}, token count: {token_count}")
                 if len(sequence) == token_count:
                     sequence_of_length += 1
-                    for verb_name in verb_options: ## Will generally only ever be one. But this will at least give the suggestion of dealing with multiple verbs. I guess this is good for the 'watch the watch' type thing.
+                    for verb_inst in verb_instances: ## Will generally only ever be one. But this will at least give the suggestion of dealing with multiple verbs. I guess this is good for the 'watch the watch' type thing.
                         #if verb_name == "verb":
                         #print(f"Verb name: {verb_name}")
-                        confirmed_verb, format_key = self.resolve_verb(tokens, verb_name, sequence)
+                        confirmed_verb, format_key = self.resolve_verb(tokens, verb_inst, sequence)
                         #print(f"confirmed verb: {confirmed_verb}, format key: {format_key}")
                         if confirmed_verb:
                             confirmed_verb_numbers += 1
+                            dict_for_output = self.build_dict(confirmed_verb, tokens, format_key, return_all_parts=True)
                             #print(f"confirmed verb: {confirmed_verb}")
                             #print(f"confirmed verb name: {confirmed_verb.name}")
-                            reformed_list = self.reform_str(confirmed_verb, tokens, format_key, return_all_parts=True) # if return_all_parts, returns parts not string, for verb_membrane.
-                            format_key, reformed_dict = reformed_list
+                            #reformed_list = self.reform_str(confirmed_verb, tokens, format_key, return_all_parts=True) # if return_all_parts, returns parts not string, for verb_membrane.
+                            #format_key, reformed_dict = reformed_list
                             test_print(f"Reformed list: {reformed_list}", print_true=True)
-                            return reformed_dict#, format_key ## for now we stop if we find one.
+                            return dict_for_output#, format_key ## for now we stop if we find one.
                             #break # stop once verb is found
 
         #print(f"correct length sequences: {sequence_of_length}")
@@ -428,6 +455,12 @@ def initialise_registry():
     verbs.list_null_words = allowed_null
     for item_name, attr in verb_defs_dict.items():
         verbs.create_verb_instance(item_name, attr)
+        #verb_inst = verbs.by_name.get(item_name)[0]
+        #print(f"Verb inst: {verb_inst}")
+        #print("formats: ")
+        #print(verb_inst.formats) # list of sets
+        #exit()
+
         if attr.get("null_words"):
             for word in attr.get("null_words"):
                 if word.lower() != None:
@@ -452,9 +485,10 @@ if __name__ == "__main__":
             plural_word_dict[word] = tuple(word.split())
 
         if action_test:
-            test_str_list = ["go to the graveyard", "pick up the paperclip", "put batteries in wallet", "GET PAPER SCRAP FROM JAR", "place the batteries on the jar"]
+            test_str_list = ["drop the paperclip"]
+            #test_str_list = ["go to the graveyard", "pick up the paperclip", "put batteries in wallet", "GET PAPER SCRAP FROM JAR", "place the batteries on the jar"]
         else:
-            test_str_list = ["go to the graveyard", "pick up the paperclip", "watch the watch", "look at watch", "put batteries in wallet", "look at batteries with wallet", "watch watch with watch", "pick up red wallet", "drop batteries in jar", "take paper scrap", "get paper scrap with number from jar", "get paper scrap from jar", "GET PAPER SCRAP FROM JAR", "place the batteries on the jar"]
+            test_str_list = []#"go to the graveyard", "pick up the paperclip", "watch the watch", "look at watch", "put batteries in wallet", "look at batteries with wallet", "watch watch with watch", "pick up red wallet", "drop batteries in jar", "take paper scrap", "get paper scrap with number from jar", "get paper scrap from jar", "GET PAPER SCRAP FROM JAR", "place the batteries on the jar"]
         #test_str_list = ["verb noun dir noun"]
 
         for item in test_str_list:
@@ -465,13 +499,11 @@ if __name__ == "__main__":
             if action_test:
 
                 #result_dict:
-
-
-
                 from verb_membrane import initialise_registry, v_actions
                 initialise_registry()
 
                 #verb_name, reformed_dict, format, tokens = parser_output
+                print(f"Reformed dict before route_verbs: {reformed_dict}")
                 v_actions.route_verbs(reformed_dict)
             #'winning format: ('verb', 'noun', 'direction', 'noun')
             #Reformed list: ('put', ('verb', 'noun', 'direction', 'noun'), {0: 'place', 1: 'batteries', 2: 'on', 3: 'glass jar'}, [Token(idx=0, text='place', kind={'verb'}, canonical='place'), Token(idx=1, text='the', kind={'null'}, canonical='the'), Token(idx=2, text='batteries', kind={'noun'}, canonical='batteries'), Token(idx=3, text='on', kind={'null', 'direction'}, canonical='on'), Token(idx=4, text='the', kind={'null'}, canonical='the'), Token(idx=5, text='jar', kind={'noun'}, canonical='glass jar')])'

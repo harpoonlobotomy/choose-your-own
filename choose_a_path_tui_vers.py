@@ -365,6 +365,17 @@ def instance_name_in_inventory(inst_name:str)->ItemInstance:
 
 def user_input():
     text = do_input()
+    """
+    text = text.lower()
+    from verb_definitions import meta_verbs # don't actually do this here, do it on init.
+    if text in list(meta_verbs.keys()):
+    if text in list(meta_verbs.values("alt_words")):
+
+        ## Actually this whole thing should be in the parsing script.
+
+## Ooooh maybe I should rip the Parser class out of verbRegistry, and have that stand on its own. That's probably a good idea maybe?
+
+    """
     if text != None:
         text=text.strip()
     if text.lower() == "godmode":
@@ -1191,4 +1202,8 @@ if __name__ == "__main__":
             enable_tui = True
             config.enable_tui = True
 
+
+    import config
+    enable_tui = False
+    config.enable_tui = False
     run()
