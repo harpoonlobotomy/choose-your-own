@@ -35,7 +35,8 @@ cardinals = ["north", "east", "south", "west"]
 directions = ["down", "up", "left", "right", "away", "toward", "towards", "closer", "further", "to", "against", "across", "at", "in", "on", "from", "inside", "away"]
 ## "in front of"?? Need to be able to cope with that.
 
-semantics = ["with"]
+nulls = ["the", "a", "an"]
+semantics = ["with", "and"]
 directions = directions + cardinals
 
 positional_dict = {
@@ -55,6 +56,7 @@ formats = {
     "verb_dir_noun": (verb, direction, noun), # 'look at watch'
     "verb_noun_dir": (verb, noun, direction), # throw ball up
     "verb_noun_dir_noun": (verb, noun, direction, noun), # push chest towards door
+    "verb_noun_dir_loc": (verb, noun, direction, location), # drop paperclip at graveyard #only works if you're in the graveyard, identical in function to 'drop paperclip' while at graveyard.
     "verb_noun_sem_noun": (verb, noun, sem, noun),
     "verb_dir_noun_sem_noun": (verb, direction, noun, sem, noun)
 }
@@ -69,6 +71,7 @@ verb_sem_loc = formats["verb_sem_loc"]
 verb_dir_noun = formats["verb_dir_noun"]
 verb_noun_dir = formats["verb_noun_dir"]
 verb_noun_dir_noun = formats["verb_noun_dir_noun"]
+verb_noun_dir_loc = formats["verb_noun_dir_loc"]
 verb_noun_sem_noun = formats["verb_noun_sem_noun"]
 verb_dir_noun_sem_noun = formats["verb_dir_noun_sem_noun"]
 
@@ -94,12 +97,12 @@ verb_defs_dict = {
     ## NOTE: Allowed_null is not used at present. All nulls are treated as equal, and all sem/loc/dirs are treated as viable in all cases. Will need to change this later but for now it works alright.
     "go": {"alt_words":["go to", "approach"], "allowed_null": None, "formats": [verb_loc, verb_dir_loc]},
     "leave": {"alt_words": ["depart", ""], "allowed_null": None, "formats": [verb_only, verb_loc, verb_noun_dir_noun]},
-    "combine": {"alt_words": ["mix", "add"], "allowed_null": None, "formats": [verb_noun_sem_noun]},
-    "separate": {"alt_words": ["remove", "get"], "allowed_null": None, "formats": [verb_noun_sem_noun]},
+    "combine": {"alt_words": ["mix", "add"], "allowed_null": ["with", "and"], "formats": [verb_noun_sem_noun]},
+    "separate": {"alt_words": ["remove", ""], "allowed_null": ["from", "and"], "formats": [verb_noun_sem_noun]},
     "throw": {"alt_words": ["chuck", "lob"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_sem_noun, verb_noun_dir_noun]}, # throw ball down, throw ball at tree
     "push": {"alt_words": ["shove", "move", "pull"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun]},
-    "drop": {"alt_words": ["discard", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_noun]},
-    "read": {"alt_words": ["examine", ""], "allowed_null": None, "formats": [verb_noun]}, ## Two nouns have 'examine'. Maybe make 'read' its own specific thing instead of referring 'examine' here. idk.
+    "drop": {"alt_words": ["discard", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_noun, verb_noun_dir_loc]},
+    "read": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun]}, ## Two nouns have 'examine'. Maybe make 'read' its own specific thing instead of referring 'examine' here. idk.
     "burn": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun], "inventory_check": "fire_source"},
     "lock": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun], "inventory_check": "key"},
     "unlock": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun_sem_noun], "inventory_check": "key"},

@@ -135,3 +135,86 @@ So. If we're using the same verb instance, then it makes sense to simply add tha
 3:25pm
 So... what is 'resolve_verb' even doing here? We literally get the verb during 'sequences', discard it, then check to see if it's viable again?
 We send the format key to resolve_verb, then just send it out again, it doesn't check against anything.
+
+Oh--- it checks to see that the verb found has the currently-testing format key as an acceptable format. That's what it's doing, it's not testing the /verb/. Rightright.
+
+We already test that the sequences are viable globally in get_sequences_from_tokens.  Any by that point we've found the verb. So instead, I'll just get the already-found verb instance's accepted formats and use that directly.
+
+(Will enforce the 'only one verb found' later, too. Having two verbs of the same name makes no point. Any potential conflict (like 'set on fire' and 'set on floor'), we deal with inside that verb, or in the router fn.)
+
+4.11pm
+
+Ohh, now I remember. Getting the noun instances is tricky because they're item-specific, whereas verbs are the same regardless. So for the nouns I need to check if they're in inventory and so on.
+Sooooo....
+
+First thought - remove the inventory checks etc from the Parser. Just give it the static wordlists (inc item defs) to confirm it's a noun, but then once the parsing is done, check the context.
+
+Maybe 'verb_membrane' needs to be 'context_membrane', and there it figures out if it's inventory instance or whatever else.
+
+but that's tricky, because what if I say 'get paperclip'? I might already have one in the inventory, so it can't just search there first and assume that's what I meant, if there's also one on the table.
+
+Maybe the verbs themselves need to direct it. So, 'get' would search the location + containers, but /not/ inventory. That makes more sense.
+
+So we don't check for noun instances in router, either. Just forward it on to the verb. Router is just an entry-point to verb_actions, it doesn't nee to do more than direct its input onward.
+
+Well it can check some default instance for matching noun_actions, but that's not 'the' instance. That works.
+
+So, parsing happens, verb-object (which is the same obj in parsing and in actions) is decided, applicable formats are found. All that is forward as a dict (token/inst data) and a set (suitable/potential formats, which may be more than one (viably)) to router.
+Router goes through the noun(s) and for each unique noun, checks if it's applicable for the verb. If not, then return 'You can't {verb} the {noun}'.
+
+Else, forwards on to the verb fn.
+
+
+5.36pm
+Okay, another weird one. Clearly my code has a failure somewhere.
+
+TEST STRING: `pick up the fashion magazine`
+MATCH IN PLURAL WORDS: `fashion` FOR COMPOUND WORD: fashion mag
+RESULT: [[ 'pick' 'fashion mag' ]]
+Viable formats: [('verb', 'noun')]
+Kind: noun, entry: pick
+Kind: noun, entry: fashion mag
+Nouns: {'pick', 'fashion mag'}
+Noun: pick
+No found ItemInstance for pick
+Noun: fashion mag
+
+
+The format is clearly 'verb, noun'. 'pick' is not a viable noun to choose, but is a verb.
+
+And yet. Why is it coming up as 'kind, pick'?
+
+And strangely only sometimes.
+
+If I run it again, changing nothing:
+
+TEST STRING: `pick up the fashion magazine`
+MATCH IN PLURAL WORDS: `fashion` FOR COMPOUND WORD: fashion mag
+RESULT: [[ 'pick' 'fashion mag' ]]
+Viable formats: [('verb', 'noun')]
+Kind: verb, entry: <verbRegistry.VerbInstance object at 0x0000022A1748A680>
+Kind: noun, entry: fashion mag
+Nouns: {'fashion mag'}
+Noun: fashion mag
+No found ItemInstance for fashion mag
+
+
+Dict from registry: {0: {'noun': 'pick'}, 1: {'noun': 'fashion mag'}}
+Dict from registry: {0: {'verb': <verbRegistry.VerbInstance object at 0x0000024E49DBA680>}, 1: {'noun': 'fashion mag'}}
+Kind: verb, entry: <verbRegistry.VerbInstance object at 0x0000024E49DBA680>
+
+Same script(s), run seconds apart. Seems random.
+
+Didn't use to do this, I've clearly introduced something in this changeover to membrane.
+
+Okay fixed it. Somehow I'd been feeding it the verbs list instead of the nouns. No wonder it broke.
+Not sure why it was successful in identifying the format though, when it hadn't recognised the verb as a verb.
+
+Oh, because it adds both verb and noun, because all_verbs is generated separately. So when it finds 'pick' in items because of the list generation error of mine, it adds noun. That does make sense.
+
+
+7.19pm
+Okay, getting there now. Drop function works with 'drop x in y' and 'drop x at y' depending on whether y == item + container or y == location.
+
+7.47pm
+tbh it feels like I should make the locations instances, too. I thought I had but I guess I never made use of it.

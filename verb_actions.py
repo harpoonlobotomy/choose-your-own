@@ -1,8 +1,7 @@
 
 ### Interface between item_actions and the verbs.
 
-from itemRegistry import ItemInstance
-
+from itemRegistry import ItemInstance, registry
 
 movable_objects = ["put", "take", "combine", "separate", "throw", "push", "drop", "set", "move"]
 
@@ -24,9 +23,97 @@ flag_actions = {
     "can_remove_from": ""
     }
 
+##### Parts Parsing ########
 
-def put(noun, ):
+def four_parts_a_x_b(input_dict):
+
+    from verb_definitions import directions
+    if list(input_dict[2].values())[0] in directions:
+        a = list(input_dict[1].values())[0]
+        sem_or_dir = list(input_dict[2].values())[0]
+        b = list(input_dict[3].values())[0]
+
+        return a, sem_or_dir, b
+
+def get_elements(input_dict) -> tuple:
+### I don't think this is actually better than each one just doing 'if len(), because it still has to evaluate the number afterwards to unpack it, no?
+
+    if len(input_dict) == 2:
+        return (2, list(input_dict[1].values())[0]) # could be 'leave loc', 'drop item', 'get item', 'talk person' etc.
+
+    elif len(input_dict) == 3:
+        print("I can't think of an example right now.")
+
+    elif len(input_dict) == 4:
+        return 4, four_parts_a_x_b(input_dict)
+
+
+##############################
+
+
+#### Fundamental Operations ####
+
+def get_current_loc():
+
+    from set_up_game import game
+    location = game.place
+    cardinal = game.facing_direction
+    return location, cardinal
+
+def move_a_to_b(a, b, action=None, direction=None):
+
+    from item_definitions import container_limit_sizes
+   ## This is the terminus of any 'move a to b' type action. a must be an item instance, b may be an item instance (container-type) or a location.
+    if not direction:
+        direction = "to"
+    if not action:
+        action = "moving"
+
+    if isinstance(b, ItemInstance):
+        if hasattr(b, "container_limits"):
+            print(f"{b.name} is a container with capacity {b.container_limits}.")
+            container_size = container_limit_sizes.get(b.container_limits)
+            if isinstance(a, ItemInstance):
+                if hasattr(a, "item_size"):
+                    print(f"{b.name} is an item with size {a.item_size}.")
+                    item_size = container_limit_sizes.get(a.item_size)
+                    if item_size < container_size:
+                        print(f"{a.name} will fit in {b.name}")
+                        print(f"{action} {a} {direction} {b}")
+
+    elif isinstance(b, tuple):
+        print(f"b is a tuple: {b}")
+        from env_data import dataset as locations
+        if b[0] in locations:
+            print(f"B[0]: {b[0]}")
+            print(f"{action} {a.name} {direction} {b}")
+
+
+    else:
+        location = None
+        print("B is not an instance.")
+        from env_data import dataset as locations
+        if b in list(locations):
+            print(f"B is a location: {b}")
+            location = b
+        elif "a " + b in list(locations):
+            print(f"B is a location: {b}")
+            location = "a " + b
+        if location:
+            print(f"{action} {a.name} {direction} {b}")
+
+
+
+#######################
+
+def put(input_dict):
     print("Put varies depending on the format.")
+
+    count, parts = get_elements(input_dict)
+
+
+
+
     """
     verb_noun_dir, verb_noun_sem_noun, verb_noun_dir_noun
 
@@ -42,11 +129,21 @@ def put(noun, ):
     """
 
 
+def drop(input_dict):
 
-def drop(noun_name):
-
-    print(f"Noun name: {noun_name}")
+    #print(f"Noun name: {noun_name}")
     print("This is the drop function.")
+    if len(input_dict) == 4:
+        item_to_place, direction, container_or_location = four_parts_a_x_b(input_dict)
+        if direction in ["in", "into", "on", "onto"]:
+            move_a_to_b(a=item_to_place, b=container_or_location, action="dropping", direction=direction)
+
+    if len(input_dict) == 2:
+        if isinstance(list((input_dict)[1].values())[0], ItemInstance):
+            location = get_current_loc()
+            print(f"location: {location}")
+            move_a_to_b(a=list((input_dict)[1].values())[0], b=location, action="dropping")
+
     """ ## from itemRegistry:
 
     def drop(self, inst: ItemInstance, location, direction, inventory_list):
@@ -71,16 +168,7 @@ def put(noun_name):
 def burn():
     print()
 
-def check_noun_actions(noun_inst, verb_inst):
 
-    print(f"Verb inst name: {verb_inst.name}")
-    print(f"noun inst actions: {noun_inst.verb_actions}")
-    #if verb_inst.name in noun_inst[0].verb_actions:
-    for action in noun_inst.verb_actions:
-        if flag_actions.get(action):
-            if verb_inst.name in flag_actions[action]:
-                print(f"{action}: Verb inst name in flag_actions for noun: ({noun_inst.name}): {verb_inst.name}")
-                return noun_inst.name
         #print(f"Verb name is in noun list: {verb_inst.name}")
     #print(f"Noun for checking: {noun}")
     #formats_for_verb = verb_inst.formats
@@ -105,65 +193,25 @@ def check_noun_actions(noun_inst, verb_inst):
 
 
 
-def router(noun_inst=None, verb_inst=None, reformed_dict={}):
-
-    noun_insts = []
-    inst_dict = {}
-
-    #if not (noun_inst and verb_inst):
-    for idx, v in reformed_dict.items():
-        #print("Missing at least one part.")
-        #print(f"noun_inst: {noun_inst}, verb inst: {verb_inst}")
-        print(f"Index: {idx}, v: {v}")
-        for kind, content in reformed_dict[idx].items():
-            inst_dict[idx] = content
-            print(f"kind: {kind}, content: {content}")
-            if kind == "verb" and verb_inst == None:
-                from verb_membrane import v_actions
-                verb_inst = v_actions.get_action_from_name(content)
-            if kind == "noun":
-                noun_insts.append(content)
-    #else:
-    #    print("Not missing any bits.")
-    #    print(f"noun: {noun_inst}, verb: {verb_inst}")
-    #    noun_insts.append(noun_inst)
-
-    from item_definitions import item_defs_dict
-    inventory =list(item_defs_dict.keys())
-
-    if noun_insts:
-        for noun in noun_insts:
-            print(f"Noun in noun_insts: {noun}")
-            from itemRegistry import registry
-            if isinstance(noun, str):
-                noun_inst = registry.instances_by_name(noun)[0]
-            elif isinstance(noun, ItemInstance):
-                noun_inst = noun
-            #inst_dict[idx] = noun_inst
-
-            #print(f"Noun inst: {noun_inst}, type: {type(noun_inst)}")
-            ## can use this (that I forgot I set up previously apparently?)
-           #    actions_from_registry = registry.get_actions_for_item(noun_inst, inventory)
-
-            ## And there was a second way but I can't think of it. Too tired.
-            ## Oh it was this:
-            #print(f"noun inst actions: {noun_inst.verb_actions}") <--
-            # slightly different lists, need to remove one of them or it's going to be confusing as hell later, if it isn't already.
+def router(viable_formats, inst_dict):
 
 
-    #        print(f"Actions from registry: {actions_from_registry}")
-    #        print(f"noun inst: {noun}, verb inst: {verb_inst}")
-            noun_name = check_noun_actions(noun_inst, verb_inst)
-#
-            function_dict = {
-                "drop": drop,
-                "put": put
-            }
 
-            if noun_name:
-                func = function_dict[verb_inst.name]
+    print(f"Dict for output: {inst_dict}")
 
-                func(noun_name)
+    for data in inst_dict.values():
+        for kind, entry in data.items():
+            if kind == "verb":
+                verb_inst = entry
+
+    function_dict = {
+        "drop": drop,
+        "put": put
+    }
+
+    func = function_dict[verb_inst.name]
+
+    func(inst_dict)
 #from item_definitions import item_actions
 #for item in item_actions:
     #print(f'"{item}": "",')
