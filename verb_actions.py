@@ -60,7 +60,7 @@ def get_current_loc():
     cardinal = game.facing_direction
     return location, cardinal
 
-def move_a_to_b(a, b, action=None, direction=None):
+def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
 
     from item_definitions import container_limit_sizes
    ## This is the terminus of any 'move a to b' type action. a must be an item instance, b may be an item instance (container-type) or a location.
@@ -84,9 +84,14 @@ def move_a_to_b(a, b, action=None, direction=None):
     elif isinstance(b, tuple):
         print(f"b is a tuple: {b}")
         from env_data import dataset as locations
-        if b[0] in locations:
-            print(f"B[0]: {b[0]}")
+        if b[0] in current_loc:
             print(f"{action} {a.name} {direction} {b}")
+
+        else:
+            print("Can only move items to the location you're currently in.")
+        #if b[0] in locations:
+        #    print(f"B[0]: {b[0]}")
+        #    print(f"{action} {a.name} {direction} {b}")
 
 
     else:
@@ -133,14 +138,17 @@ def drop(input_dict):
 
     #print(f"Noun name: {noun_name}")
     print("This is the drop function.")
+    if isinstance(list((input_dict)[1].values())[0], ItemInstance):
+        location = get_current_loc()
+
     if len(input_dict) == 4:
         item_to_place, direction, container_or_location = four_parts_a_x_b(input_dict)
+
         if direction in ["in", "into", "on", "onto"]:
             move_a_to_b(a=item_to_place, b=container_or_location, action="dropping", direction=direction)
 
     if len(input_dict) == 2:
-        if isinstance(list((input_dict)[1].values())[0], ItemInstance):
-            location = get_current_loc()
+
             print(f"location: {location}")
             move_a_to_b(a=list((input_dict)[1].values())[0], b=location, action="dropping")
 
@@ -195,9 +203,7 @@ def burn():
 
 def router(viable_formats, inst_dict):
 
-
-
-    print(f"Dict for output: {inst_dict}")
+    #print(f"Dict for output: {inst_dict}")
 
     for data in inst_dict.values():
         for kind, entry in data.items():

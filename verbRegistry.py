@@ -81,11 +81,58 @@ class VerbRegistry:
 @dataclass
 class Parser:
 
+    def check_compound_words(parts_dict, word, parts, idx, kinds, word_type):
+        #print(f"parts dict: {parts_dict}")
+        canonical = potential_match = omit_next = None
+        compound_match = 0
+        compound_matches = {}
+        #if not word.startswith("a "):
+            #word = "a " + word
+        for compound_word, word_parts in parts_dict:
+            #print(f"Word: {word} // word parts: {word_parts}")
+            if word in word_parts:
+                test_print(f"MATCH IN PLURAL WORDS: `{word}` FOR COMPOUND WORD: {compound_word}", print_true=True)
+                matches_count = 0
+                for _ in word_parts:
+                    try:
+                        if parts[idx+matches_count] and parts[idx+matches_count].lower() in word_parts:
+                            #test_print(f"parts[{idx}+{matches_count}]: {parts[idx+matches_count]}")#, print_true=True)
+                            matches_count += 1
+                        elif parts[idx+matches_count].lower() == "magazine" and "mag" in word_parts: # hardcoded for magazines, they're an odd one.
+                            #TODO: later, put something like this in for general shorthand.
+                            #test_print(f"parts[{idx}+{matches_count}]: {parts[idx+matches_count]}")#, print_true=True)
+                            matches_count += 1
+
+                        else:
+                            #print(f"parts[idx+matches_count]: {parts[idx+matches_count].lower()}")
+                            print(f"Part {matches_count+1} `{parts[idx+matches_count]}` does not match expected second word {word_parts[matches_count]}")
+                    except:
+                        #test_print(f"No matched word-parts after parts[{idx}+{matches_count}].", print_true=True)
+                        break
+                compound_match += 1
+                compound_matches[compound_word]=tuple(((compound_match, len(word_parts)))) ## if input == 'paper scrap': "paper scrap with paper":(2,4)
+
+        if compound_match == 1:
+            #print(f"list compound_matches: {list(compound_matches)}")
+            canonical = list(compound_matches)[0] ## just add it if it's the only possible match, for now. Make it more rigorous later, but this'll catch most cases.
+            kinds.add(word_type)
+            potential_match=True
+            omit_next = matches_count ## Skip however many successful matches there were, so we don't re-test words confirmed to be part of a compound word.
+
+        else:
+            #print(f"Compound matches: {compound_match}")
+            #print(f"Content: {compound_matches}")
+            test_print("More than one potential compound match, the system can't cope with that yet.", print_true=False)
+
+        return idx, word, kinds, canonical, potential_match, omit_next
+
     def tokenise(input_str, nouns_list, locations, directions):
 
         parts = input_str.split()
         loc_options = locations
-
+        compound_locs = {}
+        for word in locations:
+            compound_locs[word] = tuple(word.split())
         items = nouns_list
 
         tokens = []
@@ -120,19 +167,23 @@ class Parser:
 
 
                 if word in initial or f"a {word}" in initial:
+                    #print(f"Word in initial: {word}")
                     if word in verbs.list_null_words:
                         kinds.add("null")
                         canonical = word
 
-                    if word in verbs.semantics:
+                    elif word in verbs.semantics:
                         kinds.add("sem")
                         canonical = word
-                    if word == "up" and idx == 1: ## temporarily doing this for 'pick up x'
+
+                    elif word == "up" and idx == 1: ## temporarily doing this for 'pick up x'
                         if parts[0] == "pick":
                             #print("pick up")
                             kinds.add("null")
                             canonical = word
                     else:
+                        #print(f"Word in else: {word}")
+                        #print(f"directions: {directions}")
                         if word in directions:
                             kinds.add("direction")
                             canonical = word
@@ -160,46 +211,23 @@ class Parser:
 
 
                 if canonical != None:
+                    tokens.append(Token(idx, word, kinds, canonical))
                     potential_match = True
                 else:
-                    compound_match = 0
-                    compound_matches = {}
-                    #print(f"No canonical for idx `{idx}`, word `{word}`")
-                    #print(f"verbs.compound_words: {verbs.compound_words}")
-                    for compound_word, word_parts in verbs.compound_words.items():
-                        #print(f"Word: {word} // word parts: {word_parts}")
-                        if word in word_parts:
-                            test_print(f"MATCH IN PLURAL WORDS: `{word}` FOR COMPOUND WORD: {compound_word}", print_true=True)
-                            matches_count = 0
-                            for _ in word_parts:
-                                try:
-                                    if parts[idx+matches_count] and parts[idx+matches_count].lower() in word_parts:
-                                        test_print(f"parts[{idx}+{matches_count}]: {parts[idx+matches_count]}")#, print_true=True)
-                                        matches_count += 1
-                                    elif parts[idx+matches_count].lower() == "magazine" and "mag" in word_parts: # hardcoded for magazines, they're an odd one.
-                                        #TODO: later, put something like this in for general shorthand.
-                                        test_print(f"parts[{idx}+{matches_count}]: {parts[idx+matches_count]}")#, print_true=True)
-                                        matches_count += 1
+                    #print(f"Word going to check compound words: {word}")
+                    new_idx, word, kinds, canonical, potential_match, omit_next = Parser.check_compound_words(parts_dict = verbs.compound_words.items(), word=word, parts=parts, idx=idx, kinds=kinds, word_type = "noun")
 
-                                    else:
-                                        print(f"parts[idx+matches_count]: {parts[idx+matches_count].lower()}")
-                                        print(f"Part {matches_count+1} `{parts[idx+matches_count]}` does not match expected second word {word_parts[matches_count]}")
-                                except:
-                                    test_print(f"No matched word-parts after parts[{idx}+{matches_count}].", print_true=True)
-                                    break
-                            compound_match += 1
-                            compound_matches[compound_word]=tuple(((compound_match, len(word_parts)))) ## if input == 'paper scrap': "paper scrap with paper":(2,4)
-
-                    if compound_match == 1:
-                        canonical = list(compound_matches.keys())[0] ## just add it if it's the only possible match, for now. Make it more rigorous later, but this'll catch most cases.
-                        kinds.add("noun")
-                        potential_match=True
-                        omit_next = matches_count ## Skip however many successful matches there were, so we don't re-test words confirmed to be part of a compound word.
+                    if canonical:
+                        tokens.append(Token(new_idx, word, kinds, canonical))
 
                     else:
-                        print(f"Compound matches: {compound_match}")
-                        print(f"Content: {compound_matches}")
-                        test_print("More than one potential compound match, the system can't cope with that yet.", print_true=True)
+                        #print(f"Word going to compound loc: ({word})")
+                        idx, word, kinds, canonical, potential_match, omit_next = Parser.check_compound_words(parts_dict = compound_locs.items(), word=word, parts=parts, idx=idx, kinds=kinds, word_type = "location")
+                        if canonical:
+                            tokens.append(Token(new_idx, word, kinds, canonical))
+                    #print(f"No canonical for idx `{idx}`, word `{word}`")
+                    #print(f"verbs.compound_words: {verbs.compound_words}")
+
                         ## Set up a fn where it tests the results tuple of compound_word, whichever compound_word in compound_matches has the best ration of (matches, total_parts) wins.)
                         ## If multiple options and all have same ratio, then we take the longest. So, 'blue glass jar, glass jar and jar' might all successfully match for separate jar-type items. But even if 'glass jar', 'blue glass jar' and 'jar' are legit entities, 'blue glass jar' wins if all three are matched. So first get match-ratio, then if no winner, get matched-length. There'll most likely only be one potential winner but good to have the system in place.
 
@@ -213,7 +241,6 @@ class Parser:
                     #   Reformed list: ['drop', 'batteries', 'in', 'toilet']
                 #    potential_match=True
 
-                tokens.append(Token(idx, word, kinds, canonical))
             #print(f"canonical: {canonical}")
                 #print(idx, word, kinds, canonical)
             if not potential_match:
@@ -393,7 +420,7 @@ def initialise_verbRegistry():
 
     from item_definitions import item_defs_dict
     plural_word_names = [i for i in list(item_defs_dict.keys()) if len(i.split()) > 1]
-    verbs.compound_words = {}
+    verbs.compound_words = {} ### TODO:  Need to include locations in this, else everything but 'graveyard' will fail. TODO: Making it again because this one's important.
     for word in plural_word_names:
         verbs.compound_words[word] = tuple(word.split())
 
