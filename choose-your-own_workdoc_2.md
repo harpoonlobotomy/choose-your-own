@@ -305,3 +305,14 @@ The previous fix worked /sometimes/ but failed under specific criteria, but it's
 
 It's getting a bit less fragile I think. Messed up the verb allocation in the middle so will need to go over that again tomorrow, my brain's just scrambled today.
 But it does now correctly allocate multiple noun objects along with the correct verb, so 'get apple from tree' would work now. Still not tied into the game yet, but it's messy enough that I'm happy keeping it in isolation for the time being.
+
+9.37am 7/1/26
+Just realised I haven't accounted for interacting with scenery at all yet. Might need another class or smth for that.
+
+10.00am
+Working on the outline for how the format + verb functions will actually work beyond just parsing. Realised I'm going to need context beyond game + instance data, eg
+
+'# verb_noun = move item (to where? maybe context.)' -- if the scene is 'there is a box in front of the door', then contextually it's pretty clear the intent is to get the box out of the way.
+So I need to think about how to work that.
+
+I'm thinking maybe the membrane take in scene-specific data, and after sending off to the parser and running through the router, it can add data from the scene more generally with the results of the router.

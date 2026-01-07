@@ -1,7 +1,7 @@
 # Choose your own adventure
 
 import random
-from itemRegistry import initialise_registry, registry
+from itemRegistry import initialise_itemRegistry, registry
 #import locations
 import choices
 import misc_utilities
@@ -212,7 +212,7 @@ def init_game():
     test_for_weird()
     #choices.set_choices()
     load_world()
-    initialise_registry()
+    initialise_itemRegistry()
     set_inventory()
     loadout() ## move loadout after load_world to allow for time_management to run first. Testing...
     #print("Initial inventory:: ", game.inventory)
@@ -262,7 +262,7 @@ class game:
 
     emotional_summary = None
 
-    place = "home"
+    place = "a graveyard"
     time = "morning"
     #pops = "few"
     weather = "fine"

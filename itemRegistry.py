@@ -95,7 +95,8 @@ class LootRegistry:
         self.by_category = {}        # category (loot value) -> set of instance IDs
         self.by_container = {}
         self.inst_to_names_dict = {}
-        self.is_container = True ## This must be wrong. idk. I tried something else earlier and it didn't work.
+        self.is_container = bool(True) ## This must be wrong. idk. I tried something else earlier and it didn't work.
+        self.plural_words = {}
     # -------------------------
     # Creation / deletion
     # -------------------------
@@ -297,7 +298,12 @@ class LootRegistry:
 
     def instances_by_name(self, definition_key:str)->list:
         #logging_fn()
-        return self.by_name.get(definition_key)# if self.by_name.get(definition_key) else None
+        if self.by_name.get(definition_key):
+            return self.by_name.get(definition_key)
+        else:
+            print(f"definition key: {definition_key}")
+            print(f"self.by_name: {self.by_name:}")
+        return # if self.by_name.get(definition_key) else None
 
     def instances_by_container(self, container:ItemInstance)->list:
         logging_fn()
@@ -459,6 +465,10 @@ class LootRegistry:
 
         action_options = []
         for item in item_actions:
+            print(f"item: {item}")
+            if not isinstance(item, str):
+                item = item.name
+            print(f"item: {item}")
             if item in inst.flags:
                 if item == "can_read":
                     action_options.append("read") # can_read is the only one for now. There's really no need to separate contextual vs not...
@@ -469,7 +479,7 @@ class LootRegistry:
                     else:
                         action_options.append("drop")
                 elif item == "can_open":
-                    if item.is_open: ## TODO: Add 'is_open' flag/make sure it's used when item opened/closed
+                    if inst.is_open: ## TODO: Add 'is_open' flag/make sure it's used when item opened/closed
                         action_options.append("close")
                     else:
                         action_options.append("open")
@@ -589,16 +599,21 @@ if get_flags:
     get_all_flags()
 
 
-def initialise_registry():
+def initialise_itemRegistry():
     from item_definitions import get_item_defs
     registry.complete_location_dict()
+    plural_word_dict = {}
     #print("Running initialise registry.")
     for item_name, attr in get_item_defs().items():
         registry.create_instance(item_name, attr)
+        if len(item_name.split()) > 1:
+            plural_word_dict[item_name] = tuple(item_name.split())
+
+    registry.plural_words = plural_word_dict
     repr(registry)
 
 
 if __name__ == "__main__":
 
-    initialise_registry()
+    initialise_itemRegistry()
 

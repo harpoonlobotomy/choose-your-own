@@ -51,7 +51,6 @@ formats = {
     "verb_noun": (verb, noun), # drop paperclip
     "verb_loc": (verb, location), # go graveyard
     "verb_dir_loc": (verb, direction, location), # go to graveyard
-    "verb_sem_loc": (verb, sem, location), # throw ball up
     "verb_noun_noun": (verb, noun, noun), # can't think of any examples.
     "verb_dir_noun": (verb, direction, noun), # 'look at watch'
     "verb_noun_dir": (verb, noun, direction), # throw ball up
@@ -69,7 +68,6 @@ verb_noun = formats["verb_noun"]
 verb_loc = formats["verb_loc"]
 verb_noun_noun = formats["verb_noun_noun"]
 verb_dir_loc = formats["verb_dir_loc"]
-verb_sem_loc = formats["verb_sem_loc"]
 verb_dir_noun = formats["verb_dir_noun"]
 verb_noun_dir = formats["verb_noun_dir"]
 verb_noun_dir_noun = formats["verb_noun_dir_noun"]
@@ -81,20 +79,14 @@ verb_dir_noun_sem_noun = formats["verb_dir_noun_sem_noun"]
 
 ## Note: Need to figure out how I'm getting noun-objects in here. Like, 'magnifying glass' is 1 noun, but two words. Need to figure that out.
 
-allowed_null = set(('the', 'at', 'a', 'an', 'out', 'of')) ## removed strictly directional words from null, as null is used differently now.
+allowed_null = set(('the', 'a', 'an', 'out', 'of')) ## removed strictly directional words from null, as null is used differently now.
 #allowed_null = set(('and', 'with', 'to', 'the', 'at', 'plus', 'a', 'an', 'from', 'out', 'of', 'on')) ### Note: There may be more than one viable semantic when only one is required. That's fine.
 
 combined_wordphrases = { # maybe something like this, instead of the hardcoded exceptions.
-    "verbs": {
-        "pick": {"second_part": "up"},
-        },
-    "nouns": {
-        "pry": {"second_part": "open"},
-        "break": {"second_part": "open"}, ## a way to apply the key verb-name then check against that instead? Instead of listing all variations of a key phrase here.
-        },
-    "directions": {
-        "away": {"second_part": "from"},
-        }
+    "up" : ["pick"], # reversed the directions
+    "open" : ["pry", "break"], ## a way to apply the key verb-name then check against that instead? Instead of listing all variations of a key phrase here.
+    "from" : ["away"],
+    "on": ["down"]
 }
 #What about something like 'away from', eg 'move papers away from fire'. Need a mechanism to check #if 'away', is next part 'fire', and treat 'away from' as its own direction.
 # I know it's sprawling but it'll keep things viable without having to add a hundred options for each /noun/ if they're added at the verb le
@@ -115,7 +107,7 @@ verb_defs_dict = {
     "leave": {"alt_words": ["depart", ""], "allowed_null": None, "formats": [verb_only, verb_loc, verb_noun_dir_noun]},
     "combine": {"alt_words": ["mix", "add"], "allowed_null": ["with", "and"], "formats": [verb_noun_sem_noun, verb_noun_dir_noun, verb_noun]},
     "separate": {"alt_words": ["remove", ""], "allowed_null": ["from", "and"], "formats": [verb_noun_sem_noun, verb_noun_dir_noun, verb_noun]},
-    "throw": {"alt_words": ["chuck", "lob"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_sem_noun, verb_noun_dir_noun, verb_noun_dir_loc]}, # throw ball down, throw ball at tree
+    "throw": {"alt_words": ["chuck", "lob"], "allowed_null": ["at"], "formats": [verb_noun, verb_noun_dir, verb_noun_sem_noun, verb_noun_dir_noun, verb_noun_dir_loc]}, # throw ball down, throw ball at tree
     "push": {"alt_words": ["shove", "move", "pull"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun]},
     "drop": {"alt_words": ["discard", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_noun, verb_noun_dir_loc, verb_noun_dir_noun_dir_loc]},
     "read": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_loc]}, ## Two nouns have 'examine'. Maybe make 'read' its own specific thing instead of referring 'examine' here. idk.
@@ -125,7 +117,7 @@ verb_defs_dict = {
     "open": {"alt_words": ["pry", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun]},
     "close": {"alt_words": ["barricade", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun]},
     "break": {"alt_words": ["smash", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun]},
-    "take": {"alt_words": ["pick up", "get", "pick"], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_dir_noun, verb_noun_dir_noun_dir_loc]}, # take ball, take ball from bag
+    "take": {"alt_words": ["pick up", "get", "pick"], "allowed_null": None, "formats": [verb_noun, verb_dir_noun, verb_noun_sem_noun, verb_noun_dir_noun, verb_noun_dir_noun_dir_loc]}, # take ball, take ball from bag
     "put": {"alt_words": ["place", "leave"], "allowed_null": ["in", "inside"], "formats": [verb_noun_dir, verb_noun_sem_noun, verb_noun_dir_noun, verb_noun_dir_noun_dir_loc]}, # put paper down, put paper on table ## using 'leave' here might be tricky. But I want to allow for 'leave church' and 'leave pamphlet on table' both.
     "eat": {"alt_words": ["consume", "drink"], "allowed_null": None, "formats": [verb_noun]},
     "look": {"alt_words": ["watch", "observe", "investigate", "examine"], "allowed_null": ["at", "to"],  "formats": [verb_only, verb_noun, verb_loc, verb_noun_sem_noun, verb_noun_dir_noun, verb_dir_noun, verb_dir_noun_sem_noun]}, # look, look at book, look at book with magnifying glass

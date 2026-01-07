@@ -98,6 +98,23 @@ def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
             print(f"Failed to move `{a}` to `{b}`.")
             print(f"Reason: `{b}` is not the current location.")
 
+def check_lock_open_state(noun_inst, check_open = True, check_locked=True):
+
+    is_open = is_locked = False
+    print("Check the item registry for status.")
+
+    return is_open, is_locked
+
+
+"""
+okay so something like this:
+
+    if len(format_list) == 2:
+        if format_list == tuple(("verb", "location")):
+to disperse parts around within functions. So if '
+
+"""
+
 #################################
 
 
@@ -134,7 +151,7 @@ def get_elements(input_dict) -> tuple:
 
     print(len(input_dict))
     if len(input_dict) == 2:
-        return (2, list(input_dict[1].values())[0]) # could be 'leave loc', 'drop item', 'get item', 'talk person' etc.
+        return 2, list(input_dict[1].values()) # could be 'leave loc', 'drop item', 'get item', 'talk person' etc.
 
     elif len(input_dict) == 3:
         return 3, three_parts_a_x_b(input_dict)
@@ -148,10 +165,11 @@ def get_elements(input_dict) -> tuple:
 #######################
 #func(format_list, input_dict, location)
 
-def look(format_list, input_dict, location=None):
+#def sample(format_list, input_dict, location):
+#    pass
+#
 
-    if len(format_list) == 2:
-        print(f"You look at the {list(input_dict.keys())[1]}")
+
 
 def go(format_list, input_dict, location=None):
 
@@ -164,37 +182,40 @@ def go(format_list, input_dict, location=None):
             if location not in get_current_loc():
                 print("Cannot leave a place you are not in.")
 
-def put(format_list, input_dict, location=None):
-    print("Put varies depending on the format.")
-
-    action_word = "putting"
-    if not location:
-        current_loc = get_current_loc()
-
-    print(f"Input dict: {input_dict}")
-    count, parts = get_elements(input_dict)
-
-    #print(f"Parts: {parts}")
-    if isinstance(parts, ItemInstance):
-        a=parts
-        move_a_to_b(a=a, b=location, action=action_word, current_loc=location)
-
-    elif len(parts) == 3: # put paperclip down
-        if list(input_dict[2].values())[0] in down_words:
-            a = list(input_dict[1].values())[0]
-            move_a_to_b(a=a, b=location, action=action_word, current_loc=location)
-
-    elif len(parts) == 4:
-        a, sem_or_dir, b = three_parts_a_x_b()
-        move_a_to_b(a=a, b=b, action=action_word, direction=sem_or_dir, current_loc=location)
+def leave(format_list, input_dict, location):
+    #verb_only, verb_loc = go
+    # verb_noun_dir_noun = movw item to container/surface
+    print("LEAVE FUNCTION")
+    pass
 
 
-    elif len(parts) == 5:
-        a, sem_or_dir, b, sem_or_dir_2, c = five_parts_a_x_b_in_c(input_dict)
-        if c == location:
-            move_a_to_b(a=a, b=b, action=action_word, direction=sem_or_dir, current_loc=location)
+def look(format_list, input_dict, location=None):
+
+    if len(format_list) == 2:
+        print(f"You look at the {list(input_dict.keys())[1]}")
+def look(format_list, input_dict, location):
+    print("look FUNCTION")
+    # verb_only = look, describe surroundings
+    # verb_loc == look, describe surroundings (same as above as long as loc == current)
+    # verb_noun == look at item
+    # verb_dir_noun == look at noun (same as above as long as dir is appropriate)
+    # verb_noun_sem_noun == watch show with magnifying glass (if noun2 can be used to assist in looking in some way)
+    # verb_dir_noun_sem_noun == look at book with magnifying glass (if noun2 can be used to assist in some way)
+    # verb_noun_dir_noun = ## No idea of the context for this variation.
+    pass
 
 
+def read(format_list, input_dict, location):
+    print("read FUNCTION")
+    #verb_noun if noun is can_read
+    # verb_noun_dir_loc as above, but noun may more likely be scenery
+    # and now I realise I haven't accounted for scenery at all. Hm.
+    pass
+
+def eat(format_list, input_dict, location):
+    print("eat FUNCTION")
+    # verb_noun = eat noun if noun == edible, or maybe let them try if it isn't.
+    pass
 
     """
     verb_noun_dir, verb_noun_sem_noun, verb_noun_dir_noun, "verb_noun_dir_dir_noun" #put paperclip down on table
@@ -210,51 +231,25 @@ def put(format_list, input_dict, location=None):
 
     """
 
-def drop(format_list, input_dict, location):
+def clean(format_list, input_dict, location):
+    print("clean FUNCTION")
+    print(f"format list: {format_list}, type: {type(format_list)}, length: {len(format_list)}")
+    if len(format_list) == 2:
+        if format_list == tuple(("verb", "location")):
+        #if "verb" in format_list and "location" in format_list:
+            print("This is a matching format list.")
+    # verb_noun == clean item
+    # verb_noun_sem_noun == clean item with item
+    # verb_loc == clean location (not sure how useful but worth a custom response at least)
+    pass
 
-    action_word = "dropping"
-    print("This is the drop function.")
-
-    if location == None:
-        location = get_current_loc()
-
-    if len(input_dict) == 2:
-        print(f"location: {location}")
-        move_a_to_b(a=list((input_dict)[1].values())[0], b=location, action=action_word)
-
-    if len(input_dict) == 4:
-        item_to_place, direction, container_or_location = three_parts_a_x_b(input_dict)
-
-        if direction in ["in", "into", "on", "onto"]:
-            move_a_to_b(a=item_to_place, b=container_or_location, action=action_word, direction=direction)
-
-
-    """ ## from itemRegistry:
-
-    def drop(self, inst: ItemInstance, location, direction, inventory_list):
-    print("inventory_list")
-    if inst not in inventory_list:
-        return None, inventory_list
-    inventory_list.remove(inst)
-    print("inventory_list")
-    self.move_item(inst, place=location, direction=direction)
-    return inst, inventory_list
-    if in inventory
-    """
-    print()
-
-def get():
-    print()
-
-def open_thing(format_list, input_dict, location=None):
-
-    print("Open thing.")
-
-
-def burn():
-
-    print()
-
+def burn(format_list, input_dict, location):
+    print("burn FUNCTION")
+    # for all burn items = require fire source, noun1 must be flammable.
+    # verb_noun == burn item
+    # verb_noun_sem_noun == noun2 must be flammable
+    # verb_noun_dir_loc as 'burn item' but with location needlessly added.
+    pass
 
         #print(f"Verb name is in noun list: {verb_inst.name}")
     #print(f"Noun for checking: {noun}")
@@ -278,8 +273,77 @@ def burn():
 
     #glass jar: {'is_container', 'can_pick_up'}
 
+def break_item(format_list, input_dict, location):
+    print("break_item FUNCTION")
+    # verb_noun == break item (if it's fragile enough)
+    # verb_noun_sem_noun == break item with item2
+    pass
 
-def pick_up(format_list, input_dict, location):
+    """ ## from itemRegistry:
+
+    def drop(self, inst: ItemInstance, location, direction, inventory_list):
+    print("inventory_list")
+    if inst not in inventory_list:
+        return None, inventory_list
+    inventory_list.remove(inst)
+    print("inventory_list")
+    self.move_item(inst, place=location, direction=direction)
+    return inst, inventory_list
+    if in inventory
+    """
+    print()
+
+
+def un_lock(format_list, input_dict, location):
+    print("un_lock FUNCTION")
+    ## Use same checks for lock and unlock maybe? Not sure.
+    #verb_noun == lock if noun does not require key to lock (padlock etc)
+    # verb_noun_sem_noun lock noun w noun2 if noun2 is correct key and in inventory
+    pass
+
+def open_close(format_list, input_dict, location):
+    print("open_close FUNCTION")
+    # like un_lock, maybe use this for open and close both, not sure yet.
+    # They have the same checks is the thing. So maybe they just diverge at the end, with open/close sub-functions internally.
+
+    # verb_noun == open noun if noun can be opened, may be obj or door/etc
+    # verb_noun_sem_noun open noun w something (open window with stick, open cabinet w prybar)
+    pass
+
+
+def combine(format_list, input_dict, location):
+    #if verb_noun_sem_noun, verb_noun_dir_noun, combine a+b
+    #if verb_noun == what do you want to combine it with.
+    print("COMBINE FUNCTION")
+    pass
+
+def separate(format_list, input_dict, location):
+    #if verb_noun_sem_noun, verb_noun_dir_noun, combine a+b
+    #if verb_noun == what do you want to combine it with.
+    print("SEPARATE FUNCTION")
+    pass
+
+def combine_and_separate(format_list, input_dict, location):
+
+    print(f"length of format list: {len(format_list)}")
+
+def move(format_list, input_dict, location):
+    print("move FUNCTION")
+    # verb_noun = move item (to where? maybe context.)
+    # verb_noun_dir = move item left, move item away
+    # verb_noun_dir_noun == move item away from thing ## 'away from' is a combined_phrase, so only one 'dir'.
+
+    pass
+
+def take(format_list, input_dict, location):
+    print("take FUNCTION")
+    # verb_noun == pick up noun
+    # verb_dir_noun == pick up noun
+    # verb_noun_sem_noun pick up noun with noun (eg something hot with a thick glove)
+    # verb_noun_dir_noun == take ball from bag
+    # verb_noun_dir_noun_dir_loc == take ball from bag at location (if loc == cur_loc)
+    pass
+def pick_up(format_list, input_dict, location): # should be 'take'
 
     object_inst = None
     if len(format_list) == 2:
@@ -289,8 +353,113 @@ def pick_up(format_list, input_dict, location):
             print(f"Put {object_inst.name} in your inventory.")
 
 
-def use(format_list, input_dict, location):
+def put(format_list, input_dict, location=None):
+    print("Put varies depending on the format.")
+    print(f"Format list: {format_list}")
+    action_word = "putting"
+    if not location:
+        current_loc = get_current_loc()
+
+    print(f"Input dict: {input_dict}")
+    count, parts = get_elements(input_dict)
+
+    noun_count = format_list.count("noun")
+    print(f"Length of parts: {len(parts)}")
+    print(f"Parts: {parts}")
+    if noun_count == 2:
+        print(f"Noun count: {noun_count}")
+        print(f"2 nouns for this put verb: {input_dict}") # `mix the unlabelled cream with the anxiety meds`
+        exit()
+
+    #print(f"Parts: {parts}")
+    if isinstance(parts, ItemInstance):
+        a=parts
+        move_a_to_b(a=a, b=location, action=action_word, current_loc=location)
+
+    elif len(parts) == 3: # put paperclip down
+        if list(input_dict[2].values())[0] in down_words:
+            a = list(input_dict[1].values())[0]
+            move_a_to_b(a=a, b=location, action=action_word, current_loc=location)
+
+    elif len(parts) == 4:
+        a, sem_or_dir, b = three_parts_a_x_b()
+        move_a_to_b(a=a, b=b, action=action_word, direction=sem_or_dir, current_loc=location)
+
+
+    elif len(parts) == 5:
+        a, sem_or_dir, b, sem_or_dir_2, c = five_parts_a_x_b_in_c(input_dict)
+        if c == location:
+            move_a_to_b(a=a, b=b, action=action_word, direction=sem_or_dir, current_loc=location)
+
+    print("AFTER PARTS")
+def put(format_list, input_dict, location):
+    print("put FUNCTION")
+    # verb_noun_dir == put paper down
+    # verb_noun_dir_noun = leave pamplet on table
+    # verb_noun_dir_noun_dir_loc == leave pamplet on table at location (again, useless.)
+    pass
+
+def throw(format_list, input_dict, location):
+    print("throw FUNCTION")
+    # verb_noun == where do you want to throw it (unless context),
+    # verb_noun_dir == throw ball up (check if 'dir' makes sense)
+    # verb_noun_dir_noun  == throw ball at tree
+    pass
+
+def push(format_list, input_dict, location):
+    print("push FUNCTION")
+    # verb_noun == to move things out the way in general
+    # verb_noun_dir == #push box left
+    # verb_noun_dir_noun == push box away from cabinet
+    pass
+
+def drop(format_list, input_dict, location):
+
+    action_word = "dropping"
+    print("This is the drop function.")
+
+    if location == None:
+        location = get_current_loc()
+
+    if len(input_dict) == 2:
+        print(f"location: {location}")
+        move_a_to_b(a=list((input_dict)[1].values())[0], b=location, action=action_word)
+
+    if len(input_dict) == 4:
+        item_to_place, direction, container_or_location = three_parts_a_x_b(input_dict)
+
+        if direction in ["in", "into", "on", "onto"]:
+            move_a_to_b(a=item_to_place, b=container_or_location, action=action_word, direction=direction)
+
+def drop(format_list, input_dict, location):
+    print("drop FUNCTION")
+    # verb_noun = move noun to current loc
+    # verb_noun_dir_noun = move noun to container/surface,
+    # verb_noun_dir_loc == drop item to current loc (if loc == current loc)
+    # verb_noun_dir_noun_dir_loc == drop item in container at graveyard (if loc== current loc)
+    pass
+
+def set_action(format_list, input_dict, location):
+    print("set_action FUNCTION")
+    # verb_noun_dir == set item down == drop
+    # verb_noun_dir_noun == set item on fire if noun2 == 'fire' == burn
+    # verb_dir_noun_sem_noun set on fire with item
+    pass
+
+
+
+def use_item(format_list, input_dict, location):
+    print("use_item FUNCTION")
+    print(f"Format_list = {format_list}")
     print("For simple verb-noun dispersal")
+    pass
+
+
+def use_item_w_item(format_list, input_dict, location):
+    print("use_item_w_item FUNCTION")
+    print(f"Format list: {format_list}")
+    print(f"Length format list: {len(format_list)}")
+
 
 
 def router(viable_formats, inst_dict):
@@ -320,24 +489,63 @@ def router(viable_formats, inst_dict):
     #print("Format: ", viable_formats[0])
 
     function_dict = {
-        "drop": drop,
-        "put": put,
-        "take": pick_up,
         "go": go,
         "leave": go,
+
         "look": look,
-        "read": look, # will make this 'read' later.
-        "open": open_thing,
-        "use_item": use
+
+        "read": read,
+        "eat": eat,
+        "clean": clean,
+        "burn": burn,
+        "break": break_item,
+
+        "lock": un_lock,
+        "unlock": un_lock,
+        "open": open_close,
+        "close": open_close,
+
+        "combine": combine,
+        "separate": separate,
+
+        "move": move,
+        "take": take,#pick_up,
+        "put": put,
+        "throw": throw,
+        "push": push,
+        "drop": drop,
+        "set": set_action
+        #"use_item": use_item,
+        #"use_item_w_item": use_item_w_item
     }
 
-    move_player = ["verb_only", "verb_dir_loc", "verb_loc"]
+    #move_player = ["verb_only", "verb_dir_loc", "verb_loc"]
+    #use_item = ["verb_noun_dir", "verb_noun"]
+    #use_item_with_item = ["verb_noun_sem_noun", "verb_noun_dir_noun"]
+    #move_item_in_space = ["verb_noun_dir"]
 
-    use_item = ["verb_noun_dir", "verb_noun"]
+    no_noun_actions = [
+        "verb_only",
+        "verb_loc",
+        "verb_loc"
+        "verb_dir_loc",
+        ]
 
-    use_item_with_item = ["verb_noun_sem_noun", "verb_noun_dir_noun"]
+    single_item_actions = [
+        "verb_noun",
+        "verb_dir_noun",
+        "verb_noun_dir",
+        "verb_noun_dir_loc"
+        ]
 
-    move_item_in_space = ["verb_noun_dir"]
+    two_noun_actions = [
+        "verb_noun_noun",
+        "verb_noun_dir_noun",
+        "verb_noun_dir_dir_noun",
+        "verb_noun_dir_noun_dir_loc",
+        "verb_noun_sem_noun",
+        "verb_dir_noun_sem_noun"
+        ]
 
   #  "verb_noun": (verb, noun),
   #  "verb_loc": (verb, location),
@@ -355,22 +563,21 @@ def router(viable_formats, inst_dict):
 
     move_player = ["go", "leave"]
 
-
     use_item_w_item_funcs = ["combine", "separate", "unlock", "lock", "clean"]
 
     item_actions = ["put", "move", "drop", "burn", "throw", "push", "read", "open", "close", "break", "take", "eat", "look", "set"]
 
-    if verb_inst.name in use_item_w_item_funcs:
-        func = function_dict["put"]
+    #if verb_inst.name in use_item_w_item_funcs:
+    #    func = function_dict["use_item_w_item"]
 
-    elif verb_inst.name in move_player:
-        func = function_dict["go"]
+    #elif verb_inst.name in move_player:
+    #    func = function_dict["go"]
 
-    elif verb_inst.name in item_actions:
-        func = function_dict["use_item"]
+    #elif verb_inst.name in item_actions:
+    #    func = function_dict["use_item"]
 
-    else:
-        func = function_dict[verb_inst.name]
+    #else:
+    func = function_dict[verb_inst.name]
 
     noun_counter = viable_formats[0].count("noun")
     if noun_counter:
@@ -381,7 +588,7 @@ def router(viable_formats, inst_dict):
             #print(inst_dict[noun_index].values())
 
 
-    #func(format_list = viable_formats[0], input_dict = inst_dict, location = location)
+    func(format_list = viable_formats[0], input_dict = inst_dict, location = location)
     #func(format_list, input_dict, location)
 #from item_definitions import item_actions
 #for item in item_actions:
