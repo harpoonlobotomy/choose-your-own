@@ -218,3 +218,90 @@ Okay, getting there now. Drop function works with 'drop x in y' and 'drop x at y
 
 7.47pm
 tbh it feels like I should make the locations instances, too. I thought I had but I guess I never made use of it.
+
+
+
+7.89pm 6/1/26
+Still working on the verbs.
+
+TEST STRING: `watch the watch`
+idx 0, word: watch
+idx 1, word: the
+Word in initial: the
+null word: the
+idx 2, word: watch
+Tokens: [Token(idx=0, text='watch', kind={'verb', 'noun'}, canonical='watch'), Token(idx=1, text='the', kind={'null'}, canonical='the'), Token(idx=2, text='watch', kind={'verb', 'noun'}, canonical='watch')]
+Sequences: [['verb', 'verb'], ['verb', 'noun'], ['noun', 'verb'], ['noun', 'noun']]
+This sequence is compatible with verb_instance look: ['verb', 'noun']
+length checked sequences: [('verb', 'noun')]
+Build dict: {0: {'verb': 'watch'}, 1: {'verb': 'watch'}}
+Token index: 0, data: {'verb': 'watch'}
+kind: verb, entry: watch
+entry 0 is confirmed verb look
+Token index: 1, data: {'verb': 'watch'}
+kind: verb, entry: watch
+entry 1 is confirmed verb look
+RESULT: [[ 'watch' 'watch' ]]
+Verb: `look`
+Verb: `look`
+Kind: verb, entry: <verbRegistry.VerbInstance object at 0x000001B03CBDA200>
+Kind: verb, entry: <verbRegistry.VerbInstance object at 0x000001B03CBDA200>
+All nouns (0) are suitable for this verb (look). Sending onward.
+Format:  ('verb', 'noun')
+NOUN INDEX: 1
+dict_values([<verbRegistry.VerbInstance object at 0x000001B03CBDA200>])
+For simple verb-noun dispersal
+
+That was number 41
+
+Works fine. But:
+
+TEST STRING: `watch the watch`
+idx 0, word: watch
+idx 1, word: the
+Word in initial: the
+null word: the
+idx 2, word: watch
+Tokens: [Token(idx=0, text='watch', kind={'noun', 'verb'}, canonical='watch'), Token(idx=1, text='the', kind={'null'}, canonical='the'), Token(idx=2, text='watch', kind={'noun', 'verb'}, canonical='watch')]
+Sequences: [['noun', 'noun'], ['noun', 'verb'], ['verb', 'noun'], ['verb', 'verb']]
+This sequence is compatible with verb_instance look: ['verb', 'noun']
+length checked sequences: [('verb', 'noun')]
+Build dict: {0: {'noun': 'watch'}, 1: {'noun': 'watch'}}
+Token index: 0, data: {'noun': 'watch'}
+kind: noun, entry: watch
+Token index: 1, data: {'noun': 'watch'}
+kind: noun, entry: watch
+RESULT: [[ 'watch' 'watch' ]]
+Kind: noun, entry: watch
+Noun inst: [<ItemInstance watch (2c1e876b-077d-4eb4-8310-23999319dddf)>]
+Traceback (most recent call last):
+  File "d:\Git_Repos\choose-your-own\verb_membrane.py", line 152, in <module>
+    run_membrane(input_str)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File "d:\Git_Repos\choose-your-own\verb_membrane.py", line 134, in run_membrane
+    inst_dict = get_noun_instances(dict_from_registry)
+  File "d:\Git_Repos\choose-your-own\verb_membrane.py", line 76, in get_noun_instances
+    noun_name = check_noun_actions(noun_inst[0], verb)
+  File "d:\Git_Repos\choose-your-own\verb_membrane.py", line 51, in check_noun_actions
+    if verb_inst.name in flag_actions[action]:
+       ^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'name'
+
+So I need to look into why.
+
+
+So they're both actually wrong, because they both take either watch == verb or watch == noun.
+So I need to... realign them to the format. Because the format key is still there and knows which is which.
+
+Need a specific 'they do match but for some reason are fucky' function. Or just to figure out why it breaks like this and fix it. Should probaly od that one.
+
+
+Okay, fixed it. Now it checks if the token.kind matches its position in the sequence, and if so, adds the applicable type as the reformed_dict entry.
+
+
+11.27pm
+Fixed, broke and re-fixed the verb setup.
+The previous fix worked /sometimes/ but failed under specific criteria, but it's better now.
+
+It's getting a bit less fragile I think. Messed up the verb allocation in the middle so will need to go over that again tomorrow, my brain's just scrambled today.
+But it does now correctly allocate multiple noun objects along with the correct verb, so 'get apple from tree' would work now. Still not tied into the game yet, but it's messy enough that I'm happy keeping it in isolation for the time being.
