@@ -1,8 +1,7 @@
 # Choose your own adventure
 
 import random
-from itemRegistry import initialise_itemRegistry, registry
-#import locations
+from itemRegistry import registry
 import choices
 import misc_utilities
 
@@ -90,7 +89,7 @@ def calc_emotions():
         return "doing quite well"
 
 def load_world(relocate=False, rigged=False, new_loc=None):
-    from env_data import weatherdict
+    from env_data import locRegistry as loc, weatherdict
     rigged =True
     rig_place = "a graveyard"#"a city hotel room"#
     rig_weather = "perfect"
@@ -112,13 +111,14 @@ def load_world(relocate=False, rigged=False, new_loc=None):
 
     #print(f"loc_list: {loc_list}")
     if new_loc:
+        loc.current
         game.place=new_loc
 
     if game.place != None:
         game.last_loc = game.place
     #game.pops = random.choice(("few", "many"))
     game.bad_weather = weatherdict[game.weather].get("bad_weather")
-
+    loc.current = loc.places[game.place]
     return game.place
 
 def set_text_speed():

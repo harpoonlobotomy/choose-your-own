@@ -3,7 +3,7 @@
 ## Rules: One direction is always the exit.
 
 #from locations import places
-from misc_utilities import assign_colour
+
 
 # a little section for weather. This is a weird, environment-data file. idk.
 weatherdict = {
@@ -137,10 +137,14 @@ dataset = {
 class place_data:
 
     def __init__(self, name):
+
+
         self.name = name
         self.visited = False
         self.first_weather = None
         self.description = dataset.get(name, {}).get("descrip")
+        self.current_loc = None
+        self.colour = None ## assign like items on first
 
         for attr, value in dataset.get(name, {}).items():
             #print(f"name: {name}, attr: {attr}, value: {value}")
@@ -162,22 +166,43 @@ class place_data:
                 cardinal_actions = leave_options # use the defaults if none.
 
         if dataset[name].get("descrip"):
+            from misc_utilities import assign_colour
             self.overview = f"{dataset[name]["descrip"]}.{"\033[0m"} \n{self.n_desc} to the {assign_colour("north")}. To the {assign_colour("east")} is {self.e_desc}, to the {assign_colour("south")} is {self.s_desc}, and to the {assign_colour("west")} is {self.w_desc}."
         #def get_cardinal_desc()
 
     def visit(self):
         self.visited = True
 
-def placedata_init():
-    places = {}
-    for name in dataset.keys():
-        place = place_data(name)
-        places[name] = place
-    return places
+
+
+class placeRegistry:
+
+    def __init__(self):
+
+        self.places = {}
+        self.route = list() # store everywhere you go for a game, in order. Could be interesting to use later.
+        self.current = None
+
+        for name in dataset.keys():
+            place = place_data(name)
+            self.places[name] = place
+
+    def set_current(self, loc):
+        # will  loc be a string or a loc instance? idk.
+        if isinstance(loc, str):
+            loc_inst = self.places[loc]
+            self.current = loc_inst
+
+        elif isinstance(loc, place_data):
+            self.current = loc_inst
+
+        self.route.append(loc_inst)
+
+locRegistry = placeRegistry()
 
 #from locations import run_loc
 #from pprint import pprint
 #places = run_loc()
-places = placedata_init()
+#if __name__ == "__main__":
 
 #print(p_data["a graveyard"].north)

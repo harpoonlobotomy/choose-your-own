@@ -14,7 +14,7 @@ def initialise_all():
     print("initialised verbregistry")
 
     import env_data
-    env_data.placedata_init()
+    env_data
 
     from set_up_game import set_up
     test=True

@@ -1,4 +1,4 @@
-from itemRegistry import ItemInstance, registry
+from itemRegistry import ItemInstance
 from logger import logging_fn
 
 ## utilities to be used by any script at any point
@@ -257,6 +257,7 @@ def is_item_in_container(inventory_list, item):
 
 def generate_clean_inventory(inventory_inst_list, will_print = False, coloured = False):
 
+    from itemRegistry import registry
     from tui.tui_update import update_text_box
     from config import enable_tui
     tui_enabled = enable_tui
@@ -325,7 +326,7 @@ def generate_clean_inventory(inventory_inst_list, will_print = False, coloured =
     return inventory_names, no_xval_inventory_names
 
 def separate_loot(child_input=None, parent_input=None, inventory=[]): ## should be inside registry, not here.
-
+    from itemRegistry import registry
     child = None
     parent = None
 
@@ -415,6 +416,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
         item=item[0] #arbitrarily take the first one.
 
     def check_instance_col(item):
+        from itemRegistry import registry
         if isinstance(item, ItemInstance):
             entry:ItemInstance = item
 
@@ -437,6 +439,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
 
 
     elif isinstance(item, str) or isinstance(item, ItemInstance):
+        from itemRegistry import registry
         if isinstance(item, str):
 
             plain_name, val = check_name(item)

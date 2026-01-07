@@ -1,6 +1,7 @@
 
 from time import sleep
 import uuid
+
 from logger import logging_fn
 
 print("Item registry is being run right now.")
@@ -264,6 +265,9 @@ class itemRegistry:
         logging_fn()
 
         instance_list = []
+        from env_data import place_data
+        if isinstance(place, place_data):# for now just make it string. Later will change by_location to use the instance.
+            place = place.name
 
         location = self.by_location.get(place) ## always expects 'not `a ` version of name.' ### PREVIOUS COMMENT IS A LIE. SOMETIMES IT EXPECTS THE A_ VERSION. oR AT LEAST THAT'S WHAT IT GETS. This is entirely my own fault, I knew this would happen.
         #print(f"location by default: {location}, raw place: {place}")
@@ -304,8 +308,8 @@ class itemRegistry:
         if self.by_name.get(definition_key):
             return self.by_name.get(definition_key)
         else:
-            print(f"definition key: {definition_key}")
-            print(f"self.by_name: {self.by_name:}")
+            print(f"No instance in itemRegistry by the name: {definition_key}")
+            #print(f"self.by_name: {self.by_name:}")
         return # if self.by_name.get(definition_key) else None
 
     def instances_by_container(self, container:ItemInstance)->list:
@@ -487,6 +491,7 @@ class itemRegistry:
                     else:
                         action_options.append("open")
                 elif item == "can_combine":
+                    print(f"inst.flags: {inst.flags}")
                     requires = inst.flags["combine_with"]
                     if isinstance(requires, list):
                         print(f"item {inst.name} can combine with: {requires} (list)")
