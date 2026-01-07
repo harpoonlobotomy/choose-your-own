@@ -316,3 +316,21 @@ Working on the outline for how the format + verb functions will actually work be
 So I need to think about how to work that.
 
 I'm thinking maybe the membrane take in scene-specific data, and after sending off to the parser and running through the router, it can add data from the scene more generally with the results of the router.
+
+11.19am
+goddamn I think I need a membrane class too.
+
+This is so dumb. Surely I just need to put it all in one place, no...?
+
+1.22pm
+Changed the parser's output dict so it retains original inputted text instead of relying on the instance name. For both the verbs and nouns, so while it'll act on the fully-named noun, it'll return whatever you gave it. (At least for the moment. Might not always be applicable.)
+
+Oh damn I just realised I could have assigned it to the verb object itself. Although maybe not because then it'd change each time... that could get funky. Idk. TODO: Potentially save the current-name for the verb on the verb object.
+
+3.18pm
+Added the location instances to the dict in membrane.
+
+3.27
+realised I'm not using location instances basically anywhere. Need to. Would solve the damn 'a graveyard/graveyard' issue somewhat. Hell I can just have a place.a_name variant (and place.the_name if I'm feeling ostentatious) and do away with it hardcoded entirely. How nice would that be.
+
+I'm really sad. Probably not going to get muich else done today.

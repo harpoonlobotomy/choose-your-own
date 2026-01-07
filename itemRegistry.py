@@ -1,7 +1,10 @@
 
-#from time import sleep
+from time import sleep
 import uuid
 from logger import logging_fn
+
+print("Item registry is being run right now.")
+sleep(.5)
 
 class ItemInstance:
     """
@@ -79,7 +82,7 @@ class ItemInstance:
         return f"<ItemInstance {self.name} ({self.id})>"
 
 
-class LootRegistry:
+class itemRegistry:
     """
     Central manager for all item instances.
     Also keeps a location-indexed lookup for fast "what's here?" queries.
@@ -552,15 +555,16 @@ class LootRegistry:
 
     def drop(self, inst: ItemInstance, location, direction, inventory_list):
         logging_fn()
-        print("inventory_list")
+        #print("inventory_list")
         if inst not in inventory_list:
             return None, inventory_list
         inventory_list.remove(inst)
-        print("inventory_list")
+        #print("inventory_list")
         self.move_item(inst, place=location, direction=direction)
         return inst, inventory_list
 
     def complete_location_dict(self):
+
         logging_fn()
         from env_data import dataset
         from misc_utilities import cardinal_cols
@@ -576,8 +580,11 @@ class LootRegistry:
         print(f"flag actions: {flag_actions}")
         return inst
 
+    def add_plural_words(self, plural_words_dict):
+        self.plural_words = plural_words_dict
+
 # setup
-registry = LootRegistry()
+registry = itemRegistry()
 inventory = []
 
 
@@ -603,17 +610,16 @@ def initialise_itemRegistry():
     from item_definitions import get_item_defs
     registry.complete_location_dict()
     plural_word_dict = {}
-    #print("Running initialise registry.")
+    #print("Running `initialise_itemRegistry`.")
     for item_name, attr in get_item_defs().items():
         registry.create_instance(item_name, attr)
         if len(item_name.split()) > 1:
             plural_word_dict[item_name] = tuple(item_name.split())
 
+    registry.add_plural_words(plural_word_dict)
     registry.plural_words = plural_word_dict
-    repr(registry)
 
 
 if __name__ == "__main__":
 
     initialise_itemRegistry()
-

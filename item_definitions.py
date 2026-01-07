@@ -37,7 +37,7 @@ CAN_REMOVE_FROM = "can_remove_from" ## not sure about this. Serves the same purp
 
 ## DOING STUFF WITH INVENTORY. This section is just thinking aloud. Not implemented at all.
 
-item_actions = [
+item_actions = [  ## NOTE: I think this is only used for get_actions_for_item, which won't be needed in the new setup. Need to check into it.
     CAN_PICKUP,
     CONTAINER,
     FLAMMABLE,

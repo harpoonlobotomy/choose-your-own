@@ -50,6 +50,7 @@ formats = {
     "verb_only": (verb,), #'leave'
     "verb_noun": (verb, noun), # drop paperclip
     "verb_loc": (verb, location), # go graveyard
+    "verb_dir": (verb, direction), # go graveyard
     "verb_dir_loc": (verb, direction, location), # go to graveyard
     "verb_noun_noun": (verb, noun, noun), # can't think of any examples.
     "verb_dir_noun": (verb, direction, noun), # 'look at watch'
@@ -66,6 +67,7 @@ formats = {
 verb_only = formats["verb_only"]
 verb_noun = formats["verb_noun"]
 verb_loc = formats["verb_loc"]
+verb_dir = formats["verb_dir"]
 verb_noun_noun = formats["verb_noun_noun"]
 verb_dir_loc = formats["verb_dir_loc"]
 verb_dir_noun = formats["verb_dir_noun"]
@@ -103,7 +105,7 @@ combined_wordphrases = { # maybe something like this, instead of the hardcoded e
 
 verb_defs_dict = {
     ## NOTE: Allowed_null is not used at present. All nulls are treated as equal, and all sem/loc/dirs are treated as viable in all cases. Will need to change this later but for now it works alright.
-    "go": {"alt_words":["go to", "approach"], "allowed_null": None, "formats": [verb_only, verb_loc, verb_dir_loc]},
+    "go": {"alt_words":["go to", "approach"], "allowed_null": None, "formats": [verb_only, verb_loc, verb_dir, verb_dir_loc]},
     "leave": {"alt_words": ["depart", ""], "allowed_null": None, "formats": [verb_only, verb_loc, verb_noun_dir_noun]},
     "combine": {"alt_words": ["mix", "add"], "allowed_null": ["with", "and"], "formats": [verb_noun_sem_noun, verb_noun_dir_noun, verb_noun]},
     "separate": {"alt_words": ["remove", ""], "allowed_null": ["from", "and"], "formats": [verb_noun_sem_noun, verb_noun_dir_noun, verb_noun]},
@@ -120,7 +122,7 @@ verb_defs_dict = {
     "take": {"alt_words": ["pick up", "get", "pick"], "allowed_null": None, "formats": [verb_noun, verb_dir_noun, verb_noun_sem_noun, verb_noun_dir_noun, verb_noun_dir_noun_dir_loc]}, # take ball, take ball from bag
     "put": {"alt_words": ["place", "leave"], "allowed_null": ["in", "inside"], "formats": [verb_noun_dir, verb_noun_sem_noun, verb_noun_dir_noun, verb_noun_dir_noun_dir_loc]}, # put paper down, put paper on table ## using 'leave' here might be tricky. But I want to allow for 'leave church' and 'leave pamphlet on table' both.
     "eat": {"alt_words": ["consume", "drink"], "allowed_null": None, "formats": [verb_noun]},
-    "look": {"alt_words": ["watch", "observe", "investigate", "examine"], "allowed_null": ["at", "to"],  "formats": [verb_only, verb_noun, verb_loc, verb_noun_sem_noun, verb_noun_dir_noun, verb_dir_noun, verb_dir_noun_sem_noun]}, # look, look at book, look at book with magnifying glass
+    "look": {"alt_words": ["watch", "observe", "investigate", "examine"], "allowed_null": ["at", "to"],  "formats": [verb_only, verb_noun, verb_dir, verb_loc, verb_noun_sem_noun, verb_noun_dir_noun, verb_dir_noun, verb_dir_noun_sem_noun]}, # look, look at book, look at book with magnifying glass
     "set": {"alt_words": [""], "allowed_null": None, "formats": [verb_noun_dir, verb_noun_sem_noun, verb_noun], "distinction": {"second_noun":"fire", "new_verb":"burn", "else_verb":"put"}}, ## not implemented, just an idea. 'if fire is the second noun, the correct verb to use is 'burn', else the verb is 'put'. So 'set' is not its own thing, just a membrane/signpost.
     "move": {"alt_words": ["shift"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun]},
     "clean": {"alt_words": ["wipe"], "allowed_null": None, "formats": [verb_noun, verb_loc, verb_noun_sem_noun]}

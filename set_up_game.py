@@ -212,7 +212,7 @@ def init_game():
     test_for_weird()
     #choices.set_choices()
     load_world()
-    initialise_itemRegistry()
+    #initialise_itemRegistry()
     set_inventory()
     loadout() ## move loadout after load_world to allow for time_management to run first. Testing...
     #print("Initial inventory:: ", game.inventory)

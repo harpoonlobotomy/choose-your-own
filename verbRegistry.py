@@ -7,6 +7,8 @@ from typing import Optional
 
 from verb_actions import get_current_loc
 
+print("Verb registry is being run right now.")
+
 null_adjectives = True
 
 
@@ -88,16 +90,15 @@ class Parser:
 
     def check_compound_words(parts_dict, word, parts, idx, kinds, word_type, omit_next):
 
-        if not parts_dict:
-            from itemRegistry import registry
-            parts_dict = registry.plural_words.items() ## if no parts_dict, use the item plurals
+ ## if no parts_dict, use the item plurals
 
         canonical = potential_match = None
         compound_match = 0
         compound_matches = {}
         #if not word.startswith("a "):
             #word = "a " + word
-        for compound_word, word_parts in parts_dict:
+        #print(f"parts dict:: type: {type(parts_dict)}")
+        for compound_word, word_parts in parts_dict.items():
             if word == "tv":
                 word = "TV"
             #print(f"Word: {word} // word parts: {word_parts}")
@@ -138,16 +139,22 @@ class Parser:
 
         return idx, word, kinds, canonical, potential_match, omit_next
 
-    def tokenise(input_str, nouns_list, locations, directions):
+    def tokenise(input_str, nouns_list, locations, directions, membrane):
 
         current_location = get_current_loc()
-        from verb_definitions import combined_wordphrases
-        word_phrases = combined_wordphrases
+        word_phrases = membrane.combined_wordphrases
+        #print(f"Word phrases: {word_phrases}")
         parts = input_str.split()
         loc_options = locations
-        compound_locs = {}
-        for word in locations:
-            compound_locs[word] = tuple(word.split())
+        compound_locs = membrane.compound_locations
+        #print(f"compound_locs: {compound_locs}")
+        compound_nouns = membrane.plural_words_dict
+        #print("compound nouns:")
+        #print(compound_nouns)
+        #exit()
+
+        #for word in locations:
+        #    compound_locs[word] = tuple(word.split())
         items = nouns_list
         #print(f"nouns list: {items}")
         tokens = []
@@ -249,18 +256,18 @@ class Parser:
                     tokens.append(Token(idx, word, kinds, canonical))
                     potential_match = True
                 else:
-                    #print(f"Word going to check compound words: {word}")
+                    print(f"Word going to check compound words: {word}")
                     #new_idx, word, kinds, canonical, potential_match, omit_next = Parser.check_compound_words(parts_dict = verbs.compound_words.items(), word=word, parts=parts, idx=idx, kinds=kinds, word_type = "noun", omit_next=omit_next)
-                    #maybe new_idx is bad. Now with 'tv set', it correctly finds 'tv set', but hten also finds 'set' as a verb when it should have been omitted.
-                    idx, word, kinds, canonical, potential_match, omit_next = Parser.check_compound_words(parts_dict = verbs.compound_words.items(), word=word, parts=parts, idx=idx, kinds=kinds, word_type = "noun", omit_next=omit_next)
+                    #maybe new_idx is bad. Now with 'tv set', it correctly finds 'tv set', but then also finds 'set' as a verb when it should have been omitted.
+                    idx, word, kinds, canonical, potential_match, omit_next = Parser.check_compound_words(parts_dict = compound_nouns, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "noun", omit_next=omit_next)
 
                     if canonical:
-                        #print(f"CANONICAL: {canonical, idx}")
+                        print(f"CANONICAL: {canonical, idx}")
                         tokens.append(Token(idx, word, kinds, canonical))
 
                     else:
                         #print(f"Word going to compound loc: ({word})")
-                        idx, word, kinds, canonical, potential_match, omit_next = Parser.check_compound_words(parts_dict = compound_locs.items(), word=word, parts=parts, idx=idx, kinds=kinds, word_type = "location", omit_next=omit_next)
+                        idx, word, kinds, canonical, potential_match, omit_next = Parser.check_compound_words(parts_dict = compound_locs, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "location", omit_next=omit_next)
                         if canonical:
                             #print(f"canonical loc: {canonical}")
                             tokens.append(Token(idx, word, kinds, canonical))
@@ -351,7 +358,7 @@ class Parser:
     def get_sequences_from_tokens(tokens) -> list:
         sequences = [[]]
         verb_instances = []
-        #print(f"Tokens in get_sequences: {tokens}")
+        print(f"Tokens in get_sequences: {tokens}")
         for i, token in enumerate(tokens):
             options = Parser.token_role_options(token)
             if "verb" in options:
@@ -450,7 +457,7 @@ class Parser:
         """
         Need to change this a bit -- I need to ensure the original typed name is kept, currently it's wiped and I'm relying on the verb_instance name only, which won't work if they type a variation that has connotations. I need to be able to branch out from the primary function into more detailed actions (or just response strings).
         """
-        
+
         dict_for_output = initial_dict
         #print(f"Format key: {format_key}")
         for i, item in enumerate(format_key[0]):
@@ -462,7 +469,9 @@ class Parser:
                 #resolve_verb(tokens, verb_name, format_key)
                 if verb:
                     #print(f"Verb::: {verb}, verb_name: {verb.name}")
-                    dict_for_output[i]={item: verb}
+                    #dict_for_output[i]={item: verb}
+                    dict_for_output[i]={item: {"instance":verb, "str_name":item_name}}
+                    ## changed t oadd instance and item_name
                 #for verb_dicts in confirmed_verb:
                 #    for entry in verb_dicts.values():
                 #        print(f"Entry: {entry}")
@@ -473,7 +482,7 @@ class Parser:
                 #            print("entry name is item name.")
                 #            dict_for_output[i]={item: entry}
             else:
-                dict_for_output[i]={item:item_name}
+                dict_for_output[i]={item:{"instance":None, "str_name":item_name}}
 
         #print(f"Build dict: {initial_dict}")
         #for token_index, data in initial_dict.items():
@@ -499,10 +508,15 @@ class Parser:
         return format_key, dict_for_output, tokens # including tokens for any minor input detail that might matter later.
 
 
-    def input_parser(self, input_str, membrane_data): # temporarily adding 'items' just so I can test with any item from the item dict without having to add to inventory/location first. Purely for testing convenience.
+    def input_parser(self, input_str): # temporarily adding 'items' just so I can test with any item from the item dict without having to add to inventory/location first. Purely for testing convenience.
 
-        nouns_list, locations, directions = membrane_data
-        tokens = self.tokenise(input_str, nouns_list, locations, directions)
+        from verb_membrane import membrane
+
+        nouns_list = membrane.nouns_list
+        locations = membrane.locations
+        directions = membrane.directions
+
+        tokens = self.tokenise(input_str, nouns_list, locations, directions, membrane)
 
         #print(f"Tokens: {tokens}")
 
@@ -547,6 +561,7 @@ colours = ["BLACK","RED", "GREEN", "YELLOW", "BLUE", "MAGENTA", "CYAN", "WHITE"]
 sizes = ["big", "small", "tiny", "enormous", "massive", "little"]
 
 def initialise_verbRegistry():
+
     from verb_definitions import get_verb_defs, allowed_null, semantics, formats
 
     verb_defs_dict, verb_set = get_verb_defs()

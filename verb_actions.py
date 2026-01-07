@@ -1,8 +1,9 @@
 
 ### Interface between item_actions and the verbs.
 
+import time
 from itemRegistry import ItemInstance, registry
-from verb_definitions import directions
+from verb_definitions import directions, formats
 
 movable_objects = ["put", "take", "combine", "separate", "throw", "push", "drop", "set", "move"]
 
@@ -29,15 +30,18 @@ in_words = ["in", "inside", "into", "within", "to"]
 down_words = ["down"]
 
 
-
 #### Fundamental Operations ####
 
 def get_current_loc():
 
     from set_up_game import game
-    location = game.place
+    location = game.place ### I use this instead of the instance. Really should use the instance. Would mean I can add data to it which would be handy...
     cardinal = game.facing_direction
     return location, cardinal
+
+def is_loc_current_loc(location):
+
+    current_location, current_cardinal = get_current_loc()
 
 def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
 
@@ -113,7 +117,18 @@ okay so something like this:
         if format_list == tuple(("verb", "location")):
 to disperse parts around within functions. So if '
 
+Maybe it returns an int, and that int is what drives the per-function expansion. I think that works. Avoid counting lengths over and over etc. Going to import the formats dict values from verb_definitions and use that.
+
 """
+def check_against_formats(format_tuple):
+
+    #all_formats_list = [i for i in formats.values()]
+    #print(f"formats list: {all_formats_list}")
+        ### LOCATION ONLY ###
+    for format in ["verb_only", "verb_loc", "verb_dir", "verb_dir_loc"]:
+        pass
+
+
 
 #################################
 
@@ -237,7 +252,7 @@ def clean(format_list, input_dict, location):
     if len(format_list) == 2:
         if format_list == tuple(("verb", "location")):
         #if "verb" in format_list and "location" in format_list:
-            print("This is a matching format list.")
+            print("You want to clean the ")
     # verb_noun == clean item
     # verb_noun_sem_noun == clean item with item
     # verb_loc == clean location (not sure how useful but worth a custom response at least)
@@ -471,7 +486,7 @@ def router(viable_formats, inst_dict):
         for kind, entry in data.items():
             #kinds.append(kind)
             if kind == "verb":
-                verb_inst = entry
+                verb_inst = entry["instance"]
             if kind == "location":
                 current_loc = get_current_loc()
                 if entry in current_loc:
@@ -527,7 +542,7 @@ def router(viable_formats, inst_dict):
     no_noun_actions = [
         "verb_only",
         "verb_loc",
-        "verb_loc"
+        "verb_dir"
         "verb_dir_loc",
         ]
 
@@ -595,5 +610,12 @@ def router(viable_formats, inst_dict):
     #print(f'"{item}": "",')
     #print(verb_name, verb_inst, reformed_dict)
 
+    #print("Leaving router.")
+    quick_list = []
+    for v in inst_dict.values():
+        for data in v.values():
+            quick_list.append(data["str_name"])
 
+    print(f'\n\033[1;32m[[  {" ".join(quick_list)}  \033[0m]]')
+    #time.sleep(.5)
 
