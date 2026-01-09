@@ -34,14 +34,20 @@ down_words = ["down"]
 
 def get_current_loc():
 
-    from set_up_game import game
-    location = game.place ### I use this instead of the instance. Really should use the instance. Would mean I can add data to it which would be handy...
-    cardinal = game.facing_direction
+    from env_data import locRegistry
+    location = locRegistry.current
+    cardinal = locRegistry.current_cardinal
     return location, cardinal
 
-def is_loc_current_loc(location):
+def is_loc_current_loc(location=None, cardinal=None):
 
     current_location, current_cardinal = get_current_loc()
+    if location and location == current_location:
+        return 1, current_location, current_cardinal
+    if not location and cardinal: ## so it can check if the facing direction is current without needing location.
+        if cardinal == current_cardinal:
+            return 1, current_location, current_cardinal
+    return 0, current_location, current_cardinal # 0 if not matching. Always returns current.
 
 def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
 
@@ -72,7 +78,7 @@ def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
     elif isinstance(b, tuple):
         print(f"b is a tuple: {b}")
         if not current_loc:
-            current_loc = get_current_loc()
+            current_loc, _ = get_current_loc() ## this may pick up cardinals accidentally. Changing to break the tuple. Might break things.
         if b[0] in current_loc:
             print(f"{action} {a.name} {direction} {b}")
 
@@ -87,7 +93,7 @@ def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
         location = None
         print("B is not an instance.")
         if not current_loc:
-            current_loc = get_current_loc()
+            current_loc, current_card = get_current_loc()
 
         if b in current_loc:
             print(f"B is the current location: {b}")
@@ -164,7 +170,6 @@ def get_elements(input_dict) -> tuple:
     ## This is only useful if there's some other check going on. Otherwise it should just be per item, I think.
 ### I don't think this is actually better than each one just doing 'if len(), because it still has to evaluate the number afterwards to unpack it, no?
 
-    print(len(input_dict))
     if len(input_dict) == 2:
         return 2, list(input_dict[1].values()) # could be 'leave loc', 'drop item', 'get item', 'talk person' etc.
 
@@ -177,6 +182,43 @@ def get_elements(input_dict) -> tuple:
 
 ##############################
 
+# little bits, the finer end points that things resolve to.
+
+def turn_cardinal(prospective_cardinal):
+    print(f"prospective cardinal: {prospective_cardinal}. Type: {type(prospective_cardinal)}.")
+    if isinstance(prospective_cardinal, dict):
+        test = prospective_cardinal.get("cardinal")
+        print(f"Test: {test}")
+        if test:
+            prospective_cardinal = test.get("instance")
+        else:
+            test = prospective_cardinal.get("instance")
+            if test:
+                prospective_cardinal = test
+
+    print(f"prospective cardinal going to loc test: {prospective_cardinal}")
+    bool_test, _, _ = is_loc_current_loc(None, prospective_cardinal)
+    if not bool_test:
+        turning_to = prospective_cardinal
+        print(f"turning_to: {turning_to}, type: {type(turning_to)}")
+        print(f"You turn to face the {turning_to.ern_p_name}")
+        return "new_cardinal", turning_to
+    else:
+        print(f"Prospective cardinal: {prospective_cardinal}")
+        print(f"Prospective cardinal.name: {prospective_cardinal.name}")
+        print(f"Already facing {prospective_cardinal.ern_p_name}.")
+        return "no_change", None
+
+    """
+                    bool_test, current_location, current_cardinal = is_loc_current_loc(None, cardinal)
+                    if bool_test:
+                        print(f"You're already in the {current_card.place_name}")
+                    else:
+                        from env_data import locRegistry
+                        print(f"Going to {cardinal["instance"].place_name}")
+                        locRegistry.set_current()
+    """
+
 #######################
 #func(format_list, input_dict, location)
 
@@ -186,15 +228,42 @@ def get_elements(input_dict) -> tuple:
 
 
 
-def go(format_list, input_dict, location=None):
+def go(format_list, input_dict, location=None, new_cardinal=None):
+
+    current_loc, current_card = get_current_loc()
+    print(f"Input dict: {input_dict}")
+    if len(format_list) == 2:
+        print(f"input_dict[1]: {input_dict[1]}")
+        #input_dict[1]: {'cardinal': {'instance': <env_data.cardinalInstance object at 0x0000017522843B60>, 'str_name': 'east'}}
+        if input_dict[1].get("cardinal"):
+            cardinal = input_dict[1].get("cardinal")
+            if location == None:
+                return turn_cardinal(cardinal)
+
 
     if len(format_list) == 3:
-        if format_list[1] == "to":
-            if location not in get_current_loc():
-                destination = location
-                print(f"Leaving {get_current_loc} and going to {destination}")
+        destination = None
+        turning_to = None
+        if format_list[1] == "direction":
+            print(f"format_list1: {format_list[1]}")
+            if input_dict[1]["direction"]["str_name"] == "to":
+                if format_list[2] == "location":
+                #if location:
+                    if location and location != current_loc:
+                        destination = location
+                    else:
+                        print(input_dict[2])
+                        destination = input_dict[2]["location"]["instance"]
+                    if destination:
+                        print(f"Leaving {current_loc} and going to {destination}")
+                        return "new_location", destination
+
+                if format_list[2] == "cardinal":
+                    return turn_cardinal(input_dict[2]["cardinal"]["instance"])
+
+
         elif format_list[1] == "from":
-            if location not in get_current_loc():
+            if location != current_loc():
                 print("Cannot leave a place you are not in.")
 
 def leave(format_list, input_dict, location):
@@ -204,20 +273,20 @@ def leave(format_list, input_dict, location):
     pass
 
 
-def look(format_list, input_dict, location=None):
+def look(format_list, input_dict, location):
 
     if len(format_list) == 2:
-        print(f"You look at the {list(input_dict.keys())[1]}")
-def look(format_list, input_dict, location):
-    print("look FUNCTION")
-    # verb_only = look, describe surroundings
-    # verb_loc == look, describe surroundings (same as above as long as loc == current)
-    # verb_noun == look at item
-    # verb_dir_noun == look at noun (same as above as long as dir is appropriate)
-    # verb_noun_sem_noun == watch show with magnifying glass (if noun2 can be used to assist in looking in some way)
-    # verb_dir_noun_sem_noun == look at book with magnifying glass (if noun2 can be used to assist in some way)
-    # verb_noun_dir_noun = ## No idea of the context for this variation.
-    pass
+        if format_list[1] == "sem":
+            if input_dict[1]["sem"]["str_name"] == "around":
+                return "describe", "environment" ### This shouldn't return back to the main script. It should  return to membrane, which then gets the description and outputs it from itemRegistry.
+
+
+        elif format_list[1] == "noun":
+            print(f"You look at the {list(input_dict.keys())[1]}")
+            return "describe", list(input_dict.keys())[1]
+
+        else:
+            print(f"format list len 2, no idea what's happening: {format_list}, input_dict")
 
 
 def read(format_list, input_dict, location):
@@ -350,6 +419,18 @@ def move(format_list, input_dict, location):
 
     pass
 
+def turn(format_list, input_dict, location):
+    print("TURN FUNCTION")
+    if location:
+        current_location, current_turning = current_location()
+        if location != current_location:
+            print("Can only turn where you already are.")
+    cardinal_index = format_list.index("cardinal")
+    new_cardinal = input_dict[cardinal_index]
+    new_cardinal = new_cardinal["cardinal"]["instance"]
+
+    return "new_cardinal", new_cardinal
+
 def take(format_list, input_dict, location):
     print("take FUNCTION")
     # verb_noun == pick up noun
@@ -373,7 +454,7 @@ def put(format_list, input_dict, location=None):
     print(f"Format list: {format_list}")
     action_word = "putting"
     if not location:
-        current_loc = get_current_loc()
+        current_loc, current_card = get_current_loc()
 
     print(f"Input dict: {input_dict}")
     count, parts = get_elements(input_dict)
@@ -434,7 +515,7 @@ def drop(format_list, input_dict, location):
     print("This is the drop function.")
 
     if location == None:
-        location = get_current_loc()
+        location, current_card = get_current_loc() # don't know if separating the tuple is making life harder for myself here...
 
     if len(input_dict) == 2:
         print(f"location: {location}")
@@ -484,12 +565,15 @@ def router(viable_formats, inst_dict):
 
     for data in inst_dict.values():
         for kind, entry in data.items():
+            print(f"kind: {kind}, entry: {entry}")
             #kinds.append(kind)
             if kind == "verb":
                 verb_inst = entry["instance"]
             if kind == "location":
-                current_loc = get_current_loc()
-                if entry in current_loc:
+                booltest, current_loc, current_card = is_loc_current_loc(location=entry["instance"])
+                #current_loc, current_card = get_current_loc()
+                #if entry["instance"] == current_loc:
+                if booltest:
                     print(f"Current location is the location listed: {entry}/{current_loc}")
                     location = current_loc
                 else:
@@ -524,6 +608,7 @@ def router(viable_formats, inst_dict):
         "separate": separate,
 
         "move": move,
+        "turn": turn,
         "take": take,#pick_up,
         "put": put,
         "throw": throw,
@@ -594,28 +679,29 @@ def router(viable_formats, inst_dict):
     #else:
     func = function_dict[verb_inst.name]
 
-    noun_counter = viable_formats[0].count("noun")
-    if noun_counter:
-        for i, word_type in enumerate(viable_formats[0]):
-            #print(f"inst_dict: {inst_dict}")
-            if word_type == "noun":
-                print(f"NOUN INDEX: {i} [[{inst_dict[i].values()}]]")
-            #print(inst_dict[noun_index].values())
+    #noun_counter = viable_formats[0].count("noun")
+    #if noun_counter:
+    #    for i, word_type in enumerate(viable_formats[0]):
+    #        #print(f"inst_dict: {inst_dict}")
+    #        if word_type == "noun":
+    #            print(f"NOUN INDEX: {i} [[{inst_dict[i].values()}]]")
+    #        #print(inst_dict[noun_index].values())
 
 
-    func(format_list = viable_formats[0], input_dict = inst_dict, location = location)
+    response = func(format_list = viable_formats[0], input_dict = inst_dict, location = location)
     #func(format_list, input_dict, location)
 #from item_definitions import item_actions
 #for item in item_actions:
     #print(f'"{item}": "",')
     #print(verb_name, verb_inst, reformed_dict)
 
-    #print("Leaving router.")
+    print("Leaving router.")
     quick_list = []
     for v in inst_dict.values():
         for data in v.values():
             quick_list.append(data["str_name"])
 
-    print(f'\n\033[1;32m[[  {" ".join(quick_list)}  \033[0m]]')
+    print(f'\n\033[1;32m[[  {" ".join(quick_list)}  ]]\033[0m')
+    return response
     #time.sleep(.5)
 

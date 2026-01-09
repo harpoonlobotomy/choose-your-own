@@ -46,7 +46,7 @@ combine_parts = {("put", "into"), ("add", "to") # thinking about this for more s
 
    #exit()
 
-def get_noun_instances(dict_from_parser):
+def get_noun_instances(dict_from_parser, viable_formats):
 
     def check_noun_actions(noun_inst, verb_inst):
 
@@ -58,54 +58,80 @@ def get_noun_instances(dict_from_parser):
                     #print(f"{action}: Verb inst name in flag_actions for noun: ({noun_inst.name}): {verb_inst.name}")
                     return noun_inst.name
 
+    def check_cardinals(entry, data, format):
+
+        from env_data import locRegistry
+
+        if not data.get("location"):
+            loc_inst = locRegistry.current
+            card_inst = locRegistry.cardinals[loc_inst][entry["str_name"]]
+            print(f"card_inst: {card_inst}")
+        else:
+            print("Oops. You gave a location I'm not currently at, I can't deal.")
+            exit()
+
+        dict_from_parser[idx][kind] = ({"instance": card_inst, "str_name": entry["str_name"]})
+        return dict_from_parser
+
+    #if len(viable_formats) != 1:
+    #    print("More than one viable format. I can't handle that yet. Exiting.")
+    #    print(viable_formats)
+    #    exit()
+
+
     verb = None
-    #print(f"dict_from_parser: {dict_from_registry}")
-    for data in dict_from_parser.values():
-        for kind, entry in data.items():
-            print(f"kind: {kind}, entry: {entry}")
-            if "verb" in kind:
-                verb = entry["instance"]
-                #print(f"Verb: {verb}")
-                #print(f"Verb type: {type(verb)}")
-                print(f"Verb.name in get_noun_instances: `{verb.name}`")
+    #print(f"dict_from_parser: {dict_from_parser}")
+    if dict_from_parser:
+        for data in dict_from_parser.values():
+            for kind, entry in data.items():
+                #print(f"kind: {kind}, entry: {entry}")
+                if "verb" in kind:
+                    verb = entry["instance"]
+                    #print(f"Verb: {verb}")
+                    #print(f"Verb type: {type(verb)}")
+                    #print(f"Verb.name in get_noun_instances: `{verb.name}`")
 
-    suitable_nouns = 0
+        suitable_nouns = 0
 
-    for idx, data in dict_from_parser.items():
-        for kind, entry in data.items():
-            #  dict_from_registry[i]={item: {"instance":verb, "str_name":item_name}}
+        for idx, data in dict_from_parser.items():
+            for kind, entry in data.items():
+                #  dict_from_registry[i]={item: {"instance":verb, "str_name":item_name}}
 
-            print(f"GET NOUN INSTANCES::: Kind: {kind}, entry: {entry}")
-            if kind == "noun":
-                name = entry["str_name"]
-                noun_inst = registry.instances_by_name(name)
-                if not noun_inst:
-                    suitable_nouns -= 10
-                    print(f"No found ItemInstance for {entry}")
-                else:
-                    #print(f"Noun inst: {noun_inst}")
-                    noun_name = check_noun_actions(noun_inst[0], verb)
-                    if noun_name:
-                        dict_from_parser[idx][kind] = ({"instances": noun_inst[0], "str_name": name})
-                        suitable_nouns += 1
-                    else:
-                        print(f"You can't {verb.name} the {entry}")
+                #print(f"GET NOUN INSTANCES::: Kind: {kind}, entry: {entry}")
+                if kind == "noun":
+                    name = entry["str_name"]
+                    noun_inst = registry.instances_by_name(name)
+                    if not noun_inst:
                         suitable_nouns -= 10
+                        #print(f"No found ItemInstance for {entry}")
+                    else:
+                        #print(f"Noun inst: {noun_inst}")
+                        noun_name = check_noun_actions(noun_inst[0], verb)
+                        if noun_name:
+                            dict_from_parser[idx][kind] = ({"instance": noun_inst[0], "str_name": name})
+                            suitable_nouns += 1
+                        else:
+                            #print(f"You can't {verb.name} the {entry}")
+                            suitable_nouns -= 10
 
-            elif kind == "location":
-                from env_data import places
-                loc_name = entry["str_name"]
-                if places.get(loc_name):
-                    dict_from_parser[idx][kind] = ({"instances": places[loc_name], "str_name": loc_name})
+                elif kind == "location":
+                    from env_data import locRegistry
+                    loc_name = entry["str_name"]
+                    if locRegistry.place_by_name(loc_name):
+                        dict_from_parser[idx][kind] = ({"instance": locRegistry.place_by_name(loc_name), "str_name": loc_name})
 
+                elif kind == "direction": #Changing cardinals to their own specicial thing, can then ignore this part really.
 
-    if suitable_nouns >= 0 or verb.name == "look":
-        print(f"All nouns ({suitable_nouns}) are suitable for this verb ({verb.name}). Sending onward.")
+                    dict_from_parser[idx][kind] = ({"instance": None, "str_name": entry["str_name"]})
+                    # TODO: Make it more explicit (or at least, really really remember) that this is going to <cardinal> <current_location> unless stated otherwise.
 
-    else:
-        print(f"At least one noun from dict nouns does not match this verb: {verb.name}")
+                        #locRegistry.place_cardinals[place_instance_obj][cardinal_direction_str]
+                elif kind == "cardinal":
+                    #print(f"Kind is cardinal: {entry}")
+                    dict_from_parser = check_cardinals(entry, data, viable_formats)
 
-    return dict_from_parser
+        return dict_from_parser
+    return None
 
 class Membrane:
     ## To hold the general dicts/lists etc as a central point, so verbRegistry and itemRegistry can get data from item_definitions/verb_definitions from here instead of directly. Also other custom data, like the formats-by-type dict etc.
@@ -120,7 +146,7 @@ class Membrane:
     def __init__(self):
 
         from item_definitions import item_defs_dict#, item_actions
-        from verb_definitions import get_verb_defs, directions, formats, combined_wordphrases
+        from verb_definitions import get_verb_defs, directions, formats, combined_wordphrases, cardinals
 
         verb_defs_dict, verbs_set = get_verb_defs()
 
@@ -136,12 +162,12 @@ class Membrane:
         from itemRegistry import registry
 
         self.plural_words_dict = registry.plural_words
-        print(self.plural_words_dict)
         compound_locs = {}
         for word in self.locations:
             compound_locs[word] = tuple(word.split())
         self.compound_locations = compound_locs
         self.directions = directions
+        self.cardinals = set(cardinals) ## does membrane nede these or not?
 
         def get_format_sublists(all_formats):
 
@@ -171,35 +197,25 @@ membrane = Membrane()
 
 test_input_list = ["take the paperclip", "pick up the glass jar", "put the paperclip in the wallet", "place the dried flowers on the headstone", "go to the graveyard", "approach the forked tree branch", "look at the moss", "examine the damp newspaper", "read the puzzle mag", "read the fashion mag in the city hotel room", "open the glass jar", "close the window", "pry open the TV set", "smash the TV set", "break the glass jar", "clean the watch", "clean the severed tentacle", "mix the unlabelled cream with the anxiety meds", "combine the fish food and the moss", "eat the dried flowers", "consume the fish food", "drink the unlabelled cream", "burn the damp newspaper", "burn the fashion mag in a pile of rocks", "throw the pretty rock", "lob the pretty rock at the window", "chuck the glass jar into a pile of rocks", "drop the wallet", "discard the paper scrap with number", "remove the batteries from the TV set", "add the batteries to the mobile phone", "put the car keys in the plastic bag", "set the watch", "lock the window", "unlock the window", "shove the TV set", "move the headstone", "barricade the window with the TV set", "separate the costume jewellery", "investigate the exact thing", "observe the graveyard", "watch the watch", "go to a city hotel room", "leave the graveyard", "depart", "go", "go to the pile of rocks", "take the exact thing", "put the severed tentacle in the glass jar", "open the wallet with the paperclip", "read the mail order catalogue at the forked tree branch", "pick the moss", "pick the watch", "pick up moss", "throw anxiety meds", "put batteries into watch", "clean a pile of rocks"]
 
-def run_membrane(input_str):
+def run_membrane(input_str=None):
+
+    if input_str == None:
+        input_str = input()
 
     from verbRegistry import Parser
     viable_formats, dict_from_parser = Parser.input_parser(Parser, input_str)
 
-    inst_dict = get_noun_instances(dict_from_parser)
-    from verb_actions import router
-    print(f"inst_dict going to router: {inst_dict}")
-    #exit()
-    router(viable_formats, inst_dict)
+    inst_dict = get_noun_instances(dict_from_parser, viable_formats)
+
+    if inst_dict:
+        from verb_actions import router
+        #print(f"inst_dict going to router: {inst_dict}")
+        #exit()
+        response = router(viable_formats, inst_dict)
+        return response
 
 
-#input_str = "drop the paperclip in glass jar"
-input_str = "put batteries into watch"
-#
 #membrane, membrane_data = initialise_membrane()
-
-
-if __name__ == "__main__":
-
 
 # failed: "wipe the window with the damp newspaper", "push the pile of rocks", "pull the forked tree branch",
 
-
-
-    if test_input_list:
-        for i, input_str in enumerate(test_input_list):
-            run_membrane(input_str)
-            print(f"\nThat was number {i}\n")
-    else:
-        run_membrane(input_str)
-    #run_membrane(input_str)

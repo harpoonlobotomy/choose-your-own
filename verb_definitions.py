@@ -22,6 +22,7 @@ location = "location"
 noun = "noun"
 sem = "sem" # semantic operator (with, to, from etc)
 direction = "direction"
+car = "cardinal"
 
 # o[type] == 'optional {type}'
 
@@ -36,8 +37,8 @@ directions = ["down", "up", "left", "right", "away", "toward", "towards", "close
 ## "in front of"?? Need to be able to cope with that.
 
 nulls = ["the", "a", "an"]
-semantics = ["with", "and"]
-directions = directions + cardinals
+semantics = ["with", "and", "around"]
+directions = directions
 
 positional_dict = {
     "in": {"alts": ["inside", "within"]},
@@ -45,7 +46,35 @@ positional_dict = {
     "against": {"alts": ["leant", "leaning on"]}
     }
 
+formats = {
+    ### CARDINAL ###
+    "verb_car": (verb, car), # go west
+    "verb_dir_car": (verb, direction, car), # go to the west
+    "verb_dir_car_loc": (verb, direction, car, location), # go to east graveyard
+    "verb_dir_loc_car": (verb, direction, location, car), # go to graveyard east
 
+    ### LOCATION ONLY ###
+    "verb_only": (verb,), #'leave'
+    "verb_dir": (verb, direction), #go up, go outside
+    "verb_sem": (verb, sem), # 'look around'
+    "verb_loc": (verb, location), # go graveyard
+    "verb_dir_loc": (verb, direction, location), # go to graveyard
+
+    ### SINGLE NOUNS ###
+    "verb_noun": (verb, noun), # drop paperclip
+    "verb_dir_noun": (verb, direction, noun), # 'look at watch'
+    "verb_noun_dir": (verb, noun, direction), # throw ball up
+    "verb_noun_dir_loc": (verb, noun, direction, location), # drop paperclip at graveyard
+
+    ### TWO NOUNS ###
+    "verb_noun_noun": (verb, noun, noun), # can't think of any examples.
+    "verb_noun_dir_noun": (verb, noun, direction, noun), # push chest towards door, put paperclip in jar
+    "verb_noun_dir_dir_noun": (verb, noun, direction, direction, noun), # put paperclip down on table
+    "verb_noun_dir_noun_dir_loc": (verb, noun, direction, noun, direction, location), # put paperclip in glass jar in graveyard # pointless, but included just in case.
+    "verb_noun_sem_noun": (verb, noun, sem, noun), # mix water with potion
+    "verb_dir_noun_sem_noun": (verb, direction, noun, sem, noun) #go to table with box
+}
+"""
 formats = {
     "verb_only": (verb,), #'leave'
     "verb_noun": (verb, noun), # drop paperclip
@@ -62,12 +91,18 @@ formats = {
     "verb_noun_sem_noun": (verb, noun, sem, noun),
     "verb_dir_noun_sem_noun": (verb, direction, noun, sem, noun)
 }
+"""
 
 ### 'sem' == semantic operators, eg 'with' in 'combine x with y'.
 verb_only = formats["verb_only"]
 verb_noun = formats["verb_noun"]
 verb_loc = formats["verb_loc"]
 verb_dir = formats["verb_dir"]
+verb_car = formats["verb_car"]
+verb_sem = formats["verb_sem"]
+verb_dir_car = formats["verb_dir_car"]
+verb_dir_car_loc = formats["verb_dir_car_loc"]
+verb_dir_loc_car = formats["verb_dir_loc_car"]
 verb_noun_noun = formats["verb_noun_noun"]
 verb_dir_loc = formats["verb_dir_loc"]
 verb_dir_noun = formats["verb_dir_noun"]
@@ -103,9 +138,12 @@ combined_wordphrases = { # maybe something like this, instead of the hardcoded e
 # "inside" eg ("look inside the book" == "look at book")
 # if no 'allowed_null', all null = allowed.
 
+
+
 verb_defs_dict = {
     ## NOTE: Allowed_null is not used at present. All nulls are treated as equal, and all sem/loc/dirs are treated as viable in all cases. Will need to change this later but for now it works alright.
-    "go": {"alt_words":["go to", "approach"], "allowed_null": None, "formats": [verb_only, verb_loc, verb_dir, verb_dir_loc]},
+    "go": {"alt_words":["go to", "approach"], "allowed_null": None, "formats": [verb_only, verb_loc, verb_dir, verb_dir_loc, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car]},
+    "turn": {"alt_words": [""], "allowed_null": None, "formats": [verb_car, verb_dir_car, verb_dir_car_loc]}, # Turn only changes the cardinal, does not move otherwise.
     "leave": {"alt_words": ["depart", ""], "allowed_null": None, "formats": [verb_only, verb_loc, verb_noun_dir_noun]},
     "combine": {"alt_words": ["mix", "add"], "allowed_null": ["with", "and"], "formats": [verb_noun_sem_noun, verb_noun_dir_noun, verb_noun]},
     "separate": {"alt_words": ["remove", ""], "allowed_null": ["from", "and"], "formats": [verb_noun_sem_noun, verb_noun_dir_noun, verb_noun]},
@@ -122,9 +160,9 @@ verb_defs_dict = {
     "take": {"alt_words": ["pick up", "get", "pick"], "allowed_null": None, "formats": [verb_noun, verb_dir_noun, verb_noun_sem_noun, verb_noun_dir_noun, verb_noun_dir_noun_dir_loc]}, # take ball, take ball from bag
     "put": {"alt_words": ["place", "leave"], "allowed_null": ["in", "inside"], "formats": [verb_noun_dir, verb_noun_sem_noun, verb_noun_dir_noun, verb_noun_dir_noun_dir_loc]}, # put paper down, put paper on table ## using 'leave' here might be tricky. But I want to allow for 'leave church' and 'leave pamphlet on table' both.
     "eat": {"alt_words": ["consume", "drink"], "allowed_null": None, "formats": [verb_noun]},
-    "look": {"alt_words": ["watch", "observe", "investigate", "examine"], "allowed_null": ["at", "to"],  "formats": [verb_only, verb_noun, verb_dir, verb_loc, verb_noun_sem_noun, verb_noun_dir_noun, verb_dir_noun, verb_dir_noun_sem_noun]}, # look, look at book, look at book with magnifying glass
+    "look": {"alt_words": ["watch", "observe", "investigate", "examine"], "allowed_null": ["at", "to"],  "formats": [verb_only, verb_noun, verb_dir, verb_sem, verb_loc, verb_noun_sem_noun, verb_noun_dir_noun, verb_dir_noun, verb_dir_noun_sem_noun, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car]}, # look, look at book, look at book with magnifying glass
     "set": {"alt_words": [""], "allowed_null": None, "formats": [verb_noun_dir, verb_noun_sem_noun, verb_noun], "distinction": {"second_noun":"fire", "new_verb":"burn", "else_verb":"put"}}, ## not implemented, just an idea. 'if fire is the second noun, the correct verb to use is 'burn', else the verb is 'put'. So 'set' is not its own thing, just a membrane/signpost.
-    "move": {"alt_words": ["shift"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun]},
+    "move": {"alt_words": ["shift"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car]},
     "clean": {"alt_words": ["wipe"], "allowed_null": None, "formats": [verb_noun, verb_loc, verb_noun_sem_noun]}
     }
 

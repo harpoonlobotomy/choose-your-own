@@ -525,7 +525,8 @@ def do_print(text=None, end=None, do_edit_list=False, print_func=None):
     #    do_edit_list=True
 
     update_text_box(to_print=text, edit_list=do_edit_list) ## enable_tui removed from here, instead tui_update pulls it itself.
-    update_text_box(to_print="  ")
+    if end != "no": # bit weak but it'll do, lets me force no extra newlines even with the messy af print sequence I hae for now.
+        update_text_box(to_print="  ")
 
 def do_input():
 

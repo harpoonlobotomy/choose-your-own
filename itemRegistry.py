@@ -2,6 +2,7 @@
 from time import sleep
 import uuid
 
+from initialise_all import initialise_all
 from logger import logging_fn
 
 print("Item registry is being run right now.")
@@ -265,13 +266,11 @@ class itemRegistry:
         logging_fn()
 
         instance_list = []
-        from env_data import place_data
-        if isinstance(place, place_data):# for now just make it string. Later will change by_location to use the instance.
+        from env_data import placeInstance
+        if isinstance(place, placeInstance):# for now just make it string. Later will change by_location to use the instance.
             place = place.name
 
-        location = self.by_location.get(place) ## always expects 'not `a ` version of name.' ### PREVIOUS COMMENT IS A LIE. SOMETIMES IT EXPECTS THE A_ VERSION. oR AT LEAST THAT'S WHAT IT GETS. This is entirely my own fault, I knew this would happen.
-        #print(f"location by default: {location}, raw place: {place}")
-        #print("self.by_location:: ", self.by_location)
+        location = self.by_location.get(place)
         if place.startswith("a "):
             no_a_place = place.split("a ")[1]
             location = self.by_location.get(no_a_place)
@@ -308,7 +307,8 @@ class itemRegistry:
         if self.by_name.get(definition_key):
             return self.by_name.get(definition_key)
         else:
-            print(f"No instance in itemRegistry by the name: {definition_key}")
+            if definition_key is not "":
+                print(f"No instance in itemRegistry by the name: {definition_key}")
             #print(f"self.by_name: {self.by_name:}")
         return # if self.by_name.get(definition_key) else None
 
@@ -371,7 +371,7 @@ class itemRegistry:
         if "container" in inst.flags:
             children = self.instances_by_container(inst)
             if not children:
-                print(f"no children present. name: {inst.name_children_removed}")
+                #print(f"no children present. name: {inst.name_children_removed}")
                 return inst.name_children_removed
 
         if not inst:
@@ -472,10 +472,10 @@ class itemRegistry:
 
         action_options = []
         for item in item_actions:
-            print(f"item: {item}")
+            #print(f"item: {item}")
             if not isinstance(item, str):
                 item = item.name
-            print(f"item: {item}")
+            #print(f"item: {item}")
             if item in inst.flags:
                 if item == "can_read":
                     action_options.append("read") # can_read is the only one for now. There's really no need to separate contextual vs not...
@@ -492,15 +492,17 @@ class itemRegistry:
                         action_options.append("open")
                 elif item == "can_combine":
                     print(f"inst.flags: {inst.flags}")
-                    requires = inst.flags["combine_with"]
-                    if isinstance(requires, list):
-                        print(f"item {inst.name} can combine with: {requires} (list)")
-                    else:
-                        print(f"Item {inst.name} requires: {requires}")
-                    print("item management quitting.")
-                    exit()
-                    if requires in inventory_list:
-                        action_options.append(f"combine") ## do I want to have 'combine with {requires}'? Maybe start with that and later allow 'combine x and y'. Don't want to make the decision for them. Maybe two lots of combine. A general combine option to just test things out, and a second one for prescribed combinations (eg dvd player + dvd)
+                    if "combine_with" in inst.flags:
+
+                        requires = inst.flags["combine_with"]
+                        if isinstance(requires, list):
+                            print(f"item {inst.name} can combine with: {requires} (list)")
+                        else:
+                            print(f"Item {inst.name} requires: {requires}")
+                        #print("item management quitting.")
+                        #exit()
+                        if requires in inventory_list:
+                            action_options.append(f"combine") ## do I want to have 'combine with {requires}'? Maybe start with that and later allow 'combine x and y'. Don't want to make the decision for them. Maybe two lots of combine. A general combine option to just test things out, and a second one for prescribed combinations (eg dvd player + dvd)
                 elif item == "flammable":
                     from set_up_game import game
                     if game.has_fire: # true if have matches or if near fire (which is why I'm not just using the inventory to check for matches etc)
@@ -571,11 +573,12 @@ class itemRegistry:
     def complete_location_dict(self):
 
         logging_fn()
-        from env_data import dataset
+        from env_data import locRegistry as loc
         from misc_utilities import cardinal_cols
-        for location in list(dataset.keys()):
+        for placeInstance in loc.places:
             for direction in list(cardinal_cols.keys()):
-                self.by_location.setdefault(location, {}).setdefault(direction, set())
+                self.by_location.setdefault(placeInstance, {}).setdefault(direction, set())
+
 
     def get_action_flags_from_name(self, name):
         print(f"get flag for this name: {name}")
@@ -584,6 +587,7 @@ class itemRegistry:
         flag_actions = inst[0].verb_actions
         print(f"flag actions: {flag_actions}")
         return inst
+
 
     def add_plural_words(self, plural_words_dict):
         self.plural_words = plural_words_dict
@@ -622,8 +626,6 @@ def initialise_itemRegistry():
             plural_word_dict[item_name] = tuple(item_name.split())
 
     registry.add_plural_words(plural_word_dict)
-    registry.plural_words = plural_word_dict
-
 
 if __name__ == "__main__":
 

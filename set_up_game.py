@@ -90,36 +90,49 @@ def calc_emotions():
 
 def load_world(relocate=False, rigged=False, new_loc=None):
     from env_data import locRegistry as loc, weatherdict
-    rigged =True
-    rig_place = "a graveyard"#"a city hotel room"#
+    rigged = True
+    rig_place = "graveyard"#"a city hotel room"#
     rig_weather = "perfect"
-    rig_time = "midday"
+    rig_time = "midnight"
+
+
+    if loc.current != None:
+        loc.last_loc = loc.current # changed from game.last_loc
+
+    #loc.show_name(new_loc, "<Start of load_world>")
 
     if rigged:
         game.time=rig_time
         game.weather=rig_weather
         if new_loc and relocate:
-            game.place=new_loc
+            loc.set_current(new_loc)
+            #loc.show_name(loc.current, "<new_loc and relocate>")
         else:
-            game.place=rig_place
-    else:
-        if not relocate:
+            loc.set_current(rig_place)
+            #loc.show_name(loc.current, "<not new_loc and relocate>")
+    elif not relocate:
             game.time = random.choice(choices.time_of_day) ## should only be random at run start, not relocation.
             weatherlist = list(weatherdict.keys())
             game.weather = random.choice(weatherlist)#"fine", "stormy", "thunderstorm", "raining", "cloudy", "perfect", "a heatwave"))
-            game.place = random.choice((game.loc_list))#"your home", "the city centre", "a small town", "the nature reserve", "the back alley", "a hospital", "a friend's house", "graveyard"))
+            #loc.show_name(loc.current, "<not rigged or relocate before random>")
+            loc.set_current(random.choice(list(loc.places.values())))
+            #loc.show_name(loc.current, "<not rigged or relocate after random>")
+            #"your home", "the city centre", "a small town", "the nature reserve", "the back alley", "a hospital", "a friend's house", "graveyard"))
 
+    else:
     #print(f"loc_list: {loc_list}")
-    if new_loc:
-        loc.current
-        game.place=new_loc
+        #print(f"current loc: {loc.current.name}")
+        if new_loc:
+            loc.current = new_loc
 
-    if game.place != None:
-        game.last_loc = game.place
+    if not getattr(loc, "current_cardinal"):
+        facing = loc.by_cardinal(game.facing_direction)
+        loc.current_cardinal = facing
+    #loc.show_name(new_loc)
     #game.pops = random.choice(("few", "many"))
     game.bad_weather = weatherdict[game.weather].get("bad_weather")
-    loc.current = loc.places[game.place]
-    return game.place
+
+    return loc.current
 
 def set_text_speed():
     from misc_utilities import do_print, do_input
@@ -262,7 +275,7 @@ class game:
 
     emotional_summary = None
 
-    place = "a graveyard"
+    place = "graveyard"
     time = "morning"
     #pops = "few"
     weather = "fine"
@@ -278,8 +291,8 @@ class game:
     painting = "a ship in rough seas"
     cardinals = ["north", "south", "east", "west"]
 
-    from env_data import dataset
-    loc_list = list(dataset.keys())
+    #from env_data import locRegistry
+    #loc_list = list(locRegistry.places.values()) # just run it directly from loc within the game as needed.
     day_number=1
 
     last_loc = "a graveyard" # just here to keep the persistence if things get distracted during a scene change
