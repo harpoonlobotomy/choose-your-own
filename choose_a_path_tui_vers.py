@@ -229,13 +229,13 @@ def do_action(action:str, inst:ItemInstance|str)->list:
 def item_interaction(inst:str, inventory_names:list=None, no_xval_names:list=None):
     logging_fn()
     if isinstance(inst, str):
-        test=from_inventory_name(inst, game.inventory)
-        if test:
-            inst=test
+        inv_test=from_inventory_name(inst, game.inventory)
+        if inv_test:
+            inst=inv_test
         else:
-            test = registry.instances_by_name(inst)[0]
-            if test:
-                inst=test
+            inv_test = registry.instances_by_name(inst)[0]
+            if inv_test:
+                inst=inv_test
 
     if not isinstance(inst, ItemInstance):
         print(f"Is not an instance. Something is wrong. `{inst}`, type: {type(inst)}")
@@ -269,22 +269,22 @@ def item_interaction(inst:str, inventory_names:list=None, no_xval_names:list=Non
     actions = registry.get_actions_for_item(inst, game.inventory, has_children=children_val, has_multiple=multiple_val)
 
     while True:
-        trial = None
-        trial = option(actions, print_all=True, preamble=f"\n{assign_colour("Actions available for ", "yellow")}{assign_colour(inst)}: ")
-        match, _ = compare_input_to_options(actions, input=trial)
+        test = None
+        test = option(actions, print_all=True, preamble=f"\n{assign_colour("Actions available for ", "yellow")}{assign_colour(inst)}: ")
+        match, _ = compare_input_to_options(actions, input=test)
         if match:
             test_inventory = do_action(match, inst) ## added so I don't accidentally wipe game.inventory if something fails.
             if test_inventory != None:
                 game.inventory = test_inventory
             actions = registry.get_actions_for_item(inst, game.inventory)
-            if "drop" in trial:
+            if "drop" in test:
                 break
 
-        if trial == "" or trial is None or trial == "continue":
+        if test == "" or test is None or test == "continue":
             #do_print(assign_colour(f"(Chosen: <NONE>) [item_interaction]", "yellow"))
             break
 
-    return trial
+    return test
 
 
 def do_inventory():
@@ -455,25 +455,7 @@ def option(*values, no_lookup=None, print_all=False, none_possible=True, preambl
 #
     #if return_any:
     #    return test
-    print(f"RESPONSE:: {response}")
-    describe = ["describe"]
-    player_moved = ["new_cardinal", "new_location"]
-    nothing = ["no_change", "no change"]
-    if response:
 
-        call, details = response
-        if call in nothing:
-            print("Nothing.")
-        if call in player_moved:
-            new_relocate(details)
-        if call in describe:
-            print(loc.current.description)
-
-def new_relocate(new_location_data):
-    print(new_location_data)
-    print(new_location_data.name)
-    loc.set_current(new_location_data)
-    print(f"You're now facing {loc.current_cardinal.place_name}")
 
 
 
@@ -732,7 +714,8 @@ def relocate(need_sleep=None):
     # instead of choosing random place names as above, instead:
     options = list(loc.by_name.keys())
 
-    new_location = option(options, print_all=True, preamble="Please pick your destination:")
+    test = option(options, print_all=True, preamble="Please pick your destination:")
+    new_location = test
     print(f"OPTIONS: {options}")
     if new_location in options:
         print(f"New location in options: {new_location}")
@@ -1066,51 +1049,53 @@ def add_rocks():
 
 def run():
 
+    test = None
     global loc
-    from env_data import locRegistry as loc
-    #do_clearscreen()
-    playernm = ""
+    while test != "quit":
+        from env_data import locRegistry as loc
+        #do_clearscreen()
+        playernm = ""
 
-    test_mode=True
-    if test_mode:
-        playernm = "Testbot"
-        enable_tui = False
-    else:
-        intro()
-        do_print()
-        slowWriting("What's your name?")
-        while  playernm == "":
-            playernm = do_input()
-    global game
-    game = set_up(weirdness=True, bad_language=True, player_name=playernm)
+        test_mode=True
+        if test_mode:
+            playernm = "Testbot"
+            enable_tui = False
+        else:
+            intro()
+            do_print()
+            slowWriting("What's your name?")
+            while  playernm == "":
+                playernm = do_input()
+        global game
+        game = set_up(weirdness=True, bad_language=True, player_name=playernm)
 
-    #do_clearscreen()
+        #do_clearscreen()
 
-    if config.enable_tui:
-        from tui.tui_elements import run_tui_intro
-        player_name = run_tui_intro(play_intro=False)
+        if config.enable_tui:
+            from tui.tui_elements import run_tui_intro
+            player_name = run_tui_intro(play_intro=False)
 
-        if player_name:
-            game.playername = player_name
+            if player_name:
+                game.playername = player_name
 
-        world = (loc.current, game.weather, game.time, game.day_number)
-        player = (game.player, game.carryweight, game.playername)
-        add_infobox_data(print_data = True, backgrounds = False, inventory=None, playerdata=player, worldstate=world)
-        print_commands(backgrounds=False)
-        update_infobox(hp_value=game.player["hp"], name=game.playername, carryweight_value=game.carryweight, location=loc.current.name, weather=game.weather, t_o_d=game.time, day=game.day_number)
+            world = (loc.current, game.weather, game.time, game.day_number)
+            player = (game.player, game.carryweight, game.playername)
+            add_infobox_data(print_data = True, backgrounds = False, inventory=None, playerdata=player, worldstate=world)
+            print_commands(backgrounds=False)
+            update_infobox(hp_value=game.player["hp"], name=game.playername, carryweight_value=game.carryweight, location=loc.current.name, weather=game.weather, t_o_d=game.time, day=game.day_number)
 
-        add_infobox_data(print_data = True, inventory=game.inventory)
+            add_infobox_data(print_data = True, inventory=game.inventory)
 
-    ## Add glass jar to inventory for container tests
-    #game.carryweight += 5
-    #inst = registry.instances_by_name("glass jar")
-    #_, game.inventory = registry.pick_up(inst, game.inventory)
+        ## Add glass jar to inventory for container tests
+        #game.carryweight += 5
+        #inst = registry.instances_by_name("glass jar")
+        #_, game.inventory = registry.pick_up(inst, game.inventory)
 
-    if not test_mode:
-        slowWriting("[[ Type 'help' for controls and options. ]]")
-        do_print()
+        if not test_mode:
+            slowWriting("[[ Type 'help' for controls and options. ]]")
+            do_print()
 
-    inner_loop(speed_mode=test_mode)
+        inner_loop(speed_mode=test_mode)
 
 
 def temp_run():

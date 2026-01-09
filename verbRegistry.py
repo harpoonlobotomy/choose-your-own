@@ -5,6 +5,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Optional
 
+from initialise_all import initialise_all
 from verb_actions import get_current_loc
 
 print("Verb registry is being run right now.")
@@ -65,6 +66,7 @@ class VerbRegistry:
         self.adjectives = set()
         self.semantics = set()
         self.formats = set()
+        self.cardinals = set()
         self.compound_words = {}
 
     def create_verb_instance(self, verb_key:str, attr:dict)->VerbInstance:
@@ -90,8 +92,6 @@ class Parser:
 
     def check_compound_words(parts_dict, word, parts, idx, kinds, word_type, omit_next):
 
- ## if no parts_dict, use the item plurals
-
         canonical = potential_match = None
         compound_match = 0
         compound_matches = {}
@@ -103,7 +103,7 @@ class Parser:
                 word = "TV"
             #print(f"Word: {word} // word parts: {word_parts}")
             if word in word_parts:
-                test_print(f"MATCH IN PLURAL WORDS: `{word}` FOR COMPOUND WORD: {compound_word}", print_true=True)
+                #test_print(f"MATCH IN PLURAL WORDS: `{word}` FOR COMPOUND WORD: {compound_word}", print_true=True)
                 matches_count = 1
                 for _ in word_parts:
                     try:
@@ -115,9 +115,9 @@ class Parser:
                             #test_print(f"parts[{idx}+{matches_count}]: {parts[idx+matches_count]}")#, print_true=True)
                             matches_count += 1
 
-                        else:
+                        #else:
                             #print(f"parts[idx+matches_count]: {parts[idx+matches_count].lower()}")
-                            print(f"Part {matches_count+1} `{parts[idx+matches_count+1]}` does not match expected second word {word_parts[matches_count+1]}")
+                            #print(f"Part {matches_count+1} `{parts[idx+matches_count+1]}` does not match expected second word {word_parts[matches_count+1]}")
                     except:
                         test_print(f"No matched word-parts after parts[{idx}+{matches_count}].", print_true=False)
                         break
@@ -132,14 +132,14 @@ class Parser:
             omit_next = matches_count ## Skip however many successful matches there were, so we don't re-test words confirmed to be part of a compound word.
             #print("omit_next: ", omit_next)
 
-        else:
+        #else:
             #print(f"Compound matches: {compound_match}")
             #print(f"Content: {compound_matches}")
-            test_print("More than one potential compound match, the system can't cope with that yet.", print_true=False)
+            #test_print("More than one potential compound match, the system can't cope with that yet.", print_true=False)
 
         return idx, word, kinds, canonical, potential_match, omit_next
 
-    def tokenise(input_str, nouns_list, locations, directions, membrane):
+    def tokenise(input_str, nouns_list, locations, directions, cardinals, membrane):
 
         current_location = get_current_loc()
         word_phrases = membrane.combined_wordphrases
@@ -161,7 +161,7 @@ class Parser:
         omit_next = 0
 
         #print("verbs.semantics: ", verbs.semantics)
-        initial = verbs.list_null_words | set(directions) | set(loc_options) | verbs.semantics
+        initial = verbs.list_null_words | set(directions) | set(loc_options) | verbs.semantics | cardinals
 
         #print(f"verbs.null words: {verbs.list_null_words}")
 
@@ -172,7 +172,7 @@ class Parser:
 
             #test_print(f"idx {idx}, word: {word}", print_true=True)
             if omit_next > 1:
-                print(f"Skipping word part {idx} because it is a part match for {canonical}")
+                #print(f"Skipping word part {idx} because it is a part match for {canonical}")
                 #print(f"Omit next: {omit_next}")
                 omit_next -= 1
                 continue
@@ -211,6 +211,10 @@ class Parser:
                         #print(f"canonical after word phrases: {canonical}")
                         #print(f"Word in else: {word}")
                         #print(f"directions: {directions}")
+                        if word in cardinals:
+                            kinds.add("cardinal")
+                            canonical = word
+
                         if word in directions:
                             kinds.add("direction")
                             canonical = word
@@ -256,13 +260,13 @@ class Parser:
                     tokens.append(Token(idx, word, kinds, canonical))
                     potential_match = True
                 else:
-                    print(f"Word going to check compound words: {word}")
+                    #print(f"Word going to check compound words: {word}")
                     #new_idx, word, kinds, canonical, potential_match, omit_next = Parser.check_compound_words(parts_dict = verbs.compound_words.items(), word=word, parts=parts, idx=idx, kinds=kinds, word_type = "noun", omit_next=omit_next)
                     #maybe new_idx is bad. Now with 'tv set', it correctly finds 'tv set', but then also finds 'set' as a verb when it should have been omitted.
                     idx, word, kinds, canonical, potential_match, omit_next = Parser.check_compound_words(parts_dict = compound_nouns, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "noun", omit_next=omit_next)
 
                     if canonical:
-                        print(f"CANONICAL: {canonical, idx}")
+                        #print(f"CANONICAL: {canonical, idx}")
                         tokens.append(Token(idx, word, kinds, canonical))
 
                     else:
@@ -315,7 +319,7 @@ class Parser:
     def get_viable_verb(token):
         word = token.text
         viable_instance = None
-        print(f"Word: {word}")
+        #print(f"Word: {word}")
         if verbs.by_name.get(word):
             viable_instance = (verbs.by_name.get(word)[0])
         else:
@@ -358,7 +362,6 @@ class Parser:
     def get_sequences_from_tokens(tokens) -> list:
         sequences = [[]]
         verb_instances = []
-        print(f"Tokens in get_sequences: {tokens}")
         for i, token in enumerate(tokens):
             options = Parser.token_role_options(token)
             if "verb" in options:
@@ -378,12 +381,12 @@ class Parser:
                         new_sequences.append(seq + [opt])
 
             sequences = new_sequences
-        test_print(f"Sequences: {sequences}", print_true=True)
+        #test_print(f"Sequences: {sequences}", print_true=True)
 
         if not verb_instances:
-            print("No verb_instance found in get_sequences_from_tokens. Exiting immediately.")
+            print("No verb_instance found in get_sequences_from_tokens. Returning None.")
             print(f"TOKENS: {tokens}")
-            exit()
+            return None, None
 
         #print(f"Verb instances: {verb_instance}")
         viable_sequences = []
@@ -392,7 +395,7 @@ class Parser:
                 for verb_entry in verb_instances:
                     for verb in verb_entry.values():
                         if tuple(seq) in verb.formats and seq not in viable_sequences:
-                            print(f"This sequence is compatible with verb_instance {verb.name}: {seq}")
+                            #print(f"This sequence is compatible with verb_instance {verb.name}: {seq}")
                             viable_sequences.append(seq)
 
         #if not viable_sequences:
@@ -440,7 +443,7 @@ class Parser:
                 #print(f"verb obj name: {verb_obj.name}")
                 #verb_token = [i for i in tokens if i.text == verb_name]
                 #print(f"Verb token: {verb_token}")
-                test_print(f"Winning format: {format_key}", print_true=True)
+                #test_print(f"Winning format: {format_key}", print_true=True)
                 return verb_obj, format_key ## currently returns once it has a single success. Again, works as long as there's only one verb. For now, is fine.
 
             else:
@@ -515,27 +518,28 @@ class Parser:
         nouns_list = membrane.nouns_list
         locations = membrane.locations
         directions = membrane.directions
+        cardinals = membrane.cardinals
 
-        tokens = self.tokenise(input_str, nouns_list, locations, directions, membrane)
+        tokens = self.tokenise(input_str, nouns_list, locations, directions, cardinals, membrane)
 
         #print(f"Tokens: {tokens}")
 
         sequences, verb_instances = self.get_sequences_from_tokens(tokens)
 
         if not sequences:
-            print(f"No viable sequences found for {input_str}. Exiting immediately.")
+            print(f"No viable sequences found for {input_str}.")
             clean_parts = []
             token_parts = [i.kind for i in tokens if i.kind != "null"]
             for parts in token_parts:
                 for part in parts:
                     if part != "null":
                         clean_parts.append(part)
-
                         break
 
-            print("\n  TOKEN PARTS:")
             print(" ".join(clean_parts))
-            exit()
+            return clean_parts, None
+
+            #TODO:  If no functional sequences, need to pick out parts that might be applicable to make reasonable guesses. Like if we have 'go'  and 'location', 'did you mean 'go to location', etc. Need a way to pause mid-parse, get confirmation then come back and run the sequencer again. Not today, but soon.
 
         token_count = len([i for i in tokens if i.kind != {"null"} and i.kind != set()])
 
@@ -570,6 +574,7 @@ def initialise_verbRegistry():
     verbs.adjectives = set(i.lower() for i in colours) | set(i.lower() for i in sizes)
     verbs.semantics = set(i for i in semantics)
     verbs.list_null_words = allowed_null
+    verbs.cardinals = set(("north", "south", "east", "west"))
 
     from itemRegistry import registry
 
@@ -591,8 +596,7 @@ def initialise_verbRegistry():
 
 
 if __name__ == "__main__":
-    initialise_verbRegistry()
-
+    initialise_all()
     test=True
     action_test=True
     if test:
@@ -613,7 +617,7 @@ if __name__ == "__main__":
             test_print(f"\nTEST STRING: `{test_str}`", print_true=True)
             from item_definitions import item_defs_dict
             items = list(item_defs_dict.keys())
-            viable_formats, dict_for_output = Parser.input_parser(Parser, test_str, items)
+            viable_formats, dict_for_output = Parser.input_parser(Parser, test_str)
 
             if action_test:
                 print("Initialising verb membrane: ")

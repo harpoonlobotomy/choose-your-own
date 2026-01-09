@@ -334,3 +334,142 @@ Added the location instances to the dict in membrane.
 realised I'm not using location instances basically anywhere. Need to. Would solve the damn 'a graveyard/graveyard' issue somewhat. Hell I can just have a place.a_name variant (and place.the_name if I'm feeling ostentatious) and do away with it hardcoded entirely. How nice would that be.
 
 I'm really sad. Probably not going to get muich else done today.
+
+
+10.10am 8/1/26
+
+Have the location instances plugged in. They work nicely now. And I was right yesterday, the a_name/the_name variants are lovely. Will still need  the 'switch_the' fn for some other things, but removing the 'a ' from the literal names and adding
+        self.a_name = "a " + name
+        self.the_name = "the " + name
+to the class means I can just set this:
+        slowWriting(f"You wake up in {assign_colour(loc.current.a_name, 'loc')}, right around {game.time}. You find have a bizarrely good sense of cardinal directions; how odd.")
+        slowWriting(f"`{game.playername}`, you think to yourself, `is it weird to be in {assign_colour(loc.current.the_name, 'loc')} at {game.time}, while it's {game.weather}?`")
+and have it work.
+
+I've basically replaced all instances of game.place with loc.current. 'loc.current' is self.current of placeRegistry, which holds all placeInstances keyed by name. So loc.current == the current place instance
+
+11.13am
+So I'm going to have to redo the main structure of the game, because it's so definitively geared around 'here are your discrete possible answers, here's the selection you made from those'.
+
+So I think I just need to rejig it, take old parts from the existing (all the copy text etc can be reused) and go with that.
+
+
+11.32am
+
+Input dict: {0: {'verb': {'instance': <verbRegistry.VerbInstance object at 0x000001CFF9B96900>, 'str_name': 'go'}}, 1: {'direction': {'instance': None, 'str_name': 'east'}}}
+
+I really need to make the location:cardinals instances too, nested under those locations.
+
+Not exactly sure how it'd work, and I need to be careful not to rule out cardinal travel (if at some point I want them to be alble to travel 'east', generally, instead of 'east {place}'). But generally it will work - you start by default in the graveyard, not facing any direction. So 'go east' should take you to the east-graveyard instance. And that can hold the location-items, instead of the primary location instance. Mm. Okay. Will think about it.
+
+Maybe 'if you're in a location, 'go east' == 'go east within this space if there is one'. Then at some other point if there's like, map-based travel, we just use alt contextual east. I think that works.
+
+3.27pm
+Have set up the location instances with cardinals. Happy with it for the moment.
+
+"locRegistry.by_cardinal("north").place_name" uses current location if no loc is given, and returns the location's cardinal instance's place_name.
+
+So when we're at the east graveyard, I can just use locRegistry.by_cardinal("east").place_name to have it print such, instead of manually having to fetch the cardinal data via dict. Also makes local items much easier. Wil need to update the itemRegistry accordingly, but that already needed a major overhaul so I'm okay with it.
+
+Still need to move cardinal_actions to the cardinals themselves and have to make sure I use the cardinals directly instead of locations, but I think it'll work. Have added self.place to cardinals, so the cardinal instance holds its association.  If the place we'r at is locRegistry.by_cardinal("east"), we can get the overall place inst back with locRegistry.by_cardinal("east").place
+
+locRegistry.set_current("graveyard")
+print(place_cardinals["east"].place_name)
+place = place_cardinals["east"].place
+print(place.name)
+
+==
+
+Set loc.current to graveyard
+east graveyard
+graveyard
+
+
+4.07pm
+decided to add 'cardinals' as a new kind-type, but just realised it means adding cardinals to each format. But that's probably not a bad idea really, a bit of a pain to do now but it makes sense.
+
+Maybe not 'cardinals' exclusively. Maybe something that encompasses 'left/right' etc instead. Something that differentiates from 'to/from/at' etc.
+
+Going to call it cardinals for now anyway. Can change it later.
+
+5.58pm
+[[  go east  ]]
+go east
+Tokens: [Token(idx=0, text='go', kind={'verb'}, canonical='go'), Token(idx=1, text='east', kind={'cardinal'}, canonical='east')]
+verb instance: <verbRegistry.VerbInstance object at 0x00000246DB106BA0>
+Name: go
+Sequences: [['verb', 'cardinal']]
+This sequence is compatible with verb_instance go: ['verb', 'cardinal']
+Winning format: ('verb', 'cardinal')
+dict_from_parser: {0: {'verb': {'instance': <verbRegistry.VerbInstance object at 0x00000246DB106BA0>, 'str_name': 'go'}}, 1: {'cardinal': {'instance': None, 'str_name': 'east'}}}
+kind: verb, entry: {'instance': <verbRegistry.VerbInstance object at 0x00000246DB106BA0>, 'str_name': 'go'}
+kind: cardinal, entry: {'instance': None, 'str_name': 'east'}
+Kind is cardinal: {'instance': None, 'str_name': 'east'}
+card_inst: <env_data.cardinalInstance object at 0x00000246DB093B60>
+kind: verb, entry: {'instance': <verbRegistry.VerbInstance object at 0x00000246DB106BA0>, 'str_name': 'go'}
+kind: cardinal, entry: {'instance': <env_data.cardinalInstance object at 0x00000246DB093B60>, 'str_name': 'east'}
+Input dict: {0: {'verb': {'instance': <verbRegistry.VerbInstance object at 0x00000246DB106BA0>, 'str_name': 'go'}}, 1: {'cardinal': {'instance': <env_data.cardinalInstance object at 0x00000246DB093B60>, 'str_name': 'east'}}}
+input_dict[1]: {'cardinal': {'instance': <env_data.cardinalInstance object at 0x00000246DB093B60>, 'str_name': 'east'}}
+Going to east graveyard
+kind: verb, entry: {'instance': <verbRegistry.VerbInstance object at 0x00000246DB106BA0>, 'str_name': 'go'}
+kind: cardinal, entry: {'instance': <env_data.cardinalInstance object at 0x00000246DB093B60>, 'str_name': 'east'}
+Input dict: {0: {'verb': {'instance': <verbRegistry.VerbInstance object at 0x00000246DB106BA0>, 'str_name': 'go'}}, 1: {'cardinal': {'instance': <env_data.cardinalInstance object at 0x00000246DB093B60>, 'str_name': 'east'}}}
+input_dict[1]: {'cardinal': {'instance': <env_data.cardinalInstance object at 0x00000246DB093B60>, 'str_name': 'east'}}
+Going to east graveyard
+
+
+Proud of this mess.
+
+
+6.56pm
+ Changed 'north' to 'north_desc' to make it clearer once it's added to the cardinals, but realised that's not actually that helpful either.
+ So maybe just change it when I'm adding it to the class? Idk.
+Or maybe I need to break up the dataset more, just make 'city hotel room' > north > short_desc/desc/actions.
+Would make more sense now I'm doing it the way I am. Might do that.
+
+9.06am
+didn't sleep again. Have updated the location dict (prev 'dataset') and updated cardinal instances to include the cardinal descriptions, which are now accessable from the place>instance.
+
+11.02am
+Yeah so membrane really shouldn't return anything unless it needs to be acted on in the 'story'. Actions should send their own calls, I don't need to add a network of other calls to it.
+
+I think I am going to do the player_movement and item_interactions scripts though, because a lot of those actions are currently done in the main script. I don't have a clear vision for this yet tbh, but I'm trying.
+
+main script holds the 'shape' of the thing, it's what actually 'plays'.
+membrane takes input and figures out what's what, and sends out the relevant calls to do whatever the text said.
+
+Originally it was all a pretty linear loop, and I'm just not sure what to replace that with, if that makes sense.
+
+11.50am
+Ah, now I see a reason why to separate the action-command from the action happening - I can't print the input the way I want to before the action happening at present, because the action-results are printing inside the functions. So there /is/ a reason to send the calls and /then/ respond. Okay.
+
+Will work on that later, though. Far too tired today to make sense of anything.
+
+But, it is working, to a degree:
+
+# Chosen: (look east)
+#
+# LOOK FUNCTION
+# You see a variety of headstones, most quite worn and decorated by clumps of moss. There's a glass jar being used as a vase in front of one of the headstones, dried  left long ago.
+#
+# [[  look east  ]]
+#
+# What do you want to do? Stay here and look around, or go elsewhere?
+# Chosen: (go to city hotel room)
+#
+# You're now facing north city hotel room
+# You're in a 'budget' hotel room; small but pleasant enough, at least to sleep in. The sound of traffic tells you you're a couple of floors up at least, and the carpet is well-trod
+#
+# [[  go to city hotel room  ]]
+#
+# What do you want to do? Stay here and look around, or go elsewhere?
+#
+The commands are being followed, even if there's not much actually happening. Proof of concept stage, at least.
+So the to-be new way -
+
+main game gives you things to respond to.
+You input, it sends it to membrane for parsing. Membane sends back 'here's what you need to do/say'. then... I guess the main game sends it out again? Idk. This is where I get lost. Maybe just too tired.
+
+
+### documents/testing_import_20_10_33.blend ###
+GLTF importer test file.

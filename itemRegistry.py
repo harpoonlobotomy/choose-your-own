@@ -306,11 +306,11 @@ class itemRegistry:
         #logging_fn()
         if self.by_name.get(definition_key):
             return self.by_name.get(definition_key)
-        else:
-            if definition_key is not "":
-                print(f"No instance in itemRegistry by the name: {definition_key}")
+        #else:
+            #if definition_key is not "":
+                #print(f"No instance in itemRegistry by the name: {definition_key}")
             #print(f"self.by_name: {self.by_name:}")
-        return # if self.by_name.get(definition_key) else None
+        #return # if self.by_name.get(definition_key) else None
 
     def instances_by_container(self, container:ItemInstance)->list:
         logging_fn()

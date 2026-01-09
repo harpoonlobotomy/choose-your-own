@@ -2,6 +2,8 @@
 ### Interface between item_actions and the verbs.
 
 import time
+from env_data import cardinalInstance
+from interactions import player_movement
 from itemRegistry import ItemInstance, registry
 from verb_definitions import directions, formats
 
@@ -26,7 +28,8 @@ flag_actions = {
     }
 
 
-in_words = ["in", "inside", "into", "within", "to"]
+in_words = ["in", "inside", "into"]#, "within", "to"]
+
 down_words = ["down"]
 
 
@@ -180,15 +183,18 @@ def get_elements(input_dict) -> tuple:
         return 4, three_parts_a_x_b(input_dict)
 
 
-##############################
+def inst_from_idx(dict_entry, kind_str):
 
+    return dict_entry[kind_str]["instance"]
+
+##############################
+#from interactions.player_movement import new_relocate
+            #new_relocate(details)
 # little bits, the finer end points that things resolve to.
 
 def turn_cardinal(prospective_cardinal):
-    print(f"prospective cardinal: {prospective_cardinal}. Type: {type(prospective_cardinal)}.")
     if isinstance(prospective_cardinal, dict):
         test = prospective_cardinal.get("cardinal")
-        print(f"Test: {test}")
         if test:
             prospective_cardinal = test.get("instance")
         else:
@@ -196,28 +202,21 @@ def turn_cardinal(prospective_cardinal):
             if test:
                 prospective_cardinal = test
 
-    print(f"prospective cardinal going to loc test: {prospective_cardinal}")
+    #print(f"prospective cardinal going to loc test: {prospective_cardinal}")
     bool_test, _, _ = is_loc_current_loc(None, prospective_cardinal)
     if not bool_test:
         turning_to = prospective_cardinal
-        print(f"turning_to: {turning_to}, type: {type(turning_to)}")
-        print(f"You turn to face the {turning_to.ern_p_name}")
-        return "new_cardinal", turning_to
+        #print(f"turning_to: {turning_to}, type: {type(turning_to)}") ## Shouldn't have this, should be able to use this function for just turning.
+        #print(f"You turn to the {turning_to.ern_name}")
+        player_movement.turn_around(turning_to)
+        #return "new_cardinal", turning_to
     else:
-        print(f"Prospective cardinal: {prospective_cardinal}")
-        print(f"Prospective cardinal.name: {prospective_cardinal.name}")
-        print(f"Already facing {prospective_cardinal.ern_p_name}.")
+        #print(f"Prospective cardinal: {prospective_cardinal}")
+        #print(f"Prospective cardinal.name: {prospective_cardinal.name}")
+        print(f"You're already already facing the {prospective_cardinal.ern_name}.")
+        print(prospective_cardinal.long_desc)
         return "no_change", None
 
-    """
-                    bool_test, current_location, current_cardinal = is_loc_current_loc(None, cardinal)
-                    if bool_test:
-                        print(f"You're already in the {current_card.place_name}")
-                    else:
-                        from env_data import locRegistry
-                        print(f"Going to {cardinal["instance"].place_name}")
-                        locRegistry.set_current()
-    """
 
 #######################
 #func(format_list, input_dict, location)
@@ -227,40 +226,40 @@ def turn_cardinal(prospective_cardinal):
 #
 
 
-
-def go(format_list, input_dict, location=None, new_cardinal=None):
+def go(format_list, input_dict, location=None, new_cardinal=None): ## move to a location/cardinal/inside
 
     current_loc, current_card = get_current_loc()
-    print(f"Input dict: {input_dict}")
-    if len(format_list) == 2:
-        print(f"input_dict[1]: {input_dict[1]}")
+    #print(f"Input dict: {input_dict}")
+    if "cardinal" in format_list and not "location" in format_list:
+    #if len(format_list) == 2: ## instead of format list lengths, I need to use the format list.
+        #print(f"input_dict[1]: {input_dict[1]}")
         #input_dict[1]: {'cardinal': {'instance': <env_data.cardinalInstance object at 0x0000017522843B60>, 'str_name': 'east'}}
         if input_dict[1].get("cardinal"):
             cardinal = input_dict[1].get("cardinal")
             if location == None:
-                return turn_cardinal(cardinal)
+                turn_cardinal(cardinal["instance"])
 
 
     if len(format_list) == 3:
         destination = None
-        turning_to = None
         if format_list[1] == "direction":
-            print(f"format_list1: {format_list[1]}")
             if input_dict[1]["direction"]["str_name"] == "to":
                 if format_list[2] == "location":
-                #if location:
                     if location and location != current_loc:
                         destination = location
                     else:
-                        print(input_dict[2])
                         destination = input_dict[2]["location"]["instance"]
                     if destination:
                         print(f"Leaving {current_loc} and going to {destination}")
-                        return "new_location", destination
+                        from interactions.player_movement import new_relocate
+                        new_relocate(new_location=destination)
 
-                if format_list[2] == "cardinal":
-                    return turn_cardinal(input_dict[2]["cardinal"]["instance"])
+                elif format_list[2] == "cardinal":
+                    turn_cardinal(input_dict[2]["cardinal"]["instance"])
 
+            elif input_dict[1]["direction"]["str_name"] in in_words:
+                print(f"Can {input_dict[1]["direction"]["str_name"]} be entered?")
+                print("This isn't done yet.")
 
         elif format_list[1] == "from":
             if location != current_loc():
@@ -274,19 +273,30 @@ def leave(format_list, input_dict, location):
 
 
 def look(format_list, input_dict, location):
+    print("LOOK FUNCTION")
 
-    if len(format_list) == 2:
-        if format_list[1] == "sem":
+    if format_list[1] == "sem":
+        if len(format_list) == 2:
             if input_dict[1]["sem"]["str_name"] == "around":
                 return "describe", "environment" ### This shouldn't return back to the main script. It should  return to membrane, which then gets the description and outputs it from itemRegistry.
 
+    elif format_list[1] == "noun" and len(format_list) == 2:
+        print(f"You look at the {list(input_dict.keys())[1]}")
+        return "describe", list(input_dict.keys())[1]
 
-        elif format_list[1] == "noun":
-            print(f"You look at the {list(input_dict.keys())[1]}")
-            return "describe", list(input_dict.keys())[1]
+    elif format_list[1] == "cardinal" and len(format_list) == 2:
+        inst = inst_from_idx(input_dict[1], "cardinal")
+        turn_cardinal(inst)
 
-        else:
-            print(f"format list len 2, no idea what's happening: {format_list}, input_dict")
+    elif len(format_list) == 3:
+        print(f"INPUT DICT: {input_dict}")
+        if format_list[2] == "noun" and format_list[1] == "direction":
+            print("input_dict[2]", input_dict[2])
+            print(f"You look at the {input_dict[2]["noun"]["instance"]}")
+            return "describe", input_dict[2]["noun"]["instance"]
+
+    else:
+        print(f"format list len 2, no idea what's happening: {format_list}, input_dict")
 
 
 def read(format_list, input_dict, location):
@@ -412,6 +422,10 @@ def combine_and_separate(format_list, input_dict, location):
     print(f"length of format list: {len(format_list)}")
 
 def move(format_list, input_dict, location):
+    if location: # so if it's 'move to graveyard', it just treats it as 'go to'.
+        go(format_list, input_dict, location)
+        return
+
     print("move FUNCTION")
     # verb_noun = move item (to where? maybe context.)
     # verb_noun_dir = move item left, move item away
@@ -424,12 +438,13 @@ def turn(format_list, input_dict, location):
     if location:
         current_location, current_turning = current_location()
         if location != current_location:
-            print("Can only turn where you already are.")
-    cardinal_index = format_list.index("cardinal")
-    new_cardinal = input_dict[cardinal_index]
-    new_cardinal = new_cardinal["cardinal"]["instance"]
+            print(f"You're not at {location.the_name}; you can only turn where you already are.")
+            return
 
-    return "new_cardinal", new_cardinal
+    cardinal_inst = inst_from_idx(input_dict[format_list.index("cardinal")], "cardinal")
+
+    turn_cardinal(cardinal_inst)
+    #return "new_cardinal", new_cardinal
 
 def take(format_list, input_dict, location):
     print("take FUNCTION")
@@ -439,6 +454,7 @@ def take(format_list, input_dict, location):
     # verb_noun_dir_noun == take ball from bag
     # verb_noun_dir_noun_dir_loc == take ball from bag at location (if loc == cur_loc)
     pass
+
 def pick_up(format_list, input_dict, location): # should be 'take'
 
     object_inst = None
@@ -565,7 +581,7 @@ def router(viable_formats, inst_dict):
 
     for data in inst_dict.values():
         for kind, entry in data.items():
-            print(f"kind: {kind}, entry: {entry}")
+            #print(f"kind: {kind}, entry: {entry}")
             #kinds.append(kind)
             if kind == "verb":
                 verb_inst = entry["instance"]
@@ -679,29 +695,15 @@ def router(viable_formats, inst_dict):
     #else:
     func = function_dict[verb_inst.name]
 
-    #noun_counter = viable_formats[0].count("noun")
-    #if noun_counter:
-    #    for i, word_type in enumerate(viable_formats[0]):
-    #        #print(f"inst_dict: {inst_dict}")
-    #        if word_type == "noun":
-    #            print(f"NOUN INDEX: {i} [[{inst_dict[i].values()}]]")
-    #        #print(inst_dict[noun_index].values())
-
-
     response = func(format_list = viable_formats[0], input_dict = inst_dict, location = location)
-    #func(format_list, input_dict, location)
-#from item_definitions import item_actions
-#for item in item_actions:
-    #print(f'"{item}": "",')
-    #print(verb_name, verb_inst, reformed_dict)
 
-    print("Leaving router.")
+    #print("Leaving router.")
     quick_list = []
     for v in inst_dict.values():
         for data in v.values():
             quick_list.append(data["str_name"])
 
-    print(f'\n\033[1;32m[[  {" ".join(quick_list)}  ]]\033[0m')
+    print(f'\n\033[1;32m[[  {" ".join(quick_list)}  ]]\033[0m\n')
     return response
     #time.sleep(.5)
 

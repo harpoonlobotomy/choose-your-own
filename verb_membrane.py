@@ -15,7 +15,7 @@
 # Checks the nouns are viable for the verb.
 # Then sends the format and dict onward to verb_actions.
 
-from itemRegistry import registry
+from itemRegistry import ItemInstance, registry
 
 movable_objects = ["put", "take", "combine", "separate", "throw", "push", "drop", "set", "move"]
 
@@ -46,12 +46,44 @@ combine_parts = {("put", "into"), ("add", "to") # thinking about this for more s
 
    #exit()
 
+######## The supplement membrane bit that sends out the calls externally.
+
+def send_calls(response): # probably ditching this. Was an interesting idea maybe, but I'm not sure there's any point. I can fix the input-print elsewhere. (I think.)
+
+    response_dict = {
+        "describe": ["describe", "look"],
+        "player_moved": ["new_cardinal", "new_location"],
+        "nothing": ["no_change", "no change"]
+    }
+
+    #print(f"RESPONSE:: {response}")
+
+    if response:
+
+        call, details = response
+        if call in response_dict["nothing"]:
+            print("Nothing.")
+        if call in response_dict["describe"]:
+            if details == "environment": # This could be done inside the look function so easily... Why does this exist here...?
+                # Maybe we keep this for things tha do something other than print...
+                from env_data import locRegistry as loc
+                #print(loc.current.description)
+                print(loc.current.overview)
+            elif isinstance(details, ItemInstance):
+                from interactions.item_interactions import look_at
+                look_at(response)
+
+
+##### The main membrane bit that figures it out ########
+
 def get_noun_instances(dict_from_parser, viable_formats):
 
     def check_noun_actions(noun_inst, verb_inst):
 
-        #print(f"Verb inst name: {verb_inst.name}")
-        #print(f"noun inst actions: {noun_inst.verb_actions}")
+        print(f"Verb inst name: {verb_inst.name}")
+        print(f"noun inst actions: {noun_inst.verb_actions}")
+        if verb_inst.name == "look": # always pass 'look'
+            return noun_inst.name
         for action in noun_inst.verb_actions:
             if flag_actions.get(action):
                 if verb_inst.name in flag_actions[action]:
@@ -65,7 +97,7 @@ def get_noun_instances(dict_from_parser, viable_formats):
         if not data.get("location"):
             loc_inst = locRegistry.current
             card_inst = locRegistry.cardinals[loc_inst][entry["str_name"]]
-            print(f"card_inst: {card_inst}")
+            #print(f"card_inst: {card_inst}")
         else:
             print("Oops. You gave a location I'm not currently at, I can't deal.")
             exit()
@@ -95,7 +127,6 @@ def get_noun_instances(dict_from_parser, viable_formats):
 
         for idx, data in dict_from_parser.items():
             for kind, entry in data.items():
-                #  dict_from_registry[i]={item: {"instance":verb, "str_name":item_name}}
 
                 #print(f"GET NOUN INSTANCES::: Kind: {kind}, entry: {entry}")
                 if kind == "noun":
@@ -103,7 +134,7 @@ def get_noun_instances(dict_from_parser, viable_formats):
                     noun_inst = registry.instances_by_name(name)
                     if not noun_inst:
                         suitable_nouns -= 10
-                        #print(f"No found ItemInstance for {entry}")
+                        print(f"No found ItemInstance for {entry}")
                     else:
                         #print(f"Noun inst: {noun_inst}")
                         noun_name = check_noun_actions(noun_inst[0], verb)
@@ -111,7 +142,7 @@ def get_noun_instances(dict_from_parser, viable_formats):
                             dict_from_parser[idx][kind] = ({"instance": noun_inst[0], "str_name": name})
                             suitable_nouns += 1
                         else:
-                            #print(f"You can't {verb.name} the {entry}")
+                            print(f"You can't {verb.name} the {entry}")
                             suitable_nouns -= 10
 
                 elif kind == "location":
@@ -157,8 +188,8 @@ class Membrane:
         self.nouns_list = list(item_defs_dict.keys()) ## prev. 'nouns_list'
         #self.item_action_options = item_actions ### Is this ever used? I think only for get_item_actions in itemregistry, not here. Use the instance flags instead, that's what they're for.
 
-        from env_data import dataset
-        self.locations = list(dataset.keys())
+        from env_data import loc_dict
+        self.locations = list(loc_dict.keys())
         from itemRegistry import registry
 
         self.plural_words_dict = registry.plural_words
@@ -199,21 +230,29 @@ test_input_list = ["take the paperclip", "pick up the glass jar", "put the paper
 
 def run_membrane(input_str=None):
 
-    if input_str == None:
-        input_str = input()
+    #while input_str != "quit":
+        if input_str == None:
+            input_str = input()
 
-    from verbRegistry import Parser
-    viable_formats, dict_from_parser = Parser.input_parser(Parser, input_str)
+        from verbRegistry import Parser
+        viable_formats, dict_from_parser = Parser.input_parser(Parser, input_str)
 
-    inst_dict = get_noun_instances(dict_from_parser, viable_formats)
+        inst_dict = get_noun_instances(dict_from_parser, viable_formats)
 
-    if inst_dict:
-        from verb_actions import router
-        #print(f"inst_dict going to router: {inst_dict}")
-        #exit()
-        response = router(viable_formats, inst_dict)
-        return response
+        if inst_dict:
+            from verb_actions import router
+            #print(f"inst_dict going to router: {inst_dict}")
+            #exit()
+            response = router(viable_formats, inst_dict)
 
+            send_calls(response)
+            ## Move list of key response terms to here from def option()
+            # Then this can do the initial directions, and just let it continue back accordingly.
+
+            # I really need to figure out the 'baseline' that it returns to when an action is completed. Currently it's in a constant state of falling, there's no resting state.
+
+            return response
+    #exit()
 
 #membrane, membrane_data = initialise_membrane()
 

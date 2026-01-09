@@ -87,7 +87,7 @@ loc_dict = {
                 "actions": leave_options,
                 },
             "east": {"short_desc": "a variety of headstones",
-                "long_desc": "You see a variety of headstones, most quite worn and decorated by clumps of moss. There's a glass jar being used as a vase in front of one of the headstones, dried  left long ago.", # details here depending on weather. if raining, the dried flowers are saturated and heavy. If sunny, they're crispy, etc. Not close to implementing that yet.
+                "long_desc": "You see a variety of headstones, most quite worn and decorated by clumps of moss. There's a glass jar being used as a vase in front of one of the headstones, with dried flowers left long ago.", # details here depending on weather. if raining, the dried flowers are saturated and heavy. If sunny, they're crispy, etc. Not close to implementing that yet.
                 "weird": None,
                 "east_actions": None,
                 },
@@ -156,7 +156,7 @@ class cardinalInstance:
     def __init__(self, cardinal, loc):
         self.name = cardinal# + " " + place.name # eg "east graveyard"
         self.place_name = cardinal + " " + loc.name # eg "east graveyard"        },
-        self.ern_p_name = cardinal + "ern " + loc.name # eg "east graveyard"
+        self.ern_name = cardinal + "ern " + loc.name # eg "east graveyard"
         self.place = loc
         self.short_desc = loc_dict[loc.name][cardinal].get("short_desc")
         self.long_desc = loc_dict[loc.name][cardinal].get("long_desc")
@@ -234,9 +234,9 @@ class placeRegistry:
                     self.current = loc
 
             if isinstance(loc, placeInstance): # this should run after the previous, no? Though the previous should never actually run, it should always be a placeInstance.
-                print(f"loc.name: {loc.name}")
+                #print(f"loc.name: {loc.name}")
                 self.current = loc
-                print("self.current: ", self.current)
+                #print("self.current: ", self.current)
             self.route.append(loc)
             #print(f"Set loc.current to {loc.name}")
 
