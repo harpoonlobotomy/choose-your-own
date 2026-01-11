@@ -2,11 +2,27 @@
 from time import sleep
 import uuid
 
-from initialise_all import initialise_all
+from env_data import cardinalInstance
 from logger import logging_fn
+from env_data import locRegistry as loc
 
 print("Item registry is being run right now.")
 sleep(.5)
+
+
+def get_card_inst_from_strings(self, inst, location):
+    from env_data import locRegistry as loc
+    if not isinstance(location, cardinalInstance):
+        location_str, card_str = next(iter(location.items())) # strings from dict
+        place = loc.place_by_name(location_str)
+        cardinal_inst = loc.by_cardinal(cardinal_str=card_str, loc=place)
+    else:
+        cardinal_inst = location
+    print(f"Cardinal_inst: {cardinal_inst}")
+    print(f"Cardinal_inst.name: {cardinal_inst.name}")
+    #self.by_location.setdefault(location, {}).setdefault(cardinal, set()).add(inst)
+    registry.by_location_inst[cardinal_inst] = inst
+    return inst
 
 class ItemInstance:
     """
@@ -20,10 +36,18 @@ class ItemInstance:
         self.nicename=attr["name"]
         self.description = attr["description"]
         self.starting_location = attr.get("starting_location")  # switching over to make this the 'discovered at' attr.
-        self.location = (attr.get("starting_location") if attr.get("starting_location") != None and not attr.get("contained_in") else None)  # starting location or None -- always none if 'contained_in'.
         self.colour = None
         self.verb_actions = set()
+        self.in_container = False
+        self.in_inventory = False
+        self.location = None
 
+        if attr.get("starting_location" and attr.get("starting_location") != None and not attr.get("contained_in")):
+            from env_data import locRegistry as loc
+            cardinal_str, location_str = attr.get("starting_location")
+            cardinal_inst = loc.by_cardinal(cardinal_str=cardinal_str, loc=place)
+
+        self.location = (attr.get("starting_location") if attr.get("starting_location") != None and not attr.get("contained_in") else None)  # starting location or None -- always none if 'contained_in'.
 ### FLAGS ###
  #     INITIAL FLAG MANAGEMENT
 
@@ -95,13 +119,15 @@ class itemRegistry:
         #sleep(1)
 
         self.instances = {}      # id -> ItemInstance
-        self.by_location = {}    # (place, direction) -> set of instance IDs
+
+        self.by_location_inst = {}  # (cardinalInstance) -> set of instance IDs
         self.by_name = {}        # definition_key -> set of instance IDs
         self.by_category = {}        # category (loot value) -> set of instance IDs
         self.by_container = {}
         self.inst_to_names_dict = {}
         self.is_container = bool(True) ## This must be wrong. idk. I tried something else earlier and it didn't work.
         self.plural_words = {}
+
     # -------------------------
     # Creation / deletion
     # -------------------------
@@ -123,7 +149,6 @@ class itemRegistry:
 
         inst = ItemInstance(definition_key, container_data, attr.get("item_size"), attr)#nicename, primary_category, is_container, can_pick_up, description, location, contained_in, item_size, container_data)
         self.instances[inst.id] = inst
-
         self.attributes = attr
 
         loot_type = attr.get("loot_type")
@@ -153,14 +178,16 @@ class itemRegistry:
                         if not inst in self.instances_by_container(prospective_parent):
                             inst.contained_in = prospective_parent
                             self.by_container[prospective_parent].add(inst)
+                            inst.in_container = True
                         else:
                             continue # if already there, try another prospective parent. Don't know if this'll work on not yet.
+
 
         # Index by location ## Do this at the end, so can check container status - if in a container, don't add it to the location. Let it be in the container exclusively.
         if location:
             if not hasattr(inst, "contained_in") or inst.contained_in == None:
-                location, cardinal = next(iter(location.items()))
-                self.by_location.setdefault(location, {}).setdefault(cardinal, set()).add(inst)
+                self.by_location_inst.setdefault(inst, set()).add(get_card_inst_from_strings(registry, inst, location))
+    ## above is wrong, need to rewrite. Too braindead today.
 
         # Index by name
         self.by_name.setdefault(definition_key, list()).append(inst)
@@ -175,46 +202,89 @@ class itemRegistry:
             return
 
         # remove from location index
-        if inst.location and inst.location in self.by_location:
-            self.by_location[inst.location].discard(inst)
-            if not self.by_location[inst.location]:
-                del self.by_location[inst.location]
+        if inst.location and inst.location in self.by_location_inst:
+            self.by_location_inst[inst.location].discard(inst)
+           # if not self.by_location_inst[inst.location]:
+           #     del self.by_location_inst[inst.location]
 
         # remove from name index
         self.by_name.get(inst.definition_key, set()).discard(inst)
 
+
+    def check_item_is_accessible(self, inst:ItemInstance):
+
+        from misc_utilities import is_item_in_container
+        # func to check that an item to be picked up is actually eligible to be picked up #
+        container = None
+
+        def run_check(inst):
+            confirmed_inst = None
+            container, inst = is_item_in_container(inst)
+            if container:
+                if container.is_locked or container.is_closed:
+                    print(f"Container {container} is locked.")
+                    print(f"Container.name {container.name}")
+                else:
+                    confirmed_inst = inst
+
+            else:
+                inst_list = self.get_item_by_location(loc.current_cardinal)
+                if inst_list:
+                    print(f"Inst list: {inst_list}")
+                    if isinstance(inst_list, list):
+                        if inst in inst_list:
+                            confirmed_inst = inst
+                    else:
+                        confirmed_inst = inst
+
+            return confirmed_inst
+
+        if not isinstance(inst, ItemInstance):
+            if isinstance(inst, str):
+                named_instances = self.instances_by_name(inst)
+                for item in named_instances:
+                    confirmed_inst = run_check(item)
+                    if confirmed_inst != None:
+                        return confirmed_inst
+
+
+        if isinstance(inst, ItemInstance):
+            confirmed_inst = run_check(inst)
+            if confirmed_inst != None:
+                return confirmed_inst
+        print(f"Could not find confirmed instance for {inst.name}")
+
+
+
+
+
+
     # -------------------------
     # Movement
     # -------------------------
-    def move_item(self, inst:ItemInstance, place:str=None, direction:str=None, new_container:ItemInstance=None, old_container:ItemInstance=None)->list:
+    def move_item(self, inst:ItemInstance, location:cardinalInstance=None, new_container:ItemInstance=None, old_container:ItemInstance=None)->list:
         logging_fn()
 
         ## REMOVE FROM ORIGINAL LOCATION ##
 
         old_loc = inst.location
-        if old_loc:
-            location, cardinal = next(iter(old_loc.items()))
-            if location in self.by_location:
-                if cardinal in self.by_location.get(location):
-                    self.by_location[location][cardinal].discard(inst)
-
-                 #   if not self.by_location[location][cardinal]: ## I really don't like this. It's going to break searches instead of just returning none.
-                 #       del self.by_location[location][cardinal]
+        if old_loc and old_loc != None:
+            if self.by_location_inst.get(old_loc):
+                self.by_location_inst[location].discard(inst)
 
         ## MOVE TO NEW LOCATION IF PROVIDED
 
-        if place != None and direction != None:
-            new_location = {place: direction} if place and direction else None
+        if location != None:
+            new_location = {location}
             inst.location = new_location
 
             if new_location:
-                if not self.by_location.get(place):
-                    temp_place = place.replace("a ", "")
-                    if self.by_location.get(temp_place):
-                        place = temp_place
-                    if not self.by_location.get(place):
-                        self.by_location.setdefault(place, {})
-                self.by_location[place].setdefault(direction, set()).add(inst)
+                if not self.by_location_inst.get(location):
+                    if self.by_location_inst.get(location):
+                        location = location
+                    if not self.by_location_inst.get(location):
+                        self.by_location_inst[location] = set()
+                self.by_location_inst[location].add(inst)
 
         if old_container or new_container:
             return_text = []
@@ -241,9 +311,6 @@ class itemRegistry:
   #                  self.by_container[new_container].add(child) ## Wait no. They should stay in their current container, iths the container itself being moved. So they stay in a container. It makes it recursive to potentially infinity without checks. Need to rework this but just testing as-is.
   # ## I don't know ## these all get moved separately because child items are shown separately in the location list. If this changes and you only see the contents when they're separated or being investigated, then these should no longer be moved with their parent.
 
-        ### TODO:: Use this for location descriptions/items. Currently it's all manual, but I should be able to do a version that takes the listed items and presents them automatically.
-
-        ## I want to add a 'picked up from'. Not implemented yet though.
 
     def move_from_container_to_inv(self, inst:ItemInstance, inventory:list, parent:ItemInstance=None) -> tuple[list,list]:
         logging_fn()
@@ -262,55 +329,17 @@ class itemRegistry:
         return self.instances.get(inst_id)
 
 
-    def instances_by_location(self, place:str, direction:str)->list:
+    def get_item_by_location(self, loc_cardinal)->list:
         logging_fn()
 
-        instance_list = []
-        from env_data import placeInstance
-        if isinstance(place, placeInstance):# for now just make it string. Later will change by_location to use the instance.
-            place = place.name
-
-        location = self.by_location.get(place)
-        if place.startswith("a "):
-            no_a_place = place.split("a ")[1]
-            location = self.by_location.get(no_a_place)
-            if location:
-                place = no_a_place
-
-            else:
-                a_place = "a " + place
-                #print(f"a place: {a_place}")
-                location = self.by_location.get(a_place)
-                #print(f"location: {location}")
-                if location:
-                    place = a_place
-        #print(f"places: {self.by_location}")
-        #print(f"place: {place}")
-        if direction != "all":
-            if self.by_location[place].get(direction): # check if the direction has been established yet.
-                instance_list:list = [i for i in self.by_location[place].get(direction)] # if so, check if there are items there.
-                #if instance_list:
-                    #print(f"Instance list: {instance_list}")
-                    #sleep(1)
-                return instance_list
-        else:
-            compiled_list = []
-            for direction in ["north", "east", "south", "west"]:
-                if self.by_location[place].get(direction):
-                    instance_list:list = [i for i in self.by_location[place].get(direction)] # if so, check if there are items there.
-                    if instance_list:
-                        compiled_list += instance_list
-            return compiled_list
+        items_at_cardinal = self.by_location_inst.get(loc_cardinal)
+        if items_at_cardinal:
+            return items_at_cardinal
 
     def instances_by_name(self, definition_key:str)->list:
         #logging_fn()
         if self.by_name.get(definition_key):
             return self.by_name.get(definition_key)
-        #else:
-            #if definition_key is not "":
-                #print(f"No instance in itemRegistry by the name: {definition_key}")
-            #print(f"self.by_name: {self.by_name:}")
-        #return # if self.by_name.get(definition_key) else None
 
     def instances_by_container(self, container:ItemInstance)->list:
         logging_fn()
@@ -414,7 +443,7 @@ class itemRegistry:
 
         return inst.name
 
-    def pick_up(self, inst:str|ItemInstance, inventory_list, place=None, direction=None) -> tuple[ItemInstance, list]:
+    def pick_up(self, inst:str|ItemInstance, inventory_list=None, location=loc.current, starting_objects=False) -> tuple[ItemInstance, list]: ## location == cardinalInstance
         logging_fn()
 
         if isinstance(inst, set) or isinstance(inst, list):
@@ -422,10 +451,11 @@ class itemRegistry:
 
         if not isinstance(inst, ItemInstance):
             item_list = self.instances_by_name(inst)
-            if item_list and place != None:
-                local_items = self.instances_by_location(place, direction)
+            if item_list and location != loc.current:
+                local_items = self.get_item_by_location(location)
+                print(f"Local items(item): {local_items}")
                 for item in item_list:
-                    if item in local_items:
+                    if item in local_items or starting_objects: # hardcode 'allow starting objects regardless'.
                         inst = item
                         break
             else:
@@ -436,10 +466,12 @@ class itemRegistry:
         if not inst:
             print("Failed to find inst in pick_up.")
 
-        if not "can_pick_up" in inst.flags:
+        if not starting_objects and not hasattr(inst, "can_pick_up"):
+            print(f"[[Cannot pick up {inst.name} (according to inst.flags)]]")
+            print(f"inst.flags: {inst.flags}")
             return None, inventory_list
 
-        if inst in inventory_list:
+        if inst in inventory_list: ## TODO: Add a check so this only applies to items that can be duplicated. Though really those that can't should not still remain in the world when picked up... so the problem lies in the original pick up in that case, not the dupe.
             #print("Item already in inventory. Creating new...") ## Not sure about this.
             from item_definitions import get_item_defs
             attr = get_item_defs(inst.name)
@@ -448,7 +480,7 @@ class itemRegistry:
         self.move_item(inst)
         inventory_list.append(inst)
 
-        self.starting_location = {place:direction} # just temporarily, not in use yet. Needs formalising how it's going to work.
+        self.starting_location = {location} # just temporarily, not in use yet. Needs formalising how it's going to work.
 
         return inst, inventory_list
 
@@ -577,7 +609,7 @@ class itemRegistry:
         from misc_utilities import cardinal_cols
         for placeInstance in loc.places:
             for direction in list(cardinal_cols.keys()):
-                self.by_location.setdefault(placeInstance, {}).setdefault(direction, set())
+                self.by_location_inst.setdefault(placeInstance, {}).setdefault(direction, set())
 
 
     def get_action_flags_from_name(self, name):
@@ -627,6 +659,3 @@ def initialise_itemRegistry():
 
     registry.add_plural_words(plural_word_dict)
 
-if __name__ == "__main__":
-
-    initialise_itemRegistry()

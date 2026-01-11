@@ -2,9 +2,13 @@
 ### Interface between item_actions and the verbs.
 
 import time
-from env_data import cardinalInstance
-from interactions import player_movement
+from choose_a_path_tui_vers import item_interaction
+from env_data import cardinalInstance, locRegistry as loc
+from interactions import item_interactions
+from interactions.player_movement import new_relocate, turn_around
 from itemRegistry import ItemInstance, registry
+from misc_utilities import generate_clean_inventory
+from set_up_game import game
 from verb_definitions import directions, formats
 
 movable_objects = ["put", "take", "combine", "separate", "throw", "push", "drop", "set", "move"]
@@ -28,8 +32,8 @@ flag_actions = {
     }
 
 
-in_words = ["in", "inside", "into"]#, "within", "to"]
-
+in_words = ["in", "inside", "into"]
+to_words = ["to", "towards", "at"] ## these two (< + ^) are v similar but have some exclusive uses, so keeping them separately makes sense here.
 down_words = ["down"]
 
 
@@ -118,12 +122,47 @@ def check_lock_open_state(noun_inst, check_open = True, check_locked=True):
 
     return is_open, is_locked
 
+def get_entries_from_dict(input_dict):
+
+    direction_entry = None
+    cardinal_entry = None
+    location_entry = None
+    semantic_entry = None
+
+    #get the values from the dict for location+cardinal right at the start.
+
+    for idx in input_dict.values():
+        for kind, entry in idx.items():
+            if kind == "direction":
+                if direction_entry != None:
+                    print(f"More than one `direction`: {direction_entry} already exists, {entry} will be ignored.")
+                    continue
+                direction_entry = entry
+
+            if kind == "cardinal":
+                if cardinal_entry != None:
+                    print(f"More than one `cardinal`: {direction_entry} already exists, {entry} will be ignored.")
+                    continue
+                cardinal_entry = entry
+
+            if kind == "location":
+                if location_entry != None:
+                    print(f"More than one `location`: {direction_entry} already exists, {entry} will be ignored.")
+                    continue
+                location_entry = entry
+            if kind == "sem":
+                if semantic_entry != None:
+                    print(f"More than one `sem`: {direction_entry} already exists, {entry} will be ignored.")
+                    continue
+                semantic_entry = entry
+
+    return direction_entry, cardinal_entry, location_entry, semantic_entry
 
 """
 okay so something like this:
 
-    if len(format_list) == 2:
-        if format_list == tuple(("verb", "location")):
+    if len(format_tuple) == 2:
+        if format_tuple == tuple(("verb", "location")):
 to disperse parts around within functions. So if '
 
 Maybe it returns an int, and that int is what drives the per-function expansion. I think that works. Avoid counting lengths over and over etc. Going to import the formats dict values from verb_definitions and use that.
@@ -183,7 +222,9 @@ def get_elements(input_dict) -> tuple:
         return 4, three_parts_a_x_b(input_dict)
 
 
-def inst_from_idx(dict_entry, kind_str):
+def inst_from_idx(dict_entry, kind_str, return_str=False):
+    if return_str:
+        return dict_entry[kind_str]["str_name"]
 
     return dict_entry[kind_str]["instance"]
 
@@ -192,7 +233,8 @@ def inst_from_idx(dict_entry, kind_str):
             #new_relocate(details)
 # little bits, the finer end points that things resolve to.
 
-def turn_cardinal(prospective_cardinal):
+def turn_cardinal(prospective_cardinal, turning = True):
+
     if isinstance(prospective_cardinal, dict):
         test = prospective_cardinal.get("cardinal")
         if test:
@@ -202,111 +244,126 @@ def turn_cardinal(prospective_cardinal):
             if test:
                 prospective_cardinal = test
 
+    if isinstance(prospective_cardinal, str):
+        prospective_cardinal = loc.by_cardinal(prospective_cardinal)
+
     #print(f"prospective cardinal going to loc test: {prospective_cardinal}")
     bool_test, _, _ = is_loc_current_loc(None, prospective_cardinal)
     if not bool_test:
         turning_to = prospective_cardinal
         #print(f"turning_to: {turning_to}, type: {type(turning_to)}") ## Shouldn't have this, should be able to use this function for just turning.
         #print(f"You turn to the {turning_to.ern_name}")
-        player_movement.turn_around(turning_to)
+        turn_around(turning_to)
         #return "new_cardinal", turning_to
     else:
         #print(f"Prospective cardinal: {prospective_cardinal}")
         #print(f"Prospective cardinal.name: {prospective_cardinal.name}")
-        print(f"You're already already facing the {prospective_cardinal.ern_name}.")
+        if turning:
+            print(f"You're already already facing the {prospective_cardinal.ern_name}.")
         print(prospective_cardinal.long_desc)
         return "no_change", None
 
 
 #######################
-#func(format_list, input_dict, location)
+#func(format_tuple, input_dict, location)
 
-#def sample(format_list, input_dict, location):
+#def sample(format_tuple, input_dict):
 #    pass
 #
+def meta(format_tuple, input_dict):
+    print("meta function in verb_actions")
+    generate_clean_inventory(will_print=True, coloured=True)
+    print("Doesn't actually do anything yet, but should be a way to route inventory-type commands when user_input isn't in use.") ## it's hacky, but works, I think.
 
-
-def go(format_list, input_dict, location=None, new_cardinal=None): ## move to a location/cardinal/inside
+def go(format_tuple, input_dict): ## move to a location/cardinal/inside
 
     current_loc, current_card = get_current_loc()
-    #print(f"Input dict: {input_dict}")
-    if "cardinal" in format_list and not "location" in format_list:
-    #if len(format_list) == 2: ## instead of format list lengths, I need to use the format list.
-        #print(f"input_dict[1]: {input_dict[1]}")
-        #input_dict[1]: {'cardinal': {'instance': <env_data.cardinalInstance object at 0x0000017522843B60>, 'str_name': 'east'}}
-        if input_dict[1].get("cardinal"):
-            cardinal = input_dict[1].get("cardinal")
-            if location == None:
-                turn_cardinal(cardinal["instance"])
+
+    direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
+
+    if (direction_entry and direction_entry["str_name"] in to_words and len(format_tuple) < 5) or (not direction_entry and len(format_tuple) < 4):
+        if location_entry and not cardinal_entry:
+            new_relocate(new_location=location_entry["instance"])
+
+        elif cardinal_entry and not location_entry:
+            turn_cardinal(cardinal_entry["instance"])
+
+        else:
+            new_relocate(new_location=location_entry["instance"], new_cardinal = cardinal_entry["instance"])
 
 
-    if len(format_list) == 3:
-        destination = None
-        if format_list[1] == "direction":
-            if input_dict[1]["direction"]["str_name"] == "to":
-                if format_list[2] == "location":
-                    if location and location != current_loc:
-                        destination = location
-                    else:
-                        destination = input_dict[2]["location"]["instance"]
-                    if destination:
-                        print(f"Leaving {current_loc} and going to {destination}")
-                        from interactions.player_movement import new_relocate
-                        new_relocate(new_location=destination)
 
-                elif format_list[2] == "cardinal":
-                    turn_cardinal(input_dict[2]["cardinal"]["instance"])
+    elif input_dict[1]["direction"]["str_name"] in in_words:
+        print(f"Can {input_dict[1]["direction"]["str_name"]} be entered?")
+        print("This isn't done yet.")
 
-            elif input_dict[1]["direction"]["str_name"] in in_words:
-                print(f"Can {input_dict[1]["direction"]["str_name"]} be entered?")
-                print("This isn't done yet.")
+    elif format_tuple[1] == "from":
+        if location_entry and location_entry["instance"] != current_loc():
+            print("Cannot leave a place you are not in.")
 
-        elif format_list[1] == "from":
-            if location != current_loc():
-                print("Cannot leave a place you are not in.")
 
-def leave(format_list, input_dict, location):
+def leave(format_tuple, input_dict):
     #verb_only, verb_loc = go
     # verb_noun_dir_noun = movw item to container/surface
     print("LEAVE FUNCTION")
     pass
 
 
-def look(format_list, input_dict, location):
+def look(format_tuple, input_dict):
     print("LOOK FUNCTION")
 
-    if format_list[1] == "sem":
-        if len(format_list) == 2:
-            if input_dict[1]["sem"]["str_name"] == "around":
-                return "describe", "environment" ### This shouldn't return back to the main script. It should  return to membrane, which then gets the description and outputs it from itemRegistry.
+    direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
 
-    elif format_list[1] == "noun" and len(format_list) == 2:
-        print(f"You look at the {list(input_dict.keys())[1]}")
-        return "describe", list(input_dict.keys())[1]
+    if len(format_tuple) == 2:
+        if semantic_entry != None and input_dict[1]["sem"]["str_name"] == "around":
+            print(loc.current.overview)
+            print(f"You're facing {loc.current_cardinal.name}. {loc.current_cardinal.long_desc}")
 
-    elif format_list[1] == "cardinal" and len(format_list) == 2:
-        inst = inst_from_idx(input_dict[1], "cardinal")
-        turn_cardinal(inst)
+        elif cardinal_entry != None:
+            turn_cardinal(cardinal_entry["instance"], turning = False)
 
-    elif len(format_list) == 3:
-        print(f"INPUT DICT: {input_dict}")
-        if format_list[2] == "noun" and format_list[1] == "direction":
-            print("input_dict[2]", input_dict[2])
-            print(f"You look at the {input_dict[2]["noun"]["instance"]}")
-            return "describe", input_dict[2]["noun"]["instance"]
+        elif direction_entry != None: # if facing north, turn east, etc.)
+            intended_direction = direction_entry["str_name"]
+            if intended_direction in ("left", "right"):
+                current_facing = loc.current_cardinal.name
+                turning_dict = {
+                    "north":0,
+                    "east":1,
+                    "south":2,
+                    "west":3
+                }
+
+                #left = 1
+                #right = -1
+                if intended_direction == "left":
+                    new_int = int((turning_dict[current_facing] + 1)%4)
+                else:
+                    new_int = int((turning_dict[current_facing] - 1)%4) ## will this wrap around to go from 0 to 3?
+
+                for k, v in turning_dict.items():
+                    if v == new_int:
+                        turn_cardinal(k)
+
+        elif format_tuple[1] == "noun":
+            item_interactions.look_at_item(inst_from_idx(input_dict[1], "noun"))
+
+
+    elif len(format_tuple) == 3:
+        if format_tuple[2] == "noun" and format_tuple[1] == "direction":
+            item_interactions.look_at_item(inst_from_idx(input_dict[2], "noun"))
 
     else:
-        print(f"format list len 2, no idea what's happening: {format_list}, input_dict")
+        print(f"format list len 2, no idea what's happening: {format_tuple}, input_dict")
 
 
-def read(format_list, input_dict, location):
+def read(format_tuple, input_dict):
     print("read FUNCTION")
     #verb_noun if noun is can_read
     # verb_noun_dir_loc as above, but noun may more likely be scenery
     # and now I realise I haven't accounted for scenery at all. Hm.
     pass
 
-def eat(format_list, input_dict, location):
+def eat(format_tuple, input_dict):
     print("eat FUNCTION")
     # verb_noun = eat noun if noun == edible, or maybe let them try if it isn't.
     pass
@@ -325,19 +382,19 @@ def eat(format_list, input_dict, location):
 
     """
 
-def clean(format_list, input_dict, location):
+def clean(format_tuple, input_dict):
     print("clean FUNCTION")
-    print(f"format list: {format_list}, type: {type(format_list)}, length: {len(format_list)}")
-    if len(format_list) == 2:
-        if format_list == tuple(("verb", "location")):
-        #if "verb" in format_list and "location" in format_list:
+    print(f"format list: {format_tuple}, type: {type(format_tuple)}, length: {len(format_tuple)}")
+    if len(format_tuple) == 2:
+        if format_tuple == tuple(("verb", "location")):
+        #if "verb" in format_tuple and "location" in format_tuple:
             print("You want to clean the ")
     # verb_noun == clean item
     # verb_noun_sem_noun == clean item with item
     # verb_loc == clean location (not sure how useful but worth a custom response at least)
     pass
 
-def burn(format_list, input_dict, location):
+def burn(format_tuple, input_dict):
     print("burn FUNCTION")
     # for all burn items = require fire source, noun1 must be flammable.
     # verb_noun == burn item
@@ -367,7 +424,7 @@ def burn(format_list, input_dict, location):
 
     #glass jar: {'is_container', 'can_pick_up'}
 
-def break_item(format_list, input_dict, location):
+def break_item(format_tuple, input_dict):
     print("break_item FUNCTION")
     # verb_noun == break item (if it's fragile enough)
     # verb_noun_sem_noun == break item with item2
@@ -388,14 +445,14 @@ def break_item(format_list, input_dict, location):
     print()
 
 
-def un_lock(format_list, input_dict, location):
+def un_lock(format_tuple, input_dict):
     print("un_lock FUNCTION")
     ## Use same checks for lock and unlock maybe? Not sure.
     #verb_noun == lock if noun does not require key to lock (padlock etc)
     # verb_noun_sem_noun lock noun w noun2 if noun2 is correct key and in inventory
     pass
 
-def open_close(format_list, input_dict, location):
+def open_close(format_tuple, input_dict):
     print("open_close FUNCTION")
     # like un_lock, maybe use this for open and close both, not sure yet.
     # They have the same checks is the thing. So maybe they just diverge at the end, with open/close sub-functions internally.
@@ -405,25 +462,27 @@ def open_close(format_list, input_dict, location):
     pass
 
 
-def combine(format_list, input_dict, location):
+def combine(format_tuple, input_dict):
     #if verb_noun_sem_noun, verb_noun_dir_noun, combine a+b
     #if verb_noun == what do you want to combine it with.
     print("COMBINE FUNCTION")
     pass
 
-def separate(format_list, input_dict, location):
+def separate(format_tuple, input_dict):
     #if verb_noun_sem_noun, verb_noun_dir_noun, combine a+b
     #if verb_noun == what do you want to combine it with.
     print("SEPARATE FUNCTION")
     pass
 
-def combine_and_separate(format_list, input_dict, location):
+def combine_and_separate(format_tuple, input_dict):
 
-    print(f"length of format list: {len(format_list)}")
+    print(f"length of format list: {len(format_tuple)}")
 
-def move(format_list, input_dict, location):
-    if location: # so if it's 'move to graveyard', it just treats it as 'go to'.
-        go(format_list, input_dict, location)
+def move(format_tuple, input_dict):
+
+    direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
+    if location_entry: # so if it's 'move to graveyard', it just treats it as 'go to'.
+        go(format_tuple, input_dict, location_entry["instance"])
         return
 
     print("move FUNCTION")
@@ -433,21 +492,50 @@ def move(format_list, input_dict, location):
 
     pass
 
-def turn(format_list, input_dict, location):
+def turn(format_tuple, input_dict):
+
+    direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
+
     print("TURN FUNCTION")
-    if location:
+    if location_entry:
         current_location, current_turning = current_location()
-        if location != current_location:
-            print(f"You're not at {location.the_name}; you can only turn where you already are.")
+        if location_entry["instance"] != current_location and cardinal_entry:
+            print(f"You're not at {location_entry["instance"].the_name}; you can only turn where you already are.")
             return
 
-    cardinal_inst = inst_from_idx(input_dict[format_list.index("cardinal")], "cardinal")
+    if cardinal_entry:
+        turn_cardinal(cardinal_entry["instance"])
+        return
 
-    turn_cardinal(cardinal_inst)
+    if semantic_entry and semantic_entry["str_name"] == "around" and len(format_tuple) == 2:
+        invert_cardinals = {
+            "south": "north",
+            "north":"south",
+            "east": "west",
+            "west": "east"
+            }
+        new_cardinal_str = invert_cardinals[loc.current_cardinal.name]
+        new_cardinal = loc.by_cardinal(new_cardinal_str)
+        turn_cardinal(new_cardinal)
+
+
+
+
     #return "new_cardinal", new_cardinal
 
-def take(format_list, input_dict, location):
+def take(format_tuple, input_dict):
     print("take FUNCTION")
+    if format_tuple in (("verb", "noun"), ("verb", "direction", "noun")):
+
+        noun_idx = format_tuple.index("noun")
+        noun_inst = inst_from_idx(input_dict[noun_idx], "noun")
+        #print(f"format_tuple[noun_idx]: {format_tuple[noun_idx]}")
+        #print(f"input_dict[noun_idx] inst_from_idx: {noun_inst}")
+
+        confirmed_inst = registry.check_item_is_accessible(noun_inst)
+        if confirmed_inst:
+            print(f"Noun inst {confirmed_inst.name} can be accessed.")
+            registry.pick_up(confirmed_inst, inventory_list=game.inventory)
     # verb_noun == pick up noun
     # verb_dir_noun == pick up noun
     # verb_noun_sem_noun pick up noun with noun (eg something hot with a thick glove)
@@ -455,19 +543,19 @@ def take(format_list, input_dict, location):
     # verb_noun_dir_noun_dir_loc == take ball from bag at location (if loc == cur_loc)
     pass
 
-def pick_up(format_list, input_dict, location): # should be 'take'
+def pick_up(format_tuple, input_dict): # should be 'take'
 
     object_inst = None
-    if len(format_list) == 2:
+    if len(format_tuple) == 2:
         object_inst = two_parts_a_b(input_dict)
 
         if object_inst:
             print(f"Put {object_inst.name} in your inventory.")
 
 
-def put(format_list, input_dict, location=None):
+def put(format_tuple, input_dict, location=None):
     print("Put varies depending on the format.")
-    print(f"Format list: {format_list}")
+    print(f"Format list: {format_tuple}")
     action_word = "putting"
     if not location:
         current_loc, current_card = get_current_loc()
@@ -475,7 +563,7 @@ def put(format_list, input_dict, location=None):
     print(f"Input dict: {input_dict}")
     count, parts = get_elements(input_dict)
 
-    noun_count = format_list.count("noun")
+    noun_count = format_tuple.count("noun")
     print(f"Length of parts: {len(parts)}")
     print(f"Parts: {parts}")
     if noun_count == 2:
@@ -504,28 +592,28 @@ def put(format_list, input_dict, location=None):
             move_a_to_b(a=a, b=b, action=action_word, direction=sem_or_dir, current_loc=location)
 
     print("AFTER PARTS")
-def put(format_list, input_dict, location):
+def put(format_tuple, input_dict):
     print("put FUNCTION")
     # verb_noun_dir == put paper down
     # verb_noun_dir_noun = leave pamplet on table
     # verb_noun_dir_noun_dir_loc == leave pamplet on table at location (again, useless.)
     pass
 
-def throw(format_list, input_dict, location):
+def throw(format_tuple, input_dict):
     print("throw FUNCTION")
     # verb_noun == where do you want to throw it (unless context),
     # verb_noun_dir == throw ball up (check if 'dir' makes sense)
     # verb_noun_dir_noun  == throw ball at tree
     pass
 
-def push(format_list, input_dict, location):
+def push(format_tuple, input_dict):
     print("push FUNCTION")
     # verb_noun == to move things out the way in general
     # verb_noun_dir == #push box left
     # verb_noun_dir_noun == push box away from cabinet
     pass
 
-def drop(format_list, input_dict, location):
+def drop(format_tuple, input_dict):
 
     action_word = "dropping"
     print("This is the drop function.")
@@ -543,7 +631,7 @@ def drop(format_list, input_dict, location):
         if direction in ["in", "into", "on", "onto"]:
             move_a_to_b(a=item_to_place, b=container_or_location, action=action_word, direction=direction)
 
-def drop(format_list, input_dict, location):
+def drop(format_tuple, input_dict):
     print("drop FUNCTION")
     # verb_noun = move noun to current loc
     # verb_noun_dir_noun = move noun to container/surface,
@@ -551,7 +639,7 @@ def drop(format_list, input_dict, location):
     # verb_noun_dir_noun_dir_loc == drop item in container at graveyard (if loc== current loc)
     pass
 
-def set_action(format_list, input_dict, location):
+def set_action(format_tuple, input_dict):
     print("set_action FUNCTION")
     # verb_noun_dir == set item down == drop
     # verb_noun_dir_noun == set item on fire if noun2 == 'fire' == burn
@@ -560,50 +648,45 @@ def set_action(format_list, input_dict, location):
 
 
 
-def use_item(format_list, input_dict, location):
+def use_item(format_tuple, input_dict):
     print("use_item FUNCTION")
-    print(f"Format_list = {format_list}")
+    print(f"format_tuple = {format_tuple}")
     print("For simple verb-noun dispersal")
     pass
 
 
-def use_item_w_item(format_list, input_dict, location):
+def use_item_w_item(format_tuple, input_dict):
     print("use_item_w_item FUNCTION")
-    print(f"Format list: {format_list}")
-    print(f"Length format list: {len(format_list)}")
+    print(f"Format list: {format_tuple}")
+    print(f"Length format list: {len(format_tuple)}")
 
 
 
-def router(viable_formats, inst_dict):
+def router(viable_format, inst_dict):
 
-    #print(f"Dict for output: {inst_dict}")
+    verb_inst = None
+    #print(f"Viable formats at start of router: {viable_format}.")
+    quick_list = []
+    for v in inst_dict.values():
+        for data in v.values():
+            quick_list.append(data["str_name"])
+
+    print(f'\n\033[1;32m[[  {" ".join(quick_list)}  ]]\033[0m\n')
+
+    print(f"Dict for output: {inst_dict}")
     location = None
 
     for data in inst_dict.values():
         for kind, entry in data.items():
-            #print(f"kind: {kind}, entry: {entry}")
+            print(f"kind: {kind}, entry: {entry}")
             #kinds.append(kind)
             if kind == "verb":
                 verb_inst = entry["instance"]
-            if kind == "location":
-                booltest, current_loc, current_card = is_loc_current_loc(location=entry["instance"])
-                #current_loc, current_card = get_current_loc()
-                #if entry["instance"] == current_loc:
-                if booltest:
-                    print(f"Current location is the location listed: {entry}/{current_loc}")
-                    location = current_loc
-                else:
-                    if verb_inst.name != "go":
-                        print(f"Current location {current_loc} is not the location listed: {entry}")
-
-
-
-    #print(f"kinds: {kinds}")
-    if len(viable_formats) > 1:
-        print("More than one viable format. Wut?")
-    #print("Format: ", viable_formats[0])
+            if kind == "meta" and verb_inst == None:
+                verb_inst = entry["str_name"]
 
     function_dict = {
+        "meta": meta,
         "go": go,
         "leave": go,
 
@@ -693,17 +776,16 @@ def router(viable_formats, inst_dict):
     #    func = function_dict["use_item"]
 
     #else:
-    func = function_dict[verb_inst.name]
+    if isinstance(verb_inst, str):
+        func = function_dict["meta"]
+    else:
+        func = function_dict[verb_inst.name]
 
-    response = func(format_list = viable_formats[0], input_dict = inst_dict, location = location)
+
+    response = func(format_tuple = viable_format, input_dict = inst_dict)
 
     #print("Leaving router.")
-    quick_list = []
-    for v in inst_dict.values():
-        for data in v.values():
-            quick_list.append(data["str_name"])
 
-    print(f'\n\033[1;32m[[  {" ".join(quick_list)}  ]]\033[0m\n')
     return response
     #time.sleep(.5)
 

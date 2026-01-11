@@ -46,36 +46,6 @@ combine_parts = {("put", "into"), ("add", "to") # thinking about this for more s
 
    #exit()
 
-######## The supplement membrane bit that sends out the calls externally.
-
-def send_calls(response): # probably ditching this. Was an interesting idea maybe, but I'm not sure there's any point. I can fix the input-print elsewhere. (I think.)
-
-    response_dict = {
-        "describe": ["describe", "look"],
-        "player_moved": ["new_cardinal", "new_location"],
-        "nothing": ["no_change", "no change"]
-    }
-
-    #print(f"RESPONSE:: {response}")
-
-    if response:
-
-        call, details = response
-        if call in response_dict["nothing"]:
-            print("Nothing.")
-        if call in response_dict["describe"]:
-            if details == "environment": # This could be done inside the look function so easily... Why does this exist here...?
-                # Maybe we keep this for things tha do something other than print...
-                from env_data import locRegistry as loc
-                #print(loc.current.description)
-                print(loc.current.overview)
-            elif isinstance(details, ItemInstance):
-                from interactions.item_interactions import look_at
-                look_at(response)
-
-
-##### The main membrane bit that figures it out ########
-
 def get_noun_instances(dict_from_parser, viable_formats):
 
     def check_noun_actions(noun_inst, verb_inst):
@@ -110,18 +80,20 @@ def get_noun_instances(dict_from_parser, viable_formats):
     #    print(viable_formats)
     #    exit()
 
-
     verb = None
-    #print(f"dict_from_parser: {dict_from_parser}")
+    print(f"dict_from_parser: {dict_from_parser}")
     if dict_from_parser:
         for data in dict_from_parser.values():
             for kind, entry in data.items():
-                #print(f"kind: {kind}, entry: {entry}")
+                print(f"kind: {kind}, entry: {entry}")
                 if "verb" in kind:
                     verb = entry["instance"]
-                    #print(f"Verb: {verb}")
-                    #print(f"Verb type: {type(verb)}")
-                    #print(f"Verb.name in get_noun_instances: `{verb.name}`")
+                    print(f"Verb: {verb}")
+                    print(f"Verb type: {type(verb)}")
+                    print(f"Verb.name in get_noun_instances: `{verb.name}`")
+                if "meta" in kind and verb == None:
+                    verb = entry["instance"]
+                    print(f"meta Verb: {verb}")
 
         suitable_nouns = 0
 
@@ -161,10 +133,11 @@ def get_noun_instances(dict_from_parser, viable_formats):
                     #print(f"Kind is cardinal: {entry}")
                     dict_from_parser = check_cardinals(entry, data, viable_formats)
 
+        #print(f"dict_from_parser in geT_noun_instances: {dict_from_parser}")
         return dict_from_parser
     return None
 
-class Membrane:
+class Membrane: ## it really holds so much duplicate data, it needs to be trimmed down. I'm not using it like I thought/as was intended.
     ## To hold the general dicts/lists etc as a central point, so verbRegistry and itemRegistry can get data from item_definitions/verb_definitions from here instead of directly. Also other custom data, like the formats-by-type dict etc.
     # So to clarify: itemRegistry is all item objects, and currently has item actions but those will be moved out.
     # verbRegistry is really just for parsing, but the parsing is format + verb based so the name can stay I guess.
@@ -198,7 +171,7 @@ class Membrane:
             compound_locs[word] = tuple(word.split())
         self.compound_locations = compound_locs
         self.directions = directions
-        self.cardinals = set(cardinals) ## does membrane nede these or not?
+        self.cardinals = set(cardinals) ## does membrane need these or not?
 
         def get_format_sublists(all_formats):
 
@@ -220,7 +193,7 @@ class Membrane:
             return new_format_dict
 
         self.formats = formats
-        self.format_sublists = get_format_sublists(formats)
+        #self.format_sublists = get_format_sublists(formats) ## these aren't used /at all/
 
 
 
@@ -229,29 +202,47 @@ membrane = Membrane()
 test_input_list = ["take the paperclip", "pick up the glass jar", "put the paperclip in the wallet", "place the dried flowers on the headstone", "go to the graveyard", "approach the forked tree branch", "look at the moss", "examine the damp newspaper", "read the puzzle mag", "read the fashion mag in the city hotel room", "open the glass jar", "close the window", "pry open the TV set", "smash the TV set", "break the glass jar", "clean the watch", "clean the severed tentacle", "mix the unlabelled cream with the anxiety meds", "combine the fish food and the moss", "eat the dried flowers", "consume the fish food", "drink the unlabelled cream", "burn the damp newspaper", "burn the fashion mag in a pile of rocks", "throw the pretty rock", "lob the pretty rock at the window", "chuck the glass jar into a pile of rocks", "drop the wallet", "discard the paper scrap with number", "remove the batteries from the TV set", "add the batteries to the mobile phone", "put the car keys in the plastic bag", "set the watch", "lock the window", "unlock the window", "shove the TV set", "move the headstone", "barricade the window with the TV set", "separate the costume jewellery", "investigate the exact thing", "observe the graveyard", "watch the watch", "go to a city hotel room", "leave the graveyard", "depart", "go", "go to the pile of rocks", "take the exact thing", "put the severed tentacle in the glass jar", "open the wallet with the paperclip", "read the mail order catalogue at the forked tree branch", "pick the moss", "pick the watch", "pick up moss", "throw anxiety meds", "put batteries into watch", "clean a pile of rocks"]
 
 def run_membrane(input_str=None):
+        print_traceback = False
+        response = (None, None)
 
     #while input_str != "quit":
         if input_str == None:
             input_str = input()
 
-        from verbRegistry import Parser
-        viable_formats, dict_from_parser = Parser.input_parser(Parser, input_str)
+        if input_str != None and "traceback" in input_str:
+            print_traceback = True
+            input_str = input_str.replace(" traceback","")
 
-        inst_dict = get_noun_instances(dict_from_parser, viable_formats)
+        from verbRegistry import Parser
+        viable_format, dict_from_parser = Parser.input_parser(Parser, input_str)
+        if print_traceback:
+            print(f"Viable formats: {viable_format}")
+
+        inst_dict = get_noun_instances(dict_from_parser, viable_format)
+        if print_traceback:
+            print(f"inst_dict: {inst_dict}")
+
 
         if inst_dict:
             from verb_actions import router
             #print(f"inst_dict going to router: {inst_dict}")
             #exit()
-            response = router(viable_formats, inst_dict)
+            response = router(viable_format, inst_dict) ## If I add traceback flags /here/ I should get inner prints maybe. Currently I don't, just that 'router' was called.
 
-            send_calls(response)
             ## Move list of key response terms to here from def option()
             # Then this can do the initial directions, and just let it continue back accordingly.
 
             # I really need to figure out the 'baseline' that it returns to when an action is completed. Currently it's in a constant state of falling, there's no resting state.
+        if print_traceback:
+            print(f"Traceback: {input_str}")
+            from traceback import print_stack
+            import inspect
+            frame = inspect.currentframe()
+            print("print stack", print_stack(f=frame))
+            print("frame.f_trace", frame.f_trace)
 
-            return response
+        #print("About to send response back to main script.")
+        return response
     #exit()
 
 #membrane, membrane_data = initialise_membrane()

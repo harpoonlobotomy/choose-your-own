@@ -470,6 +470,57 @@ So the to-be new way -
 main game gives you things to respond to.
 You input, it sends it to membrane for parsing. Membane sends back 'here's what you need to do/say'. then... I guess the main game sends it out again? Idk. This is where I get lost. Maybe just too tired.
 
+This:
+instances_by_location(self, place:str, direction:str)->list:
+needs an upate; it should just use the loc_cardinal instance, not two strings. Oh jeez. Okay, going to do the smart thing and branch it before I start all that.
 
-### documents/testing_import_20_10_33.blend ###
-GLTF importer test file.
+
+2.21pm 10/1/26
+
+Changing itemRegistry to use the cardinalInstances.
+
+Going to add 'inventory' as an actual inventory item maybe. But then would have to exclude it from everything, so maybe not... Yeah actually it'll cause more problems than it solves, I think. Just going to add an 'in_container' flag to items and check against that + an equivalent 'in_inventory' flag.
+
+
+For some reason, changing this part:
+        if loc and not cardinal and self.current == None:
+            self.current = loc
+
+in env_data triggers this:
+  File "d:\Git_Repos\choose-your-own\itemRegistry.py", line 427, in pick_up
+    if not hasattr(inst.flags, "can_pick_up"):
+                   ^^^^^^^^^^
+AttributeError: 'str' object has no attribute 'flags'
+Fixed it. It was failing because it couldn't give/find a location for the startup items, so they weren't proper items. Previously they'd just been assigned the string location name, which had accidentally solved itself later on lookup.
+
+5.10pm
+Just realised I was re-running game.set_up() each time I wrote something because the while loop included the full intro. Now the 'while loop' is literally just the inner_loop() itself, until you type 'quit' at which points the whole process ends.
+
+5.31pm
+Made a note in membrane re adding a traceback flag in the fn sig of the main memrane parser. But it might be a good idea to add a global logging flag that I can trigger via that input_str. Being able to be mid-run, get a weird result then run the same command again with 'go east traceback' instead of 'go east' and have it log live for that command, instead of having a run with/without logging entirely, would be excellent given the kind of thing this is. Will do that.
+
+
+6.55pm
+[[  take glass jar  ]]
+
+take FUNCTION
+Inst list: <ItemInstance headstone (e0d7df0b-1f6f-457c-a64e-44d2730020ec)>
+Noun inst glass jar can be accessed.
+
+Hm. This is... odd.
+Why is the headstone the only thing that prints, even though the glass jar is outputted correctly?
+
+
+8.43 just realised I've spent most of the afternoon/evening trying to add 'meta' as a verb and it's not working. Should have just added it as a damn category. No idea why I didn't. Or I did, but tried to make it a verb as well...? Absolutely no clue.
+
+10.06am 11/1/26
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "d:\Git_Repos\choose-your-own\itemRegistry.py", line 480, in pick_up
+    self.move_item(inst)
+    ~~~~~~~~~~~~~~^^^^^^
+  File "d:\Git_Repos\choose-your-own\itemRegistry.py", line 272, in move_item
+    if self.by_location_inst.get(old_loc):
+       ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+TypeError: unhashable type: 'set'
+
+Tried to pick up the fish food I just dropped, and this. So old_loc is being stored as a set, when it should be a cardinalInstance. Need to work on that.

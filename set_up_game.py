@@ -4,8 +4,6 @@ import random
 from itemRegistry import registry
 import choices
 import misc_utilities
-
-
 """
 Sample start:
 Starting items: ['paperclip', 'puzzle magazine']
@@ -33,7 +31,7 @@ def test_for_weird():
 def set_inventory():
 
     if game.w_value != 0:
-        registry.pick_up("severed tentacle", game.inventory)
+        registry.pick_up("severed tentacle", game.inventory, starting_objects=True)
         #print(f"back after item management: game.inventory :: {game.inventory}")
         game.weirdness = True # what's the point of both weirdness and w_value? I guess w_value allows for severity later on.
 
@@ -44,11 +42,11 @@ def loadout(): # for random starting items, game, etc (could be renamed
 #        something like this being used maybe  , exclude_none=True
     paperclip_list = registry.instances_by_name("paperclip")
 
-    _, game.inventory = registry.pick_up(paperclip_list[0], game.inventory)
+    _, game.inventory = registry.pick_up(paperclip_list[0], game.inventory, starting_objects=True)
     #_, game.inventory = registry.pick_up(paperclip_list[0], game.inventory) ## duped because I was testing the plural inventory system.
     #_, game.inventory = registry.pick_up(paperclip_list[0], game.inventory)
 #
-    _, game.inventory = registry.pick_up(registry.random_from("magazine"), game.inventory)
+    _, game.inventory = registry.pick_up(registry.random_from("magazine"), game.inventory, starting_objects=True)
     game.carryweight = 12
     #print(f"Game inventory after managizine added: {game.inventory}")
     starting_items = registry.instances_by_category("starting") ## starting items == list of instances
@@ -63,7 +61,7 @@ def loadout(): # for random starting items, game, etc (could be renamed
         for item in temp_inventory:
             if item == None:
                 continue
-            _, game.inventory = registry.pick_up(item, game.inventory)
+            _, game.inventory = registry.pick_up(item, game.inventory, starting_objects=True)
 
 def calc_emotions():
     counter = 0
@@ -89,6 +87,7 @@ def calc_emotions():
         return "doing quite well"
 
 def load_world(relocate=False, rigged=False, new_loc=None):
+    print("Starting load_world in set_up_game.py\n\n")
     from env_data import locRegistry as loc, weatherdict
     rigged = True
     rig_place = "graveyard"#"a city hotel room"#
@@ -124,6 +123,7 @@ def load_world(relocate=False, rigged=False, new_loc=None):
         #print(f"current loc: {loc.current.name}")
         if new_loc:
             loc.current = new_loc
+
 
     if not getattr(loc, "current_cardinal"):
         facing = loc.by_cardinal(game.facing_direction)

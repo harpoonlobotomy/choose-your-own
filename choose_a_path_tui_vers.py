@@ -1,3 +1,5 @@
+## I'm not really sure what the identify of this particular script is in the new version. It used to be the core of everything because it held the loops, but the loops aren't used anymore...
+
 from os import system
 import random
 
@@ -5,7 +7,6 @@ from misc_utilities import assign_colour, col_list, generate_clean_inventory, ge
 
 from set_up_game import load_world, set_up, init_settings
 from choices import choose, time_of_day, night, trip_over, emphasis
-
 
 from item_definitions import container_limit_sizes, detail_data
 from itemRegistry import ItemInstance, registry
@@ -18,8 +19,8 @@ import config
 
 from verb_membrane import run_membrane
 
-#from verb_membrane import run_membrane
-#print("Importing choose_a_path_tui_vers.py")
+from env_data import locRegistry as loc
+
 
 user_prefs = r"D:\Git_Repos\Choose_your_own\path_userprefs.json"
 run_again = False
@@ -32,7 +33,6 @@ clear_screen = False
 def do_clearscreen():
     if clear_screen:
         system("cls")
-
 
 def slowLines(txt, speed=0.1, end=None, edit=False):
     if isinstance(txt, str) and txt.strip=="":
@@ -53,19 +53,13 @@ def get_visited_map():
     do_print("End of Past Visits.")
 
 
-def get_items_at_here(print_list=False, return_coloured=True, place=None) -> list:
+def get_items_at_here(print_list=False, return_coloured=True, place=loc.current_cardinal) -> list: # default to current_cardinal as place, otherwise you have to state what you want.
 
-    instance_objs_at = []
-    if place != None:
-        for direction in ["north", "east", "south", "west"]:
-            temp = registry.instances_by_location(loc.places[loc.current].the_name, direction)
-            #print(f"Temp (get_items_at_here): {temp}")
-            if temp:
-                instance_objs_at = instance_objs_at + temp
-
-    else:
-        instance_objs_at = (registry.instances_by_location((loc.current), loc.current_cardinal))
+    instance_objs_at = (registry.get_item_by_location(place))
         #print(f"Instance objs at: {instance_objs_at}")
+
+    if not instance_objs_at:
+        print(f"There are no items at {place.place_name}")
 
     to_print_list = []
     coloured_list = []
@@ -80,60 +74,6 @@ def get_items_at_here(print_list=False, return_coloured=True, place=None) -> lis
         if return_coloured:
             return coloured_list
     return to_print_list
-
-
-def add_item_to_container(container:ItemInstance):
-
-    if "container" in container.flags:
-        container_size = container.container_limits
-        container_size = container_limit_sizes[container_size]
-
-        def get_suitable_items():
-            add_x_to = []
-            inv_list = []
-            for item in game.inventory:
-                item_size = item.item_size
-                item_size = container_limit_sizes[item_size]
-                if item_size < container_size:
-                    #print(f"Item size {item}, {item_size}, < container size {container.name}, container_size: {container_size}")
-                    add_x_to.append(item)
-                    inv_list, _ = generate_clean_inventory(add_x_to)
-            return inv_list, add_x_to
-
-        done=False
-        while not done:
-            inv_list, add_x_to = get_suitable_items()
-            test = option(inv_list, preamble=f"Choose an object to put inside {assign_colour(container, switch=True)} or hit enter when done:", print_all=True)
-            if test == "" or test == None:
-                do_print(assign_colour(f"(Chosen: <NONE>) [add_item_to_container]", "yellow"))
-                done=True
-                break
-            cleaned, alignment = compare_input_to_options(inv_list, input=test, inventory=game.inventory, use_last=False)
-
-            if cleaned:
-                outcome_ref = alignment.get(cleaned)
-                #print(f"Cleaned: {cleaned}, alignment: {alignment}")
-                if outcome_ref:
-                    #print(f"outcome ref: {outcome_ref}")
-                    instance = outcome_ref.get("instance")
-                    if not instance:
-                        print("no instance ")
-                        instance = from_inventory_name(cleaned, add_x_to)
-                else:
-                    instance = from_inventory_name(test, add_x_to)
-                    #print(f"instance from alignment: {instance}")
-                #print(f"outcome: {outcome}, alignment: {outcome_ref}")
-                #instance = from_inventory_name(test, add_x_to)
-                #print(f"Instance from from_inventory_name: {instance}")
-                #exit()
-                result = [(f"Added [child] to [new_container]", assign_colour(instance), assign_colour(container))]
-                from misc_utilities import clean_separation_result
-                clean_separation_result(result, to_print=True)
-                registry.move_item(instance, new_container=container)
-                game.inventory.remove(instance)
-
-
-
 
 def do_action(action:str, inst:ItemInstance|str)->list:
     logging_fn()
@@ -540,7 +480,7 @@ def drop_loot(named:ItemInstance|str=None, forced_drop=False)->str:
         inst_test=from_inventory_name(test)
 
     if inst_test != None:
-        _, test_inventory = registry.drop(test, loc.current, loc.current_cardinal, game.inventory)
+        _, test_inventory = registry.drop(test, game.inventory)
         if test_inventory != None:
             game.inventory = test_inventory
         slowWriting(f"Dropped {assign_colour(test)}.")
@@ -589,7 +529,7 @@ def get_loot(value=None, random=True, named="", message:str=None):
             items_list = registry.instances_by_name(named) ## wait I didn't even provide a name here. wtf...
             print(f"items list: {items_list}")
             for inst in items_list:
-                if inst != instance_name_in_inventory(named) and registry.instances_by_location(loc.current, loc.current_cardinal):
+                if inst != instance_name_in_inventory(named) and registry.get_item_by_location(loc.current, loc.current_cardinal):
 
                     item_inst=inst
                 elif inst.contained_in: ## does this need to be hasattr()? Probably.
@@ -801,7 +741,7 @@ def location_item_interaction(item_name):
 
     item_entry = registry.instances_by_name(item_name)
     if item_entry:
-        local_items = registry.instances_by_location(loc.current, loc.current_cardinal)
+        local_items = registry.get_item_by_location(loc.current, loc.current_cardinal)
         for item in item_entry:
             if item in local_items and item not in game.inventory:
                 ### TODO: and item not in container that is in inventory
@@ -1051,50 +991,50 @@ def run():
 
     test = None
     global loc
+    from env_data import locRegistry as loc
+    #do_clearscreen()
+    playernm = ""
+
+    test_mode=True
+    if test_mode:
+        playernm = "Testbot"
+        enable_tui = False
+    else:
+        intro()
+        do_print()
+        slowWriting("What's your name?")
+        while  playernm == "":
+            playernm = do_input()
+    global game
+    game = set_up(weirdness=True, bad_language=True, player_name=playernm)
+
+    #do_clearscreen()
+
+    if config.enable_tui:
+        from tui.tui_elements import run_tui_intro
+        player_name = run_tui_intro(play_intro=False)
+
+        if player_name:
+            game.playername = player_name
+
+        world = (loc.current, game.weather, game.time, game.day_number)
+        player = (game.player, game.carryweight, game.playername)
+        add_infobox_data(print_data = True, backgrounds = False, inventory=None, playerdata=player, worldstate=world)
+        print_commands(backgrounds=False)
+        update_infobox(hp_value=game.player["hp"], name=game.playername, carryweight_value=game.carryweight, location=loc.current.name, weather=game.weather, t_o_d=game.time, day=game.day_number)
+
+        add_infobox_data(print_data = True, inventory=game.inventory)
+
+    ## Add glass jar to inventory for container tests
+    #game.carryweight += 5
+    #inst = registry.instances_by_name("glass jar")
+    #_, game.inventory = registry.pick_up(inst, game.inventory)
+
+    if not test_mode:
+        slowWriting("[[ Type 'help' for controls and options. ]]")
+        do_print()
+
     while test != "quit":
-        from env_data import locRegistry as loc
-        #do_clearscreen()
-        playernm = ""
-
-        test_mode=True
-        if test_mode:
-            playernm = "Testbot"
-            enable_tui = False
-        else:
-            intro()
-            do_print()
-            slowWriting("What's your name?")
-            while  playernm == "":
-                playernm = do_input()
-        global game
-        game = set_up(weirdness=True, bad_language=True, player_name=playernm)
-
-        #do_clearscreen()
-
-        if config.enable_tui:
-            from tui.tui_elements import run_tui_intro
-            player_name = run_tui_intro(play_intro=False)
-
-            if player_name:
-                game.playername = player_name
-
-            world = (loc.current, game.weather, game.time, game.day_number)
-            player = (game.player, game.carryweight, game.playername)
-            add_infobox_data(print_data = True, backgrounds = False, inventory=None, playerdata=player, worldstate=world)
-            print_commands(backgrounds=False)
-            update_infobox(hp_value=game.player["hp"], name=game.playername, carryweight_value=game.carryweight, location=loc.current.name, weather=game.weather, t_o_d=game.time, day=game.day_number)
-
-            add_infobox_data(print_data = True, inventory=game.inventory)
-
-        ## Add glass jar to inventory for container tests
-        #game.carryweight += 5
-        #inst = registry.instances_by_name("glass jar")
-        #_, game.inventory = registry.pick_up(inst, game.inventory)
-
-        if not test_mode:
-            slowWriting("[[ Type 'help' for controls and options. ]]")
-            do_print()
-
         inner_loop(speed_mode=test_mode)
 
 
@@ -1106,22 +1046,22 @@ def temp_run():
 
 
 
-if __name__ == "__main__":
-    #do_clearscreen()
-    import sys
-    if sys.argv:
-        #print(f"sys.argv: {sys.argv}")
-
-        if len(sys.argv) == 2:
-            #disable_tui_test = sys.argv[1] ## at present the content doesn't matter, either it's plain and uses tui, or python choose_a_path disable_tui (where 'disable_tui' can be literally anything). Works for the moment.
-            enable_tui = False
-            config.enable_tui = False
-        else:
-            enable_tui = True
-            config.enable_tui = True
-
-
-
-    enable_tui = False
-    config.enable_tui = False
-    run()
+#if __name__ == "__main__":
+#    #do_clearscreen()
+#    import sys
+#    if sys.argv:
+#        #print(f"sys.argv: {sys.argv}")
+#
+#        if len(sys.argv) == 2:
+#            #disable_tui_test = sys.argv[1] ## at present the content doesn't matter, either it's plain and uses tui, or python choose_a_path disable_tui (where 'disable_tui' can be literally anything). Works for the moment.
+#            enable_tui = False
+#            config.enable_tui = False
+#        else:
+#            enable_tui = True
+#            config.enable_tui = True
+#
+#
+#
+#    enable_tui = False
+#    config.enable_tui = False
+#    run()

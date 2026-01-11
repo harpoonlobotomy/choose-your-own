@@ -239,7 +239,7 @@ def from_inventory_name(test:str, inst_inventory:list=None) -> ItemInstance:
     print(f"Could not find inst `{test}` in inst_inventory.")
     input()
 
-def is_item_in_container(inventory_list, item):
+def is_item_in_container(item, inventory_list=None):
 
     inst = None
     if isinstance(item, ItemInstance) and item != None:
@@ -255,12 +255,16 @@ def is_item_in_container(inventory_list, item):
         return container, inst
     return None, None
 
-def generate_clean_inventory(inventory_inst_list, will_print = False, coloured = False):
+def generate_clean_inventory(inventory_inst_list=None, will_print = False, coloured = False):
 
     from itemRegistry import registry
     from tui.tui_update import update_text_box
     from config import enable_tui
     tui_enabled = enable_tui
+
+    if inventory_inst_list == None:
+        from set_up_game import game
+        inventory_inst_list = game.inventory
 
     no_xval_inventory_names = []
     inv_list = get_inst_list_names(inventory_inst_list)
@@ -292,7 +296,7 @@ def generate_clean_inventory(inventory_inst_list, will_print = False, coloured =
                 no_xval_inventory_names.append(item_name)
             """
             children=None
-            has_parent, child_inst = is_item_in_container(inventory_inst_list, item_name) # is it a child
+            has_parent, child_inst = is_item_in_container(item_name, inventory_inst_list) # is it a child
             if not has_parent:
                 inst = from_inventory_name(item_name, inventory_inst_list)
                 if registry.by_container.get(inst):

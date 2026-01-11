@@ -114,7 +114,7 @@ loc_dict = {
                 "actions": leave_options,
                 },
         "east": {"short_desc": "a variety of headstones",
-                "long_desc": "You see a variety of headstones, most quite worn and decorated by clumps of moss. There's a glass jar being used as a vase in front of one of the headstones, dried  left long ago.", # details here depending on weather. if raining, the dried flowers are saturated and heavy. If sunny, they're crispy, etc. Not close to implementing that yet.
+                "long_desc": "You see a variety of headstones, most quite worn and decorated by clumps of moss. There's a glass jar being used as a vase in front of one of the headstones, dried flowers left long ago.", # details here depending on weather. if raining, the dried flowers are saturated and heavy. If sunny, they're crispy, etc. Not close to implementing that yet.
                 "weird": None,
                 "east_actions": None,
                 },
@@ -156,7 +156,7 @@ class cardinalInstance:
     def __init__(self, cardinal, loc):
         self.name = cardinal# + " " + place.name # eg "east graveyard"
         self.place_name = cardinal + " " + loc.name # eg "east graveyard"        },
-        self.ern_name = cardinal + "ern " + loc.name # eg "east graveyard"
+        self.ern_name = cardinal + "ern " + loc.name # eg "eastern graveyard"
         self.place = loc
         self.short_desc = loc_dict[loc.name][cardinal].get("short_desc")
         self.long_desc = loc_dict[loc.name][cardinal].get("long_desc")
@@ -171,7 +171,8 @@ class cardinalInstance:
         if not self.cardinal_actions or self.cardinal_actions == None:
             self.cardinal_actions = leave_options
 
-
+        self.by_placename = {}
+        # placeInstance.name = {"south": southInstance, "north": northInstance, etc}
 class placeInstance:
 
     def __init__(self, name):
@@ -214,34 +215,47 @@ class placeRegistry:
         self.cardinals = {} # locRegistry.place_cardinals[place_instance_obj][cardinal_direction_str]
         self.current_cardinal = None # Not sure if I want to use this, or keep it in game.facing_direction. This might make more sense, keep it centralised? Not sure.
 
-    def add_cardinals(self, loc):
+    def add_cardinals(self, locationInstance):
         cardinals_dict = dict()
 
         for card in cardinals_list:
-            cardinal_inst = cardinalInstance(card, loc)
+            cardinal_inst = cardinalInstance(card, locationInstance)
             cardinals_dict[card] = cardinal_inst
 
+
+        # placeInstance.name = {"south": southInstance, "north": northInstance, etc}
         return cardinals_dict
 
     def set_current(self, loc=None, cardinal=None):
         # will  loc be a string or a loc instance? idk.
         #print(f"set_current. \nloc: {loc}, cardinal: {cardinal}")
+
         if loc:
             if isinstance(loc, str):
                 loc_test = self.by_name[loc]
                 if isinstance(loc_test, placeInstance):
                     loc = loc_test
-                    self.current = loc
+                else:
+                    print(f"Failed to find instance for {loc}")
 
-            if isinstance(loc, placeInstance): # this should run after the previous, no? Though the previous should never actually run, it should always be a placeInstance.
+            if isinstance(loc, placeInstance) and not cardinal:
+                self.current = loc
+                if not self.current_cardinal:
+                    print("No current_cardinal, defaulting to 'north'.")
+                    current_card = "north"
+                else:
+                    current_card = self.current_cardinal.name
+                new_card = self.cardinals[self.current][current_card]
+                self.current_cardinal = new_card
                 #print(f"loc.name: {loc.name}")
                 self.current = loc
                 #print("self.current: ", self.current)
-            self.route.append(loc)
-            #print(f"Set loc.current to {loc.name}")
+                self.route.append(loc)
 
             if isinstance(loc, cardinalInstance):
                 self.current_cardinal = loc
+
+            return
                 #print(f"self.current_cardinal set to {loc.name}")
 
         if cardinal: ## cardinal setting always operates on current loc. If loc and cardinal have both changed, loc should be set first. Can't 'move to west graveyard' by moving west first, then going to graveyard.
@@ -249,15 +263,11 @@ class placeRegistry:
                 cardinal = self.cardinals[self.current][cardinal]
 
             if isinstance(cardinal, cardinalInstance):
+                #print(f"before setting current: cardinal.name: {cardinal.place_name}")
                 self.current_cardinal = cardinal
-        if loc and not cardinal:
-            if not self.current_cardinal:
-                print("self.cardinals: ", self.cardinals)
-                current_card = "north"
-            else:
-                current_card = self.current_cardinal.name
-            new_card = self.cardinals[self.current][current_card]
-            self.current_cardinal = new_card
+                #print("self.current_cardinal.name: ", self.current_cardinal.place_name)
+
+
 
     def place_by_name(self, loc_name):
         if loc_name.startswith("a "):
@@ -267,6 +277,8 @@ class placeRegistry:
 
         loc_inst = self.by_name[loc_name]
         if isinstance(loc_inst, placeInstance):
+            #print(f"loc_inst in place_by_name: {loc_inst}")
+            #print(f"loc_inst.name in place_by_name: {loc_inst.name}")
             return loc_inst
         print(f"LOC INST: {loc_inst}, type: {type(loc_inst)}")
         print(f"Failed to get item instance for {loc_name}. Please investigate. Exiting from env_data.")
@@ -286,12 +298,15 @@ class placeRegistry:
             print("[Is not an instance.]")
             print(loc)
 
-    def by_cardinal(self, cardinal_str, loc=None):
+
+    def by_cardinal(self, cardinal_str:str, loc=None):
         if loc == None:
             loc = self.current
+        elif isinstance(loc, str):
+            loc = self.place_by_name(self, loc)
+            
         cardinal_inst = locRegistry.cardinals[loc][cardinal_str]
         return cardinal_inst
-
 
 
 locRegistry = placeRegistry()

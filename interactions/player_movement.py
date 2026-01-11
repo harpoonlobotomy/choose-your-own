@@ -4,38 +4,38 @@
 
 from env_data import cardinalInstance, locRegistry as loc, placeInstance
 
-def new_relocate(new_location=None, new_cardinal=None): #redoing this now
-    print("new_relocate")
+def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=None): #redoing this now
+    print("[PLAYER MOVEMENT:: <new_relocate>]")
+    if new_location:
+        print(f"New location.name: {new_location.name}")
+    if new_cardinal:
+        print(f"New cardinal.name: {new_cardinal.name}")
+
     if new_location and not isinstance(new_location, placeInstance):
         print("new_relocate requires new_location is a placeInstance.")
         print(f"It received: {new_location}, type: {type(new_location)}")
         exit()
-    print(new_location)
-    print(new_location.name)
 
-    if isinstance(new_location, str):
-        new_location = loc.by_name(new_location)
-
-    if isinstance(new_location, placeInstance):
+    if new_location and isinstance(new_location, placeInstance):
         loc.set_current(loc=new_location)
 
-    if new_cardinal:
-        print(new_location)
-        print(new_location.name)
-        loc.set_current(cardinal=new_location)
-        print(f"You're now facing {loc.current_cardinal.place_name}")
-
+    if new_cardinal and isinstance(new_cardinal, cardinalInstance):
+        loc.set_current(cardinal=new_cardinal)
 
     print(f"You're now facing {loc.current_cardinal.place_name}")
-    print(loc.current.description)
+    if new_location:
+        print(loc.current.overview)
+    else:
+        print(loc.current_cardinal.long_desc)
 
 
 def turn_around(new_cardinal):
+    #print("[PLAYER MOVEMENT:: <turn_around>]")
     if not isinstance(new_cardinal, cardinalInstance):
-        print("turn_around in player_movement requires cardinalInstance, but got:")
-        print(f"{new_cardinal}, type: {type(new_cardinal)}")
+        print(f"turn_around in player_movement requires cardinalInstance, but got type: {type(new_cardinal)}:")
+        print(f"{new_cardinal}")
         exit()
-    print(f"You turn to face the {new_cardinal.ern_name}")
     loc.set_current(loc=None, cardinal=new_cardinal)
-    print(new_cardinal.long_desc)
+    print(f"You turn to face the {loc.current_cardinal.ern_name}")
+    print(f"{loc.current_cardinal.long_desc}")
 
