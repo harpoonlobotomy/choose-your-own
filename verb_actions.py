@@ -33,7 +33,7 @@ flag_actions = {
 
 
 in_words = ["in", "inside", "into"]
-to_words = ["to", "towards", "at"] ## these two (< + ^) are v similar but have some exclusive uses, so keeping them separately makes sense here.
+to_words = ["to", "towards", "at", "for"] ## these two (< + ^) are v similar but have some exclusive uses, so keeping them separately makes sense here. # 'for' in the sense of 'leave for the graveyard'.
 down_words = ["down"]
 
 
@@ -235,6 +235,29 @@ def inst_from_idx(dict_entry, kind_str, return_str=False):
 
 def turn_cardinal(prospective_cardinal, turning = True):
 
+    if prospective_cardinal in ("left", "right"):
+        print("prospective cardinal in left/right")
+        current_facing = loc.current_cardinal.name
+        turning_dict = {
+            "north":0,
+            "east":1,
+            "south":2,
+            "west":3
+        }
+        #left = 1
+        #right = -1
+        if prospective_cardinal == "left":
+            new_int = int((turning_dict[current_facing] + 1)%4)
+        else:
+            new_int = int((turning_dict[current_facing] - 1)%4) ## will this wrap around to go from 0 to 3?
+        print(f"NEW INT: {new_int}")
+        for k, v in turning_dict.items():
+            if v == new_int:
+                print(f"V == new_int: {v}")
+                prospective_cardinal = loc.by_cardinal(k)
+                print(f"Prospective cardinal is now: {prospective_cardinal.name}")
+
+
     if isinstance(prospective_cardinal, dict):
         test = prospective_cardinal.get("cardinal")
         if test:
@@ -283,6 +306,10 @@ def go(format_tuple, input_dict): ## move to a location/cardinal/inside
 
     if (direction_entry and direction_entry["str_name"] in to_words and len(format_tuple) < 5) or (not direction_entry and len(format_tuple) < 4):
         if location_entry and not cardinal_entry:
+            if location_entry["instance"] == loc.current:
+                if input_dict[0].get("verb") and input_dict[0]["verb"]["str_name"] == "leave":
+                    print("You can't leave without a new destination in mind. Where do you want to go?")
+                    return
             new_relocate(new_location=location_entry["instance"])
 
         elif cardinal_entry and not location_entry:
@@ -325,24 +352,7 @@ def look(format_tuple, input_dict):
         elif direction_entry != None: # if facing north, turn east, etc.)
             intended_direction = direction_entry["str_name"]
             if intended_direction in ("left", "right"):
-                current_facing = loc.current_cardinal.name
-                turning_dict = {
-                    "north":0,
-                    "east":1,
-                    "south":2,
-                    "west":3
-                }
-
-                #left = 1
-                #right = -1
-                if intended_direction == "left":
-                    new_int = int((turning_dict[current_facing] + 1)%4)
-                else:
-                    new_int = int((turning_dict[current_facing] - 1)%4) ## will this wrap around to go from 0 to 3?
-
-                for k, v in turning_dict.items():
-                    if v == new_int:
-                        turn_cardinal(k)
+                turn_cardinal(intended_direction, turning=False)
 
         elif format_tuple[1] == "noun":
             item_interactions.look_at_item(inst_from_idx(input_dict[1], "noun"))
@@ -351,8 +361,17 @@ def look(format_tuple, input_dict):
     elif len(format_tuple) == 3:
         if format_tuple[2] == "noun" and format_tuple[1] == "direction":
             item_interactions.look_at_item(inst_from_idx(input_dict[2], "noun"))
+        elif format_tuple[2] == "cardinal" and format_tuple[1] == "direction":
+            turn_cardinal(inst_from_idx(input_dict[2], "cardinal"), turning = False)
 
+    elif len(format_tuple) == 4:
+        if cardinal_entry and location_entry:
+            if location_entry["instance"] != loc.current:
+                print(f"You can only look at locations you're currently in. Do you want to go to {location_entry["instance"].name}?")
+            else:
+                turn_cardinal(cardinal_entry["instance"], turning = False)
     else:
+
         print(f"format list len 2, no idea what's happening: {format_tuple}, input_dict")
 
 
@@ -518,7 +537,8 @@ def turn(format_tuple, input_dict):
         new_cardinal = loc.by_cardinal(new_cardinal_str)
         turn_cardinal(new_cardinal)
 
-
+    if direction_entry and direction_entry["str_name"] in ("left", "right"):
+        turn_cardinal(direction_entry["str_name"])
 
 
     #return "new_cardinal", new_cardinal
@@ -531,26 +551,44 @@ def take(format_tuple, input_dict):
         noun_inst = inst_from_idx(input_dict[noun_idx], "noun")
         #print(f"format_tuple[noun_idx]: {format_tuple[noun_idx]}")
         #print(f"input_dict[noun_idx] inst_from_idx: {noun_inst}")
+        #print(f"Noun inst location: {noun_inst.location.place_name}")
 
-        confirmed_inst = registry.check_item_is_accessible(noun_inst)
-        if confirmed_inst:
-            print(f"Noun inst {confirmed_inst.name} can be accessed.")
-            registry.pick_up(confirmed_inst, inventory_list=game.inventory)
+        container, reason_val = registry.check_item_is_accessible(noun_inst)
+        if reason_val not in (0, 5):
+            print(f"Cannot take {noun_inst.name}.")
+            if reason_val == 2:
+                print(f"{noun_inst.name} is already in your inventory.")
+        #if reason_val == 0:
+        #    print("REASON VAL:: Accessible item. continue with action.")
+        #elif reason_val == 1:
+        #    print("REASON VAL:: Item is in a container that is closed and/or locked.")
+        #elif reason_val == 2:
+        #    print("REASON VAL:: ITEM IS IN INVENTORY ALREADY.")
+        #elif reason_val == 3:
+        #    print("REASON VAL:: Item is not at the current location or on your person.")
+        else:
+            if reason_val == 5:
+                print(f"Item {noun_inst.name} is in an container, but you can take it.")
+                registry.move_from_container_to_inv(noun_inst, inventory=game.inventory, parent=container)
+            else:
+                print(f"Noun inst {noun_inst.name} can be accessed.")
+                registry.pick_up(noun_inst, inventory_list=game.inventory)
+
     # verb_noun == pick up noun
     # verb_dir_noun == pick up noun
     # verb_noun_sem_noun pick up noun with noun (eg something hot with a thick glove)
     # verb_noun_dir_noun == take ball from bag
     # verb_noun_dir_noun_dir_loc == take ball from bag at location (if loc == cur_loc)
-    pass
 
 def pick_up(format_tuple, input_dict): # should be 'take'
 
-    object_inst = None
-    if len(format_tuple) == 2:
-        object_inst = two_parts_a_b(input_dict)
-
-        if object_inst:
-            print(f"Put {object_inst.name} in your inventory.")
+    take(format_tuple, input_dict)
+    #object_inst = None
+    #if len(format_tuple) == 2:
+    #    object_inst = two_parts_a_b(input_dict)
+#
+    #    if object_inst:
+    #        print(f"Put {object_inst.name} in your inventory.")
 
 
 def put(format_tuple, input_dict, location=None):
@@ -670,15 +708,14 @@ def router(viable_format, inst_dict):
     for v in inst_dict.values():
         for data in v.values():
             quick_list.append(data["str_name"])
+    MOVE_UP = "\033[A"
+    print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {" ".join(quick_list)}  ]]\033[0m\n')
 
-    print(f'\n\033[1;32m[[  {" ".join(quick_list)}  ]]\033[0m\n')
-
-    print(f"Dict for output: {inst_dict}")
-    location = None
+    #print(f"Dict for output: {inst_dict}")
 
     for data in inst_dict.values():
         for kind, entry in data.items():
-            print(f"kind: {kind}, entry: {entry}")
+            #print(f"kind: {kind}, entry: {entry}")
             #kinds.append(kind)
             if kind == "verb":
                 verb_inst = entry["instance"]

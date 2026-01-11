@@ -253,7 +253,7 @@ def is_item_in_container(item, inventory_list=None):
     if hasattr(inst, "contained_in"):
         container = inst.contained_in
         return container, inst
-    return None, None
+    return None, inst
 
 def generate_clean_inventory(inventory_inst_list=None, will_print = False, coloured = False):
 
@@ -547,9 +547,9 @@ def do_input():
     if enable_tui:
         move_up = ""
 
-    if text == "" or text == None:
-        do_print(assign_colour(f"{move_up}{HIDE}(Chosen: <NONE>)", "yellow"))
-    else:
-        do_print(assign_colour(f'{move_up}{HIDE}Chosen: ({text.strip()})', 'yellow'))
+    #if text == "" or text == None:
+    #    do_print(assign_colour(f"{move_up}{HIDE}(Chosen: <NONE>)", "yellow"))
+    #else:
+    #    do_print(assign_colour(f'{move_up}{HIDE}Chosen: ({text.strip()})', 'yellow'))
     return text
 

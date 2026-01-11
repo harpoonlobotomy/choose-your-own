@@ -10,10 +10,31 @@ def look_at(response):
     print("[LOOK_AT] in item interactions.")
     print(f"Response: {response}")
 
-def look_at_item(item_inst):
+
+def look_at_item(item_inst): ## this is just using everything from registry. Should really just be in registry....
+
     if isinstance(item_inst, ItemInstance):
-        print(f"You look at the {item_inst.name}")
-        print(registry.describe(item_inst, caps=True))
+        #print(f"item_inst.location: {item_inst.location}")
+        confirmed, reason_val = registry.check_item_is_accessible(item_inst)
+        if reason_val not in (0, 2):
+            print(f"Cannot look at {item_inst.name}.")
+        #if reason_val == 0:
+        #    print("REASON VAL:: Accessible item. continue with action.")
+        #elif reason_val == 1:
+        #    print("REASON VAL:: Item is in a container that is closed and/or locked.")
+        #elif reason_val == 2:
+        #    print("REASON VAL:: ITEM IS IN INVENTORY ALREADY.")
+        #elif reason_val == 3:
+        #    print("REASON VAL:: Item is not at the current location or on your person.")
+
+        else:
+            if reason_val == 2:
+                extra = " in your inventory."
+            else:
+                extra = "."
+            print(f"You look at the {item_inst.name}{extra}")
+            print(registry.describe(item_inst, caps=True))
+
 
 def add_item_to_loc(item_instance, location=None):
 
@@ -27,8 +48,6 @@ def add_item_to_loc(item_instance, location=None):
     else:
         print("add_item_to_location needs a cardinalInstance.")
         exit
-
-
 
 
 def add_item_to_container(container:ItemInstance):

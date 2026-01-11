@@ -34,7 +34,7 @@ meta = "meta"
 #    "verb_noun_noun": f"{verb} o{null} {noun} {null} o{null} {noun}"
 #}
 cardinals = ["north", "east", "south", "west"]
-directions = ["down", "up", "left", "right", "away", "toward", "towards", "closer", "further", "to", "against", "across", "at", "in", "on", "from", "inside", "away", "into"]
+directions = ["down", "up", "left", "right", "away", "toward", "towards", "closer", "further", "to", "against", "across", "at", "in", "on", "from", "inside", "away", "into", "for"]
 ## "in front of"?? Need to be able to cope with that.
 
 nulls = ["the", "a", "an"]
@@ -159,7 +159,7 @@ verb_defs_dict = {
     ## NOTE: Allowed_null is not used at present. All nulls are treated as equal, and all sem/loc/dirs are treated as viable in all cases. Will need to change this later but for now it works alright.
     "go": {"alt_words":["go to", "approach"], "allowed_null": None, "formats": [verb_only, verb_loc, verb_dir, verb_dir_loc, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car]},
     "turn": {"alt_words": [""], "allowed_null": None, "formats": [verb_car, verb_sem, verb_dir, verb_dir_car, verb_dir_car_loc]}, # Turn only changes the cardinal, does not move otherwise.
-    "leave": {"alt_words": ["depart", ""], "allowed_null": None, "formats": [verb_only, verb_loc, verb_noun_dir_noun]},
+    "leave": {"alt_words": ["depart", ""], "allowed_null": None, "formats": [verb_only, verb_loc, verb_dir_loc, verb_noun_dir_noun]},
     "combine": {"alt_words": ["mix", "add"], "allowed_null": ["with", "and"], "formats": [verb_noun_sem_noun, verb_noun_dir_noun, verb_noun]},
     "separate": {"alt_words": ["remove", ""], "allowed_null": ["from", "and"], "formats": [verb_noun_sem_noun, verb_noun_dir_noun, verb_noun]},
     "throw": {"alt_words": ["chuck", "lob"], "allowed_null": ["at"], "formats": [verb_noun, verb_noun_dir, verb_noun_sem_noun, verb_noun_dir_noun, verb_noun_dir_loc]}, # throw ball down, throw ball at tree

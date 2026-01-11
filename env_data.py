@@ -79,7 +79,7 @@ loc_dict = {
             "exitwall": "west",
             },
 
-    "forked tree branch": {"descrip": "None yet...", "inside":False,
+    "forked tree branch": {"descrip": "You've climbed up a gnarled old tree, and found a relatively safe place to sit, in the fork of its broad branches. This needs more description but that's all that's written for now.", "inside":False,
             "electricity": False, "nature": True,
             "north": {"short_desc": "The entrace gates are",
                 "long_desc": "You think you could leave through the large wrought-iron gates to the north. They're imposing but run-down; this graveyard doesn't get as much love as it could.",
@@ -304,10 +304,8 @@ class placeRegistry:
             loc = self.current
         elif isinstance(loc, str):
             loc = self.place_by_name(self, loc)
-            
         cardinal_inst = locRegistry.cardinals[loc][cardinal_str]
         return cardinal_inst
-
 
 locRegistry = placeRegistry()
 

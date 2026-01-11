@@ -524,3 +524,85 @@ Why is the headstone the only thing that prints, even though the glass jar is ou
 TypeError: unhashable type: 'set'
 
 Tried to pick up the fish food I just dropped, and this. So old_loc is being stored as a set, when it should be a cardinalInstance. Need to work on that.
+
+5.09pm 12/1/26
+
+    self.by_location.setdefault(cardinal_inst, set()).add(inst)
+    self.by_cardinal_placename.setdefault(cardinal_inst.place_name, set()).add(inst)
+setting up two parallel dicts for item location. It's messy at the moment.
+
+
+6.56pm
+Have fixed the item locations, I think. Not using the placename version at all so will remove it again later.
+Cardinals are no longer sub-parts of locations, but instead are just their place_name versions directly. Will cause problems for locations without four cardinal locations potentially, but will come to that later.
+Maybe should add a tiny location like a shrine or something that only has one cardinal direction, either you're at the shrine or you're not. Will need to customise loc.current.overview and add additional checks for whether location has x cardinal or not. But for now, you can go to any location, go from any location to any other location (generally or by cardinal location), picking up and dropping items seems to work (though the descriptions don't update; wasn't too much of an issue before because if the item list, but now there's no item list printed by default there's no way to know the active items available at all unless you try to pick things up, which isn't acceptable.)
+
+The user_input options still work, which is nice. So `show visited`, `d`, `i`, etc. Though `i` and `inventory` currently show different things, as the latter is done via membrane. Need to remove one of those. Not sure which.
+
+Current problem to fix:
+#   File "d:\Git_Repos\choose-your-own\itemRegistry.py", line 282, in run_check
+#     if confirmed_container.is_locked or confirmed_container.is_closed:
+#        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# AttributeError: 'ItemInstance' object has no attribute 'is_locked'
+
+
+Okay that one's done, I think.
+
+Next:
+
+
+[[  get glass jar  ]]
+
+take FUNCTION
+Noun inst glass jar can be accessed.
+[[move item glass jar]]
+
+(inventory at this time:
+severed tentacle
+paperclip x2
+gardening mag
+fish food
+regional map
+car keys
+anxiety meds
+batteries
+glass jar*
+)
+
+[[  get dried flowers  ]]
+
+take FUNCTION
+Item dried flowers is in an container, but you can take it.
+[[move item dried flowers]]
+
+
+[[  drop dried flowers  ]]
+
+drop FUNCTION
+
+
+i
+INVENTORY:
+
+paperclip x2
+puzzle mag
+unlabelled cream
+regional map
+batteries
+car keys
+glass jar
+dried flowers
+
+> Issue:
+Dried flowers were picked up inside the jar, but not removed from location as I was then able to pick them up. And, after dropping, they're still in the inventory.
+So I need to rework the inventory child setup a bit to work with the new system.
+
+
+Going to make a new scene just for testing.
+Needs:
+#   a locked box that can be picked up
+#   a key for that box
+#   an item in that box that can only be seen/interacted w/ after the box is unlocked + opened.
+#   an open container with an item in, both of which can be picked up (the container + child if present, or just the child)
+
+I need to use setattr far more. Been sleeping on that one.

@@ -44,13 +44,17 @@ def slowWriting(txt, speed=0.001, end=None, edit=False): # Just keeping this her
 
 def get_visited_map():
 
-    for place_name, place_obj in loc.places.items():
+    for place_obj in loc.places:
         if place_obj.visited:
-            location = loc.places[place_name]
-            do_print(f"Visited {place_name}. \n {assign_colour(f'Description: {location.overview}', "b_yellow")}")
-            get_items_at_here(place=place_name, print_list=True)
+            do_print(f"Visited {place_obj.name}. \n {assign_colour(f'Description: {place_obj.overview}', "b_yellow")}")
+            for cardinal in loc.cardinals[place_obj]:
+                cardinal_inst = loc.cardinals[place_obj][cardinal]
+                items = get_items_at_here(place=cardinal_inst, print_list=False, return_coloured=True)
+                if items:
+                    items = ", ".join(items)
+                    print(f"Items at {cardinal_inst.place_name}: {items}")
 
-    do_print("End of Past Visits.")
+    do_print("\nEnd of Past Visits.")
 
 
 def get_items_at_here(print_list=False, return_coloured=True, place=loc.current_cardinal) -> list: # default to current_cardinal as place, otherwise you have to state what you want.
@@ -58,8 +62,8 @@ def get_items_at_here(print_list=False, return_coloured=True, place=loc.current_
     instance_objs_at = (registry.get_item_by_location(place))
         #print(f"Instance objs at: {instance_objs_at}")
 
-    if not instance_objs_at:
-        print(f"There are no items at {place.place_name}")
+    #if not instance_objs_at:
+    #    print(f"There are no items at {place.place_name}")
 
     to_print_list = []
     coloured_list = []
@@ -101,7 +105,7 @@ def do_action(action:str, inst:ItemInstance|str)->list:
 
     elif "add to" in action:
 
-        add_item_to_container(inst)
+        registry.add_item_to_container(inst)
 
         # currently not tracking how 'full' a container is, so implement that and then check against it.
         # then list any items that would fit and let user choose from that list, and then add that to the container and remove from open inventory. (though currently, open inventory includes in-container items.)
@@ -288,8 +292,8 @@ def god_mode():
                 except Exception as e:
                     do_print(f"Cannot set {text}: {e}.")
         if "done" in text or text == "":
-            if text == "":
-                do_print(assign_colour(f"(Chosen: <NONE>) [god_mode]", "yellow"))
+            #if text == "":
+                #do_print(assign_colour(f"(Chosen: <NONE>) [god_mode]", "yellow"))
             do_print("Returning to game with changes made.")
             break
 
@@ -332,11 +336,9 @@ def user_input():
         do_print(f"    inventory: {inventory_names}, inventory weight: [{len(inventory_names)}], carryweight: [{game.carryweight}]")
         do_print(f"    Player data: {game.player}")
         do_print()
-        return "done"
     if text.lower() == "i":
         # removed the print line from here, goes from 3 blank lines between i and inventory to 1.
         do_inventory()
-        return "inventory_done"
     if text.lower() == "d" or text.lower() == "description": ##TODO: make this a function instead of having it here. This is silly.
         #loc_data = places[game.place]
         do_print(assign_colour(f"[ Describe location. ]", "yellow"))
@@ -348,23 +350,21 @@ def user_input():
         if is_items:
             do_print(assign_colour("You see a few scattered objects in this area:", "b_white"))
             get_items_at_here(print_list=True)
-        return "done"
     if text.lower() == "show visited":
         get_visited_map()
-        return "done"
-    if text.lower().startswith("drop "):
-        #do_print(f"Text starts with drop: {text}")
-        textparts=text.split()[1:]
-        #do_print(f"textparts: {textparts}, len: {len(textparts)}")
-        if len(textparts) > 1:
-            textparts = " ".join(textparts[0:])
-        else:
-            textparts = textparts[0]
-        do_action("drop", textparts)
+        text = None
+    #if text.lower().startswith("drop "):
+    #    #do_print(f"Text starts with drop: {text}")
+    #    textparts=text.split()[1:]
+    #    #do_print(f"textparts: {textparts}, len: {len(textparts)}")
+    #    if len(textparts) > 1:
+    #        textparts = " ".join(textparts[0:])
+    #    else:
+    #        textparts = textparts[0]
+    #    do_action("drop", textparts)
         #item = instance_name_in_inventory(textparts)
         #if item:
         #    drop_loot(item)
-        return "drop_done"
     if text and text.lower() in ("exit", "quit", "stop", "q"):
         # Should add the option of saving and returning later.
         ##TODO: Need to work on this. Not urgently, but I'd at least like the setup done so it's an option conceptually; pretty much save everything in game, registry and item_management (or at least the data required to reconstruct). Will be a project in itself. Maybe tomorrow.
@@ -379,6 +379,7 @@ def option(*values, no_lookup=None, print_all=False, none_possible=True, preambl
 
     if preamble:
         print(preamble)
+    print("\n")
     test=user_input()
 
     response = run_membrane(test)
@@ -924,16 +925,15 @@ def new_day():
 def describe_loc():
     logging_fn()
 
-    loc_data = loc.current
-    slowWriting(f"You take a moment to take in your surroundings. {loc_data.overview}")
-    test=option(game.cardinals, "go elsewhere", print_all=True, preamble="Pick a direction to investigate, or go elsewhere?")
-    ## TODO: I miss when it used to print 'chosen: (go elsewhere)' if I entered 'g'. Need to get that back.
-    if test in game.cardinals:
-        loc.current_cardinal = test
-        look_around()
-    else:
-        slowWriting(f"You decide to leave {assign_colour(loc.current.the_name, 'loc')}")
-        relocate()
+    slowWriting(f"You take a moment to take in your surroundings. {loc.current.overview}")
+    #test=option(game.cardinals, "go elsewhere", print_all=True, preamble="Pick a direction to investigate, or go elsewhere?")
+    ### TODO: I miss when it used to print 'chosen: (go elsewhere)' if I entered 'g'. Need to get that back.
+    #if test in game.cardinals:
+    #    loc.current_cardinal = test
+    #    look_around()
+    #else:
+    #    slowWriting(f"You decide to leave {assign_colour(loc.current.the_name, 'loc')}")
+    #    relocate()
 
 def inner_loop(speed_mode=False):
     logging_fn()
@@ -946,8 +946,8 @@ def inner_loop(speed_mode=False):
         slowWriting(f"`{game.playername}`, you think to yourself, `is it weird to be in {assign_colour(loc.current.the_name, 'loc')} at {game.time}, while it's {game.weather}?`")
         do_print()
         describe_loc()
-
-    test=option("stay here", "go elsewhere", preamble="What do you want to do? Stay here and look around, or go elsewhere?")
+    while True:
+        test=option("stay here", "go elsewhere", preamble="")#What do you want to do? Stay here and look around, or go elsewhere?")
     #turning these off, so it's determined by typed input, not reliant on the entered keywords. Will change the fn sig later.
     #if test in ("stay", "stay here", "look"):
     #    slowWriting("You decide to look around a while.")
@@ -995,7 +995,7 @@ def run():
     #do_clearscreen()
     playernm = ""
 
-    test_mode=True
+    test_mode=False#True
     if test_mode:
         playernm = "Testbot"
         enable_tui = False
@@ -1034,8 +1034,8 @@ def run():
         slowWriting("[[ Type 'help' for controls and options. ]]")
         do_print()
 
-    while test != "quit":
-        inner_loop(speed_mode=test_mode)
+    #while test != "quit":
+    inner_loop(speed_mode=test_mode)
 
 
 def temp_run():
