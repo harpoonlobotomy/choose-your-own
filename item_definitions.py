@@ -20,10 +20,13 @@ CAN_PICKUP = "can_pick_up"
 CONTAINER = "container"
 FLAMMABLE = "flammable"
 DIRTY = "dirty"
-LOCKED = "locked"
+LOCKED = "is_locked"
+CLOSED = "is_closed"
 CAN_LOCK = "can_lock"
+IS_KEY = "is_key"
 FRAGILE = "fragile"
 CAN_OPEN = "can_open"
+IS_HIDDEN = "is_hidden" # eg a key is hidden in a scroll, cannot be seen until scroll it looked at.
 CAN_READ = "can_read"
 CAN_COMBINE = "can_combine"
 WEIRD = "weird"
@@ -52,7 +55,8 @@ item_actions = [  ## NOTE: I think this is only used for get_actions_for_item, w
     DUPE,
     IS_CHILD,
     COMBINE_WITH,
-    CAN_REMOVE_FROM
+    CAN_REMOVE_FROM,
+    IS_HIDDEN
     ]
 
 
@@ -105,6 +109,8 @@ detail_data = { # should tie this into the class directly. Will leave it here fo
 # failure = <10, success = 10-19, crit = 20.
 "paper_scrap_details": {"is_tested": True, "failure": "The last three digits are 487, but the rest are illegible.", "success": "It takes you a moment, but the number on the paper is `07148 718 487'. No name, though.", "crit": "The number is `07148 718 487. Looking closely, you can see a watermark on the paper, barely visible - `Vista Continental West`. Do you know that name?"},
 
+"scroll_details": {"is_tested": True, "failure": "Unrolling the scroll, pieces of it fall to dust in your hands.", "crit": "You carefully unroll the scroll, and see a complex drawing on the surface - you've seen something like it in a book somewhere..."},
+
 "puzzle_mag_details": {"is_tested":False, "print_str": "A puzzle magazine. Looks like someone had a bit of a go at one of the Sudoku pages but gave up. Could be a nice way to wait out a couple of hours if you ever wanted to."},
 
 "fashion_mag_details": {"is_tested":False, "print_str": "A glamourous fashion magazine, looks like it's a couple of years old. Not much immediate value to it, but if you wanted to kill some time it'd probably be servicable enough."},
@@ -146,7 +152,13 @@ SECONDARY RULES:
 graveyard = "graveyard"
 city = "city hotel room" ## better way of doing it, in case I want to change the names of locations later. Ideally, have this centralised somewhere accessible.
 
+## CONTENTS OF CONTAINER MUST BE LISTED AFTER THE CONTAINER, OR IT FAILS TO RECOGNISE THEM.
 item_defs_dict = {
+    "scroll": {"name": "an old scroll", "description": f"An old parchment scroll, seemingly abandoned at a hidden shrine.", "flags": [CAN_PICKUP, CAN_OPEN, CAN_READ, CONTAINER], "item_size": SMALLER_THAN_BASKETBALL, "starting_location": {"test shrine": "north"}, "container_limits": SMALL_FLAT_THINGS, "starting_children": ["old gold key"],},
+    "old gold key": {"name": "an old gold key", "description": f"A simple, sturdy looking gold key, worn with age but still in tact.", "flags": [CAN_PICKUP, IS_KEY, IS_HIDDEN], "item_size": SMALL_FLAT_THINGS, "starting_location": {"test shrine": "north"}, "started_contained_in": "scroll"},
+    "ivory pot": {"name": "an ivory-coloured jar", "description": f"A tall scratched ivory pot; no label, and a cork stopper held in place with a fine but strong-looking wire tied around the neck.", "description_no_children": f"A tall scratched ivory pot; no label, and a cork stopper held in place with a fine but strong-looking wire tied around the neck.", "flags": [CONTAINER, CAN_PICKUP, CAN_OPEN, CAN_LOCK, LOCKED, CLOSED], KEY:"wire cutters", "container_limits": SMALLER_THAN_APPLE, "item_size": SMALLER_THAN_BASKETBALL, "starting_location": {"test shrine": "north"}},
+    "metal pot": {"name": "an metal pot", "description": f"A stout metal pot, which would be called a pot if I wasn't testing how it deals with two jars; it seems to be dug into the earth, and stuck fast. It has a flat, plate-like lid, with a small gold lock holding it closed.", "flags": [CONTAINER, CAN_OPEN, CAN_LOCK, LOCKED, CLOSED], KEY:"old gold key", "container_limits": SMALLER_THAN_BASKETBALL, "item_size": BIGGER_THAN_BASKETBALL, "starting_location": {"test shrine": "north"}, "starting_children": ["wire cutters"],},
+    "wire cutters": {"name": "a pair of wire cutters", "description": f"A slightly rusted pair of wire cutters. They look like they'll still work, though.", "flags": [CAN_PICKUP, IS_KEY, IS_HIDDEN], "item_size": PALM_SIZED, "starting_location": {"test shrine": "north"}, "started_contained_in": "metal pot"},
     "watch": {"name": "a gold watch", "description": f"A scratched gold watch.", "flags": [CAN_PICKUP], "item_size": SMALLER_THAN_APPLE},
     "glass jar": {"name": "a glass jar with flowers", "description": f"a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.",
                     "description_no_children": "a glass jar, now empty aside from some bits of debris.", "starting_children": ["dried flowers"], "name_children_removed":"a glass jar", "flags":[CAN_PICKUP, CONTAINER, DIRTY], "container_limits": SMALLER_THAN_APPLE, "item_size": SMALLER_THAN_BASKETBALL, "starting_location": {graveyard: "east"}},

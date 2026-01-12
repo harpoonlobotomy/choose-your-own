@@ -57,6 +57,7 @@ formats = {
     "verb_noun_dir_meta": (verb, noun, direction, meta), # remove item from inventory == drop item
 
     ### CARDINAL ###
+    "car": (car,), # (go) west, assume verb 'go'
     "verb_car": (verb, car), # go west
     "verb_dir_car": (verb, direction, car), # go to the west
     "verb_dir_car_loc": (verb, direction, car, location), # go to east graveyard
@@ -65,6 +66,7 @@ formats = {
     ### LOCATION ONLY ###
     "verb_only": (verb,), #'leave'
     "loc": (location,), #location only, assume verb 'go'.
+    "dir": (direction,), #direction only, assume verb 'go'.
     "verb_sem": (verb, sem),
     "verb_dir": (verb, direction), #go up, go outside
     "verb_sem": (verb, sem), # 'look around'
@@ -105,6 +107,8 @@ formats = {
 """
 
 loc_only = formats["loc"]
+dir_only = formats["dir"]
+car_only = formats["car"]
 ### 'sem' == semantic operators, eg 'with' in 'combine x with y'.
 meta = formats["meta"]
 verb_meta = formats["verb_meta"]
@@ -161,7 +165,7 @@ combined_wordphrases = { # maybe something like this, instead of the hardcoded e
 
 verb_defs_dict = {
     ## NOTE: Allowed_null is not used at present. All nulls are treated as equal, and all sem/loc/dirs are treated as viable in all cases. Will need to change this later but for now it works alright.
-    "go": {"alt_words":["go to", "approach", "head", "travel", "move"], "allowed_null": None, "formats": [loc_only, verb_only, verb_loc, verb_dir, verb_dir_loc, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car]},
+    "go": {"alt_words":["go to", "approach", "head", "travel", "move"], "allowed_null": None, "formats": [loc_only, dir_only, car_only, verb_only, verb_loc, verb_dir, verb_dir_loc, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car]},
     "turn": {"alt_words": [""], "allowed_null": None, "formats": [verb_car, verb_sem, verb_dir, verb_dir_car, verb_dir_car_loc]}, # Turn only changes the cardinal, does not move otherwise. ## I think I can get rid of 'turn' and 'leave' here, and just use 'go' and route through there. Makes more sense. Do all the checks up-front, and then differentiate. Will think on it.
     "leave": {"alt_words": ["depart", ""], "allowed_null": None, "formats": [verb_only, verb_loc, verb_dir_loc, verb_noun_dir_noun]},
     "combine": {"alt_words": ["mix", "add"], "allowed_null": ["with", "and"], "formats": [verb_noun_sem_noun, verb_noun_dir_noun, verb_noun]},

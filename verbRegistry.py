@@ -48,6 +48,8 @@ class VerbInstance:
         self.distinction = attr.get("distinction") if attr.get("distinction") else None
         self.colour = None
 
+    def __repr__(self):
+        return f"<verbInstance {self.name} ({self.id})>"
 
 class VerbRegistry:
     """
@@ -60,7 +62,6 @@ class VerbRegistry:
         self.verbs = {}      # id -> VerbInstance
         self.meta_verbs = {}
         self.all_meta_verbs = {}
-        self.by_name = {}        # verb_key -> verb
         self.by_format = {}        # format -> set of verbs
         self.by_alt_words = {}
         self.list_null_words = set()
@@ -74,8 +75,8 @@ class VerbRegistry:
     def create_verb_instance(self, verb_key:str, attr:dict)->VerbInstance:
 
         inst = VerbInstance(verb_key, attr)
+        self.verbs[verb_key]=inst
         self.name = verb_key
-        self.by_name.setdefault(verb_key, list()).append(inst)
         for alt_word in attr["alt_words"]:
             if alt_word == "":
                 continue
@@ -331,8 +332,8 @@ class Parser:
             word="go"
         viable_instance = None
         #print(f"Word: {word}")
-        if verbs.by_name.get(word):
-            viable_instance = (verbs.by_name.get(word)[0])
+        if verbs.verbs.get(word):
+            viable_instance = verbs.verbs.get(word)
         else:
             #print(f"verbs.by_alt_words: ")
             #print(verbs.by_alt_words)
@@ -379,9 +380,17 @@ class Parser:
 
         for i, token in enumerate(tokens):
             options = Parser.token_role_options(token)
-            if len(tokens) == 1 and "location" in options:
-                instance = Parser.get_viable_verb(token, force_location=True)
-                verb_instances.append({i:instance})
+            #print(f"Options: {options}")
+            if len(tokens) == 1:
+                #print(f"Token.kind: {token.kind}, type: {type(token.kind)}")
+                if list(token.kind)[0] in ("location", "direction"):
+                    #print(f"Token kind: {token.kind}")
+                    instance = Parser.get_viable_verb(token, force_location=True)
+                    verb_instances.append({i:instance})
+                if list(token.kind)[0] == "cardinal":
+                    #print(f"Token: {token}")
+                    instance = Parser.get_viable_verb(token, force_location=True)
+                    verb_instances.append({i:instance})
             #print(f"Options: {options}")
             if "verb" in options:
                 instance = Parser.get_viable_verb(token)
@@ -489,7 +498,7 @@ class Parser:
         #print(f"Items: {items}")
         #print("by alt words: ", verbs.by_alt_words.get(verb_name))
         if items and verb_name in items:
-            verb_obj = verbs.by_name.get(verb_name)[0]
+            verb_obj = verbs.verbs.get(verb_name)
             if not verb_obj:
                 verb_obj = verbs.by_alt_words.get(verb_name)[0] ## Currently just takes the first. I think this is fine for now, later would like to set some minor refinement rules (such as the 'if 'fire' in noun token, then 'burn' instead of 'place' if 'burn' in by_alt_words options. But for now this is fine.)
             #print(f"verb_obj: {verb_obj}")
@@ -546,27 +555,6 @@ class Parser:
             else:
                 dict_for_output[i]={item:{"instance":None, "str_name":item_name}}
 
-        #print(f"Build dict: {initial_dict}")
-        #for token_index, data in initial_dict.items():
-        #    print(f"Token index: {token_index}, data: {data}")
-        #    #   idx: `0`, kind: `{'verb': 'drop'}`
-        #    for kind, entry in data.items():
-        #        print(f"kind: {kind}, entry: {entry}")
-        #        #   k: `verb`, v: `drop`
-        #        if kind == "verb":
-        #            for item in confirmed_verb:
-        #                for value in item.values():
-        #                    print(f"item: {item}")
-        #                    print(f"value: {value}")
-        #                    if value.name == entry:
-        #                        print(f"Confirmed verb: {confirmed_verb}")
-        #                        print(format_key[token_index])
-        #                        print(f"Kind is verb: {entry}")
-        #                        dict_for_output[token_index][kind]=confirmed_verb
-        #            #print(f"entry {token_index} is confirmed verb {confirmed_verb.name}")
-        #        print_refined.append(entry)
-        #print(f"Dict for output: {dict_for_output}")
-        #print(f"RESULT: [[ '{"' '".join(print_refined)}' ]]")
         return dict_for_output, tokens # including tokens for any minor input detail that might matter later.
 
 
@@ -647,51 +635,9 @@ def initialise_verbRegistry():
 
     for item_name, attr in verb_defs_dict.items():
         verbs.create_verb_instance(item_name, attr)
-        #verb_inst = verbs.by_name.get(item_name)[0]
-        #print(f"Verb inst: {verb_inst}")
-        #print("formats: ")
-        #print(verb_inst.formats) # list of sets
-        #exit()
 
         if attr.get("null_words"):
             for word in attr.get("null_words"):
                 if word.lower() != None:
-                    #print(f"Word in null words: {word}")
                     verbs.list_null_words.add(word)
 
-
-if __name__ == "__main__":
-    initialise_all()
-    test=True
-    action_test=True
-    if test:
-
-        from set_up_game import set_up ## might break
-        set_up(weirdness=True, bad_language=True, player_name="Testing")
-
-
-        if action_test:
-            test_str_list = ["drop the paperclip"]
-            #test_str_list = ["go to the graveyard", "pick up the paperclip", "put batteries in wallet", "GET PAPER SCRAP FROM JAR", "place the batteries on the jar"]
-        else:
-            test_str_list = []#"go to the graveyard", "pick up the paperclip", "watch the watch", "look at watch", "put batteries in wallet", "look at batteries with wallet", "watch watch with watch", "pick up red wallet", "drop batteries in jar", "take paper scrap", "get paper scrap with number from jar", "get paper scrap from jar", "GET PAPER SCRAP FROM JAR", "place the batteries on the jar"]
-        #test_str_list = ["verb noun dir noun"]
-
-        for item in test_str_list:
-            test_str = item
-            test_print(f"\nTEST STRING: `{test_str}`", print_true=True)
-            from item_definitions import item_defs_dict
-            items = list(item_defs_dict.keys())
-            viable_format, dict_for_output = Parser.input_parser(Parser, test_str) # outputs a single format set here, not a list of one set.
-
-            if action_test:
-                print("Initialising verb membrane: ")
-                #result_dict:
-
-
-##  >   router(noun_inst, verb_inst, reformed_dict)
-                #verb_name, reformed_dict, format, tokens = parser_output
-                print(f"Reformed dict before route_verbs: {dict_for_output}")
-                #v_actions.route_verbs(dict_for_output)
-            #'winning format: ('verb', 'noun', 'direction', 'noun')
-            #Reformed list: ('put', ('verb', 'noun', 'direction', 'noun'), {0: 'place', 1: 'batteries', 2: 'on', 3: 'glass jar'}, [Token(idx=0, text='place', kind={'verb'}, canonical='place'), Token(idx=1, text='the', kind={'null'}, canonical='the'), Token(idx=2, text='batteries', kind={'noun'}, canonical='batteries'), Token(idx=3, text='on', kind={'null', 'direction'}, canonical='on'), Token(idx=4, text='the', kind={'null'}, canonical='the'), Token(idx=5, text='jar', kind={'noun'}, canonical='glass jar')])'

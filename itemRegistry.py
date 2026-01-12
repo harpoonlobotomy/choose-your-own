@@ -2,8 +2,8 @@
 from time import sleep
 import uuid
 
-from env_data import cardinalInstance
-from logger import logging_fn
+from env_data import cardinalInstance, placeInstance
+from logger import logging_fn, traceback_fn
 from env_data import locRegistry as loc
 
 print("Item registry is being run right now.")
@@ -125,7 +125,6 @@ class itemRegistry:
         self.instances = {}      # id -> ItemInstance
 
         self.by_location = {}  # (cardinalInstance) -> set of instance IDs
-        self.by_cardinal_placename = {}  # (cardinalInstance.place_name) -> set of instance IDs
         self.by_name = {}        # definition_key -> set of instance IDs
         self.by_category = {}        # category (loot value) -> set of instance IDs
         self.by_container = {}
@@ -178,6 +177,7 @@ class itemRegistry:
             parent_obj_list = self.instances_by_name(parent_name) # TODO: I've cut a lot of the comments from this section. Still needs a rework though.
             if parent_obj_list:
                 for prospective_parent in parent_obj_list:
+                    print(f"Prospective parent: {prospective_parent}")
                     pros_children = prospective_parent.starting_children
                     if inst.name in pros_children:
                         if not inst in self.instances_by_container(prospective_parent):
@@ -195,9 +195,7 @@ class itemRegistry:
                 cardinal_inst = get_card_inst_from_strings(location)
                 #print(f"CARDINAL INST IF LOCATION: {cardinal_inst}, {cardinal_inst.name}")
                 self.by_location.setdefault(cardinal_inst, set()).add(inst)
-                self.by_cardinal_placename.setdefault(cardinal_inst.place_name, set()).add(inst)
                 #print(f"SELF.BY_LOCATION: {self.by_location}")
-                #print(f"SELF.BY_CARDINAL_PLACENAME: {self.by_cardinal_placename}")
                 inst.location = cardinal_inst
                 #print(f"self.location: {inst.location}, self.location.place_name: {inst.location.place_name}")
     ## above is wrong, need to rewrite. Too braindead today.
@@ -217,7 +215,6 @@ class itemRegistry:
         # remove from location index
         if inst.location and inst.location in self.by_location:
             self.by_location[inst.location].discard(inst)
-            self.by_cardinal_placename[inst.location.place_name].discard(inst)
            # if not self.by_location_inst[inst.location]:
            #     del self.by_location_inst[inst.location]
 
@@ -226,9 +223,11 @@ class itemRegistry:
 
 
     def check_item_is_accessible(self, inst:ItemInstance) -> tuple[ItemInstance|None, int]:
-
+        logging_fn()
         from misc_utilities import is_item_in_container
         # func to check that an item to be picked up is actually eligible to be picked up #
+        confirmed_inst = None
+        reason_val = 4
 
         def run_check(inst):
             confirmed_inst = None
@@ -243,12 +242,13 @@ class itemRegistry:
             # 2 = `in inventory`
             # 3 = 'not at current location'
             # 4 = 'other error, investigate'
-            # 5 = `in a container but accessible`
+            # 5 = `in a container but accessible locally` # can pick up but not drop
+            # 6 = `in a container, accessible and in your inventory` # can drop, pick up == separate
 
             #print(f"inst.name: {inst.name}")
             #print(f"loc.current_cardinal.place_name: {loc.current_cardinal.place_name}")
             #print(f"inventory_list: {inventory_list}")
-            local_items_list = self.get_item_by_location(loc.current_cardinal.place_name)
+            local_items_list = self.get_item_by_location(loc.current)
             #print(f"inst_list: {local_items_list}")
             container, inst = is_item_in_container(inst, inventory_list)
 
@@ -258,38 +258,51 @@ class itemRegistry:
                 return confirmed_inst, reason
 
             def in_local_items_list(inst, inst_list):
-                confirmed_inst = None
+                temp_inst = None
                 if inst_list:
                     #print(f"Inst list in_local_items_list: {inst_list}")
                     if isinstance(inst_list, list|set|tuple):
                         if inst in inst_list:
-                            confirmed_inst = inst
+                            temp_inst = inst
                     else:
                         if isinstance(inst_list, ItemInstance):
                             if inst_list == inst:
-                                confirmed_inst = inst
-                    return confirmed_inst
+                                temp_inst = inst
+                    return temp_inst
                 else:
                     print("No items at this location.")
 
             if container:
                 if container in inventory_list:
                     confirmed_container = container
+                    if confirmed_container:
+                        print(f"Confirmed container: {confirmed_container}")
+                        if (hasattr(confirmed_container, "is_closed") and getattr(confirmed_container, "is_closed")) or (hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked")):
+                            print(f"Container {confirmed_container} is locked.")
+                            print(f"Container.name {confirmed_container.name}")
+                            reason = 1
+                        else:
+                            confirmed_inst = confirmed_container
+                            print("confirmed container is not locked or closed")
+                            reason = 6
+                    #reason = 2 # maybe needs another number for 'is in container which is in your inventory', not just 'accessible#
                 else:
                     confirmed_container = in_local_items_list(container, local_items_list)
-                if confirmed_container:
-                    if (hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked")) or (hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked")):
-                        print(f"Container {confirmed_container} is locked.")
-                        print(f"Container.name {confirmed_container.name}")
-                        reason = 1
+                    if confirmed_container:
+                        print(f"Confirmed container locally, not in inventory: {confirmed_container}")
+                        if (hasattr(confirmed_container, "is_closed") and getattr(confirmed_container, "is_closed")) or (hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked")):
+                            print(f"Container {confirmed_container} is locked.")
+                            print(f"Container.name {confirmed_container.name}")
+                            reason = 1
+                        else:
+                            confirmed_inst = confirmed_container
+                            reason = 5
                     else:
-                        confirmed_inst = confirmed_container
-                        reason = 5
-                else:
-                    reason = 3 # is elsewhere in a container.
+                        reason = 3 # is elsewhere in a container.
             else:
                 confirmed_inst = in_local_items_list(inst, local_items_list)
                 if confirmed_inst:
+                    #print(f"else, confirmed_inst in local_items_list: {inst}")
                     reason = 0
                 else:
                     if inst in inventory_list:
@@ -305,10 +318,11 @@ class itemRegistry:
             return None, reason
 
         if not isinstance(inst, ItemInstance):
-            if isinstance(inst, str):
+            if isinstance(inst, str) and inst != None:
                 named_instances = self.instances_by_name(inst)
-                for item in named_instances:
-                    confirmed_inst, reason_val = run_check(item)
+                if named_instances:
+                    for item in named_instances:
+                        confirmed_inst, reason_val = run_check(item)
 
         else:
             confirmed_inst, reason_val = run_check(inst)
@@ -325,7 +339,7 @@ class itemRegistry:
         if confirmed_inst != None:
             return confirmed_inst, reason_val
 
-        print(f"Could not find confirmed instance for {inst.name}")
+        print(f"Could not find confirmed instance for {inst}")
         return inst, reason_val
 
 
@@ -336,7 +350,6 @@ class itemRegistry:
         logging_fn()
 
         ## REMOVE FROM ORIGINAL LOCATION ##
-        print(f"[[move item {inst.name}]]")
         old_loc = inst.location
         #print(f"old_loc: {old_loc}")
         if old_loc and old_loc != None:
@@ -345,7 +358,6 @@ class itemRegistry:
             if self.by_location.get(old_loc):
                 #print(f"self.by_location has old_loc: {self.by_location}")
                 self.by_location[old_loc].discard(inst)
-                self.by_cardinal_placename[old_loc.place_name].discard(inst)
                 #print(f"self.by_location should not have old_loc anymore: {self.by_location}")
                 inst.location = None # remove location from item itself, will be added below if needed.
 
@@ -354,6 +366,7 @@ class itemRegistry:
         if location != None:
             if not isinstance(location, cardinalInstance):
                 print(f"move_item requires location to be cardinalInstance. Recieved `{location}` of type `{type(location)}`.")
+                traceback_fn()
                 exit()
             inst.location = location
             if not self.by_location.get(location):
@@ -404,25 +417,33 @@ class itemRegistry:
         return self.instances.get(inst_id)
 
 
-    def get_item_by_location(self, loc_cardinal:cardinalInstance)->list: ### by_location uses cardinal.place_name, not cardinal instance object or .name.
+    def get_item_by_location(self, loc_cardinal:cardinalInstance=None)->list:
         logging_fn()
 
-        items_at_cardinal = None
-        if isinstance(loc_cardinal, cardinalInstance):
-            print(f"LOC CARDINAL PLACE_NAME: {loc_cardinal.place_name}")
-            items_at_cardinal = self.by_location.get(loc_cardinal)
+        if loc_cardinal == None:
+            loc_cardinal = loc.current
 
         elif isinstance(loc_cardinal, str):
-            items_at_cardinal = self.by_cardinal_placename.get(loc_cardinal)
+            loc_cardinal = loc.by_cardinal(loc_cardinal)
+
+        elif isinstance(loc_cardinal, placeInstance):
+            print(f"Loc_cardinal in get_item_by_location is a Place: {loc_cardinal}")
+            traceback_fn()
+
+        items_at_cardinal = None
+
+        if isinstance(loc_cardinal, cardinalInstance):
+            items_at_cardinal = self.by_location.get(loc_cardinal)
 
         if items_at_cardinal:
             return items_at_cardinal
 
 
     def instances_by_name(self, definition_key:str)->list:
-        #logging_fn()
+        logging_fn()
         if self.by_name.get(definition_key):
             return self.by_name.get(definition_key)
+        #print(f"Cound not find instance for `{definition_key}` in by_name: \n{self.by_name}")
 
     def instances_by_container(self, container:ItemInstance)->list:
         logging_fn()
@@ -526,17 +547,19 @@ class itemRegistry:
 
         return inst.name
 
-    def pick_up(self, inst:str|ItemInstance, inventory_list=None, location=loc.current, starting_objects=False) -> tuple[ItemInstance, list]: ## location == cardinalInstance
+    def pick_up(self, inst:str|ItemInstance, inventory_list=None, location=None, starting_objects=False) -> tuple[ItemInstance, list]: ## location == cardinalInstance
         logging_fn()
 
         if isinstance(inst, set) or isinstance(inst, list):
             inst=inst[0]
 
+        if location == None:
+            location = loc.current
+
         if not isinstance(inst, ItemInstance):
             item_list = self.instances_by_name(inst)
             if item_list and location != loc.current:
                 local_items = self.get_item_by_location(location)
-                print(f"Local items(at {location}): {local_items}")
                 for item in item_list:
                     if local_items:
                         if item in local_items or starting_objects: # hardcode 'allow starting objects regardless'.
@@ -559,11 +582,16 @@ class itemRegistry:
             print(f"inst.flags: {inst.flags}")
             return None, inventory_list
 
-        if not starting_objects:
-            local_items = self.get_item_by_location(location)
-            if local_items and inst not in local_items:
-                print(f"[[Cannot pick up {inst.name} (not at current location)]]")
-                return None, inventory_list
+        #if not starting_objects:
+        #    local_items = self.get_item_by_location(location)
+        #    if local_items:
+        #        if inst not in local_items:
+        #            print(f"[[Cannot pick up {inst.name} (not at current location)]]")
+        #            return None, inventory_list
+        #    else:
+        #        print(f"[[Cannot pick up {inst.name} (not at current location) (no items at {loc.current.place_name})]]")
+        #        return None, inventory_list
+
 
         if inst in inventory_list: ## TODO: Add a check so this only applies to items that can be duplicated. Though really those that can't should not still remain in the world when picked up... so the problem lies in the original pick up in that case, not the dupe.
             #print("Item already in inventory. Creating new...") ## Not sure about this.
@@ -574,7 +602,8 @@ class itemRegistry:
         self.move_item(inst)
         inventory_list.append(inst)
 
-        self.starting_location = {location} # just temporarily, not in use yet. Needs formalising how it's going to work.
+        if not hasattr(self, "starting_location"): # so it only updates once, instead of being the 'last picked up at'. Though that could be useful tbh. Hm.
+            self.starting_location = {location} # just temporarily, not in use yet. Needs formalising how it's going to work.
 
         return inst, inventory_list
 
@@ -694,7 +723,7 @@ class itemRegistry:
 
         inventory_list.remove(inst)
         #print("inventory_list")
-        self.move_item(inst, loc.current_cardinal)
+        self.move_item(inst, loc.current)
         return inst, inventory_list
 
     def complete_location_dict(self):

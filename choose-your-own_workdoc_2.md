@@ -800,3 +800,186 @@ I can still have graveyard-wide things apply, cardinal.place still gives us the 
 Okay. Going to commit what I have for now and do that. Change it so all player + item-relevant things are to the cardinal-instance, so 'loc.current' is the cardinal, not the general location.
 
 Then I really need to do that test location I had the idea for last night, a proper setup just with things that will probably break and less noise.
+
+3.00 pm
+
+from env_data:
+cardinal = self.cardinals[self.current][cardinal]
+self.current_cardinal = cardinal
+
+Ah.
+So if you update by cardinal, it doesn't update the location at all, /only/ the cardinal. So then, when it later checks 'location' by cardinal.name, the location is still 'tree' or w/e. Which is why the issue doesn't happen if you
+go to graveyard
+turn east
+
+but does if you
+go to east graveyard
+
+Because :
+self.cardinals = {} # locRegistry.place_cardinals[place_instance_obj][cardinal_direction_str] <- because we look by cardinal_str here, even if 'current_cardinal' is accurate, the location won't have been updated in this context.
+
+Still kinda want to change it all to cardinalInstances though.
+
+3.08pm
+I was missing one really obvious thing in set_current:
+
+        if loc and cardinal:
+            if isinstance(loc, placeInstance) and isinstance(cardinal, cardinalInstance):
+                self.currentPlace = loc
+                self.currentCardinal = cardinal
+                return
+
+and def new_relocate() never actually sent the new location, only the cardinal. that's why.
+
+3.55pm
+got distracted. Haven't fixed it yet.
+"go to east graveyard"
+
+Inst dict: {0: {'verb': {'instance': <verbRegistry.VerbInstance object at 0x00000233A6AFABA0>, 'str_name': 'go'}}, 1: {'direction': {'instance': None, 'str_name': 'to'}}, 2: {'cardinal': {'instance': <env_data.cardinalInstance object at 0x00000233A6A87D40>, 'str_name': 'east'}}, 3: {'location': {'instance': <env_data.placeInstance object at 0x00000233A6AC6710>, 'str_name': 'graveyard'}}}
+
+then in 'look':
+loc_cardinal: <env_data.cardinalInstance object at 0x00000233A6A87D40>
+
+Okay so the cardinalInstance applied at 'east graveyard' is not 'east graveyard's', but current_location before the change. Okay.
+
+4.00pm
+
+Ahhh.
+check_cardinals is /trying/, but it's checking against 'data'. Which is the value of 'idx, data' in dict_from_parser. So it's only looking at its own entry, which obviously doesn't contain a location.
+
+So I need to expand so it can check the rest of the dict too, then it should be okay. Or I can hard-fix it elsewhere, but that feels messier. Though idk. I mean if it's not at least probably-correct, then there's no point adding the cardinalInst here at all.
+
+Okay so it /might/ be fixed. I say this tentatively.
+
+I haven't shifted everything to a cardinal-only basis yet. Playing on a stripped-down version of the main script, seeing as most of it wasn't being used anyway.
+
+
+4.41pm
+
+There were notes here, they made no sense and are gone now.
+
+
+
+8.10pm:
+
+take ivory jar
+ivory jar is now in your inventory.
+
+
+open jar
+No canonical for idx `1`, word `jar`
+No viable sequences found for open jar.
+verb
+
+So, this fails here. Not sure why. 'jar' worked before, perhaps it's because now there's more than one in the noun dict, even if they're not all viable options. I never did make that as robust as I'd thought about doing.
+
+8.12pm
+Yes, that's the issue. If I rename the new jars to pots, then I can use 'take jar' again, though obviously both pots fail.
+
+
+"instance_name_in_inventory" and "from_inventory_name" can absolutely be collapsed into one. Man so much of this is overlapping for no benefit. Beh.
+
+9.44pm
+
+[[  look at scroll  ]]
+
+You look at the scroll in your inventory.
+An old parchment scroll, seemingly abandoned at a hidden shrine.
+
+I need a way to trigger the key falling out from the scroll at this point.
+
+9.53
+Well I have it set to just reveal the contents after it's open, but it only shows  it when you first open it, then the contents are seemingly hidden. You could still take key from scroll, but you'd have to know about it. Opening doesn't move the item out of the container.
+
+Maybe I need to add container contents to container, so if not hidden and container is open, 'look at' also lists contents?
+
+10.04pm
+Have added that for now.
+
+'use key on metal pot' doesn't work, and it should. Need to fix that tomorrow.
+
+use key on metal pot
+No canonical for idx `0`, word `use`
+No verb_instance or meta_instance found in get_sequences_from_tokens. Returning None.
+TOKENS: [Token(idx=1, text='key', kind={'noun'}, canonical='old gold key'), Token(idx=2, text='on', kind={'direction'}, canonical='on'), Token(idx=3, text='metal', kind={'noun'}, canonical='metal pot')]
+No viable sequences found for use key on metal pot.
+noun direction noun
+
+(open metal pot with key) does work, though.
+
+
+10.19pm
+Also this:
+[[  take old gold key from scroll  ]]
+
+Confirmed container locally, not in inventory: <ItemInstance scroll (8d385860-d1b5-4244-a3d6-8079ededaa75)>
+old gold key is now in your inventory.
+
+should not work, as the scroll is closed.
+
+
+10.24pm
+Also this:
+
+[[  open ivory pot  ]]
+
+noun entry: {'instance': <ItemInstance ivory pot (3ee3e8cd-aa34-4689-a98c-b9cd33a9fa56)>, 'str_name': 'ivory pot'}
+noun_inst: <ItemInstance ivory pot (3ee3e8cd-aa34-4689-a98c-b9cd33a9fa56)>
+reason val: 0
+IS_LOCKED: `True`
+key: `wire cutters`
+CONTAINER: <ItemInstance wire cutters (648853ad-d8be-458e-96ae-906550e6c4ba)>
+You need to unlock it before you can open it. You do have the key, though... (wire cutters)
+
+
+[[  open ivory pot with wire cutters  ]]
+
+list(input_dict[2].values())[0]: with
+ivory pot is already open.
+
+10.48pm
+also this:
+
+ivory pot
+
+
+[[  open ivory pot  ]]
+
+noun entry: {'instance': <ItemInstance ivory pot (2e127fec-2b32-491d-b99a-490158f0f312)>, 'str_name': 'ivory pot'}
+noun_inst: <ItemInstance ivory pot (2e127fec-2b32-491d-b99a-490158f0f312)>
+reason val: 2
+IS_LOCKED: `True`
+key: `wire cutters`
+Confirmed container locally, not in inventory: <ItemInstance metal pot (120ed582-2120-49cb-b81c-eb2c631efa93)>
+Container <ItemInstance metal pot (120ed582-2120-49cb-b81c-eb2c631efa93)> is locked.
+Container.name metal pot
+Could not find confirmed instance for wire cutters
+CONTAINER: wire cutters
+It seems like you need a way to open it first...
+
+
+[[  open ivory pot with wire cutters  ]]
+
+list(input_dict[2].values())[0]: with
+ivory pot is already open.
+
+I hadn't discovered the wire cutters yet.
+
+And this:
+#   ivory pot is already open.
+is from the format_tuple 'verb, noun'. But the command was 'open x with y', so it shouldn't have been triggered...
+
+Okay so I fixed part of it, but it's still:
+
+[[  open ivory pot with wire cutters  ]]
+
+list(input_dict[2].values())[0]: with
+You open the ivory pot
+
+
+and i didn't have (or even find) the wire cutters yet.
+Oh right. The long form version doesn't check if you have the key, just checks that it's correctly identified.
+
+Not going to fix it further here, going to just make a proper lock/unlock x with key' fn. Actually I'm quite sure I made one already, just not using it. Tomorrow.
+
+Progress is being made, slowly.

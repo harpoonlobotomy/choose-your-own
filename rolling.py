@@ -27,3 +27,33 @@ def roll_risk(rangemin=None, rangemax=None):
             if game.show_rolls:
                 do_print(f"Roll: {roll}\n{msg}")
             return val
+
+
+def outcomes(state, activity):
+    from misc_utilities import assign_colour
+    logging_fn()
+
+    item = None
+    ## item needs to be a random item from inventory, droppable. (TODO: Add droppable (or, 'undroppable', probably better) to relevant items so you can't drop anything too important.)
+    # Also it needs to be dropped at the location you're currently at.
+    very_negative = ["It hurts suddenly. This isn't good...", f"You suddenly realise, your {assign_colour(item)} is missing. Did you leave it somewhere?"]
+    negative = [f"Uncomfortable, but broadly okay. Not the worst {activity} ever.", f"Entirely survivable, but not much else to say about this {activity}.", f"You did a {activity}. Not much else to say about it really."]
+    positive = [f"Honestly, quite a good {activity}", f"One of the better {activity}-based events, it turns out."]
+    very_positive = [f"Your best {activity} in a long, long time."]
+
+    outcome_table = {
+        1: very_negative,
+        2: negative,
+        3: positive,
+        4: very_positive
+    }
+
+    outcome = random.choice((outcome_table[state]))
+    if "is missing. Did" in outcome:
+        if not game.inventory:
+            dropped = "everything"
+        else:
+            dropped = random.choice((game.inventory))
+            loc.current.items.append(dropped)
+        item = dropped
+    return outcome

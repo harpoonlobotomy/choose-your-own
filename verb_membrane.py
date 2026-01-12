@@ -17,6 +17,7 @@
 
 from itemRegistry import ItemInstance, registry
 from logger import logging_fn
+from verbRegistry import VerbInstance
 
 movable_objects = ["put", "take", "combine", "separate", "throw", "push", "drop", "set", "move"]
 
@@ -47,32 +48,42 @@ combine_parts = {("put", "into"), ("add", "to") # thinking about this for more s
 
    #exit()
 
+def check_noun_actions(noun_inst, verbname):
+
+    #print(f"Verb inst name: {verb_inst.name}")
+    #print(f"noun inst actions: {noun_inst.verb_actions}")
+    if isinstance(verbname, VerbInstance):
+        verbname = verbname.name
+    if verbname == "look": # always pass 'look'
+        return noun_inst.name
+    for action in noun_inst.verb_actions:
+        if flag_actions.get(action):
+            if verbname in flag_actions[action]:
+                #print(f"{action}: Verb inst name in flag_actions for noun: ({noun_inst.name}): {verb_inst.name}")
+                return noun_inst.name
+
 def get_noun_instances(dict_from_parser, viable_formats):
 
-    def check_noun_actions(noun_inst, verb_inst):
 
-        #print(f"Verb inst name: {verb_inst.name}")
-        #print(f"noun inst actions: {noun_inst.verb_actions}")
-        if verb_inst.name == "look": # always pass 'look'
-            return noun_inst.name
-        for action in noun_inst.verb_actions:
-            if flag_actions.get(action):
-                if verb_inst.name in flag_actions[action]:
-                    #print(f"{action}: Verb inst name in flag_actions for noun: ({noun_inst.name}): {verb_inst.name}")
-                    return noun_inst.name
-
-    def check_cardinals(entry, data, format):
+    def check_cardinals(entry, dict, format):
 
         from env_data import locRegistry
+        loc_inst = None
+        for _, dict_entry in dict.items():
+            for k, v in dict_entry.items():
+                if k == "location":
+                    loc_inst = v.get("instance")
+                    if not loc_inst:
+                        #print(f"V: {v}")
+                        loc_name = v.get("str_name")
+                        #print(f"loc_name canonical: {loc_name}")
+                        loc_inst = locRegistry.by_name[loc_name]
 
-        if not data.get("location"):
-            loc_inst = locRegistry.current
-            card_inst = locRegistry.cardinals[loc_inst][entry["str_name"]]
-            #print(f"card_inst: {card_inst}")
-        else:
-            print("Oops. You gave a location I'm not currently at, I can't deal.")
-            exit()
-
+        if loc_inst == None:
+            loc_inst = locRegistry.currentPlace
+        card = entry['str_name']
+        #print(f"locRegistry.cardinals[loc_inst]: {locRegistry.cardinals[loc_inst]}")
+        card_inst = locRegistry.cardinals[loc_inst][card]
         dict_from_parser[idx][kind] = ({"instance": card_inst, "str_name": entry["str_name"]})
         return dict_from_parser
 
@@ -110,12 +121,15 @@ def get_noun_instances(dict_from_parser, viable_formats):
                         print(f"No found ItemInstance for {entry}")
                     else:
                         #print(f"Noun inst: {noun_inst}")
-                        noun_name = check_noun_actions(noun_inst[0], verb)
+                        noun_name = check_noun_actions(noun_inst[0], verb) ## I feel like this should be left for later. If I can't take the headstone, let that be something for 'take' to do, no?
+                        # Wait, no. I need to do it here so the parser actually works. Right.
                         if noun_name:
                             dict_from_parser[idx][kind] = ({"instance": noun_inst[0], "str_name": name})
                             suitable_nouns += 1
                         else:
-                            print(f"You can't {verb.name} the {entry}")
+    ## NOTE: Added this here so all nouns pass even if they will fail later, which entirely removes the point of the allowed noun_actions. But, I can better tailor failure messages within each later action-fn. So I think I'm going with it for now.
+                            dict_from_parser[idx][kind] = ({"instance": noun_inst[0], "str_name": name})
+                            #print(f"You can't `{verb.name}` the {entry["str_name"]}")
                             suitable_nouns -= 10
 
                 elif kind == "location":
@@ -132,7 +146,7 @@ def get_noun_instances(dict_from_parser, viable_formats):
                         #locRegistry.place_cardinals[place_instance_obj][cardinal_direction_str]
                 elif kind == "cardinal":
                     #print(f"Kind is cardinal: {entry}")
-                    dict_from_parser = check_cardinals(entry, data, viable_formats)
+                    dict_from_parser = check_cardinals(entry, dict_from_parser, viable_formats)
 
         #print(f"dict_from_parser in geT_noun_instances: {dict_from_parser}")
         return dict_from_parser
@@ -204,10 +218,9 @@ test_input_list = ["take the paperclip", "pick up the glass jar", "put the paper
 
 def run_membrane(input_str=None):
         logging_fn()
-        print_traceback = False
+
         response = (None, None)
 
-    #while input_str != "quit":
         while "logging" in input_str:
             if input_str != None and "logging" in input_str:
                 from logger import logging_config
@@ -228,43 +241,13 @@ def run_membrane(input_str=None):
         if input_str == None:
             input_str = input()
 
-        if input_str != None and "traceback" in input_str:
-            print_traceback = True
-            input_str = input_str.replace(" traceback","")
-
         from verbRegistry import Parser
         viable_format, dict_from_parser = Parser.input_parser(Parser, input_str)
-        if print_traceback:
-            print(f"Viable formats: {viable_format}")
 
         inst_dict = get_noun_instances(dict_from_parser, viable_format)
-        if print_traceback:
-            print(f"inst_dict: {inst_dict}")
-
 
         if inst_dict:
             from verb_actions import router
-            #print(f"inst_dict going to router: {inst_dict}")
-            #exit()
-            response = router(viable_format, inst_dict) ## If I add traceback flags /here/ I should get inner prints maybe. Currently I don't, just that 'router' was called.
+            response = router(viable_format, inst_dict)
 
-            ## Move list of key response terms to here from def option()
-            # Then this can do the initial directions, and just let it continue back accordingly.
-
-            # I really need to figure out the 'baseline' that it returns to when an action is completed. Currently it's in a constant state of falling, there's no resting state.
-        if print_traceback:
-            print(f"Traceback: {input_str}")
-            from traceback import print_stack
-            import inspect
-            frame = inspect.currentframe()
-            print("print stack", print_stack(f=frame))
-            print("frame.f_trace", frame.f_trace)
-
-        #print("About to send response back to main script.")
         return response
-    #exit()
-
-#membrane, membrane_data = initialise_membrane()
-
-# failed: "wipe the window with the damp newspaper", "push the pile of rocks", "pull the forked tree branch",
-

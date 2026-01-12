@@ -213,13 +213,26 @@ def clean_separation_result(result:list, to_print=False):
 def look_around():
     from env_data import locRegistry as loc
     from choose_a_path_tui_vers import get_items_at_here
+    from itemRegistry import registry
 
-    print(loc.current.overview)
-    print(f"You're facing {assign_colour(loc.current_cardinal, card_type="name")}. {loc.current_cardinal.long_desc}")
-    is_items = get_items_at_here(print_list=False, place=loc.current_cardinal)
+    print(loc.currentPlace.overview)
+    print(f"You're facing {assign_colour(loc.current, card_type="name")}. {loc.current.long_desc}")
+
+    is_items = registry.get_item_by_location()
+    #is_items = get_items_at_here(print_list=False, place=loc.current)
+
+    applicable_items = []
+    confirmed_items = []
+
     if is_items:
-        do_print(assign_colour("\nYou see a few scattered objects in this area:", "b_white"))
-        is_items = ", ".join(col_list(is_items))
+        for item in is_items:
+            #print(f"ITEM: {item}, type: {type(item)}")
+            _, reason_val = registry.check_item_is_accessible(item)
+            #print(f"REASON VAL FOR `{item}`: {reason_val}")
+            if reason_val == 0:
+                applicable_items.append(item)
+        print(assign_colour("\nYou see a few scattered objects in this area:", "b_white"))
+        is_items = ", ".join(col_list(applicable_items))
         print(f"   {is_items}")
 
 
@@ -237,7 +250,7 @@ def get_inst_list_names(inventory_inst_list) -> list:
 def from_inventory_name(test:str, inst_inventory:list=None) -> ItemInstance:
 
     if isinstance(test, ItemInstance):
-        return inst
+        test = test.name
 
     if inst_inventory == None:
         from set_up_game import game ## might break
@@ -249,7 +262,7 @@ def from_inventory_name(test:str, inst_inventory:list=None) -> ItemInstance:
         if inst.name == cleaned_name:
             return inst
     #print(f"Inst inventory: {inst_inventory}")
-    logging_fn(traceback=True)
+    logging_fn()
     print(f"Could not find inst `{test}` in inst_inventory.")
     input()
 
@@ -287,7 +300,6 @@ def generate_clean_inventory(inventory_inst_list=None, will_print = False, colou
 
     inventory_names = []
     for i, item_name in enumerate(inv_list):
-
         if item_name in inventory_names:
             if item_name in checked:
                 continue
