@@ -2,32 +2,12 @@ import inspect
 import logging
 
 logging_config = {
-    "function_logging": True,
+    "function_logging": False,
+    "args": False,
     "details": True,
     "traceback": False,
     "ignore": []
     }
-
-  ## SCRIPT IDENTIFICATION ##
- ## this whole thing is stupid.
-#I'm so tired. So fucking tired.
-
-item_man = "itemRegistry.py",
-item_defs = "item_definitions.py",
-places = "env_data.py",
-utilities = "misc_utilities.py",
-set_up_game = "set_up_game.py",
-colour_class = "tui/colours.py",
-choices = "choices.py",
-main_script = "choose_a_path_tui_vers.py"
-
-layout = "tui/layout.py",
-tui_elements = "tui/tui_elements.py",
-tui_update = "tui/tui_update.py",
-
-scripts_list = [item_man, item_defs, layout, places, utilities, set_up_game, tui_elements, tui_update, colour_class, choices, main_script]
-
- #xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx#
 
 logger = logging.getLogger("main.FuncTracer")
 logger.setLevel(logging.DEBUG)
@@ -37,20 +17,37 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 
-#class FuncTracer:
-#    def __init__(self):
-#        self.logger = logging.getLogger("FuncTracer")
-#        #self.logger.info('creating an instance of Auxiliary')
+def traceback_fn():
+    # to run at expected error points to trace why it failed.
+    frame = inspect.currentframe().f_back
+    args = inspect.getargvalues(frame)
+    functionname = frame.f_code.co_name
+    arg = args.args
+    var = args.varargs
+    kw = args.keywords
+    loc = args.locals
+    args_list = []
+    for item in (arg, var, kw):
+        if item != None:
+            if isinstance(item, (set|list|tuple)):
+                for subitem in item:
+                    args_list.append(subitem)
+            else:
+                args_list.append(item)
 
-categories = ["colour", "instance_data", ""]
+    print(f"Traceback point encountered in {functionname}:  ")
+    for item in args_list:
+        args_val = loc.get(item)
+        if args_val and item != "self":
+            print(f"\033[0;44m{item}: {args_val}\033[0m")
+    from traceback import print_stack
+    print(print_stack(f=frame))
+    ##  Args: ArgInfo(args=['no_lookup', 'print_all', 'none_possible', 'preamble', 'inventory', 'look_around', 'return_any'], varargs='values', keywords=None, locals={'no_lookup': None, 'print_all': True, 'none_possible': True, 'preamble': 'Please pick your destination:', 'inventory': False, 'look_around': False, 'return_any': False, 'values': (['a graveyard', 'a forked tree branch', 'a city hotel room', 'a pile of rocks'],)})
 
-
-
-def logging_fn(traceback=False, category=None):
+def logging_fn():
 
     frame = inspect.currentframe().f_back
     #data == frame obj
-
 #        Frame objects provide these attributes:
 #        f_back          next outer frame object (this frame's caller)
 #        f_builtins      built-in namespace seen by this frame
@@ -60,48 +57,40 @@ def logging_fn(traceback=False, category=None):
 #        f_lineno        current line number in Python source code
 #        f_locals        local namespace seen by this frame
 #        f_trace         tracing function for this frame, or None"""
-
         #data: <frame at 0x00000193B9B1A560, file 'D:\\Git_Repos\\choose-your-own\\choose_a_path_tui_vers.py', line 949, code look_light>
-
 
     if logging_config["function_logging"]:
         functionname = frame.f_code.co_name
         filename = frame.f_code.co_filename
         #if logging_config["ignore_item_man"] and filename == "itemRegistry.py":
 
-        lineno = frame.f_lineno
+        plain_formatting = "\033[3;34m"
+        fancy_formatting = "\033[4;1;35m"
+        clear_formatting = "\033[0m"
 
-        filename = filename.split("\\")[-1]
-        text=f"((FILE: {filename}. FN: {functionname}. LINE: {lineno}))"
-        code = "\033[4;41m"
-        ending= f"{text}\033[0m"
-        print(f"{code}{ending}")
-        args = inspect.getargvalues(frame)
-        #print(f"Args: {args}")
-        #
-        # Args: ArgInfo(args=['self'], varargs=None, keywords=None, locals={'self': <itemRegistry.LootRegistry object at 0x000002493DAD9E80>})
-        arg = args.args
-        var = args.varargs
-        kw = args.keywords
-        loc = args.locals
+        start = f"{plain_formatting}(  Func: {clear_formatting}"
+        middle = f"{fancy_formatting}{functionname}{clear_formatting}"
+        end = f"{plain_formatting}  ){clear_formatting}"
 
-        args_list = []
-        for item in (arg, var, kw):
-            if item != None:
-                if isinstance(item, (set|list|tuple)):
-                    for subitem in item:
-                        args_list.append(subitem)
-                else:
-                    args_list.append(item)
+        print(start, middle, end)
+        if logging_config["args"]:
+            args = inspect.getargvalues(frame)
+            arg = args.args
+            var = args.varargs
+            kw = args.keywords
+            loc = args.locals
+            args_list = []
+            for item in (arg, var, kw):
+                if item != None:
+                    if isinstance(item, (set|list|tuple)):
+                        for subitem in item:
+                            args_list.append(subitem)
+                    else:
+                        args_list.append(item)
 
-        for item in args_list:
-            args_val = loc.get(item)
-            if args_val and item != "self":
+            for item in args_list:
+                args_val = loc.get(item)
+                if args_val and item != "self":
+                    print(f"\033[0;44m{item}: {args_val}\033[0m")
 
-                print(f"\033[0;44m{item}: {args_val}\033[0m")
-
-        if traceback or logging_config["traceback"]:
-            from traceback import print_stack
-            print(print_stack(f=frame))
-        ##  Args: ArgInfo(args=['no_lookup', 'print_all', 'none_possible', 'preamble', 'inventory', 'look_around', 'return_any'], varargs='values', keywords=None, locals={'no_lookup': None, 'print_all': True, 'none_possible': True, 'preamble': 'Please pick your destination:', 'inventory': False, 'look_around': False, 'return_any': False, 'values': (['a graveyard', 'a forked tree branch', 'a city hotel room', 'a pile of rocks'],)})
 

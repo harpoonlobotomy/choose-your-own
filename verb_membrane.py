@@ -16,6 +16,7 @@
 # Then sends the format and dict onward to verb_actions.
 
 from itemRegistry import ItemInstance, registry
+from logger import logging_fn
 
 movable_objects = ["put", "take", "combine", "separate", "throw", "push", "drop", "set", "move"]
 
@@ -50,8 +51,8 @@ def get_noun_instances(dict_from_parser, viable_formats):
 
     def check_noun_actions(noun_inst, verb_inst):
 
-        print(f"Verb inst name: {verb_inst.name}")
-        print(f"noun inst actions: {noun_inst.verb_actions}")
+        #print(f"Verb inst name: {verb_inst.name}")
+        #print(f"noun inst actions: {noun_inst.verb_actions}")
         if verb_inst.name == "look": # always pass 'look'
             return noun_inst.name
         for action in noun_inst.verb_actions:
@@ -81,19 +82,19 @@ def get_noun_instances(dict_from_parser, viable_formats):
     #    exit()
 
     verb = None
-    print(f"dict_from_parser: {dict_from_parser}")
+    #print(f"dict_from_parser: {dict_from_parser}")
     if dict_from_parser:
         for data in dict_from_parser.values():
             for kind, entry in data.items():
-                print(f"kind: {kind}, entry: {entry}")
+                #print(f"kind: {kind}, entry: {entry}")
                 if "verb" in kind:
                     verb = entry["instance"]
-                    print(f"Verb: {verb}")
-                    print(f"Verb type: {type(verb)}")
-                    print(f"Verb.name in get_noun_instances: `{verb.name}`")
+                    #print(f"Verb: {verb}")
+                    #print(f"Verb type: {type(verb)}")
+                    #print(f"Verb.name in get_noun_instances: `{verb.name}`")
                 if "meta" in kind and verb == None:
                     verb = entry["instance"]
-                    print(f"meta Verb: {verb}")
+                    #print(f"meta Verb: {verb}")
 
         suitable_nouns = 0
 
@@ -202,10 +203,28 @@ membrane = Membrane()
 test_input_list = ["take the paperclip", "pick up the glass jar", "put the paperclip in the wallet", "place the dried flowers on the headstone", "go to the graveyard", "approach the forked tree branch", "look at the moss", "examine the damp newspaper", "read the puzzle mag", "read the fashion mag in the city hotel room", "open the glass jar", "close the window", "pry open the TV set", "smash the TV set", "break the glass jar", "clean the watch", "clean the severed tentacle", "mix the unlabelled cream with the anxiety meds", "combine the fish food and the moss", "eat the dried flowers", "consume the fish food", "drink the unlabelled cream", "burn the damp newspaper", "burn the fashion mag in a pile of rocks", "throw the pretty rock", "lob the pretty rock at the window", "chuck the glass jar into a pile of rocks", "drop the wallet", "discard the paper scrap with number", "remove the batteries from the TV set", "add the batteries to the mobile phone", "put the car keys in the plastic bag", "set the watch", "lock the window", "unlock the window", "shove the TV set", "move the headstone", "barricade the window with the TV set", "separate the costume jewellery", "investigate the exact thing", "observe the graveyard", "watch the watch", "go to a city hotel room", "leave the graveyard", "depart", "go", "go to the pile of rocks", "take the exact thing", "put the severed tentacle in the glass jar", "open the wallet with the paperclip", "read the mail order catalogue at the forked tree branch", "pick the moss", "pick the watch", "pick up moss", "throw anxiety meds", "put batteries into watch", "clean a pile of rocks"]
 
 def run_membrane(input_str=None):
+        logging_fn()
         print_traceback = False
         response = (None, None)
 
     #while input_str != "quit":
+        while "logging" in input_str:
+            if input_str != None and "logging" in input_str:
+                from logger import logging_config
+                logging_config["function_logging"] = not logging_config["function_logging"]
+                if logging_config["function_logging"] == True:
+                    print("Logging Enabled\n")
+                else:
+                    print("Logging Disabled\n")
+                if "args" in input_str:
+                    logging_config["args"] = not logging_config["args"]
+                    if logging_config["args"] == True:
+                        print("Args Printing Enabled\n")
+                    else:
+                        print("Args Printing Disabled\n")
+                logging_fn()
+                input_str = input()
+
         if input_str == None:
             input_str = input()
 
