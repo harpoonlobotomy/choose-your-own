@@ -81,24 +81,24 @@ loc_dict = {
 
     "forked tree branch": {"descrip": "You've climbed up a gnarled old tree, and found a relatively safe place to sit, in the fork of its broad branches. This needs more description but that's all that's written for now.", "inside":False,
             "electricity": False, "nature": True,
-            "north": {"short_desc": "The entrace gates are",
-                "long_desc": "You think you could leave through the large wrought-iron gates to the north. They're imposing but run-down; this graveyard doesn't get as much love as it could.",
-                "weird": "You think you could leave through the large wrought-iron gates to the north. They're imposing - creaking constantly, and they seem to loom over you even from a distance.",
+            "north": {"short_desc": "The northern tree parts are ",
+                "long_desc": "This is the north part of a tree...",
+                "weird": "This is the north part of a tree...",
                 "actions": leave_options,
                 },
-            "east": {"short_desc": "a variety of headstones",
-                "long_desc": "You see a variety of headstones, most quite worn and decorated by clumps of moss. There's a glass jar being used as a vase in front of one of the headstones, with dried flowers left long ago.", # details here depending on weather. if raining, the dried flowers are saturated and heavy. If sunny, they're crispy, etc. Not close to implementing that yet.
+            "east": {"short_desc": "an eastern tree part",
+                "long_desc": "This is the east of a forked tree. Not sure what's here. Maybe a bird's nest..", # details here depending on weather. if raining, the dried flowers are saturated and heavy. If sunny, they're crispy, etc. Not close to implementing that yet.
                 "weird": None,
                 "east_actions": None,
                 },
-            "south": {"short_desc": "a mausoleum",
-                "long_desc": "There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble.",
+            "south": {"short_desc": "a southern tree part",
+                "long_desc": "South of a tree. Should probably be the exit.",
                 "weird": None,
                 "actions": None,
                 },
             "west": {
-                "short_desc": "what looks like a work shed of some kind",
-                "long_desc": "There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble.",
+                "short_desc": "what looks like a a western tree part",
+                "long_desc": "West of the tree. Maybe a very nice view...",
                 "weird": None,
                 "actions": None
                 },
@@ -304,7 +304,7 @@ class placeRegistry:
             print(loc)
 
 
-    def by_cardinal(self, cardinal_str:str, loc=None):
+    def by_cardinal(self, cardinal_str:str, loc=None) -> cardinalInstance:
         if loc == None:
             loc = self.current
         elif isinstance(loc, str):

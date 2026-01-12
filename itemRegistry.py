@@ -404,11 +404,12 @@ class itemRegistry:
         return self.instances.get(inst_id)
 
 
-    def get_item_by_location(self, loc_cardinal)->list: ### by_location uses cardinal.place_name, not cardinal instance object or .name.
+    def get_item_by_location(self, loc_cardinal:cardinalInstance)->list: ### by_location uses cardinal.place_name, not cardinal instance object or .name.
         logging_fn()
 
         items_at_cardinal = None
         if isinstance(loc_cardinal, cardinalInstance):
+            print(f"LOC CARDINAL PLACE_NAME: {loc_cardinal.place_name}")
             items_at_cardinal = self.by_location.get(loc_cardinal)
 
         elif isinstance(loc_cardinal, str):

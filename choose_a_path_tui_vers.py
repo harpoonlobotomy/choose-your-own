@@ -943,13 +943,7 @@ def inner_loop(speed_mode=False):
         do_print()
         describe_loc()
     while True:
-        test=option("stay here", "go elsewhere", preamble="")#What do you want to do? Stay here and look around, or go elsewhere?")
-    #turning these off, so it's determined by typed input, not reliant on the entered keywords. Will change the fn sig later.
-    #if test in ("stay", "stay here", "look"):
-    #    slowWriting("You decide to look around a while.")
-    #    look_around()
-    #else:
-    #    relocate()
+        test=option()
 
 def intro():
 

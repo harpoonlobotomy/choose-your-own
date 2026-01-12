@@ -606,3 +606,197 @@ Needs:
 #   an open container with an item in, both of which can be picked up (the container + child if present, or just the child)
 
 I need to use setattr far more. Been sleeping on that one.
+
+
+1.02pm
+Added it so you can just write 'tree' and it'll assume the verb 'go'. So:
+#   go to the forked tree branch
+ ==
+# tree
+
+
+
+1.42
+Added logging. And the ability to toggle it off/on mid run, which is nice. Not the single-run traceback I had originally, but logging_fn() at the header of each fn to trace the data route, as well as traceback_fn() at expected failure points. Hopefully it helps.
+
+Just encountered a weird one, though:
+tree
+(  Func:  run_membrane   )
+(  Func:  get_current_loc   )
+[[  forked tree branch  ]]
+
+(  Func:  go   )
+(  Func:  get_current_loc   )
+(  Func:  get_entries_from_dict   )
+(  Func:  new_relocate   )
+You're now facing north
+You've climbed up a gnarled old tree, and found a relatively safe place to sit, in the fork of its broad branches. This needs more description but that's all that's written for now..
+The entrace gates are to the north. To the east is a variety of headstones, to the south is a mausoleum, and to the west is what looks like a work shed of some kind.
+(  Func:  option   )
+
+
+go to east graveyard
+(  Func:  run_membrane   )
+(  Func:  get_current_loc   )
+[[  go to east graveyard  ]]
+
+(  Func:  go   )
+(  Func:  get_current_loc   )
+(  Func:  get_entries_from_dict   )
+(  Func:  new_relocate   )
+You're now facing east
+You see a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+The entrance gates are to the north. To the east is a variety of headstones, to the south is a mausoleum, and to the west is what looks like a work shed of some kind.
+(  Func:  option   )
+
+
+look around
+(  Func:  run_membrane   )
+(  Func:  get_current_loc   )
+[[  look around  ]])
+
+(  Func:  look   )
+(  Func:  get_entries_from_dict   )
+You see a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+The entrance gates are to the north. To the east is a variety of headstones, to the south is a mausoleum, and to the west is what looks like a work shed of some kind.
+You're facing east. You see a variety of headstones, most quite worn and decorated by clumps of moss. There's a glass jar being used as a vase in front of one of the headstones, with dried flowers left long ago.
+(  Func:  get_item_by_location   )
+(  Func:  check_name   )
+(  Func:  register_name_colour   )
+(  Func:  check_name   )
+
+You see a few scattered objects in this area:
+(  Func:  check_name   )
+   carved stick
+(  Func:  option   )
+
+
+Now the carved stick is at east tree. So something is broken.
+
+2.11pm
+... Okay so it's even weirder, because looking around in the tree gives you the graveyard's items. What the hell's going on here....
+
+You wake up in a graveyard, right around midnight. You find have a bizarrely good sense of cardinal directions; how odd.
+`test`, you think to yourself, `is it weird to be in the graveyard at midnight, while it's perfect?`
+
+You take a moment to take in your surroundings. You see a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+The entrance gates are to the north. To the east is a variety of headstones, to the south is a mausoleum, and to the west is what looks like a work shed of some kind.
+
+
+[[  look around  ]]
+
+You see a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+The entrance gates are to the north. To the east is a variety of headstones, to the south is a mausoleum, and to the west is what looks like a work shed of some kind.
+You're facing north. You think you could leave through the large wrought-iron gates to the north. They're imposing but run-down; this graveyard doesn't get as much love as it could.
+LOC CARDINAL PLACE_NAME: north graveyard
+
+
+[[  look east  ]]
+
+prospective cardinal going to loc test: <env_data.cardinalInstance object at 0x000001AB919EA5F0>
+loc.current_cardinal after turn_around: <env_data.cardinalInstance object at 0x000001AB919EA5F0>, type: <class 'env_data.cardinalInstance'>
+You turn to face the eastern graveyard
+You see a variety of headstones, most quite worn and decorated by clumps of moss. There's a glass jar being used as a vase in front of one of the headstones, dried flowers left long ago.
+
+
+[[  look around  ]]
+
+You see a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+The entrance gates are to the north. To the east is a variety of headstones, to the south is a mausoleum, and to the west is what looks like a work shed of some kind.
+You're facing east. You see a variety of headstones, most quite worn and decorated by clumps of moss. There's a glass jar being used as a vase in front of one of the headstones, dried flowers left long ago.
+LOC CARDINAL PLACE_NAME: east graveyard
+
+You see a few scattered objects in this area:
+   glass jar, moss, headstone
+
+
+[[  go to forked tree branch  ]]
+
+You're now facing east
+You've climbed up a gnarled old tree, and found a relatively safe place to sit, in the fork of its broad branches. This needs more description but that's all that's written for now..
+The northern tree parts are  to the north. To the east is an eastern tree part, to the south is a southern tree part, and to the west is what looks like a a western tree part.
+
+
+[[  look around  ]]
+
+You've climbed up a gnarled old tree, and found a relatively safe place to sit, in the fork of its broad branches. This needs more description but that's all that's written for now..
+The northern tree parts are  to the north. To the east is an eastern tree part, to the south is a southern tree part, and to the west is what looks like a a western tree part.
+You're facing east. This is the east of a forked tree. Not sure what's here. Maybe a bird's nest..
+LOC CARDINAL PLACE_NAME: east forked tree branch
+
+You see a few scattered objects in this area:
+   carved stick
+
+
+[[  go to east graveyard  ]]
+
+You're now facing east
+You see a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+The entrance gates are to the north. To the east is a variety of headstones, to the south is a mausoleum, and to the west is what looks like a work shed of some kind.
+
+
+[[  look around  ]]
+
+You see a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+The entrance gates are to the north. To the east is a variety of headstones, to the south is a mausoleum, and to the west is what looks like a work shed of some kind.
+You're facing east. This is the east of a forked tree. Not sure what's here. Maybe a bird's nest..
+LOC CARDINAL PLACE_NAME: east forked tree branch
+
+You see a few scattered objects in this area:
+   carved stick
+
+
+[[  go to graveyard  ]]
+
+You're now facing east
+You see a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+The entrance gates are to the north. To the east is a variety of headstones, to the south is a mausoleum, and to the west is what looks like a work shed of some kind.
+
+
+[[  look around  ]]
+
+You see a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+The entrance gates are to the north. To the east is a variety of headstones, to the south is a mausoleum, and to the west is what looks like a work shed of some kind.
+You're facing east. You see a variety of headstones, most quite worn and decorated by clumps of moss. There's a glass jar being used as a vase in front of one of the headstones, dried flowers left long ago.
+LOC CARDINAL PLACE_NAME: east graveyard
+
+You see a few scattered objects in this area:
+   glass jar, moss, headstone
+
+
+
+Okay. So it's the turning around. For some reason when we turn, we're not updating the location properly, but it seems like only in the place where the location is checked for items, because the description updates properly.
+
+
+
+
+new_cardinal: <env_data.cardinalInstance object at 0x0000023CD9588050> >- east tree
+
+'go to graveyard' > new_location: <env_data.placeInstance object at 0x0000023CD94E6AD0>
+## but i don't know if cardinal is updated here. it should be.
+
+'look east'
+cardinal: <env_data.cardinalInstance object at 0x0000023CD952A5F0>
+
+Okay.
+So if I change location with specific cardinal, it doesn't update the current_cardinal somewhere. Or maybe it doesn't update current_loc? I need to check. Clearly the description and the items are checking different places, and they shouldn't be.
+
+(This new toggleable args + fn logger is really useful btw.)
+
+
+2.25pm
+Ohh. I think it's because of this:
+
+    if new_location and isinstance(new_location, placeInstance):
+        loc.set_current(loc=new_location)
+
+where set_current is a placeInstance, not a cardinal. That should never happen... If we give it a placeInstance, it needs to take the str of currentCardinal and go to that cardinal of the new location. Okay.
+
+
+No, I'm wrong, that was intentional; 'loc' has always been the general location, while current_cardinal is the cardinal. But... why. Maybe we get rid of loc.current as a placeInstance entirely and just have player movement + items be cardinal-specific. That makes far more sense, right? Why have 'location = graveyard' if everything about my location that matters is relevant only to the cardinal?
+
+I can still have graveyard-wide things apply, cardinal.place still gives us the graveyard instance for travel-tracking, weather etc.
+
+Okay. Going to commit what I have for now and do that. Change it so all player + item-relevant things are to the cardinal-instance, so 'loc.current' is the cardinal, not the general location.
+
+Then I really need to do that test location I had the idea for last night, a proper setup just with things that will probably break and less noise.

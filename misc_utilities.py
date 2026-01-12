@@ -218,7 +218,7 @@ def look_around():
     print(f"You're facing {assign_colour(loc.current_cardinal, card_type="name")}. {loc.current_cardinal.long_desc}")
     is_items = get_items_at_here(print_list=False, place=loc.current_cardinal)
     if is_items:
-        do_print(assign_colour("You see a few scattered objects in this area:", "b_white"))
+        do_print(assign_colour("\nYou see a few scattered objects in this area:", "b_white"))
         is_items = ", ".join(col_list(is_items))
         print(f"   {is_items}")
 

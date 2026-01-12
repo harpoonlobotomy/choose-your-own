@@ -1,15 +1,16 @@
 
 ### Interface between item_actions and the verbs.
 
-import time
-from choose_a_path_tui_vers import item_interaction
-from env_data import cardinalInstance, locRegistry as loc
+#import time
+from logger import logging_fn, traceback_fn
+#from choose_a_path_tui_vers import item_interaction, location_item_interaction
+from env_data import cardinalInstance, locRegistry as loc#, placeInstance
 from interactions import item_interactions
 from interactions.player_movement import new_relocate, turn_around
 from itemRegistry import ItemInstance, registry
 from misc_utilities import assign_colour, generate_clean_inventory
 from set_up_game import game
-from verb_definitions import directions, formats
+from verb_definitions import directions#, formats
 
 movable_objects = ["put", "take", "combine", "separate", "throw", "push", "drop", "set", "move"]
 
@@ -31,7 +32,6 @@ flag_actions = {
     "can_remove_from": ""
     }
 
-
 in_words = ["in", "inside", "into"]
 to_words = ["to", "towards", "at", "for"] ## these two (< + ^) are v similar but have some exclusive uses, so keeping them separately makes sense here. # 'for' in the sense of 'leave for the graveyard'.
 down_words = ["down"]
@@ -40,6 +40,7 @@ down_words = ["down"]
 #### Fundamental Operations ####
 
 def get_current_loc():
+    logging_fn()
 
     from env_data import locRegistry
     location = locRegistry.current
@@ -47,6 +48,7 @@ def get_current_loc():
     return location, cardinal
 
 def is_loc_current_loc(location=None, cardinal=None):
+    logging_fn()
 
     current_location, current_cardinal = get_current_loc()
     if location and location == current_location:
@@ -57,6 +59,7 @@ def is_loc_current_loc(location=None, cardinal=None):
     return 0, current_location, current_cardinal # 0 if not matching. Always returns current.
 
 def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
+    logging_fn()
 
     location = None
     from item_definitions import container_limit_sizes
@@ -127,6 +130,7 @@ def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
             print(f"Reason: `{b}` is not the current location.")
 
 def check_lock_open_state(noun_inst, check_open = True, check_locked=True):
+    logging_fn()
 
     is_open = is_locked = False
     print("Check the item registry for status.")
@@ -134,7 +138,9 @@ def check_lock_open_state(noun_inst, check_open = True, check_locked=True):
     return is_open, is_locked
 
 def get_entries_from_dict(input_dict):
+    logging_fn()
 
+    verb_entry = None
     direction_entry = None
     cardinal_entry = None
     location_entry = None
@@ -144,6 +150,11 @@ def get_entries_from_dict(input_dict):
 
     for idx in input_dict.values():
         for kind, entry in idx.items():
+            if kind == "verb":
+                if verb_entry != None:
+                    print(f"More than one `verb`: {verb_entry} already exists, {entry} will be ignored.")
+                    continue
+                verb_entry = entry
             if kind == "direction":
                 if direction_entry != None:
                     print(f"More than one `direction`: {direction_entry} already exists, {entry} will be ignored.")
@@ -155,7 +166,6 @@ def get_entries_from_dict(input_dict):
                     print(f"More than one `cardinal`: {direction_entry} already exists, {entry} will be ignored.")
                     continue
                 cardinal_entry = entry
-
             if kind == "location":
                 if location_entry != None:
                     print(f"More than one `location`: {direction_entry} already exists, {entry} will be ignored.")
@@ -167,7 +177,7 @@ def get_entries_from_dict(input_dict):
                     continue
                 semantic_entry = entry
 
-    return direction_entry, cardinal_entry, location_entry, semantic_entry
+    return verb_entry, direction_entry, cardinal_entry, location_entry, semantic_entry
 
 """
 okay so something like this:
@@ -180,6 +190,7 @@ Maybe it returns an int, and that int is what drives the per-function expansion.
 
 """
 def check_against_formats(format_tuple):
+    logging_fn()
 
     #all_formats_list = [i for i in formats.values()]
     #print(f"formats list: {all_formats_list}")
@@ -195,12 +206,14 @@ def check_against_formats(format_tuple):
 ##### Parts Parsing ########
 
 def two_parts_a_b(input_dict):
+    logging_fn()
     return list(input_dict[1].values())[0]
 
     #                                 0      1      2    3
 def three_parts_a_x_b(input_dict): # put paperclip in glass jar
+    logging_fn()
 
-    #if list(input_dict[2].values())[0] in directions:
+    if list(input_dict[2].values())[0] in directions:
         a = list(input_dict[1].values())[0]
         sem_or_dir = list(input_dict[2].values())[0]
         b = list(input_dict[3].values())[0]
@@ -209,6 +222,7 @@ def three_parts_a_x_b(input_dict): # put paperclip in glass jar
 
                                   #       0          1        2   3        4        5
 def five_parts_a_x_b_in_c(input_dict): # `drop the paperclip in glass jar in the graveyard`
+    logging_fn()
 
     if list(input_dict[2].values())[0] in directions:
         a = list(input_dict[1].values())[0]
@@ -220,6 +234,7 @@ def five_parts_a_x_b_in_c(input_dict): # `drop the paperclip in glass jar in the
         return a, sem_or_dir, b, sem_or_dir_2, c
 
 def get_elements(input_dict) -> tuple:
+    logging_fn()
     ## This is only useful if there's some other check going on. Otherwise it should just be per item, I think.
 ### I don't think this is actually better than each one just doing 'if len(), because it still has to evaluate the number afterwards to unpack it, no?
 
@@ -234,6 +249,7 @@ def get_elements(input_dict) -> tuple:
 
 
 def inst_from_idx(dict_entry, kind_str, return_str=False):
+    logging_fn()
     if return_str:
         return dict_entry[kind_str]["str_name"]
 
@@ -245,6 +261,7 @@ def inst_from_idx(dict_entry, kind_str, return_str=False):
 # little bits, the finer end points that things resolve to.
 
 def turn_cardinal(prospective_cardinal, turning = True):
+    logging_fn()
 
     if prospective_cardinal in ("left", "right"):
         print("prospective cardinal in left/right")
@@ -299,22 +316,14 @@ def turn_cardinal(prospective_cardinal, turning = True):
 
 
 #######################
-#func(format_tuple, input_dict, location)
 
-#def sample(format_tuple, input_dict):
-#    pass
-#
 def meta(format_tuple, input_dict):
-
-    #print(f"META FUNCTION\n{input_dict}")
+    logging_fn()
 
     for idx in input_dict:
         for kind, entry in input_dict[idx].items():
-            #print(f"KIND: {kind}, ENTRY: {entry}")
             if kind == "meta":
-                #print(f"ENTRY in input_dict: {entry}")
                 meta_verb = entry["str_name"]
-
 
     if meta_verb == "help":
         print("Type words to progress, 'i' for 'inventory', 'd' to describe the environment, 'settings' for settings, 'show visited' to see where you've been this run: - that's about it.")
@@ -329,14 +338,15 @@ def meta(format_tuple, input_dict):
         from choose_a_path_tui_vers import god_mode
         god_mode()
     elif meta_verb == "quit":
-        print("Okay, quitting the game. Goodbye!")
+        print("Okay, quitting the game. Goodbye!\n\n")
         exit()
 
 def go(format_tuple, input_dict): ## move to a location/cardinal/inside
+    logging_fn()
 
     current_loc, current_card = get_current_loc()
 
-    direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
+    verb_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
 
     if (direction_entry and direction_entry["str_name"] in to_words and len(format_tuple) < 5) or (not direction_entry and len(format_tuple) < 4):
         if location_entry and not cardinal_entry:
@@ -347,7 +357,17 @@ def go(format_tuple, input_dict): ## move to a location/cardinal/inside
             new_relocate(new_location=location_entry["instance"])
 
         elif cardinal_entry and not location_entry:
-            turn_cardinal(cardinal_entry["instance"])
+            if cardinal_entry["instance"].place == loc.current:
+                turn_cardinal(cardinal_entry["instance"])
+            else:
+                new_relocate(new_location=location_entry["instance"], new_cardinal = cardinal_entry["instance"])
+
+        elif direction_entry and not location_entry and not cardinal_entry:# and verb_entry["str_name"] in ("go", "turn", "head", "travel", "move"):
+            if direction_entry["str_name"] in ("left", "right"):
+                turn_cardinal(direction_entry["str_name"])
+            else:
+                new_relocate(new_location=location_entry["instance"], new_cardinal = cardinal_entry["instance"])
+
 
         else:
             new_relocate(new_location=location_entry["instance"], new_cardinal = cardinal_entry["instance"])
@@ -358,27 +378,32 @@ def go(format_tuple, input_dict): ## move to a location/cardinal/inside
         print(f"Can {input_dict[1]["direction"]["str_name"]} be entered?")
         print("This isn't done yet.")
 
-    elif format_tuple[1] == "from":
+    elif direction_entry["str_name"] == "from":
         if location_entry and location_entry["instance"] != current_loc():
             print("Cannot leave a place you are not in.")
 
+    else:
+        print("end of go function, without resolution. Investigate.")
+        traceback_fn()
+
+
 
 def leave(format_tuple, input_dict):
+    logging_fn()
     #verb_only, verb_loc = go
     # verb_noun_dir_noun = movw item to container/surface
-    print("LEAVE FUNCTION")
     pass
 
 
 def look(format_tuple, input_dict):
-    print("LOOK FUNCTION")
+    logging_fn()
 
     if format_tuple == tuple(("verb", "sem")) and not input_dict:
         from misc_utilities import look_around
         look_around()
         return
 
-    direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
+    verb_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
 
     if len(format_tuple) == 2:
         if semantic_entry != None and input_dict[1]["sem"]["str_name"] == "around":
@@ -422,6 +447,7 @@ def look(format_tuple, input_dict):
 
 
 def read(format_tuple, input_dict):
+    logging_fn()
     print("read FUNCTION")
     #verb_noun if noun is can_read
     # verb_noun_dir_loc as above, but noun may more likely be scenery
@@ -429,6 +455,7 @@ def read(format_tuple, input_dict):
     pass
 
 def eat(format_tuple, input_dict):
+    logging_fn()
     print("eat FUNCTION")
     # verb_noun = eat noun if noun == edible, or maybe let them try if it isn't.
     pass
@@ -448,6 +475,7 @@ def eat(format_tuple, input_dict):
     """
 
 def clean(format_tuple, input_dict):
+    logging_fn()
     print("clean FUNCTION")
     print(f"format list: {format_tuple}, type: {type(format_tuple)}, length: {len(format_tuple)}")
     if len(format_tuple) == 2:
@@ -460,6 +488,7 @@ def clean(format_tuple, input_dict):
     pass
 
 def burn(format_tuple, input_dict):
+    logging_fn()
     print("burn FUNCTION")
     # for all burn items = require fire source, noun1 must be flammable.
     # verb_noun == burn item
@@ -490,6 +519,7 @@ def burn(format_tuple, input_dict):
     #glass jar: {'is_container', 'can_pick_up'}
 
 def break_item(format_tuple, input_dict):
+    logging_fn()
     print("break_item FUNCTION")
     # verb_noun == break item (if it's fragile enough)
     # verb_noun_sem_noun == break item with item2
@@ -511,6 +541,7 @@ def break_item(format_tuple, input_dict):
 
 
 def un_lock(format_tuple, input_dict):
+    logging_fn()
     print("un_lock FUNCTION")
     ## Use same checks for lock and unlock maybe? Not sure.
     #verb_noun == lock if noun does not require key to lock (padlock etc)
@@ -518,6 +549,7 @@ def un_lock(format_tuple, input_dict):
     pass
 
 def open_close(format_tuple, input_dict):
+    logging_fn()
     print("open_close FUNCTION")
     # like un_lock, maybe use this for open and close both, not sure yet.
     # They have the same checks is the thing. So maybe they just diverge at the end, with open/close sub-functions internally.
@@ -528,24 +560,28 @@ def open_close(format_tuple, input_dict):
 
 
 def combine(format_tuple, input_dict):
+    logging_fn()
     #if verb_noun_sem_noun, verb_noun_dir_noun, combine a+b
     #if verb_noun == what do you want to combine it with.
     print("COMBINE FUNCTION")
     pass
 
 def separate(format_tuple, input_dict):
+    logging_fn()
     #if verb_noun_sem_noun, verb_noun_dir_noun, combine a+b
     #if verb_noun == what do you want to combine it with.
     print("SEPARATE FUNCTION")
     pass
 
 def combine_and_separate(format_tuple, input_dict):
+    logging_fn()
 
     print(f"length of format list: {len(format_tuple)}")
 
 def move(format_tuple, input_dict):
+    logging_fn()
 
-    direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
+    verb_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
     if location_entry: # so if it's 'move to graveyard', it just treats it as 'go to'.
         go(format_tuple, input_dict, location_entry["instance"])
         return
@@ -558,8 +594,9 @@ def move(format_tuple, input_dict):
     pass
 
 def turn(format_tuple, input_dict):
+    logging_fn()
 
-    direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
+    verb_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
 
     print("TURN FUNCTION")
     if location_entry:
@@ -590,6 +627,7 @@ def turn(format_tuple, input_dict):
     #return "new_cardinal", new_cardinal
 
 def take(format_tuple, input_dict):
+    logging_fn()
     print("take FUNCTION")
     if format_tuple in (("verb", "noun"), ("verb", "direction", "noun")):
 
@@ -653,6 +691,7 @@ def take(format_tuple, input_dict):
     # verb_noun_dir_noun_dir_loc == take ball from bag at location (if loc == cur_loc)
 
 def pick_up(format_tuple, input_dict): # should be 'take'
+    logging_fn()
 
     take(format_tuple, input_dict)
     #object_inst = None
@@ -664,6 +703,7 @@ def pick_up(format_tuple, input_dict): # should be 'take'
 
 
 def put(format_tuple, input_dict, location=None):
+    logging_fn()
     print("Put varies depending on the format.")
     print(f"Format list: {format_tuple}")
     action_word = "putting"
@@ -703,6 +743,7 @@ def put(format_tuple, input_dict, location=None):
 
     print("AFTER PARTS")
 def put(format_tuple, input_dict):
+    logging_fn()
     print("put FUNCTION")
     # verb_noun_dir == put paper down
     # verb_noun_dir_noun = leave pamplet on table
@@ -710,6 +751,7 @@ def put(format_tuple, input_dict):
     pass
 
 def throw(format_tuple, input_dict):
+    logging_fn()
     print("throw FUNCTION")
     # verb_noun == where do you want to throw it (unless context),
     # verb_noun_dir == throw ball up (check if 'dir' makes sense)
@@ -717,6 +759,7 @@ def throw(format_tuple, input_dict):
     pass
 
 def push(format_tuple, input_dict):
+    logging_fn()
     print("push FUNCTION")
     # verb_noun == to move things out the way in general
     # verb_noun_dir == #push box left
@@ -724,6 +767,7 @@ def push(format_tuple, input_dict):
     pass
 
 def drop(format_tuple, input_dict):
+    logging_fn()
 
     action_word = "dropping"
     print("This is the drop function.")
@@ -749,6 +793,7 @@ def drop(format_tuple, input_dict):
             move_a_to_b(a=item_to_place, b=container_or_location, action=action_word, direction=direction)
 
 def set_action(format_tuple, input_dict):
+    logging_fn()
     print("set_action FUNCTION")
     # verb_noun_dir == set item down == drop
     # verb_noun_dir_noun == set item on fire if noun2 == 'fire' == burn
@@ -758,6 +803,7 @@ def set_action(format_tuple, input_dict):
 
 
 def use_item(format_tuple, input_dict):
+    logging_fn()
     print("use_item FUNCTION")
     print(f"format_tuple = {format_tuple}")
     print("For simple verb-noun dispersal")
@@ -765,6 +811,7 @@ def use_item(format_tuple, input_dict):
 
 
 def use_item_w_item(format_tuple, input_dict):
+    logging_fn()
     print("use_item_w_item FUNCTION")
     print(f"Format list: {format_tuple}")
     print(f"Length format list: {len(format_tuple)}")
@@ -772,6 +819,7 @@ def use_item_w_item(format_tuple, input_dict):
 
 
 def router(viable_format, inst_dict):
+    logging_fn()
 
     verb_inst = None
     #print(f"Viable formats at start of router: {viable_format}.")
@@ -886,6 +934,8 @@ def router(viable_format, inst_dict):
     #else:
     if isinstance(verb_inst, str):
         func = function_dict["meta"]
+    elif len(viable_format) == 1 and "location" in list(inst_dict[0].keys()):
+        func = function_dict["go"]
     else:
         func = function_dict[verb_inst.name]
 
