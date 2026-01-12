@@ -6,13 +6,15 @@
 #noun = "[noun]"
 
 
-meta_verbs = { ## Added to work with specific user inputs. Not sure how to implement it yet, but will figure it out. Just a placeholder for now.
-    "inventory": {"alt_words": ""},
+meta_verbs = {
+    "inventory": {"alt_words": "i"},
     "help": {"alt_words": ""},
     "settings": {"alt_words": ""},
     "stats": {"alt_words": ""},
-    "godmode": {"alt_words": ""},
-    "quit": {"alt_words": ""}
+    "describe": {"alt_words": "d"},
+    "godmode": {"alt_words": "god"}, # remove this if there's ever a god...?
+    "quit": {"alt_words": "q"},
+    "show visted": {"alt_words": ""}
 }
 
 

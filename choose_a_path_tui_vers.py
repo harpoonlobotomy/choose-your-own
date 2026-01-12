@@ -315,42 +315,45 @@ def user_input():
 
     if text != None:
         text=text.strip()
-    if text.lower() == "godmode":
-        do_print("Allowing input to set parameters. Please type 'done' or hit enter on a blank line when you're finished.")
-        god_mode()
-        do_print()
-        return "done"
-    if text.lower() == "help":
-        do_print()
-        slowWriting(f"  Type words to progress, 'i' for 'inventory', 'd' to describe the environment, 'settings' for settings, 'show visited' to see where you've been this run: - that's about it.")
-        do_print()
-        return "done"
-    if text.lower()== "settings":
-        do_print("Settings:")
-        init_settings(manual=True)
-        do_print()
-        return "done"
+    #if text.lower() == "godmode":
+    #    do_print("Allowing input to set parameters. Please type 'done' or hit enter on a blank line when you're finished.")
+    #    god_mode()
+    #    do_print()
+    #    return "done"
+    #if text.lower() == "help":
+    #    do_print()
+    #    slowWriting(f"  Type words to progress, 'i' for 'inventory', 'd' to describe the environment, 'settings' for settings, 'show visited' to see where you've been this run: - that's about it.")
+    #    do_print()
+    #    return "done"
+    #if text.lower()== "settings":
+    #    do_print("Settings:")
+    #    init_settings(manual=True)
+    #    do_print()
+    #    return "done"
     if text.lower() == "stats":
         do_print(f"    weird: [{game.weirdness}]. location: [{assign_colour(loc.current.name, 'loc')}]. time: [{game.time}]. weather: [{game.weather}]. checks: {game.checks}")
         inventory_names = get_inst_list_names(game.inventory)
         do_print(f"    inventory: {inventory_names}, inventory weight: [{len(inventory_names)}], carryweight: [{game.carryweight}]")
         do_print(f"    Player data: {game.player}")
         do_print()
-    if text.lower() == "i":
-        # removed the print line from here, goes from 3 blank lines between i and inventory to 1.
-        do_inventory()
-    if text.lower() == "d" or text.lower() == "description": ##TODO: make this a function instead of having it here. This is silly.
-        #loc_data = places[game.place]
-        do_print(assign_colour(f"[ Describe location. ]", "yellow"))
-        slowWriting(f"[{assign_colour(smart_capitalise(loc.current.name), 'loc')}]  {loc.current.overview}")
-        obj = getattr(loc.current, loc.current_cardinal)
-        slowWriting(f"You're facing {assign_colour(loc.current_cardinal)}. {obj}")
-        do_print(end='')
-        is_items = get_items_at_here(print_list=False)
-        if is_items:
-            do_print(assign_colour("You see a few scattered objects in this area:", "b_white"))
-            get_items_at_here(print_list=True)
-    if text.lower() == "show visited":
+    #if text.lower() == "i":
+    #    # removed the print line from here, goes from 3 blank lines between i and inventory to 1.
+    #    do_inventory()
+    #if text.lower() == "d" or text.lower() == "description": ##TODO: make this a function instead of having it here. This is silly.
+    #    #loc_data = places[game.place]
+    #    do_print(assign_colour(f"[ Describe location. ]", "yellow"))
+    #    slowWriting(f"[{assign_colour(smart_capitalise(loc.current.name), 'loc')}]  {loc.current.overview}")
+    #    obj = getattr(loc.current, loc.current_cardinal.name)
+    #    slowWriting(f"You're facing {assign_colour(loc.current_cardinal)}. {obj}")
+    #    do_print(end='')
+    #    is_items = get_items_at_here(print_list=False, place=loc.current_cardinal)
+    #    if is_items:
+    #        do_print(assign_colour("You see a few scattered objects in this area:", "b_white"))
+    #        is_items = ", ".join(col_list(is_items))
+    #        print(f"   {is_items}")
+    #        #get_items_at_here(print_list=True)
+    #    text=None
+    if text and text.lower() == "show visited":
         get_visited_map()
         text = None
     #if text.lower().startswith("drop "):
@@ -365,12 +368,12 @@ def user_input():
         #item = instance_name_in_inventory(textparts)
         #if item:
         #    drop_loot(item)
-    if text and text.lower() in ("exit", "quit", "stop", "q"):
-        # Should add the option of saving and returning later.
-        ##TODO: Need to work on this. Not urgently, but I'd at least like the setup done so it's an option conceptually; pretty much save everything in game, registry and item_management (or at least the data required to reconstruct). Will be a project in itself. Maybe tomorrow.
-
-        do_print("Okay, bye now!")
-        exit()
+#    if text and text.lower() in ("exit", "quit", "stop", "q"):
+#        # Should add the option of saving and returning later.
+#        ##TODO: Need to work on this. Not urgently, but I'd at least like the setup done so it's an option conceptually; pretty much save everything in game, registry and item_management (or at least the data required to reconstruct). Will be a project in itself. Maybe tomorrow.
+#
+#        do_print("Okay, bye now!")
+#        exit()
     else:
         return text
 
@@ -842,13 +845,6 @@ def look_around(status=None):
         if skip_intro==False:
             slowWriting(f"Using the power of {reason}, you're able to look around {assign_colour(loc.current.the_name, 'loc')} without too much fear of a tragic demise.")
         while True:
-            obj = loc.current_cardinal ## TODO: put the directional descriptions on the cardinal objects themselves.
-            #print(f"\n{obj}\n")
-            if obj == None or obj == "None":
-                do_print("This description hasn't been written yet... It should have some ")
-                exit()
-            else:
-                do_print(f"You're facing {assign_colour(loc.current_cardinal.long_desc)}. {obj}\n")
             remainders = list(x for x in game.cardinals if x is not loc.current_cardinal)
 
             text=None
@@ -1035,6 +1031,7 @@ def run():
         do_print()
 
     #while test != "quit":
+    print()
     inner_loop(speed_mode=test_mode)
 
 

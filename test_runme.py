@@ -18,5 +18,7 @@ if __name__ == "__main__":
             print(f"(That was number {i})\n")
     else:
         from choose_a_path_tui_vers import temp_run
+
         temp_run()
+
 

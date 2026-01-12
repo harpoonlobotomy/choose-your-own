@@ -225,12 +225,10 @@ class itemRegistry:
         self.by_name.get(inst.definition_key, set()).discard(inst)
 
 
-    def check_item_is_accessible(self, inst:ItemInstance):
+    def check_item_is_accessible(self, inst:ItemInstance) -> tuple[ItemInstance|None, int]:
 
         from misc_utilities import is_item_in_container
         # func to check that an item to be picked up is actually eligible to be picked up #
-        container = None
-        reason = 4
 
         def run_check(inst):
             confirmed_inst = None
@@ -361,7 +359,7 @@ class itemRegistry:
             if not self.by_location.get(location):
                 self.by_location[location] = set()
             self.by_location[location].add(inst)
-            self.by_cardinal_placename[location.place_name].add(inst)
+            self.by_cardinal_placename.setdefault(location.place_name, set()).add(inst)
 
         if old_container or new_container or hasattr(inst, "contained_in"): # check if it's in a container even if I don't specify one in the fn call.
             return_text = []

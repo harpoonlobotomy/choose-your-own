@@ -115,6 +115,9 @@ loc_dict = {
                 },
         "east": {"short_desc": "a variety of headstones",
                 "long_desc": "You see a variety of headstones, most quite worn and decorated by clumps of moss. There's a glass jar being used as a vase in front of one of the headstones, dried flowers left long ago.", # details here depending on weather. if raining, the dried flowers are saturated and heavy. If sunny, they're crispy, etc. Not close to implementing that yet.
+                "long_desc_dict": {"generic" :{"You see a variety of headstones, most quite worn and decorated by clumps of moss. "},
+                              "glass_jar": {"There's a glass jar being used as a vase in front of one of the headstones"},
+                              "dried_flowers": {"dried flowers left long ago."}}, # details here depending on weather. if raining, the dried flowers are saturated and heavy. If sunny, they're crispy, etc. Not close to implementing that yet.}
                 "weird": None,
                 "east_actions": None,
                 },
@@ -160,6 +163,7 @@ class cardinalInstance:
         self.place = loc
         self.short_desc = loc_dict[loc.name][cardinal].get("short_desc")
         self.long_desc = loc_dict[loc.name][cardinal].get("long_desc")
+        self.colour = None
 
         self.cardinal_data = loc_dict[self.place.name].get(cardinal)
         self.w_cardinal = loc_dict[self.place.name][cardinal].get("weird")
@@ -173,6 +177,7 @@ class cardinalInstance:
 
         self.by_placename = {}
         # placeInstance.name = {"south": southInstance, "north": northInstance, etc}
+
 class placeInstance:
 
     def __init__(self, name):

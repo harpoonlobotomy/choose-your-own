@@ -33,7 +33,7 @@ def look_at_item(item_inst): ## this is just using everything from registry. Sho
             else:
                 extra = "."
             print(f"You look at the {item_inst.name}{extra}")
-            print(registry.describe(item_inst, caps=True))
+            print(assign_colour(registry.describe(item_inst, caps=True), colour="description"))
 
 
 def add_item_to_loc(item_instance, location=None):
@@ -49,7 +49,7 @@ def add_item_to_loc(item_instance, location=None):
         print("add_item_to_location needs a cardinalInstance.")
         exit
 
-
+"""
 def add_item_to_container(container:ItemInstance):
     from item_definitions import container_limit_sizes
     from set_up_game import game
@@ -102,3 +102,4 @@ def add_item_to_container(container:ItemInstance):
                 clean_separation_result(result, to_print=True)
                 registry.move_item(instance, new_container=container)
                 game.inventory.remove(instance)
+"""

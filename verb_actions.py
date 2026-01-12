@@ -7,7 +7,7 @@ from env_data import cardinalInstance, locRegistry as loc
 from interactions import item_interactions
 from interactions.player_movement import new_relocate, turn_around
 from itemRegistry import ItemInstance, registry
-from misc_utilities import generate_clean_inventory
+from misc_utilities import assign_colour, generate_clean_inventory
 from set_up_game import game
 from verb_definitions import directions, formats
 
@@ -58,6 +58,7 @@ def is_loc_current_loc(location=None, cardinal=None):
 
 def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
 
+    location = None
     from item_definitions import container_limit_sizes
    ## This is the terminus of any 'move a to b' type action. a must be an item instance, b may be an item instance (container-type) or a location.
     if not direction:
@@ -67,6 +68,11 @@ def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
 
     if isinstance(a, ItemInstance):
         if not isinstance(b, ItemInstance):
+            if isinstance(b, cardinalInstance):
+                if b == loc.current_cardinal:
+                    print(f"{action} {a.name} {direction} {b}")
+                    item_interactions.add_item_to_loc(a, b)
+                    return "yes"
             print("B is not an instance. move a to b requires two things: What is the second item? (pass for now.)")
             return None
 
@@ -81,12 +87,15 @@ def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
                     if item_size < container_size:
                         print(f"{a.name} will fit in {b.name}")
                         print(f"{action} {a} {direction} {b}")
+                        registry.move_item(a, new_container=b)
+
 
     elif isinstance(b, tuple):
         print(f"b is a tuple: {b}")
         if not current_loc:
-            current_loc, _ = get_current_loc() ## this may pick up cardinals accidentally. Changing to break the tuple. Might break things.
+            _, current_loc = get_current_loc() ## this may pick up cardinals accidentally. Changing to break the tuple. Might break things.
         if b[0] in current_loc:
+            location = b[0]
             print(f"{action} {a.name} {direction} {b}")
 
         else:
@@ -96,11 +105,13 @@ def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
         #    print(f"{action} {a.name} {direction} {b}")
 
 
+    elif isinstance(b, cardinalInstance):
+        location = b
+
     else:
-        location = None
         print("B is not an instance.")
         if not current_loc:
-            current_loc, current_card = get_current_loc()
+            _, current_loc = get_current_loc()
 
         if b in current_loc:
             print(f"B is the current location: {b}")
@@ -270,7 +281,7 @@ def turn_cardinal(prospective_cardinal, turning = True):
     if isinstance(prospective_cardinal, str):
         prospective_cardinal = loc.by_cardinal(prospective_cardinal)
 
-    #print(f"prospective cardinal going to loc test: {prospective_cardinal}")
+    print(f"prospective cardinal going to loc test: {prospective_cardinal}")
     bool_test, _, _ = is_loc_current_loc(None, prospective_cardinal)
     if not bool_test:
         turning_to = prospective_cardinal
@@ -282,7 +293,7 @@ def turn_cardinal(prospective_cardinal, turning = True):
         #print(f"Prospective cardinal: {prospective_cardinal}")
         #print(f"Prospective cardinal.name: {prospective_cardinal.name}")
         if turning:
-            print(f"You're already already facing the {prospective_cardinal.ern_name}.")
+            print(f"You're already already facing the {assign_colour(prospective_cardinal, card_type="ern_name")}.")
         print(prospective_cardinal.long_desc)
         return "no_change", None
 
@@ -294,9 +305,32 @@ def turn_cardinal(prospective_cardinal, turning = True):
 #    pass
 #
 def meta(format_tuple, input_dict):
-    print("meta function in verb_actions")
-    generate_clean_inventory(will_print=True, coloured=True)
-    print("Doesn't actually do anything yet, but should be a way to route inventory-type commands when user_input isn't in use.") ## it's hacky, but works, I think.
+
+    #print(f"META FUNCTION\n{input_dict}")
+
+    for idx in input_dict:
+        for kind, entry in input_dict[idx].items():
+            #print(f"KIND: {kind}, ENTRY: {entry}")
+            if kind == "meta":
+                #print(f"ENTRY in input_dict: {entry}")
+                meta_verb = entry["str_name"]
+
+
+    if meta_verb == "help":
+        print("Type words to progress, 'i' for 'inventory', 'd' to describe the environment, 'settings' for settings, 'show visited' to see where you've been this run: - that's about it.")
+    elif meta_verb == "settings":
+        from choose_a_path_tui_vers import init_settings
+        init_settings(manual=True)
+    elif meta_verb == "describe":
+        look(("verb", "sem"), None)
+    elif meta_verb == "inventory":
+        generate_clean_inventory(will_print=True, coloured=True)
+    elif meta_verb == "godmode":
+        from choose_a_path_tui_vers import god_mode
+        god_mode()
+    elif meta_verb == "quit":
+        print("Okay, quitting the game. Goodbye!")
+        exit()
 
 def go(format_tuple, input_dict): ## move to a location/cardinal/inside
 
@@ -339,13 +373,25 @@ def leave(format_tuple, input_dict):
 def look(format_tuple, input_dict):
     print("LOOK FUNCTION")
 
+    if format_tuple == tuple(("verb", "sem")) and not input_dict:
+        from misc_utilities import look_around
+        look_around()
+        return
+
     direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
 
     if len(format_tuple) == 2:
         if semantic_entry != None and input_dict[1]["sem"]["str_name"] == "around":
-            print(loc.current.overview)
-            print(f"You're facing {loc.current_cardinal.name}. {loc.current_cardinal.long_desc}")
-
+            from misc_utilities import look_around
+            look_around()
+            return
+            #print(loc.current.overview)
+            #print(f"You're facing {loc.current_cardinal.name}. {loc.current_cardinal.long_desc}")
+            #is_items = get_items_at_here(print_list=False, place=loc.current_cardinal)
+            #if is_items:
+            #    do_print(assign_colour("You see a few scattered objects in this area:", "b_white"))
+            #    is_items = ", ".join(col_list(is_items))
+            #    print(f"   {is_items}")
         elif cardinal_entry != None:
             turn_cardinal(cardinal_entry["instance"], turning = False)
 
@@ -568,12 +614,38 @@ def take(format_tuple, input_dict):
         #    print("REASON VAL:: Item is not at the current location or on your person.")
         else:
             if reason_val == 5:
-                print(f"Item {noun_inst.name} is in an container, but you can take it.")
+                #print(f"Item {noun_inst.name} is in an container, but you can take it.")
                 registry.move_from_container_to_inv(noun_inst, inventory=game.inventory, parent=container)
             else:
-                print(f"Noun inst {noun_inst.name} can be accessed.")
+                #print(f"Noun inst {noun_inst.name} can be accessed.")
                 registry.pick_up(noun_inst, inventory_list=game.inventory)
 
+
+    if format_tuple == (("verb", "noun", "direction", "noun")):
+        verb_str = input_dict[0]["verb"]["str_name"]
+        if verb_str in ("take", "remove", "separate", "get"):
+            noun_idx = format_tuple.index("noun")
+            noun_inst = inst_from_idx(input_dict[noun_idx], "noun")
+            container_idx = len(format_tuple) - 1
+            container_inst = inst_from_idx(input_dict[container_idx], "noun")
+
+            container, reason_val = registry.check_item_is_accessible(noun_inst)
+
+            if reason_val not in (0, 5):
+                print(f"Cannot take {noun_inst.name}.")
+                if reason_val == 2:
+                    print(f"{noun_inst.name} is already in your inventory.")
+            else:
+                if container == container_inst and reason_val == 5:
+                    #print(f"Item {noun_inst.name} is in an container, but you can take it.")
+                    registry.move_from_container_to_inv(noun_inst, inventory=game.inventory, parent=container)
+                elif reason_val == 5:
+                    print(f"{noun_inst.name} is not in {container_inst.name}, but {container.name}.")
+                else:
+                    #print(f"Noun inst {noun_inst.name} can be accessed.")
+                    registry.pick_up(noun_inst, inventory_list=game.inventory)
+    if noun_inst in game.inventory:
+        print(f"{assign_colour(noun_inst)} is now in your inventory.")
     # verb_noun == pick up noun
     # verb_dir_noun == pick up noun
     # verb_noun_sem_noun pick up noun with noun (eg something hot with a thick glove)
@@ -656,26 +728,25 @@ def drop(format_tuple, input_dict):
     action_word = "dropping"
     print("This is the drop function.")
 
-    if location == None:
-        location, current_card = get_current_loc() # don't know if separating the tuple is making life harder for myself here...
+    _, location = get_current_loc() # don't know if separating the tuple is making life harder for myself here...
 
     if len(input_dict) == 2:
         print(f"location: {location}")
-        move_a_to_b(a=list((input_dict)[1].values())[0], b=location, action=action_word)
+        if input_dict[1].get("noun"):
+            noun_inst = input_dict[1]["noun"]["instance"]
+            if noun_inst in game.inventory:
+                print(f"noun_inst.name: {noun_inst.name}")
+                trial = move_a_to_b(a=noun_inst, b=location, action=action_word)
+                if trial:
+                    idx = game.inventory.index(noun_inst)
+                    game.inventory.pop(idx)
+
 
     if len(input_dict) == 4:
         item_to_place, direction, container_or_location = three_parts_a_x_b(input_dict)
 
         if direction in ["in", "into", "on", "onto"]:
             move_a_to_b(a=item_to_place, b=container_or_location, action=action_word, direction=direction)
-
-def drop(format_tuple, input_dict):
-    print("drop FUNCTION")
-    # verb_noun = move noun to current loc
-    # verb_noun_dir_noun = move noun to container/surface,
-    # verb_noun_dir_loc == drop item to current loc (if loc == current loc)
-    # verb_noun_dir_noun_dir_loc == drop item in container at graveyard (if loc== current loc)
-    pass
 
 def set_action(format_tuple, input_dict):
     print("set_action FUNCTION")
@@ -741,7 +812,7 @@ def router(viable_format, inst_dict):
         "close": open_close,
 
         "combine": combine,
-        "separate": separate,
+        "separate": take,
 
         "move": move,
         "turn": turn,

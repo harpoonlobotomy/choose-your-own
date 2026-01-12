@@ -1,3 +1,4 @@
+from env_data import cardinalInstance, placeInstance
 from itemRegistry import ItemInstance
 from logger import logging_fn
 
@@ -209,6 +210,19 @@ def clean_separation_result(result:list, to_print=False):
 
 ### END STRING MANIPULATION
 
+def look_around():
+    from env_data import locRegistry as loc
+    from choose_a_path_tui_vers import get_items_at_here
+
+    print(loc.current.overview)
+    print(f"You're facing {assign_colour(loc.current_cardinal, card_type="name")}. {loc.current_cardinal.long_desc}")
+    is_items = get_items_at_here(print_list=False, place=loc.current_cardinal)
+    if is_items:
+        do_print(assign_colour("You see a few scattered objects in this area:", "b_white"))
+        is_items = ", ".join(col_list(is_items))
+        print(f"   {is_items}")
+
+
 
 ### INVENTORY LIST MANAGEMENT (possible all should be in item_management instead, but keeping here for now.)
 
@@ -367,7 +381,7 @@ def separate_loot(child_input=None, parent_input=None, inventory=[]): ## should 
 
 ### COLOUR ASSIGNMENT
 
-def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=False, not_bold=False, caps=False):
+def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=False, not_bold=False, caps=False, card_type = None):
 
     from tui.colours import Colours
 
@@ -421,20 +435,28 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
 
     def check_instance_col(item):
         from itemRegistry import registry
-        if isinstance(item, ItemInstance):
-            entry:ItemInstance = item
+        if isinstance(item, ItemInstance|placeInstance|cardinalInstance):
+            entry = item
 
             if entry and entry.colour != None:
                 colour=entry.colour
-                item=item.name
                 bld=True
+                if not isinstance(item, cardinalInstance):
+                    item=item.name
             else:
                 colour=cardinals[Colours.colour_counter%len(cardinals)]
                 colour=cardinal_cols[colour] # TODO: is there any reason fo this to be separate? Can't we just use the %len directly against cardinal_cols?
                 Colours.colour_counter += 1
 
-                item=registry.register_name_colour(item, colour)
-                bld=True
+                if isinstance(item, ItemInstance):
+                    item=registry.register_name_colour(item, colour)
+                    bld=True
+                elif isinstance(item, placeInstance|cardinalInstance):
+                    item.colour=colour
+                    if not isinstance(item, cardinalInstance):
+                        item = item.name
+                    bld=True
+
             return colour, item, bld
 
     if item in cardinals:
@@ -442,7 +464,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
         bld=True
 
 
-    elif isinstance(item, str) or isinstance(item, ItemInstance):
+    elif isinstance(item, str) or isinstance(item, ItemInstance|placeInstance|cardinalInstance):
         from itemRegistry import registry
         if isinstance(item, str):
 
@@ -458,7 +480,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
                     colour, item, bld = check_instance_col(item)
                     #colour = item.colour
 
-        if isinstance(item, ItemInstance): # changing to elif breaks non-instance colours entirely.
+        if isinstance(item, ItemInstance|placeInstance|cardinalInstance): # changing to elif breaks non-instance colours entirely.
             colour, item, bld = check_instance_col(item)
 
         elif isinstance(colour, (int, float)):
@@ -486,6 +508,16 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
 
     if not_bold:
         bld=False
+
+    if card_type:
+        if card_type == "name":
+            item = item.name
+        elif card_type == "ern_name":
+            item = item.ern_name
+        elif card_type == "place_name":
+            item = item.place_name
+    elif isinstance(item, cardinalInstance):
+        item = item.name
 
     coloured_text=Colours.c(item, colour, bg, bold=bld, italics=ita, underline=u_line, invert=invt, no_reset=no_reset)
     return coloured_text
@@ -529,8 +561,8 @@ def do_print(text=None, end=None, do_edit_list=False, print_func=None):
     #    do_edit_list=True
 
     update_text_box(to_print=text, edit_list=do_edit_list) ## enable_tui removed from here, instead tui_update pulls it itself.
-    if end != "no": # bit weak but it'll do, lets me force no extra newlines even with the messy af print sequence I hae for now.
-        update_text_box(to_print="  ")
+#    if end != "no": # bit weak but it'll do, lets me force no extra newlines even with the messy af print sequence I hae for now.
+#        update_text_box(to_print="  ")
 
 def do_input():
 
@@ -539,13 +571,13 @@ def do_input():
     MOVE_UP = "\033[A"
     HIDE = "\033[?25l"
 
-    print(SHOW, end='') ## is this right? Not sure...
-    text=input()
     move_up = MOVE_UP
     import config
     enable_tui=config.enable_tui
     if enable_tui:
+        print(SHOW, end='') ## is this right? Not sure...
         move_up = ""
+    text=input()
 
     #if text == "" or text == None:
     #    do_print(assign_colour(f"{move_up}{HIDE}(Chosen: <NONE>)", "yellow"))
