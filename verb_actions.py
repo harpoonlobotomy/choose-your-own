@@ -134,14 +134,54 @@ def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
             print(f"Failed to move `{a}` to `{b}`.")
             print(f"Reason: `{b}` is not the current location.")
 
-def check_lock_open_state(noun_inst, check_open = True, check_locked=True):
+def check_lock_open_state(noun_inst, verb_inst):
     logging_fn()
 
-    ## need to do this TODO
-    is_open = is_locked = False
-    print("Check the item registry for status.")
+    inst, container, reason_val, meaning = registry.check_item_is_accessible(noun_inst)
+    print(f"MEANING (initial): {meaning}")
+    print(f"reason val: {reason_val}")
+    if reason_val in (0, 2, 5):
+        if verb_inst.name == "open" and hasattr(noun_inst, "is_open"):
+            if noun_inst.is_open:
+                return True, None, None, None # is_open, is_closed_and_unlocked, is_closed_and_locked
+            else:
+                print(f"{noun_inst.name} is not open.")
+                if hasattr(noun_inst, "is_locked") and noun_inst.is_locked:
+                    print(f"IS_LOCKED: `{noun_inst.is_locked}`")
+                    if hasattr(noun_inst, "needs_key"):
+                        key_inst = None
+                        print(f"key: `{noun_inst.needs_key}`")
+                        inst, container, reason_val, meaning = registry.check_item_is_accessible(noun_inst.needs_key)
+                        print(f"MEANING (is locked, is not open): {meaning}")
+                        if container and isinstance(container, ItemInstance) and container.name == noun_inst.needs_key:
+                            key_inst = container
+                        if reason_val in (2, 6):
+                            #if key_inst:
+                            #    print(f"You need to unlock it before you can open it. You do have the key, though... ({assign_colour(key_inst)})")
+                            #else:
+                            #open, closed, locked, locked_have_key
+                            return None, None, None, True
+                        elif reason_val == 5:
+                            print("Do you want a hint?")
+                            test = input()
+                            if test in ("yes", "y"):
+                                print(f"You'll need to take something out of the {assign_colour(container)} first.")
+                            return None, None, None, True
+                        elif reason_val == 0:
+                            return None, None, True, None
+                        else:
+                            return None, None, True, None
+                    else:
+                        print("Locked but does need a key? This is an error, investigate.")
+                        traceback_fn()
+                        exit()
 
-    return is_open, is_locked
+                else:
+                    return None, True, None, None
+
+
+    print("It should never get to this point in the check_lock_open_state fn.")
+    traceback_fn()
 
 def get_entries_from_dict(input_dict):
     logging_fn()
@@ -275,6 +315,7 @@ def inst_from_idx(dict_entry, kind_str, return_str=False):
 def turn_cardinal(prospective_cardinal, turning = True):
     logging_fn()
 
+
     if prospective_cardinal in ("left", "right"):
         print("prospective cardinal in left/right")
         current_facing = loc.current.name
@@ -310,13 +351,25 @@ def turn_cardinal(prospective_cardinal, turning = True):
     if isinstance(prospective_cardinal, str):
         prospective_cardinal = loc.by_cardinal(prospective_cardinal)
 
+
     #print(f"prospective cardinal going to loc test: {prospective_cardinal}")
     bool_test, _, _ = is_loc_current_loc(None, prospective_cardinal)
     if not bool_test:
-        turning_to = prospective_cardinal
+        from env_data import loc_dict
+        cardinal_str = prospective_cardinal.name
+        intended_cardinal = (loc_dict[loc.currentPlace.name][cardinal_str] if loc_dict[loc.currentPlace.name].get(cardinal_str) else None)
+        #print(f"Intended_cardinal: {intended_cardinal}")
+        if intended_cardinal:
+            turning_to = prospective_cardinal
+            turn_around(turning_to)
+        else:
+            print("There's nothing over that way.\n")
+            print(f"You're facing {loc.current.place_name}")
+            print(loc.current.long_desc)
+
+        return
         #print(f"turning_to: {turning_to}, type: {type(turning_to)}") ## Shouldn't have this, should be able to use this function for just turning.
         #print(f"You turn to the {turning_to.ern_name}")
-        turn_around(turning_to)
         #return "new_cardinal", turning_to
     else:
         #print(f"Prospective cardinal: {prospective_cardinal}")
@@ -582,104 +635,68 @@ def break_item(format_tuple, input_dict):
 def un_lock(format_tuple, input_dict):
     logging_fn()
     print("un_lock FUNCTION")
+
     ## Use same checks for lock and unlock maybe? Not sure.
     #verb_noun == lock if noun does not require key to lock (padlock etc)
     # verb_noun_sem_noun lock noun w noun2 if noun2 is correct key and in inventory
     pass
 
+def print_children_in_container(noun_inst):
+    children = registry.instances_by_container(noun_inst)
+    if children:
+        print(f"\nThe {assign_colour(noun_inst)} contains:")
+        children = ", ".join(col_list(children))
+        print(f"  {children}")
+
 def open_close(format_tuple, input_dict):
     logging_fn()
 
-    if format_tuple == (("verb", "noun")):
-        verb_entry, noun_entry, _, _, _, _ = get_entries_from_dict(input_dict)
-        print(f"noun entry: {noun_entry}")
-        noun_inst = noun_entry["instance"]
-        print(f"noun_inst: {noun_inst}")
-        container, reason_val = registry.check_item_is_accessible(noun_inst)
-        print(f"reason val: {reason_val}")
-        if reason_val in (0, 2, 5):
-            if hasattr(noun_inst, "is_open"):
-                if verb_entry["str_name"] == "open":
-                    if noun_inst.is_open:
-                            print(f"{assign_colour(noun_inst)} is already open.")
-                            children = registry.instances_by_container(noun_inst)
-                            if children:
-                                print(f"\nThe {assign_colour(noun_inst)} contains:")
-                                children = ", ".join(col_list(children))
-                                print(f"  {children}")
-                            return
+    verb_entry, noun_entry, _, _, _, _ = get_entries_from_dict(input_dict)
+    noun_inst = noun_entry["instance"]
 
-                    elif hasattr(noun_inst, "is_locked") and noun_inst.is_locked: ## need to use a separate function here.
-                        print(f"IS_LOCKED: `{noun_inst.is_locked}`")
-                        if hasattr(noun_inst, "needs_key"):
-                            key_inst = None
-                            print(f"key: `{noun_inst.needs_key}`")
-                            container, reason_val = registry.check_item_is_accessible(noun_inst.needs_key)
-                            print(f"CONTAINER: {container}")
-                            if container and isinstance(container, ItemInstance) and container.name == noun_inst.needs_key:
-                                key_inst = container
-                            if reason_val in (2, 6):
-                                if key_inst:
-                                    print(f"You need to unlock it before you can open it. You do have the key, though... ({assign_colour(key_inst)})")
-                                else:
-                                    print(f"You need to unlock it before you can open it. You do have the key, though... ({assign_colour(noun_inst.needs_key, "description")})")
-                            elif reason_val == 0:
-                                print(f"You need to unlock it before you can open it. What you need should be around somewhere...")
-                            else:
-                                print(f"It seems like you need a way to {verb_entry["str_name"]} it first...")
-                            return
+    is_open, is_closed_and_unlocked, is_closed_and_locked, locked_and_have_key = check_lock_open_state(noun_inst= noun_entry["instance"], verb_inst = verb_entry["instance"])
+    if is_open:
+        if verb_entry["instance"].name in ("close", "lock"):
+            if verb_entry["instance"].name == "close":
+                print(f"You closed the {noun_inst.name}")
+                noun_inst.is_closed
+            elif verb_entry["instance"].name == "lock":
+                print(f"You closed and locked the {noun_inst.name}")
+                noun_inst.is_closed
+                noun_inst.is_locked
+        else:
+            print(f"The {noun_inst.name} is already open.")
+            print_children_in_container(noun_inst)
 
-                    else:
-                        print(f"You open the {assign_colour(noun_inst)}")
-                        noun_inst.is_open = True
-                        noun_inst.is_locked = False
-
-                        children = registry.instances_by_container(noun_inst)
-                        if children:
-                            print(f"\nThe {assign_colour(noun_inst)} contains:")
-                            children = ", ".join(col_list(children))
-                            print(f"  {children}")
-                        return
-
-                    if reason_val == 5:
-                        print("Do you want a hint?")
-                        test = input()
-                        if test in ("yes", "y"):
-                            print(f"You'll need to take something out of the {assign_colour(container)} first.")
-                        return
-
-                else:
-                    if noun_inst.is_open:
-                        print(f"Closed the {noun_inst.name}")
-                        noun_inst.is_closed
-                    # reason:
-            # 0 = `accessible`
-            # 1 = 'in container but inaccessable (locked/closed)'
-            # 2 = `in inventory`
-            # 3 = 'not at current location'
-            # 4 = 'other error, investigate'
-            # 5 = `in a container but accessible locally` # can pick up but not drop
-            # 6 = `in a container, accessible and in your inventory` # can drop, pick up == separate
-    # like un_lock, maybe use this for open and close both, not sure yet.
-    # They have the same checks is the thing. So maybe they just diverge at the end, with open/close sub-functions internally.
-
-    # verb_noun == open noun if noun can be opened, may be obj or door/etc
-    # verb_noun_sem_noun open noun w something (open window with stick, open cabinet w prybar)
-    if format_tuple == (("verb", "noun", "sem", "noun")):
-        a, sem, b = three_parts_a_x_b(input_dict)
-        if a["instance"].is_open == True:
-            print(f"{assign_colour(a["instance"])} is already open.")
-        elif a["instance"].needs_key:
-            if b["instance"].name == a["instance"].needs_key:
-                print(f"You open the {assign_colour(a["instance"])}")
-                a["instance"].is_locked = False
-                a["instance"].is_open = True
-                children = registry.instances_by_container(a["instance"])
-                if children:
-                    print(f"\nThe {assign_colour(a["instance"])} contains:")
-                    children = ", ".join(col_list(children))
-                    print(f"  {children}")
+    else:
+        if is_closed_and_unlocked:
+            if verb_entry["instance"].name in ("close", "lock"):
+                print(f"The {noun_inst["instance"].name} is already closed.")
                 return
+            print(f"You open the {assign_colour(noun_inst)}")
+            noun_inst.is_open = True
+            noun_inst.is_locked = False
+            print_children_in_container(noun_inst)
+
+        elif locked_and_have_key:
+            if verb_entry["instance"].name in ("close", "lock"):
+                print(f"The {noun_inst["instance"].name} is already closed.")
+                return
+            if verb_entry["instance"].name == "open":
+                print(assign_colour("You need to unlock it before you can open it. You do have the key, though...", "description"))
+            elif verb_entry["instance"].name == "unlock":
+                print(f"You use the {noun_inst.needs_key} to unlock the {noun_inst.in_container}")
+                noun_inst.is_open=True
+                noun_inst.is_locked=False
+                print_children_in_container(noun_inst)
+        else:
+            if verb_entry["instance"].name in ("close", "lock"):
+                print(f"The {noun_inst["instance"].name} is already closed.")
+                return
+            if verb_entry["instance"].name == "open":
+                print(assign_colour("You need to unlock it before you can open it. What you need should be around somewhere...", "description"))
+            elif verb_entry["instance"].name == "unlock":
+                print(assign_colour("You need to find something to unlock it with first.", "description"))
 
 def combine(format_tuple, input_dict):
     logging_fn()
@@ -713,7 +730,6 @@ def turn(format_tuple, input_dict):
 
     verb_entry, noun_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
 
-    print("TURN FUNCTION")
     if location_entry:
         current_location, current_turning = current_location()
         if location_entry["instance"] != current_location and cardinal_entry:
@@ -721,8 +737,8 @@ def turn(format_tuple, input_dict):
             return
 
     if cardinal_entry:
+
         turn_cardinal(cardinal_entry["instance"])
-        return
 
     if semantic_entry and semantic_entry["str_name"] == "around" and len(format_tuple) == 2:
         invert_cardinals = {
@@ -751,7 +767,8 @@ def take(format_tuple, input_dict):
         #print(f"input_dict[noun_idx] inst_from_idx: {noun_inst}")
         #print(f"Noun inst location: {noun_inst.location.place_name}")
 
-        container, reason_val = registry.check_item_is_accessible(noun_inst)
+        inst, container, reason_val, meaning = registry.check_item_is_accessible(noun_inst)
+        print(f"TAKE: Meaning: {meaning}")
         if reason_val not in (0, 5, 6):
             print(f"Cannot take {noun_inst.name}.")
             print(f"Reason code: {reason_val}")
@@ -797,8 +814,8 @@ def take(format_tuple, input_dict):
             container_idx = len(format_tuple) - 1
             container_inst = inst_from_idx(input_dict[container_idx], "noun")
 
-            container, reason_val = registry.check_item_is_accessible(noun_inst)
-
+            inst, container, reason_val, reason = registry.check_item_is_accessible(noun_inst)
+            print(f"REASON: {reason}")
             if reason_val not in (0, 5, 6):
                 print(f"Cannot take {noun_inst.name}.")
                 print(f"Reason code: {reason_val}")
@@ -876,7 +893,6 @@ def put(format_tuple, input_dict, location=None):
     print("AFTER PARTS")
 def put(format_tuple, input_dict):
     logging_fn()
-    print("put FUNCTION")
     # verb_noun_dir == put paper down
     # verb_noun_dir_noun = leave pamplet on table
     # verb_noun_dir_noun_dir_loc == leave pamplet on table at location (again, useless.)
@@ -884,7 +900,6 @@ def put(format_tuple, input_dict):
 
 def throw(format_tuple, input_dict):
     logging_fn()
-    print("throw FUNCTION")
     # verb_noun == where do you want to throw it (unless context),
     # verb_noun_dir == throw ball up (check if 'dir' makes sense)
     # verb_noun_dir_noun  == throw ball at tree
@@ -892,7 +907,6 @@ def throw(format_tuple, input_dict):
 
 def push(format_tuple, input_dict):
     logging_fn()
-    print("push FUNCTION")
     # verb_noun == to move things out the way in general
     # verb_noun_dir == #push box left
     # verb_noun_dir_noun == push box away from cabinet
@@ -910,7 +924,7 @@ def drop(format_tuple, input_dict):
         #print(f"location: {location}")
         if input_dict[1].get("noun"):
             noun_inst = input_dict[1]["noun"]["instance"]
-            container, reason_val = registry.check_item_is_accessible(noun_inst)
+            _, container, reason_val = registry.check_item_is_accessible(noun_inst)
             # 0 = `accessible`
             # 1 = 'in container but inaccessable (locked/closed)'
             # 2 = `in inventory`
@@ -938,7 +952,6 @@ def drop(format_tuple, input_dict):
 
 def set_action(format_tuple, input_dict):
     logging_fn()
-    print("set_action FUNCTION")
     # verb_noun_dir == set item down == drop
     # verb_noun_dir_noun == set item on fire if noun2 == 'fire' == burn
     # verb_dir_noun_sem_noun set on fire with item
@@ -946,27 +959,34 @@ def set_action(format_tuple, input_dict):
 
 
 
-def use_item(format_tuple, input_dict):
-    logging_fn()
-    print("use_item FUNCTION")
-    print(f"format_tuple = {format_tuple}")
-    print("For simple verb-noun dispersal")
-    pass
-
 
 def use_item_w_item(format_tuple, input_dict):
     logging_fn()
-    print("use_item_w_item FUNCTION")
     print(f"Format list: {format_tuple}")
     print(f"Length format list: {len(format_tuple)}")
+    ## use x on y
+    verb_entry, noun_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict()
+    if format_tuple == (('verb', 'noun', 'direction', 'noun')):
+        if verb_entry["str_name"] == "use" and ((direction_entry and direction_entry["str_name"] == "on") or (semantic_entry and semantic_entry["str_name"] == "with")):
+            open, closed, locked, locked_have_key = check_lock_open_state(noun_entry["instance"], verb_entry["instance"])
+            if locked_have_key:
+                if noun_entry["instance"].name == input_dict[3]["verb"]["instance"].children:
+                    print(f"input_dict[3]['verb']['instance']: {input_dict[3]['verb']['instance']} == child")
 
+
+
+def use_item(format_tuple, input_dict):
+    logging_fn()
+    print(f"format_tuple = {format_tuple}")
+    if len(format_tuple) == 4:
+        use_item_w_item(format_tuple, input_dict)
+    pass
 
 
 def router(viable_format, inst_dict):
     logging_fn()
 
     verb_inst = None
-    #print(f"Viable formats at start of router: {viable_format}.")
     quick_list = []
     for v in inst_dict.values():
         for data in v.values():
@@ -1004,6 +1024,7 @@ def router(viable_format, inst_dict):
         "combine": combine,
         "separate": take,
 
+        "use": use_item,
         "move": move,
         "turn": turn,
         "take": take,#pick_up,
@@ -1019,12 +1040,8 @@ def router(viable_format, inst_dict):
     elif len(viable_format) == 1 and list(inst_dict[0].keys())[0] in ("location", "direction", "cardinal"):
         func = function_dict["go"]
     else:
-        #print(f"list(inst_dict[0].keys())[0]:: {list(inst_dict[0].keys())[0]}")
         func = function_dict[verb_inst.name]
 
-
     response = func(format_tuple = viable_format, input_dict = inst_dict)
-
-    #print("Leaving router.")
 
     return response

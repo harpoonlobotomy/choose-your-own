@@ -174,6 +174,8 @@ verb_defs_dict = {
     "push": {"alt_words": ["shove", "move", "pull"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun]},
     "drop": {"alt_words": ["discard", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_noun, verb_noun_dir_loc, verb_noun_dir_noun_dir_loc, verb_noun_dir_meta]},
     "read": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_loc]}, ## Two nouns have 'examine'. Maybe make 'read' its own specific thing instead of referring 'examine' here. idk.
+
+    "use": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_dir_loc, verb_noun_dir_noun]},
     "burn": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_dir_loc], "inventory_check": "fire_source"},
     "lock": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun], "inventory_check": "key"},
     "unlock": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun_sem_noun, verb_noun], "inventory_check": "key"},

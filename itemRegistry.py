@@ -226,41 +226,39 @@ class itemRegistry:
         logging_fn()
         from misc_utilities import is_item_in_container
         # func to check that an item to be picked up is actually eligible to be picked up #
+        accessible_dict = { ## just for printing, for my own sake because my memory is broken
+            0: "accessible",
+            1: "in container but inaccessable (locked/closed)",
+            2: "in inventory",
+            3: "not at current location",
+            4: "other error, investigate",
+            5: "in a container but accessible locally, can pick up but not drop",
+            6: "in a container, accessible and in your inventory, can drop, pick up == separate"
+        }
+
         confirmed_inst = None
+        confirmed_container = None
         reason_val = 4
 
         def run_check(inst):
             confirmed_inst = None
-            #xvals, inventory_list = generate_clean_inventory()
+            confirmed_container = None
             reason = 4
+
             from set_up_game import game
             inventory_list = game.inventory
-
-            # reason:
-            # 0 = `accessible`
-            # 1 = 'in container but inaccessable (locked/closed)'
-            # 2 = `in inventory`
-            # 3 = 'not at current location'
-            # 4 = 'other error, investigate'
-            # 5 = `in a container but accessible locally` # can pick up but not drop
-            # 6 = `in a container, accessible and in your inventory` # can drop, pick up == separate
-
-            #print(f"inst.name: {inst.name}")
-            #print(f"loc.current_cardinal.place_name: {loc.current_cardinal.place_name}")
-            #print(f"inventory_list: {inventory_list}")
             local_items_list = self.get_item_by_location(loc.current)
-            #print(f"inst_list: {local_items_list}")
             container, inst = is_item_in_container(inst, inventory_list)
 
             if inst in inventory_list and not container:
                 confirmed_inst = inst
                 reason = 2
-                return confirmed_inst, reason
+                meaning = accessible_dict[reason]
+                return confirmed_inst, None, reason, meaning
 
             def in_local_items_list(inst, inst_list):
                 temp_inst = None
                 if inst_list:
-                    #print(f"Inst list in_local_items_list: {inst_list}")
                     if isinstance(inst_list, list|set|tuple):
                         if inst in inst_list:
                             temp_inst = inst
@@ -276,33 +274,29 @@ class itemRegistry:
                 if container in inventory_list:
                     confirmed_container = container
                     if confirmed_container:
-                        print(f"Confirmed container: {confirmed_container}")
+                        #print(f"Confirmed container: {confirmed_container}")
                         if (hasattr(confirmed_container, "is_closed") and getattr(confirmed_container, "is_closed")) or (hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked")):
-                            print(f"Container {confirmed_container} is locked.")
-                            print(f"Container.name {confirmed_container.name}")
+                            #print(f"Container {confirmed_container} is locked.")
+                            #print(f"Container.name {confirmed_container.name}")
                             reason = 1
                         else:
-                            confirmed_inst = confirmed_container
-                            print("confirmed container is not locked or closed")
+                            #print("confirmed container is not locked or closed")
                             reason = 6
-                    #reason = 2 # maybe needs another number for 'is in container which is in your inventory', not just 'accessible#
                 else:
                     confirmed_container = in_local_items_list(container, local_items_list)
                     if confirmed_container:
-                        print(f"Confirmed container locally, not in inventory: {confirmed_container}")
+                        #print(f"Confirmed container locally, not in inventory: {confirmed_container}")
                         if (hasattr(confirmed_container, "is_closed") and getattr(confirmed_container, "is_closed")) or (hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked")):
-                            print(f"Container {confirmed_container} is locked.")
-                            print(f"Container.name {confirmed_container.name}")
+                            #print(f"Container {confirmed_container} is locked.")
+                            #print(f"Container.name {confirmed_container.name}")
                             reason = 1
                         else:
-                            confirmed_inst = confirmed_container
                             reason = 5
                     else:
-                        reason = 3 # is elsewhere in a container.
+                        reason = 3
             else:
                 confirmed_inst = in_local_items_list(inst, local_items_list)
                 if confirmed_inst:
-                    #print(f"else, confirmed_inst in local_items_list: {inst}")
                     reason = 0
                 else:
                     if inst in inventory_list:
@@ -311,21 +305,22 @@ class itemRegistry:
                     else:
                         reason = 3
 
-            if confirmed_inst:
-                #print(f"Confirmed inst: {confirmed_inst.name}")
-                return confirmed_inst, reason
+            meaning = accessible_dict[reason]
 
-            return None, reason
+            if confirmed_inst:
+                return confirmed_inst, confirmed_container, reason, meaning
+
+            return None, confirmed_container, reason, meaning # Not sure if container should be None or Container here. Container for hints, 'None' for clearer parsing out of the function.
 
         if not isinstance(inst, ItemInstance):
             if isinstance(inst, str) and inst != None:
                 named_instances = self.instances_by_name(inst)
                 if named_instances:
                     for item in named_instances:
-                        confirmed_inst, reason_val = run_check(item)
+                        confirmed_inst, confirmed_container, reason_val, meaning = run_check(item)
 
         else:
-            confirmed_inst, reason_val = run_check(inst)
+            confirmed_inst, confirmed_container, reason_val, meaning = run_check(inst)
 
         #if reason_val == 0:
         #    print("REASON VAL:: Accessible item. continue with action.")
@@ -337,10 +332,10 @@ class itemRegistry:
         #    print("REASON VAL:: Item is not at the current location or on your person.")
 
         if confirmed_inst != None:
-            return confirmed_inst, reason_val
+            return inst, confirmed_container, reason_val, meaning
 
-        print(f"Could not find confirmed instance for {inst}")
-        return inst, reason_val
+        #print(f"Could not find confirmed instance for {inst}")
+        return inst, confirmed_container, reason_val, meaning
 
 
     # -------------------------
@@ -372,7 +367,6 @@ class itemRegistry:
             if not self.by_location.get(location):
                 self.by_location[location] = set()
             self.by_location[location].add(inst)
-            self.by_cardinal_placename.setdefault(location.place_name, set()).add(inst)
 
         if old_container or new_container or hasattr(inst, "contained_in"): # check if it's in a container even if I don't specify one in the fn call.
             return_text = []

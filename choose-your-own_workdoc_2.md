@@ -983,3 +983,35 @@ Oh right. The long form version doesn't check if you have the key, just checks t
 Not going to fix it further here, going to just make a proper lock/unlock x with key' fn. Actually I'm quite sure I made one already, just not using it. Tomorrow.
 
 Progress is being made, slowly.
+
+4.04am 13/1/26
+
+def check_lock_open_state
+# func to determine is a container is locked, unlocked but closed, or open.
+
+
+8.08am
+
+
+[[  open scroll  ]]
+
+MEANING (initial): accessible
+reason val: 0
+scroll is not open.
+You need to unlock it before you can open it. What you need should be around somewhere...
+
+Hm.
+
+8.21am
+next:
+
+[[  take old gold key from scroll  ]]
+
+old gold key is now in your inventory.
+
+This shouldn't work, the scroll wasn't opened.
+
+##
+REASON: in a container but accessible locally, can pick up but not drop
+
+So it's not recognising that the scroll is closed. Around line 288 in itemRegistry.

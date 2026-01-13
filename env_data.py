@@ -178,7 +178,7 @@ import uuid
 class cardinalInstance:
     def __init__(self, cardinal, loc):
         self.id = str(uuid.uuid4())
-        self.name = cardinal# + " " + place.name # eg "east graveyard"
+        self.name = cardinal # "east"
         self.place_name = cardinal + " " + loc.name # eg "east graveyard"        },
         self.ern_name = cardinal + "ern " + loc.name # eg "eastern graveyard"
         self.place = loc

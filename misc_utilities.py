@@ -227,7 +227,7 @@ def look_around():
     if is_items:
         for item in is_items:
             #print(f"ITEM: {item}, type: {type(item)}")
-            _, reason_val = registry.check_item_is_accessible(item)
+            _, _, reason_val, meaning = registry.check_item_is_accessible(item)
             #print(f"REASON VAL FOR `{item}`: {reason_val}")
             if reason_val == 0:
                 applicable_items.append(item)
