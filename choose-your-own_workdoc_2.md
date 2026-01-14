@@ -1015,3 +1015,276 @@ This shouldn't work, the scroll wasn't opened.
 REASON: in a container but accessible locally, can pick up but not drop
 
 So it's not recognising that the scroll is closed. Around line 288 in itemRegistry.
+
+
+accessible_dict = {
+    0: "accessible",
+    1: "in a closed local/accessible container",
+    2: "in a locked local/accessible container",
+    3: "in an open container in your inventory",
+    4: "in an open container accessible locally, can pick up but not drop",
+    5: "in inventory",
+    6: "not at current location",
+    7: "other error, investigate",
+}
+
+4.37pm 13/1/26
+
+Okay. This is an improvement:
+
+# [[  get old gold key from scroll  ]]
+
+# Container scroll is closed by is_open flag.
+# Sorry, you can't take the old gold key right now.
+
+
+5.36pm:
+weirdness:
+
+[[  open scroll  ]]
+
+You open the scroll
+
+The scroll contains:
+  old gold key
+
+
+[[  open scroll  ]]
+
+You need to unlock it before you can open it. What you need should be around somewhere...
+
+
+Suddenly now it's locked...?
+
+And I wrote a standalone 'open' function, and it apparently doesn't update the is_open status correctly, so we get
+
+
+[[  open scroll  ]]
+
+You open the scroll.
+
+
+[[  open scroll  ]]
+
+
+
+[[  open scroll  ]]
+
+You open the scroll.
+
+
+[[  open scroll  ]]
+
+You open the scroll.
+
+It just keeps opening, and all the while:
+ 'is_open': False,
+
+
+think I fixed the open scroll thing. No idea why it broke how it did earlier.
+
+
+6.22
+New oddity:
+
+[[  take anxiety meds  ]]
+
+anxiety meds is already in your inventory.
+anxiety meds is now in your inventory.
+
+6.24
+Okay, that was simple enough.
+
+Thoughts currently:
+
+Need to add an alternate route for 'take' for things like meds. Need 'take anxiety pills' to route to 'consume'
+# Have just added a check, if only 'take x' and 'x' is in inventory and can_consume, then it prompots:
+
+[[  take anxiety meds  ]]
+anxiety meds is already in your inventory.
+Did you mean to consume the anxiety meds?
+
+It'll do for now. (Added a placeholder for eating, there's a short text print and it removes the item from inventory + registry.)
+
+
+6.46pm
+Hm.
+
+        print(f"Look at item MEANING: {meaning}")
+        if reason_val not in (0, 5):
+            print(f"Cannot look at {item_inst.name}.")
+
+Should you be able to look at an item in an open container? surely yes, right? But you have to know it's there first...
+
+I think I need to add a 'discovered' tag or something to items. So when you look at the room, you can't just go 'look at thing in jar' (unless it's described in the copy), but once you've looked at the jar and seen what's in it, then you can do 'look at thing in jar'.
+
+
+11.40am 14/1/16
+"You see nothing special." - description of container with contents removed.
+Need to set to None and use the default for some objects, not all containers will have different descriptions. And/or the description should dynamically include discovered contents.
+
+1.39pm
+Just had a thought. I need to implement item-types, instead of individual flags.
+So, instead of
+
+"ivory pot": {"name": "an ivory-coloured jar", "description": f"A tall scratched ivory pot; no label, and a cork stopper held in place with a fine but strong-looking wire tied around the neck.", "description_no_children": f"A tall scratched ivory pot; no label, and a cork stopper held in place with a fine but strong-looking wire tied around the neck.", "flags": [CONTAINER, CAN_PICKUP, CAN_OPEN, CAN_LOCK, LOCKED, CLOSED], KEY:"wire cutters", "container_limits": SMALLER_THAN_APPLE, "item_size": SMALLER_THAN_BASKETBALL, "starting_location": {"test shrine": "north"}},
+
+we have:
+
+"ivory pot": "name": an ivory coloured jar", "description": f"A tall scratched ivory pot; no label, and a cork stopper held in place with a fine but strong-looking wire tied around the neck.", "item_type": typename
+
+where typename contains the typical attributes of that type.
+
+Just need to figure out what the types are.
+
+'active' vs 'static' where 'static' is functionally scenery?
+
+All active can be picked up by default, unless there's some reason why not.
+
+So type category 1 is active/static.
+Do I just have that one category, or subcategories? Note that the subcategories have to be mutually exclusive (probably). Or maybe not I suppose, if the item instance is created independently (so 'book' is 'standard', but a particular book might be added to category 'container' and gain those attributes? idk.)
+
+Active:
+    defaults: can be picked up
+Active>standard:
+    defaults: no special flags
+Active>container
+    defaults: can open, starts closed, may have children
+Active>key
+    defaults: can be used to open something
+    ## Maybe not 'key'. Maybe 'trigger'? Then it might be 'a key that opens a thing', or 'a button that opens a door', etc. 'Thing that causes thing to happen. So yes. Trigger might be better.
+
+Or maybe these aren't 'categories', but sets of flags? I'm not sure. Categories would just be handy I think. When looking for a key for a locked container, checking 'registry.keys' for the instance just makes sense. Or I guess 'registry.keys_by_name()'
+And would save having to check all items for a 'container' flag, and just check 'registry.containers'. I think I already do that, but I also add all the extra flags to containers manually.
+
+Maybe instead of active/static as base categories with standard/container/key as secondary, standard/container/key is primary and 'active/static' is an item flag. Otherwise I'd need to check 'is there any active.containers or static.containers'. Better to check 'if there are containers: are any of them active', I think, because the 'container' part is what's relevant.
+
+So, current idea is:
+
+class itemRegistry has
+
+        self.standard = set()
+        self.containers = set()
+        self.triggers =  set() (prev 'keys')
+
+and every item is in one of those. Mostly mutually exclusive but I guess there's no reason for that to be exclusive (other than 'standard', because that's the catchall for 'not a trigger and not a container' items.)
+
+So 'triggers' might be 'button on the wall' or 'old gold key'. I think that works.
+
+all items in all categories have default flags:
+
+item_size: 0
+
+Items in self.triggers can have specific flags:
+    acts_on: item (if 'key opens gold lock on metal jar') or plot event (if 'button means villian appears when you leave the room').
+    trigger_exhausted: False (if trigger was one-time or limited and has been used (so pushing a button may not do anything the second time, instead of having to check remotely if an event has run).)
+# (( speaking of - a plotInstances might not be a bad idea. Marking which story beats have been met, manage plot trigger states, etc.))
+
+Items in containers have flags with defaults:
+
+    can_be_closed: True
+    if so:
+        is_closed: True
+
+    can_be_locked: True
+    if so:
+        is_locked: True
+
+    children: None
+
+    can_add_children:True (False for times when something may have had default contents but cannot hold anything thereafter)
+
+    children_size: self.item_size-1 (default can hold things one size smaller than itself)
+
+    # need something here to limit number of items. Like, a wallet could hold 5-10 small bits of paper, but a basketball sized thing can't hold 5-10 'smaller than basketball' sized  things. Not sure how to manage that yet. Want to avoid having to use cubic volume but maybe I'll end up doing that, hm. Or just arbitrary per item, but that's tricky. If a vase can hold 20 'marble sized' things but 2 palm-sized things, what if there's one palm-sized and 10 marbles? Hm.
+    # Maybe a default of like, 3 items per container and figure it out later.
+
+perhaps a
+    self.special = set()
+for items with some other characteristic. Not sure about that though. For things like the moss that dries out after three days. Though maybe that's managed by the plotInstance? 'moss_drying' could be a plot event. It's not really 'plot events' specifically, but 'events' in general. Maybe eventInstances is better phrasing. Mm.
+
+so maybe self.event_items, as a holding-pen for items that are involved in events. So in the moss example, moss is in self.standard, and temporarily in self.event_items also.
+self.event_items[moss_obj][moss_drying]
+Then once the event is concluded, it's removed with whatever state is set by the event.
+
+--------
+3.03pm
+
+[[  get scroll  ]]
+
+scroll is now in your inventory.
+
+(A.N.: key is in the scroll, currently you don't have to be told that to be able to pick it up.)
+
+[[  take old gold key  ]]
+
+old gold key is now in your inventory.
+
+
+[[  inventory  ]]
+
+severed tentacle
+paperclip x2
+mail order catalogue
+car keys
+anxiety meds
+regional map
+fish food
+batteries
+scroll
+old gold key
+
+
+[[  put old gold key in scroll  ]]
+
+Put varies depending on the format.
+Format list: ('verb', 'noun', 'direction', 'noun')
+Input dict: {0: {'verb': {'instance': <verbInstance put (0c4b08f7-ad83-4af2-9327-ba5b007d2d1e)>, 'str_name': 'put'}}, 1: {'noun': {'instance': <ItemInstance old gold key (5afd0d8f-1f3f-4b30-ae60-4bf7c395d99e)>, 'str_name': 'old gold key'}}, 2: {'direction': {'instance': None, 'str_name': 'in'}}, 3: {'noun': {'instance': <ItemInstance scroll (0f95d375-0203-4665-bcd8-913237fa3d66)>, 'str_name': 'scroll'}}}
+list(input_dict[2].values())[0]: in
+direction in kind: {'instance': None, 'str_name': 'in'}
+You put old gold key in scroll
+
+
+[[  inventory  ]]
+
+severed tentacle
+paperclip x2
+mail order catalogue
+car keys
+anxiety meds
+regional map
+fish food
+batteries
+scroll*
+
+
+Oh shit, it works.
+
+
+## NOTE:
+go east graveyard
+No viable sequences found for go east graveyard.
+verb cardinal location
+
+This should work. Add the format.
+
+Also
+
+east graveyard
+No verb_instance or meta_instance found in get_sequences_from_tokens. Returning None.
+TOKENS: [Token(idx=0, text='east', kind={'cardinal'}, canonical='east'), Token(idx=1, text='graveyard', kind={'location'}, canonical='graveyard')]
+No viable sequences found for east graveyard.
+cardinal location
+
+
+11.00pm
+
+Well shit.
+
+take watch
+No viable sequences found for take watch.
+verb verb
+
+Apparently at some point I broke the whole 'watch the watch with a watch' thing that I had previously. Shiiiit.
+
+11:20pm okay, re-fixed it again. At one point I'd told it basically to only check sequences if there's only one verb match, but the potential verbs of each 'watch' meant it failed immediately despite having viable sequence options. So it's back to 'for v in verb_instances' and it works again.

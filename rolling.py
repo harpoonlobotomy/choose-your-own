@@ -54,6 +54,7 @@ def outcomes(state, activity):
             dropped = "everything"
         else:
             dropped = random.choice((game.inventory))
+            from env_data import locRegistry as loc
             loc.current.items.append(dropped)
         item = dropped
     return outcome

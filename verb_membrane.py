@@ -217,6 +217,9 @@ membrane = Membrane()
 test_input_list = ["take the paperclip", "pick up the glass jar", "put the paperclip in the wallet", "place the dried flowers on the headstone", "go to the graveyard", "approach the forked tree branch", "look at the moss", "examine the damp newspaper", "read the puzzle mag", "read the fashion mag in the city hotel room", "open the glass jar", "close the window", "pry open the TV set", "smash the TV set", "break the glass jar", "clean the watch", "clean the severed tentacle", "mix the unlabelled cream with the anxiety meds", "combine the fish food and the moss", "eat the dried flowers", "consume the fish food", "drink the unlabelled cream", "burn the damp newspaper", "burn the fashion mag in a pile of rocks", "throw the pretty rock", "lob the pretty rock at the window", "chuck the glass jar into a pile of rocks", "drop the wallet", "discard the paper scrap with number", "remove the batteries from the TV set", "add the batteries to the mobile phone", "put the car keys in the plastic bag", "set the watch", "lock the window", "unlock the window", "shove the TV set", "move the headstone", "barricade the window with the TV set", "separate the costume jewellery", "investigate the exact thing", "observe the graveyard", "watch the watch", "go to a city hotel room", "leave the graveyard", "depart", "go", "go to the pile of rocks", "take the exact thing", "put the severed tentacle in the glass jar", "open the wallet with the paperclip", "read the mail order catalogue at the forked tree branch", "pick the moss", "pick the watch", "pick up moss", "throw anxiety meds", "put batteries into watch", "clean a pile of rocks"]
 
 def run_membrane(input_str=None):
+
+    def loop(input_str):
+
         logging_fn()
 
         response = (None, None)
@@ -251,3 +254,21 @@ def run_membrane(input_str=None):
             response = router(viable_format, inst_dict)
 
         return response
+
+    from config import run_tests
+
+
+    if run_tests:
+        from time import sleep
+        test_inputs = ["get scroll", "open scroll", "go to east graveyard", "get glass jar", "put glass jar in scroll", "put scroll in glass jar"]
+        for i, input_str in enumerate(test_inputs):
+            sleep(.3)
+            loop(input_str)
+
+            print()
+            if i == len(test_inputs)-1:
+                run_tests = False
+
+    else:
+        loop(input_str)
+

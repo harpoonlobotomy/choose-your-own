@@ -4,6 +4,18 @@ from logger import logging_fn
 
 ## utilities to be used by any script at any point
 
+accessible_dict = {
+    0: "accessible",
+    1: "in a closed local/accessible container",
+    2: "in a locked local/accessible container",
+    3: "in an open container in your inventory",
+    4: "in an open container accessible locally, can pick up but not drop",
+    5: "in inventory",
+    6: "not at current location",
+    7: "other error, investigate",
+}
+
+
 cardinal_cols = {
     "north": "red",
     "south": "blue",
@@ -265,6 +277,7 @@ def from_inventory_name(test:str, inst_inventory:list=None) -> ItemInstance:
     logging_fn()
     print(f"Could not find inst `{test}` in inst_inventory.")
     input()
+
 
 def is_item_in_container(item, inventory_list=None):
 

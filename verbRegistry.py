@@ -427,9 +427,11 @@ class Parser:
 
         #print(f"Verb instances: {verb_instance}")
         viable_sequences = []
+
         for seq in sequences:
             if seq:
-                if verb_entry: ## wtf, 'verb_entry' doesn't exist at this point...
+                #print(f"SEQ: {seq}")
+                if verb_instances: ## wtf, 'verb_entry' doesn't exist at this point...
                     for verb_entry in verb_instances:
                         #print(f"for verb entry {verb_entry} in verb instances:")
                         for verb in verb_entry.values():

@@ -29,19 +29,9 @@ def look_at_item(item_inst): ## this is just using everything from registry. Sho
         #print(f"item_inst.location: {item_inst.location}")
         confirmed, container, reason_val, meaning = registry.check_item_is_accessible(item_inst)
         print(f"Look at item MEANING: {meaning}")
-        if reason_val not in (0, 2):
+        if reason_val not in (0, 5):
             print(f"Cannot look at {item_inst.name}.")
-        #if reason_val == 0:
-        #    print("REASON VAL:: Accessible item. continue with action.")
-        #elif reason_val == 1:
-        #    print("REASON VAL:: Item is in a container that is closed and/or locked.")
-        #elif reason_val == 2:
-        #    print("REASON VAL:: ITEM IS IN INVENTORY ALREADY.")
-        #elif reason_val == 3:
-        #    print("REASON VAL:: Item is not at the current location or on your person.")
-
         else:
-
             if reason_val == 2:
                 extra = " in your inventory."
             else:

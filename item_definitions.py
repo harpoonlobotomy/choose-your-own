@@ -23,6 +23,7 @@ DIRTY = "dirty"
 LOCKED = "is_locked"
 CLOSED = "is_closed"
 CAN_LOCK = "can_lock"
+NEEDS_KEY_TO_LOCK = "needs_key_to_lock"
 IS_KEY = "is_key"
 FRAGILE = "fragile"
 CAN_OPEN = "can_open"
@@ -33,6 +34,7 @@ WEIRD = "weird"
 DUPE = "dupe" ## can be a duplicate, found multiple times. Do not remove from loot pool after selection.
 IS_CHILD = "is_child"
 COMBINE_WITH = "combine_with"
+CAN_CONSUME = "can_consume"
 CAN_REMOVE_FROM = "can_remove_from" ## not sure about this. Serves the same purpose as 'is_child' etc but might be a more directly accessible route to the same data. Can use it as a direct route to parenting. Separate this child? Instead of checking parent containers etc, just 'can remove from x'. idk. Maybe.
 
 # 'fragile' just means it can be broken. Context's required for breaking are not yet defined.
@@ -60,22 +62,7 @@ item_actions = [  ## NOTE: I think this is only used for get_actions_for_item, w
     ]
 
 
-#item_actions = {"from_flags": [CAN_READ], "contextual_actions": [{CAN_PICKUP: "not_in_inventory"}, {CAN_OPEN: "is_not_open"}, {CAN_COMBINE: "requires_item"}, {FLAMMABLE: "has_fire"}, {LOCKED:"needs_key"}]} ## 'has_fire' = player state, whether matches or it as a location with viable fire source.
-
-"""
-Need to figure out how to define 'container limits' ' possible values.
-eg.
-"container_limits" = 'small_flat_things', 'a few marbles', 'smaller_than_apple', 'smaller_than_basketball', etc
-
-And then all items that can be picked up need one of these flags, I guess. Unless they're too big to put in any container (inc plastic bag).
-
-So if container lists 'smaller_than_apple', anything in that category or below is allowed in that container. Doesn't factor for multiple things yet.
-"""
-
 ####### CONTAINER LIMIT CATEGORIES ############
-
-
-
 
 SMALL_FLAT_THINGS = "small_flat_things"
 A_FEW_MARBLES = 'a_few_marbles'
@@ -125,13 +112,9 @@ detail_data = { # should tie this into the class directly. Will leave it here fo
 }
 ## Need to track no of days/nights. Should already be doing this.
 
-##  "starting_children": ["dried flowers"] -- changed to 'starting_children', so it's used in init but not picked up by default children checks. May not be necessary.
-# item_size == the size the thing is
-
 group_flags = {"magazine": (FLAMMABLE, CAN_READ)}
 
 ###
-
 
 """
         RULES:
@@ -152,14 +135,16 @@ SECONDARY RULES:
 graveyard = "graveyard"
 city = "city hotel room" ## better way of doing it, in case I want to change the names of locations later. Ideally, have this centralised somewhere accessible.
 
+
+### 'combine' needs to be a specific thing for when items can be combined to be one thing, not equivalent to 'add to container'.
 ## CONTENTS OF CONTAINER MUST BE LISTED AFTER THE CONTAINER, OR IT FAILS TO RECOGNISE THEM.
 item_defs_dict = {
-    "scroll": {"name": "an old scroll", "description": f"An old parchment scroll, seemingly abandoned at a hidden shrine.", "flags": [CAN_PICKUP, CAN_OPEN, CAN_READ, CONTAINER], "item_size": SMALLER_THAN_BASKETBALL, "starting_location": {"test shrine": "north"}, "container_limits": SMALL_FLAT_THINGS, "starting_children": ["old gold key"],},
+    "scroll": {"name": "an old scroll", "description": f"An old parchment scroll, seemingly abandoned at a hidden shrine.", "flags": [CAN_PICKUP, CAN_OPEN, CAN_READ, CONTAINER, CLOSED], "item_size": SMALLER_THAN_BASKETBALL, "print_on_investigate": True, "starting_location": {"test shrine": "north"}, "container_limits": SMALL_FLAT_THINGS, "starting_children": ["old gold key"],},
     "old gold key": {"name": "an old gold key", "description": f"A simple, sturdy looking gold key, worn with age but still in tact.", "flags": [CAN_PICKUP, IS_KEY, IS_HIDDEN], "item_size": SMALL_FLAT_THINGS, "starting_location": {"test shrine": "north"}, "started_contained_in": "scroll"},
     "ivory pot": {"name": "an ivory-coloured jar", "description": f"A tall scratched ivory pot; no label, and a cork stopper held in place with a fine but strong-looking wire tied around the neck.", "description_no_children": f"A tall scratched ivory pot; no label, and a cork stopper held in place with a fine but strong-looking wire tied around the neck.", "flags": [CONTAINER, CAN_PICKUP, CAN_OPEN, CAN_LOCK, LOCKED, CLOSED], KEY:"wire cutters", "container_limits": SMALLER_THAN_APPLE, "item_size": SMALLER_THAN_BASKETBALL, "starting_location": {"test shrine": "north"}},
-    "metal pot": {"name": "an metal pot", "description": f"A stout metal pot, which would be called a pot if I wasn't testing how it deals with two jars; it seems to be dug into the earth, and stuck fast. It has a flat, plate-like lid, with a small gold lock holding it closed.", "flags": [CONTAINER, CAN_OPEN, CAN_LOCK, LOCKED, CLOSED], KEY:"old gold key", "container_limits": SMALLER_THAN_BASKETBALL, "item_size": BIGGER_THAN_BASKETBALL, "starting_location": {"test shrine": "north"}, "starting_children": ["wire cutters"],},
+    "metal pot": {"name": "an metal pot", "description": f"A stout metal pot, which would be called a pot if I wasn't testing how it deals with two jars; it seems to be dug into the earth, and stuck fast. It has a flat, plate-like lid, with a small gold lock holding it closed.", "flags": [CONTAINER, CAN_OPEN, CAN_LOCK, NEEDS_KEY_TO_LOCK, LOCKED, CLOSED], KEY:"old gold key", "container_limits": SMALLER_THAN_BASKETBALL, "item_size": BIGGER_THAN_BASKETBALL, "starting_location": {"test shrine": "north"}, "starting_children": ["wire cutters"],},
     "wire cutters": {"name": "a pair of wire cutters", "description": f"A slightly rusted pair of wire cutters. They look like they'll still work, though.", "flags": [CAN_PICKUP, IS_KEY, IS_HIDDEN], "item_size": PALM_SIZED, "starting_location": {"test shrine": "north"}, "started_contained_in": "metal pot"},
-    "watch": {"name": "a gold watch", "description": f"A scratched gold watch.", "flags": [CAN_PICKUP], "item_size": SMALLER_THAN_APPLE},
+    "watch": {"name": "a gold watch", "description": f"A scratched gold watch.", "flags": [CAN_PICKUP], "item_size": SMALLER_THAN_APPLE, "starting_location": {graveyard: "east"}},
     "glass jar": {"name": "a glass jar with flowers", "description": f"a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.",
                     "description_no_children": "a glass jar, now empty aside from some bits of debris.", "starting_children": ["dried flowers"], "name_children_removed":"a glass jar", "flags":[CAN_PICKUP, CONTAINER, DIRTY], "container_limits": SMALLER_THAN_APPLE, "item_size": SMALLER_THAN_BASKETBALL, "starting_location": {graveyard: "east"}},
     "dried flowers": {"name": "some dried flowers", "description": "a bunch of old flowers, brittle and pale; certainly not as vibrant as you imagine they once were.", "started_contained_in": "glass jar",
@@ -174,13 +159,13 @@ item_defs_dict = {
                     "flags":[CAN_PICKUP], "item_size": BIGGER_THAN_BASKETBALL,  "starting_location": {"forked tree branch": "east"}},
 
     "paperclip": {"name": "a paperclip", "description": "a humble paperclip.", "flags":[DUPE], "item_size": SMALL_FLAT_THINGS, "loot_type": "starting"},
-    "puzzle mag": {"name": "a puzzle magazine", "description": "none yet", "flags":list(), "item_size": SMALLER_THAN_BASKETBALL, "loot_type": "magazine"}, ## could I actually do a sudoku in this?
-    "fashion mag": {"name": "a fashion magazine", "description": "none yet", "flags":list(), "item_size": SMALLER_THAN_BASKETBALL, "loot_type": "magazine"}, # maybe a teen girl quiz
-    "gardening mag": {"name": "a gardening magazine", "description": "none yet", "flags":list(), "item_size": SMALLER_THAN_BASKETBALL, "loot_type": "magazine"},
-    "mail order catalogue": {"name": "a mail order catalogue", "description": "none yet", "flags":list(), "item_size": SMALLER_THAN_BASKETBALL, "loot_type": "magazine"},
+    "puzzle mag": {"name": "a puzzle magazine", "print_on_investigate": True, "description": "none yet", "flags":list(), "item_size": SMALLER_THAN_BASKETBALL, "loot_type": "magazine"}, ## could I actually do a sudoku in this?
+    "fashion mag": {"name": "a fashion magazine", "print_on_investigate": True, "description": "none yet", "flags":list(), "item_size": SMALLER_THAN_BASKETBALL, "loot_type": "magazine"}, # maybe a teen girl quiz
+    "gardening mag": {"name": "a gardening magazine", "print_on_investigate": True, "description": "none yet", "flags":list(), "item_size": SMALLER_THAN_BASKETBALL, "loot_type": "magazine"},
+    "mail order catalogue": {"name": "a mail order catalogue", "print_on_investigate": True, "description": "none yet", "flags":list(), "item_size": SMALLER_THAN_BASKETBALL, "loot_type": "magazine"},
     "car keys": {"name": "a set of car keys", "description": "none yet","flags":[CAN_COMBINE, TAKES_BATTERIES], COMBINE_WITH: ["blue_car", "batteries"],  "item_size": A_FEW_MARBLES, "loot_type": "starting"},
     "fish food": {"name": "a jar of fish food", "description": "none yet", "flags":[CAN_COMBINE], COMBINE_WITH: ["fish_tank, river"], "item_size": A_FEW_MARBLES, "loot_type": "starting"},
-    "anxiety meds": {"name": "a bottle of anxiety meds", "description": "none yet", "flags":list(), "item_size": A_FEW_MARBLES, "loot_type": "starting"},
+    "anxiety meds": {"name": "a bottle of anxiety meds", "description": "none yet", "flags":[CAN_CONSUME], "item_size": A_FEW_MARBLES, "loot_type": "starting"},
     "regional map": {"name": "a regional map", "description": "none yet", "flags":[CAN_READ, ""], "item_size": SMALLER_THAN_APPLE, "loot_type": "starting"},
     "unlabelled cream": {"name": "an unlabelled cream", "description": "none yet", "flags":list(), "item_size": SMALLER_THAN_APPLE, "loot_type": "starting"}, ## any item not used during starting should be put onto a value list so it can be found later.
     "batteries": {"name": "a set of batteries", "description": "none yet", "flags":list(DUPE), "item_size": A_FEW_MARBLES, "loot_type": ["starting", "medium_loot"]}, ## need to allow for lists

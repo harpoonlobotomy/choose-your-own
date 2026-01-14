@@ -21,8 +21,6 @@ def get_card_inst_from_strings(location):
     print(f"Cardinal_inst: {cardinal_inst}")
     print(f"Cardinal_inst.name: {cardinal_inst.name}")
 
-    #self.by_location.setdefault(location, {}).setdefault(cardinal, set()).add(inst)
-    #registry.by_location_inst[cardinal_inst] = inst
     return cardinal_inst
 
 class ItemInstance:
@@ -35,27 +33,21 @@ class ItemInstance:
         self.id = str(uuid.uuid4())  # unique per instance
         self.name:str = definition_key
         self.nicename:str = attr["name"]
-        self.description:str = attr["description"]
-        self.starting_location:dict = attr.get("starting_location")  # switching over to make this the 'discovered at' attr.
+        self.item_type = "standard" ## have it here and/or in the registry. I guess both? covers the 'is_container' thing neatly enough.
+
         self.colour = None
+        self.description:str = attr["description"]
+        self.starting_location:dict = attr.get("starting_location")
         self.verb_actions = set()
-        self.in_container:bool = False
-        self.in_inventory:bool = False
+        self.contained_in = None
         self.location:cardinalInstance = None
 
-        #if attr.get("starting_location" and attr.get("starting_location") != None and not attr.get("contained_in")):
-        #    from env_data import locRegistry as loc
-        #    cardinal_str, location_str = attr.get("starting_location")
-        #    print(f"CARDINAL STR, location str: {cardinal_str}, {location_str}")
-        #    cardinal_inst = loc.by_cardinal(cardinal_str=cardinal_str, loc=location_str)
-        #    print(f"CARDINAL INST FOR STARTING LOCATION: {cardinal_inst}, {cardinal_inst.name}")
-        #    self.location = cardinal_inst  # starting location or None -- always none if 'contained_in'.
-
-        #self.location = (attr.get("starting_location") if attr.get("starting_location") != None and not attr.get("contained_in") else None)  # starting location or None -- always none if 'contained_in'.
-### FLAGS ###
  #     INITIAL FLAG MANAGEMENT
 
         self.flags = attr["flags"]      # any runtime flags (open/locked/etc)
+
+        if "can_consume" in self.flags:
+            self.can_consume = True
 
         if "can_pick_up" in self.flags:
             self.can_pick_up = True
@@ -64,25 +56,27 @@ class ItemInstance:
             self.started_contained_in = attr.get("contained_in")  # parent instance id if inside a container
             if self.started_contained_in:
                 self.contained_in = self.started_contained_in
-            else:
-                self.contained_in = None
         else:
             self.can_pick_up=False
 
         if "can_open" in self.flags:
             self.verb_actions.add("can_open")
-            if "starts_open" in self.flags: # currently nothing uses this, but here to allow for it later.
+            if not "is_closed" in self.flags: # currently nothing uses this, but here to allow for it later.
                 self.is_open = True
             else:
                 self.is_open = False
 
         if "can_lock" in self.flags:
             self.verb_actions.add("can_lock")
-            if not "is_unlocked" in self.flags: # like 'starts_open', currently not used but here for later.
+            if "is_locked" in self.flags: # like 'starts_open', currently not used but here for later.
                 self.is_locked = True
             else:
                 self.is_locked = False
+
             self.needs_key = attr.get("key")
+
+            if "needs_key_to_lock" in self.flags:
+                self.needs_key_to_lock = (attr.get("key") if attr.get("key") else True)
 
         if "can_be_charged" in self.flags:
             self.verb_actions.add("can_charge")
@@ -93,7 +87,13 @@ class ItemInstance:
 
         if "print_on_investigate" in attr:
             self.verb_actions.add("print_on_investigate")
-            self.description_detailed = attr.get("print_on_investigate")
+
+            from item_definitions import detail_data
+            details = self.name + "_details"
+            details = details.replace(" ", "_")
+            details_data = detail_data.get(details)
+
+            self.description_detailed = details_data
 
 ###
 
@@ -106,7 +106,7 @@ class ItemInstance:
             if starting_children:
 
                 self.starting_children = starting_children ### This just adds the string name, not the id like it needs to.
-            self.children = (list()) ## Maybe we create all instances first, then add 'children' afterwards, otherwise they won't be initialised yet. Currently this works because I've listed the parents first in the item defs.
+            self.children = list() ## Maybe we create all instances first, then add 'children' afterwards, otherwise they won't be initialised yet. Currently this works because I've listed the parents first in the item defs.
 
     def __repr__(self):
         return f"<ItemInstance {self.name} ({self.id})>"
@@ -129,7 +129,7 @@ class itemRegistry:
         self.by_category = {}        # category (loot value) -> set of instance IDs
         self.by_container = {}
         self.inst_to_names_dict = {}
-        self.is_container = bool(True) ## This must be wrong. idk. I tried something else earlier and it didn't work.
+        self.is_container = bool(True) ## This must be wrong. idk. I tried something else earlier and it didn't work. ## Doesn't work because this is registry, this would need to be applied to the instance (which it already is). Delete this later.
         self.plural_words = {}
 
     # -------------------------
@@ -219,31 +219,32 @@ class itemRegistry:
            #     del self.by_location_inst[inst.location]
 
         # remove from name index
-        self.by_name.get(inst.definition_key, set()).discard(inst)
+        self.by_name.get(inst.name, list()).remove(inst)
 
 
     def check_item_is_accessible(self, inst:ItemInstance) -> tuple[ItemInstance|None, int]:
         logging_fn()
-        from misc_utilities import is_item_in_container
-        # func to check that an item to be picked up is actually eligible to be picked up #
-        accessible_dict = { ## just for printing, for my own sake because my memory is broken
-            0: "accessible",
-            1: "in container but inaccessable (locked/closed)",
-            2: "in inventory",
-            3: "not at current location",
-            4: "other error, investigate",
-            5: "in a container but accessible locally, can pick up but not drop",
-            6: "in a container, accessible and in your inventory, can drop, pick up == separate"
-        }
+        from misc_utilities import is_item_in_container, accessible_dict
+
+        #accessible_dict = { ## just for printing, for my own sake because my memory is broken
+        #    0: "accessible",
+        #    1: "in a closed local/accessible container",
+        #    2: "in a locked local/accessible container",
+        #    3: "in an open container in your inventory",
+        #    4: "in an open container accessible locally, can pick up but not drop",
+        #    5: "in inventory",
+        #    6: "not at current location",
+        #    7: "other error, investigate",
+        #}
 
         confirmed_inst = None
         confirmed_container = None
-        reason_val = 4
+        reason_val = 7
 
         def run_check(inst):
             confirmed_inst = None
             confirmed_container = None
-            reason = 4
+            reason = 7
 
             from set_up_game import game
             inventory_list = game.inventory
@@ -252,7 +253,7 @@ class itemRegistry:
 
             if inst in inventory_list and not container:
                 confirmed_inst = inst
-                reason = 2
+                reason = 5
                 meaning = accessible_dict[reason]
                 return confirmed_inst, None, reason, meaning
 
@@ -274,26 +275,26 @@ class itemRegistry:
                 if container in inventory_list:
                     confirmed_container = container
                     if confirmed_container:
-                        #print(f"Confirmed container: {confirmed_container}")
-                        if (hasattr(confirmed_container, "is_closed") and getattr(confirmed_container, "is_closed")) or (hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked")):
-                            #print(f"Container {confirmed_container} is locked.")
-                            #print(f"Container.name {confirmed_container.name}")
+                        if (hasattr(confirmed_container, "is_closed") and getattr(confirmed_container, "is_closed")):
                             reason = 1
+                        elif (hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked")):
+                            reason = 2
                         else:
-                            #print("confirmed container is not locked or closed")
-                            reason = 6
+                            reason = 3
                 else:
                     confirmed_container = in_local_items_list(container, local_items_list)
                     if confirmed_container:
-                        #print(f"Confirmed container locally, not in inventory: {confirmed_container}")
-                        if (hasattr(confirmed_container, "is_closed") and getattr(confirmed_container, "is_closed")) or (hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked")):
-                            #print(f"Container {confirmed_container} is locked.")
-                            #print(f"Container.name {confirmed_container.name}")
+                        if hasattr(confirmed_container, "is_open") and confirmed_container.is_open == False: # only is_open exists, I think.
+                            print(f"Container {confirmed_container.name} is closed by is_open flag.")
                             reason = 1
+
+                        elif hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked"):
+                            print(f"Container {confirmed_container} is locked.")
+                            reason = 2
                         else:
-                            reason = 5
+                            reason = 4
                     else:
-                        reason = 3
+                        reason = 6
             else:
                 confirmed_inst = in_local_items_list(inst, local_items_list)
                 if confirmed_inst:
@@ -301,9 +302,9 @@ class itemRegistry:
                 else:
                     if inst in inventory_list:
                         confirmed_inst = inst
-                        reason = 2
+                        reason = 5
                     else:
-                        reason = 3
+                        reason = 6
 
             meaning = accessible_dict[reason]
 
@@ -322,19 +323,9 @@ class itemRegistry:
         else:
             confirmed_inst, confirmed_container, reason_val, meaning = run_check(inst)
 
-        #if reason_val == 0:
-        #    print("REASON VAL:: Accessible item. continue with action.")
-        #elif reason_val == 1:
-        #    print("REASON VAL:: Item is in a container that is closed and/or locked.")
-        #elif reason_val == 2:
-        #    print("REASON VAL:: ITEM IS IN INVENTORY ALREADY.")
-        #elif reason_val == 3:
-        #    print("REASON VAL:: Item is not at the current location or on your person.")
-
         if confirmed_inst != None:
             return inst, confirmed_container, reason_val, meaning
 
-        #print(f"Could not find confirmed instance for {inst}")
         return inst, confirmed_container, reason_val, meaning
 
 
@@ -346,18 +337,12 @@ class itemRegistry:
 
         ## REMOVE FROM ORIGINAL LOCATION ##
         old_loc = inst.location
-        #print(f"old_loc: {old_loc}")
         if old_loc and old_loc != None:
-            #print(f"old_loc.palce_name: {old_loc.place_name}")
-            #print(f"self.by_location: {self.by_location}")
             if self.by_location.get(old_loc):
-                #print(f"self.by_location has old_loc: {self.by_location}")
                 self.by_location[old_loc].discard(inst)
-                #print(f"self.by_location should not have old_loc anymore: {self.by_location}")
-                inst.location = None # remove location from item itself, will be added below if needed.
+                inst.location = None
 
         ## MOVE TO NEW LOCATION IF PROVIDED
-
         if location != None:
             if not isinstance(location, cardinalInstance):
                 print(f"move_item requires location to be cardinalInstance. Recieved `{location}` of type `{type(location)}`.")
@@ -368,9 +353,9 @@ class itemRegistry:
                 self.by_location[location] = set()
             self.by_location[location].add(inst)
 
-        if old_container or new_container or hasattr(inst, "contained_in"): # check if it's in a container even if I don't specify one in the fn call.
+        if old_container or new_container or hasattr(inst, "contained_in"):
             return_text = []
-            if hasattr(inst, "contained_in"): ## if a new container, remove from the old one, then add to the new.
+            if hasattr(inst, "contained_in"):
                 if old_container != None:
                     parent = old_container
                 else:
@@ -381,18 +366,13 @@ class itemRegistry:
                     return_text.append((f"Item `[child]` removed from old container `[parent]`", inst, parent))
 
         ## Should this be one tab over? Probably. Otherwise it'll fail if the obj was not previously contained, no?
-                if new_container:
-                    inst.contained_in = new_container
-                    self.by_container[new_container].add(inst)
-                    return_text.append((f"Added [child] to new container [new_container]", inst, new_container))
+            if new_container:
+                inst.contained_in = new_container
+                print(f"inst.contained_in (move_item): {inst.contained_in}")
+                self.by_container[new_container].add(inst)
+                return_text.append((f"Added [child] to new container [new_container]", inst, new_container))
             if return_text:
                 return return_text
-#        if inst.contained_in:
-  #          if children and children is not None:
-  #              for child in children:
-  #                  self.by_container[new_container].add(child) ## Wait no. They should stay in their current container, iths the container itself being moved. So they stay in a container. It makes it recursive to potentially infinity without checks. Need to rework this but just testing as-is.
-  # ## I don't know ## these all get moved separately because child items are shown separately in the location list. If this changes and you only see the contents when they're separated or being investigated, then these should no longer be moved with their parent.
-
 
     def move_from_container_to_inv(self, inst:ItemInstance, inventory:list, parent:ItemInstance=None) -> tuple[list,list]:
         logging_fn()
@@ -423,6 +403,7 @@ class itemRegistry:
         elif isinstance(loc_cardinal, placeInstance):
             print(f"Loc_cardinal in get_item_by_location is a Place: {loc_cardinal}")
             traceback_fn()
+            return
 
         items_at_cardinal = None
 
@@ -437,11 +418,12 @@ class itemRegistry:
         logging_fn()
         if self.by_name.get(definition_key):
             return self.by_name.get(definition_key)
-        #print(f"Cound not find instance for `{definition_key}` in by_name: \n{self.by_name}")
+
 
     def instances_by_container(self, container:ItemInstance)->list:
         logging_fn()
         return [i for i in self.by_container.get(container, list())]
+
 
     def instances_by_category(self, category):
         logging_fn()
@@ -450,8 +432,7 @@ class itemRegistry:
     # -------------------------
     # Helpers
     # -------------------------
-## From choices.py
-    #def random_from(self, category: str):
+
 
     def random_from(self, selection:int|str)->list:
         logging_fn()
@@ -481,7 +462,8 @@ class itemRegistry:
             children = self.instances_by_container(inst)
             #print(f"children: {children}")
             if not children:
-                description = inst.description_no_children # works now. If it's a container with no children, it prints this instead.
+                if hasattr(inst, "description_no_children") and inst.description_no_children != None:
+                    description = inst.description_no_children # works now. If it's a container with no children, it prints this instead.
                 # still need to make it non-binary but that can happen later. This'll do for now.
 
         """Convenience method to return a formatted description."""
@@ -601,114 +583,6 @@ class itemRegistry:
 
         return inst, inventory_list
 
-    def get_actions_for_item(self, inst, inventory_list, has_children=None, has_multiple=None):
-        logging_fn()
-
-        inventory_list = []
-        from misc_utilities import from_inventory_name
-        from item_definitions import item_actions
-        if isinstance(inst, ItemInstance):
-            inst_name=inst
-        elif isinstance(inst, str):
-            instance = from_inventory_name(inventory_list, inst)
-            if instance:
-                inst_name = instance.name
-            else:
-                print(f"Inst was str but not in inventory: {inst}")
-                exit()
-        else:
-            print(f"No usable item given for get_actions_for_item: `{inst}`, type: {type(inst)}")
-
-        action_options = []
-        for item in item_actions:
-            #print(f"item: {item}")
-            if not isinstance(item, str):
-                item = item.name
-            #print(f"item: {item}")
-            if item in inst.flags:
-                if item == "can_read":
-                    action_options.append("read") # can_read is the only one for now. There's really no need to separate contextual vs not...
-                    # Also I should just have a dict that takes 'can_read' and returns 'read' etc. Eh.
-                if item == "can_pickup":
-                    if inst not in inventory_list:
-                        action_options.append("pick up")
-                    else:
-                        action_options.append("drop")
-                elif item == "can_open":
-                    if inst.is_open: ## TODO: Add 'is_open' flag/make sure it's used when item opened/closed
-                        action_options.append("close")
-                    else:
-                        action_options.append("open")
-                elif item == "can_combine":
-                    print(f"inst.flags: {inst.flags}")
-                    if "combine_with" in inst.flags:
-
-                        requires = inst.flags["combine_with"]
-                        if isinstance(requires, list):
-                            print(f"item {inst.name} can combine with: {requires} (list)")
-                        else:
-                            print(f"Item {inst.name} requires: {requires}")
-                        #print("item management quitting.")
-                        #exit()
-                        if requires in inventory_list:
-                            action_options.append(f"combine") ## do I want to have 'combine with {requires}'? Maybe start with that and later allow 'combine x and y'. Don't want to make the decision for them. Maybe two lots of combine. A general combine option to just test things out, and a second one for prescribed combinations (eg dvd player + dvd)
-                elif item == "flammable":
-                    from set_up_game import game
-                    if game.has_fire: # true if have matches or if near fire (which is why I'm not just using the inventory to check for matches etc)
-                        action_options.append("set alight")
-
-            #self.needs_key = attr.get("key")
-                elif item == "can_lock":
-                    if inst.is_locked: ## TODO: add 'unlocked' state to anything that can be locked. Need explicit active flag management.
-                        lock_action = "unlock"
-                    else:
-                        lock_action = "lock"
-                    key = inst.flags["key"]
-                    if key in inventory_list:
-                        action_options.append(lock_action)
-                    else:
-                        print("Locked but no key. Need to figure out how to deal w this. Maybe a few options depending on the item. If it has an obvious lock vs not etc.")
-                elif item == "can_be_charged":
-                    if "is_charged" not in inst.flags:
-                        inst.flags["is_charged"] = False
-                    else:
-                        inst.flags["is_charged"] = True
-
-                    if not inst.flags["is_charged"]:
-                        charger = inst.flags["charger"] ## This is scrappy. Needs going over again.
-                        if charger in inventory_list:
-                            action_options.append(charger)
-
-        if "pick up" not in action_options and "drop" not in action_options:
-            if "loot_type" in self.attributes:
-                if inst in inventory_list:
-                    action_options.append("drop")
-                else:
-                    action_options.append("pick up")
-
-        if "print_on_investigate" in inst.flags:
-            action_options.append("investigate closer")
-
-        children = None
-        if has_children:
-            children = has_children
-        else:
-            #print(f"has_children from sender func: {has_children}") # backup check in case the first isn't included. Streamline it later for less fallback alternatives.
-            if "container" in inst.flags:
-                children = self.instances_by_container(inst)
-
-        if children:
-            #print(f"children after checking inst.flags: {children}")
-            for child in children:
-                action_options.append(f"remove {child.name}")
-
-        if "container" in inst.flags or children != None:
-            action_options.append("add to") # just the option to add something to this container.
-
-        action_options.append("continue")
-        return action_options
-
-
     def drop(self, inst: ItemInstance, inventory_list):
         logging_fn()
         #print("inventory_list")
@@ -720,14 +594,13 @@ class itemRegistry:
         self.move_item(inst, loc.current)
         return inst, inventory_list
 
+
     def complete_location_dict(self):
 
         logging_fn()
         from env_data import locRegistry as loc
-        from misc_utilities import cardinal_cols
         for placeInstance in loc.places:
             for cardinal in loc.cardinals[placeInstance]:
-                #print(f"cardinal: {cardinal}")
                 self.by_location.setdefault(cardinal, set())
 
 

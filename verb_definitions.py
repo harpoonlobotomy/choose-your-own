@@ -164,6 +164,7 @@ combined_wordphrases = { # maybe something like this, instead of the hardcoded e
 
 
 verb_defs_dict = {
+    f"attributes": {"alt_words": ["att"], "allowed_null": None, "formats": [verb_noun]},
     ## NOTE: Allowed_null is not used at present. All nulls are treated as equal, and all sem/loc/dirs are treated as viable in all cases. Will need to change this later but for now it works alright.
     "go": {"alt_words":["go to", "approach", "head", "travel", "move"], "allowed_null": None, "formats": [loc_only, dir_only, car_only, verb_only, verb_loc, verb_dir, verb_dir_loc, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car]},
     "turn": {"alt_words": [""], "allowed_null": None, "formats": [verb_car, verb_sem, verb_dir, verb_dir_car, verb_dir_car_loc]}, # Turn only changes the cardinal, does not move otherwise. ## I think I can get rid of 'turn' and 'leave' here, and just use 'go' and route through there. Makes more sense. Do all the checks up-front, and then differentiate. Will think on it.
