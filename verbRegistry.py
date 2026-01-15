@@ -381,7 +381,7 @@ class Parser:
         for i, token in enumerate(tokens):
             options = Parser.token_role_options(token)
             #print(f"Options: {options}")
-            if len(tokens) == 1:
+            if len(tokens) in (1, 2):
                 #print(f"Token.kind: {token.kind}, type: {type(token.kind)}")
                 if list(token.kind)[0] in ("location", "direction"):
                     #print(f"Token kind: {token.kind}")

@@ -36,7 +36,7 @@ meta = "meta"
 #    "verb_noun_noun": f"{verb} o{null} {noun} {null} o{null} {noun}"
 #}
 cardinals = ["north", "east", "south", "west"]
-directions = ["down", "up", "left", "right", "away", "toward", "towards", "closer", "further", "to", "against", "across", "at", "in", "on", "from", "inside", "away", "into", "for", "elsewhere"]
+directions = ["down", "up", "left", "right", "away", "toward", "towards", "closer", "further", "to", "into", "against", "across", "at", "in", "on", "from", "inside", "away", "into", "for", "elsewhere", "here"]
 ## "in front of"?? Need to be able to cope with that.
 
 nulls = ["the", "a", "an"]
@@ -66,6 +66,10 @@ formats = {
     ### LOCATION ONLY ###
     "verb_only": (verb,), #'leave'
     "loc": (location,), #location only, assume verb 'go'.
+    "loc_car": (location, car), # # 'graveyard east'
+    "car_loc": (car, location), # # 'east graveyard'
+    "verb_car_loc": (verb, car, location),
+    "verb_loc_car": (verb, location, car),
     "dir": (direction,), #direction only, assume verb 'go'.
     "verb_sem": (verb, sem),
     "verb_dir": (verb, direction), #go up, go outside
@@ -107,6 +111,8 @@ formats = {
 """
 
 loc_only = formats["loc"]
+loc_car = formats["loc_car"] # graveyard east
+car_loc = formats["car_loc"] # east graveyard
 dir_only = formats["dir"]
 car_only = formats["car"]
 ### 'sem' == semantic operators, eg 'with' in 'combine x with y'.
@@ -122,6 +128,8 @@ verb_dir = formats["verb_dir"]
 verb_car = formats["verb_car"]
 verb_sem = formats["verb_sem"] # 'turn around'
 
+verb_car_loc = formats["verb_car_loc"]
+verb_loc_car = formats["verb_loc_car"]
 verb_dir_car = formats["verb_dir_car"]
 verb_dir_car_loc = formats["verb_dir_car_loc"]
 verb_dir_loc_car = formats["verb_dir_loc_car"]
@@ -166,16 +174,15 @@ combined_wordphrases = { # maybe something like this, instead of the hardcoded e
 verb_defs_dict = {
     f"attributes": {"alt_words": ["att"], "allowed_null": None, "formats": [verb_noun]},
     ## NOTE: Allowed_null is not used at present. All nulls are treated as equal, and all sem/loc/dirs are treated as viable in all cases. Will need to change this later but for now it works alright.
-    "go": {"alt_words":["go to", "approach", "head", "travel", "move"], "allowed_null": None, "formats": [loc_only, dir_only, car_only, verb_only, verb_loc, verb_dir, verb_dir_loc, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car]},
-    "turn": {"alt_words": [""], "allowed_null": None, "formats": [verb_car, verb_sem, verb_dir, verb_dir_car, verb_dir_car_loc]}, # Turn only changes the cardinal, does not move otherwise. ## I think I can get rid of 'turn' and 'leave' here, and just use 'go' and route through there. Makes more sense. Do all the checks up-front, and then differentiate. Will think on it.
+    "go": {"alt_words":["go to", "approach", "head", "travel", "move"], "allowed_null": None, "formats": [loc_only, loc_car, car_loc, verb_car_loc, verb_loc_car, dir_only, car_only, verb_only, verb_loc, verb_dir, verb_dir_loc, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car]},
+    "turn": {"alt_words": [""], "allowed_null": None, "formats": [verb_car, verb_sem, verb_dir, verb_dir_car, verb_dir_car_loc]},
     "leave": {"alt_words": ["depart", ""], "allowed_null": None, "formats": [verb_only, verb_loc, verb_dir_loc, verb_noun_dir_noun]},
     "combine": {"alt_words": ["mix", "add"], "allowed_null": ["with", "and"], "formats": [verb_noun_sem_noun, verb_noun_dir_noun, verb_noun]},
     "separate": {"alt_words": ["remove", ""], "allowed_null": ["from", "and"], "formats": [verb_noun_sem_noun, verb_noun_dir_noun, verb_noun]},
     "throw": {"alt_words": ["chuck", "lob"], "allowed_null": ["at"], "formats": [verb_noun, verb_noun_dir, verb_noun_sem_noun, verb_noun_dir_noun, verb_noun_dir_loc]}, # throw ball down, throw ball at tree
     "push": {"alt_words": ["shove", "move", "pull"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun]},
-    "drop": {"alt_words": ["discard", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_noun, verb_noun_dir_loc, verb_noun_dir_noun_dir_loc, verb_noun_dir_meta]},
-    "read": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_loc]}, ## Two nouns have 'examine'. Maybe make 'read' its own specific thing instead of referring 'examine' here. idk.
-
+    "drop": {"alt_words": ["discard", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun, verb_noun_dir_loc, verb_noun_dir_noun_dir_loc, verb_noun_dir_meta]},
+    "read": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_loc]},
     "use": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_dir_loc, verb_noun_dir_noun]},
     "burn": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_dir_loc], "inventory_check": "fire_source"},
     "lock": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun], "inventory_check": "key"},

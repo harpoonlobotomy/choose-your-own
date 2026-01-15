@@ -1288,3 +1288,25 @@ verb verb
 Apparently at some point I broke the whole 'watch the watch with a watch' thing that I had previously. Shiiiit.
 
 11:20pm okay, re-fixed it again. At one point I'd told it basically to only check sequences if there's only one verb match, but the potential verbs of each 'watch' meant it failed immediately despite having viable sequence options. So it's back to 'for v in verb_instances' and it works again.
+
+11.51am 15/1/26
+Sick as hell today.
+
+Have added car_loc as well as loc_car, so now 'east graveyard' and 'graveyard east' both work.
+
+Also added 'go graveyard east/go east graveyard', as neither of those worked either.
+
+3.46pm
+Got distracted with the idea of dynamic location descriptions. Maybe have an idea, it's going to be a bit of a pain (breaking scene descriptions down into parts that can be removed at will depending on item presence or lack thereof) but it'll be nice to now have it say 'there's a glass jar' when the glass jar's been removed. And I do want item-inclusive descriptions, because then I can drop the 'items in this area' line. I might add a 'look for items' func so you can explicitly look for actively interactable items, but I don't like it by default, it's too hand-holdy, 'I'll play for you' vibes.
+
+Also this could be reused elsewhere if it's flexible enough. Description of the shrine might change if the scroll's removed, not just the location descrip. Will have to think on that one. Would be far better to do that, just have to figure out how. First thought is an indicator in the string; if the graveuard description is currently
+"You see a variety of headstones, most quite worn and decorated by clumps of moss."
+then maybe it's
+"CCCYou see a variety of headstones, most quite worn and decorated by clumps of moss.EEE" to indicate the text is changeable, and then it is adapted internally to
+
+"CCCYou see a variety of headstones, most quite wornAAA and decorated by clumps of mossEEE.EEE"
+
+to mark a part that can be removed.
+(That's a location description, but there's no actual 'shrine' object to use yet for an example. Scenery doesn't exist yet.)
+
+Also I've spent a couple of days working on the test class. I do think it's going to work. Need to rewrite so much but it's worth it. So I tell myself.

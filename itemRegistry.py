@@ -18,8 +18,6 @@ def get_card_inst_from_strings(location):
         cardinal_inst = loc.by_cardinal(cardinal_str=card_str, loc=place)
     else:
         cardinal_inst = location
-    print(f"Cardinal_inst: {cardinal_inst}")
-    print(f"Cardinal_inst.name: {cardinal_inst.name}")
 
     return cardinal_inst
 
@@ -96,7 +94,6 @@ class ItemInstance:
             self.description_detailed = details_data
 
 ###
-
         if container_data:
             self.verb_actions.add("is_container")
             description_no_children, name_children_removed, container_limits, starting_children = container_data
@@ -177,13 +174,12 @@ class itemRegistry:
             parent_obj_list = self.instances_by_name(parent_name) # TODO: I've cut a lot of the comments from this section. Still needs a rework though.
             if parent_obj_list:
                 for prospective_parent in parent_obj_list:
-                    print(f"Prospective parent: {prospective_parent}")
+                    #print(f"Prospective parent: {prospective_parent}")
                     pros_children = prospective_parent.starting_children
                     if inst.name in pros_children:
                         if not inst in self.instances_by_container(prospective_parent):
                             inst.contained_in = prospective_parent
                             self.by_container[prospective_parent].add(inst)
-                            inst.in_container = True
                         else:
                             continue # if already there, try another prospective parent. Don't know if this'll work on not yet.
 
@@ -332,6 +328,7 @@ class itemRegistry:
     # -------------------------
     # Movement
     # -------------------------
+
     def move_item(self, inst:ItemInstance, location:cardinalInstance=None, new_container:ItemInstance=None, old_container:ItemInstance=None)->list:
         logging_fn()
 
@@ -453,10 +450,11 @@ class itemRegistry:
 
         return random.choice(items)# if items else "No Items (RANDOM_FROM)"
 
-    def describe(self, inst: ItemInstance, caps=False)->str:
+    def describe(self, inst: ItemInstance, caps=False, colour_instances=False)->str:
         logging_fn()
 
         description = inst.description
+
         if "container" in inst.flags:
             #print(f"Container in inst.flags: {inst}")
             children = self.instances_by_container(inst)

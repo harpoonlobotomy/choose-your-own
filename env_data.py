@@ -65,20 +65,16 @@ loc_dict = {
             "electricity": True, "nature": False,
             "north": {"short_desc": "There's a queen-size bed, simple but clean looking,",
                       "long_desc": f"The bed looks nice enough - nothing fancy, but not a disaster either. Two pillows, a spare blanket at the foot of the bed. There's a small bedside drawer to each side, and a painting above the bed.",
-                    "weird": "You think you could leave through the large wrought-iron gates to the north. They're imposing - creaking constantly, and they seem to loom over you even from a distance.",
                     "actions": leave_options,},
             "east": {"short_desc": "a television and two decent sized windows overlooking the city",
                     "long_desc": "Against the wall is a large television, sitting between two decent sized windows overlooking the city. The curtains are drawn.", # details here depending on weather. if raining, the dried flowers are saturated and heavy. If sunny, they're crispy, etc. Not close to implementing that yet.
-                    "weird": None,
                     "actions": None,},
             "south": {"short_desc": "a door, likely to a bathroom",
-                      "long_desc": "There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble.",
-                    "weird": None,
+                      "long_desc": "There's a door, lightly sun-yellowed. Nondescript; fair to assume it's a bathroom door.",
                     "actions": None},
             "west": {"short_desc": "the door out of the room, likely to the hallway",
-                    "west": "There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble.",
-                    "west_weird": None,
-                    "west_actions": None},
+                    "long_desc": "There's a standard hotel room door, with the fire escape route poster on the back and an empty coat hook.",
+                    "actions": None},
             "exitwall": "west",
             },
 
@@ -86,53 +82,46 @@ loc_dict = {
             "electricity": False, "nature": True,
             "north": {"short_desc": "The northern tree parts are ",
                 "long_desc": "This is the north part of a tree...",
-                "weird": "This is the north part of a tree...",
                 "actions": leave_options,
                 },
             "east": {"short_desc": "an eastern tree part",
                 "long_desc": "This is the east of a forked tree. Not sure what's here. Maybe a bird's nest..", # details here depending on weather. if raining, the dried flowers are saturated and heavy. If sunny, they're crispy, etc. Not close to implementing that yet.
-                "weird": None,
                 "east_actions": None,
                 },
             "south": {"short_desc": "a southern tree part",
                 "long_desc": "South of a tree. Should probably be the exit.",
-                "weird": None,
                 "actions": None,
                 },
             "west": {
                 "short_desc": "what looks like a a western tree part",
                 "long_desc": "West of the tree. Maybe a very nice view...",
-                "weird": None,
                 "actions": None
                 },
             "exitwall": "north",
             },
 
     "graveyard": {
-        "descrip": "You see a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences",
+        "descrip": "You see a rather poorly kept PPPgraveyardEEE - smaller than you might have expected given the scale of the gate and fences",
         "inside": False, "electricity": False, "nature": True,
         "north": {"short_desc": "The entrance gates are",
                 "long_desc": "You think you could leave through the large wrought-iron gates to the north. They're imposing but run-down; this graveyard doesn't get as much love as it could.",
-                "weird": "You think you could leave through the large wrought-iron gates to the north. They're imposing - creaking constantly, and they seem to loom over you even from a distance.",
+
                 "actions": leave_options,
                 },
         "east": {"short_desc": "a variety of headstones",
-                "long_desc": "You see a variety of headstones, most quite worn and decorated by clumps of moss. There's a glass jar being used as a vase in front of one of the headstones, dried flowers left long ago.", # details here depending on weather. if raining, the dried flowers are saturated and heavy. If sunny, they're crispy, etc. Not close to implementing that yet.
+                "long_desc": "You see a variety of headstones, most quite worn and decorated by clumps of moss. There's a glass jar being used as a vase in front of one of the headstones, with dried flowers left long ago.", # details here depending on weather. if raining, the dried flowers are saturated and heavy. If sunny, they're crispy, etc. Not close to implementing that yet.
                 "long_desc_dict": {"generic" :{"You see a variety of headstones, most quite worn and decorated by clumps of moss. "},
                               "glass_jar": {"There's a glass jar being used as a vase in front of one of the headstones"},
                               "dried_flowers": {"dried flowers left long ago."}}, # details here depending on weather. if raining, the dried flowers are saturated and heavy. If sunny, they're crispy, etc. Not close to implementing that yet.}
-                "weird": None,
                 "east_actions": None,
                 },
         "south": {"short_desc": "a mausoleum",
                 "long_desc": "There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble.",
-                "weird": None,
                 "actions": None,
                 },
         "west": {
                 "short_desc": "what looks like a work shed of some kind",
                 "long_desc": "There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble.",
-                "weird": None,
                 "actions": None
                 },
         "exitwall": "north",
@@ -227,6 +216,7 @@ class placeInstance:
                 self.overview = f"{loc_dict[name]["descrip"]}.{"\033[0m"} \n{self.cardinals["north"].short_desc} to the {assign_colour("north")}. To the {assign_colour("east")} is {self.cardinals["east"].short_desc}, to the {assign_colour("south")} is {self.cardinals["south"].short_desc}, and to the {assign_colour("west")} is {self.cardinals["west"].short_desc}."
             else:
                 self.overview = f"{loc_dict[name]["descrip"]}.{"\033[0m"} \n{self.cardinals["north"].short_desc} to the {assign_colour("north")}. To the {assign_colour("east")} is {self.cardinals["east"].short_desc}, and to the {assign_colour("south")} is {self.cardinals["south"].short_desc}."
+            return self.overview
 #
     def visit(self):
         self.visited = True

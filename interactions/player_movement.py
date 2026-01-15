@@ -9,7 +9,10 @@ from logger import logging_fn, traceback_fn
 def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=None):
     logging_fn()
 
-    assert isinstance(loc.current, cardinalInstance)
+    old_card = loc.current
+    if old_card == new_cardinal:
+        print(f"You're already at {assign_colour(loc.current, card_type="place_name")}")
+        return
 
     def update_loc_data(prev_loc, new_location):
         from set_up_game import game
@@ -48,10 +51,13 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
                 loc.currentPlace.first_weather = current_weather
 
     if new_location and not isinstance(new_location, placeInstance):
-        print("new_relocate requires new_location is a placeInstance.")
-        print(f"It received: {new_location}, type: {type(new_location)}")#
-        traceback_fn()
-        exit()
+        if isinstance(new_location, cardinalInstance):
+            new_cardinal = new_location
+        else:
+            print("new_relocate requires new_location is a placeInstance.")
+            print(f"It received: {new_location}, type: {type(new_location)}")#
+            traceback_fn()
+            exit()
 
     if new_location and isinstance(new_location, placeInstance) and not new_cardinal:
         new_card_inst = loc.by_cardinal(loc.current.name, new_location)
@@ -64,7 +70,7 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
             new_cardinal = loc.by_cardinal(new_cardinal)
             loc.set_current(cardinal=new_cardinal)
 
-    print(f"You're now facing {assign_colour(loc.current)}")
+    print(f"You're now facing {assign_colour(loc.current, card_type="place_name")}")
     if new_location:
         print(loc.current.place.overview)
     else:
