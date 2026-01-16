@@ -144,14 +144,14 @@ loc_dict = {
                 },
         "exitwall": "north",
             },
-    "test shrine": {
-        "descrip": "A small shrine, built into the underhang of a cliff face..",
+    "shrine": {
+        "descrip": "A small PPPshrineEEE, built into the underhang of a cliff face..",
         "inside": False, "electricity": False, "nature": True,
         "north": {"short_desc": "A wooden shrine, with aged fabric flags and various trinkets",
-                "long_desc": "The shrine itself is fragile looking, with candles still not burnt down entirely. There are scrolls on the main surface, and two jars; one on the desk, and the other on the ground beside it.",
+                "long_desc": "The shrine itself is fragile looking, with candles still not burnt down entirely.",# There are scrolls on the main surface, and two jars; one on the desk, and the other on the ground beside it.",
                 },
         "east": {"short_desc": "a small 'interior' wall of the underhang",
-                "long_desc": "The underhand's east wall is damp with spray from the waterfall outside, but otherwise unremarkable",
+                "long_desc": "The underhang's east wall is damp with spray from the waterfall outside, but otherwise unremarkable",
                 },
         "south": {"short_desc": "open air",
                 "long_desc": "The sky and fields beyond; nothing much to do here except leave.",

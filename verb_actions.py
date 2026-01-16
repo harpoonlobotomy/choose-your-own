@@ -2,10 +2,8 @@
 ### Interface between item_actions and the verbs.
 
 #import time
-import functools
 from logger import logging_fn, traceback_fn
-#from choose_a_path_tui_vers import item_interaction, location_item_interaction
-from env_data import cardinalInstance, locRegistry as loc, placeInstance#, placeInstance
+from env_data import cardinalInstance, locRegistry as loc, placeInstance
 from interactions import item_interactions
 from interactions.player_movement import new_relocate, turn_around
 from itemRegistry import ItemInstance, registry
@@ -59,6 +57,7 @@ def is_loc_current_loc(location=None, cardinal=None):
             return 1, current_location, current_cardinal
     return 0, current_location, current_cardinal # 0 if not matching. Always returns current.
 
+
 def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
     logging_fn()
 
@@ -98,7 +97,6 @@ def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
                             print(f"{action} {a} {direction} {b}")
                             registry.move_item(a, new_container=b)
 
-
     elif isinstance(b, tuple):
         print(f"b is a tuple: {b}")
         if not current_loc:
@@ -109,10 +107,6 @@ def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
 
         else:
             print("Can only move items to the location you're currently in.")
-        #if b[0] in locations:
-        #    print(f"B[0]: {b[0]}")
-        #    print(f"{action} {a.name} {direction} {b}")
-
 
     elif isinstance(b, cardinalInstance):
         location = b
@@ -229,6 +223,8 @@ def get_verb(input_dict:dict) -> ItemInstance:
         #print(f"{input_dict[0]} is a verb, confirmed in get_verb")
         return list(input_dict[0].values())[0]["instance"] # works as long as verb is always first
 
+    print(f"get_verb failed to find the verb instance: {input_dict}")
+
 def get_noun(input_dict:dict, x_noun:int=None) -> ItemInstance:
     logging_fn()
     # x_noun: 1 == 1st noun, 2 == "2nd noun", etc. Otherwise will always return the first found.
@@ -254,6 +250,7 @@ def get_location(input_dict:dict) -> cardinalInstance|placeInstance:
         for kind, entry in data.items():
             if "location" in kind:
                     return entry["instance"]
+
     print(f"get_location failed to find the location instance: {input_dict}")
 
 
@@ -264,6 +261,7 @@ def get_dir_or_sem_if_singular(input_dict:dict) -> str:
             if "direction" in kind or "sem" in kind:
                 #print(f"{kind} in kind: {entry}")
                 return entry["str_name"]
+
     print(f"get_dir_or_sem failed to find the dir/sem instance: {input_dict}")
 
 
@@ -292,6 +290,8 @@ def three_parts_a_x_b(input_dict): # kinda hate this because it returns the entr
 
         return a, sem_or_dir, b
 
+    print(f"Cannot process {input_dict} in def three_parts_a_x_b() End of function, unresolved.")
+
                                   #       0          1       2    3       4        5
 def five_parts_a_x_b_in_c(input_dict): # `drop the paperclip in glass jar in the graveyard`
     logging_fn()
@@ -304,6 +304,8 @@ def five_parts_a_x_b_in_c(input_dict): # `drop the paperclip in glass jar in the
         c = list(input_dict[5].values())[0]
 
         return a, sem_or_dir, b, sem_or_dir_2, c
+
+    print(f"Cannot process {input_dict} in def five_parts_a_x_b_in_c() End of function, unresolved.")
 
 def get_elements(input_dict) -> tuple:
     logging_fn()
@@ -318,6 +320,8 @@ def get_elements(input_dict) -> tuple:
 
     elif len(input_dict) == 4:
         return 4, three_parts_a_x_b(input_dict)
+
+    print(f"Cannot process {input_dict} in def get_elements() End of function, unresolved.")
 
 
 def inst_from_idx(dict_entry:dict, kind_str:str, return_str=False) -> ItemInstance:
@@ -412,19 +416,26 @@ def meta(format_tuple, input_dict):
 
     if meta_verb == "help":
         print("Type words to progress, 'i' for 'inventory', 'd' to describe the environment, 'settings' for settings, 'show visited' to see where you've been this run: - that's about it.")
+        return
     elif meta_verb == "settings":
         from choose_a_path_tui_vers import init_settings
         init_settings(manual=True)
+        return
     elif meta_verb == "describe":
         look(("verb", "sem"), None)
+        return
     elif meta_verb == "inventory":
         generate_clean_inventory(will_print=True, coloured=True)
+        return
     elif meta_verb == "godmode":
         from choose_a_path_tui_vers import god_mode
         god_mode()
+        return
     elif meta_verb == "quit":
         print("Okay, quitting the game. Goodbye!\n\n")
         exit()
+        return
+    print(f"Cannot process {input_dict} in def meta() End of function, unresolved. (Function not yet written)")
 
 def go(format_tuple, input_dict): ## move to a location/cardinal/inside
     logging_fn()
@@ -456,8 +467,6 @@ def go(format_tuple, input_dict): ## move to a location/cardinal/inside
         else:
             new_relocate(new_location=location_entry["instance"], new_cardinal = cardinal_entry["instance"])
 
-
-
     elif direction_entry["str_name"] in in_words:
         print(f"Can {input_dict[1]["direction"]["str_name"]} be entered?")
         print("This isn't done yet.")
@@ -467,8 +476,9 @@ def go(format_tuple, input_dict): ## move to a location/cardinal/inside
             print("Cannot leave a place you are not in.")
 
     else:
-        print("end of go function, without resolution. Investigate.")
+        print(f"Cannot process {input_dict} in def go() End of function, unresolved. (Function not yet written)")
         traceback_fn()
+
 
 
 
@@ -476,7 +486,7 @@ def leave(format_tuple, input_dict):
     logging_fn()
     #verb_only, verb_loc = go
     # verb_noun_dir_noun = movw item to container/surface
-    pass
+    print(f"Cannot process {input_dict} in def leave() End of function, unresolved. (Function not yet written)")
 
 
 def look(format_tuple, input_dict):
@@ -528,7 +538,7 @@ def look(format_tuple, input_dict):
             print("`Watch x with y` not yet implemented.")
 
     else:
-        print(f"def look(): I have no idea what's happening: \n{format_tuple} \n{input_dict}")
+        print(f"Cannot process {input_dict} in def look(): \n{format_tuple} \n{input_dict}")
 
 
 def read(format_tuple, input_dict):
@@ -576,10 +586,13 @@ def clean(format_tuple, input_dict):
             get_noun
         #if "verb" in format_tuple and "location" in format_tuple:
             print(f"You want to clean the {assign_colour(get_location)}? Not implemented yet.")
+            return
 
     if format_tuple == formats("verb_noun_sem_noun"):# verb_noun == clean item
         print("You want to clean the {assign_colour(get_noun(input_dict))} with the {assign_colour(get_noun(input_dict, x_noun=2))}? Not implemented yet.")
+        return
 
+    print(f"Cannot process {input_dict} in def clean() End of function, unresolved. (Function not yet written)")
 
 
 def burn(format_tuple, input_dict):
@@ -589,7 +602,6 @@ def burn(format_tuple, input_dict):
     # verb_noun == burn item
     # verb_noun_sem_noun == noun2 must be flammable
     # verb_noun_dir_loc as 'burn item' but with location needlessly added.
-    pass
 
         #print(f"Verb name is in noun list: {verb_inst.name}")
     #print(f"Noun for checking: {noun}")
@@ -612,6 +624,7 @@ def burn(format_tuple, input_dict):
 
 
     #glass jar: {'is_container', 'can_pick_up'}
+    print(f"Cannot process {input_dict} in def burn() End of function, unresolved. (Function not yet written)")
 
 def break_item(format_tuple, input_dict):
     logging_fn()
@@ -633,14 +646,17 @@ def break_item(format_tuple, input_dict):
     if in inventory
     """
     print()
+    print(f"Cannot process {input_dict} in def break_item() End of function, unresolved. (Function not yet written)")
 
 
 def lock(format_tuple, input_dict):
     logging_fn()
+    print(f"Cannot process {input_dict} in def lock() End of function, unresolved. (Function not yet written, should use open_close variant instead)")
 
 
 def unlock(format_tuple, input_dict):
     logging_fn()
+    print(f"Cannot process {input_dict} in def unlock() End of function, unresolved. (Function not yet written, should use open_close variant instead)")
 
 def open_item(format_tuple, input_dict):
     logging_fn()
@@ -671,7 +687,7 @@ def close(format_tuple, input_dict):
     ## Use same checks for lock and unlock maybe? Not sure.
     #verb_noun == lock if noun does not require key to lock (padlock etc)
     # verb_noun_sem_noun lock noun w noun2 if noun2 is correct key and in inventory
-    pass
+    print(f"Cannot process {input_dict} in def close() End of function, unresolved. (Function not yet written)")
 
 def print_children_in_container(noun_inst):
     children = registry.instances_by_container(noun_inst)
@@ -759,6 +775,8 @@ def open_close(format_tuple, input_dict):
             elif verb_entry["instance"].name == "unlock":
                 print(assign_colour("You need to find something to unlock it with first.", "description"))
 
+    print(f"Cannot process {input_dict} in def open_close() End of function, unresolved.")
+
 
 def simple_open_close(format_tuple, input_dict):
     logging_fn()
@@ -772,6 +790,7 @@ def simple_open_close(format_tuple, input_dict):
         if hasattr(noun_inst, "is_open"):
             if noun_inst.is_open == True:
                 print(f"{assign_colour(noun_inst)} is already open.")
+                return
             if noun_inst.is_open == False:
                 if hasattr(noun_inst, "is_locked") and noun_inst.is_locked == True:
                     open_close(format_tuple, input_dict)
@@ -780,6 +799,7 @@ def simple_open_close(format_tuple, input_dict):
                 print(f"You open the {assign_colour(noun_inst)}.")
                 noun_inst.is_open = True
                 print(f"noun_inst.is_open now: {noun_inst.is_open}")
+                return
         else:
             print(f"{assign_colour(noun_inst)} cannot be opened; this is odd. Potentially. Or maybe a totally normal thing.")
     else:
@@ -794,6 +814,9 @@ def simple_open_close(format_tuple, input_dict):
                 open_close(format_tuple, input_dict)
                 return
             print(f"{assign_colour(noun_inst)} is already closed.")
+            return
+
+    print(f"Cannot process {input_dict} in def simple_open_close() End of function, unresolved.")
 
 
 def combine(format_tuple, input_dict):
@@ -801,6 +824,8 @@ def combine(format_tuple, input_dict):
     #if verb_noun_sem_noun, verb_noun_dir_noun, combine a+b
     #if verb_noun == what do you want to combine it with.
     print("COMBINE FUNCTION")
+
+    print(f"Cannot process {input_dict} in def combine() End of function, unresolved. (Function not yet written)")
     pass
 
 def separate(format_tuple, input_dict):
@@ -808,12 +833,16 @@ def separate(format_tuple, input_dict):
     #if verb_noun_sem_noun, verb_noun_dir_noun, combine a+b
     #if verb_noun == what do you want to combine it with.
     print("SEPARATE FUNCTION")
+
+    print(f"Cannot process {input_dict} in def separate() End of function, unresolved. (Function not yet written)")
     pass
 
 def combine_and_separate(format_tuple, input_dict):
     logging_fn()
 
     print(f"length of format list: {len(format_tuple)}")
+
+    print(f"Cannot process {input_dict} in def separate_and_combine() End of function, unresolved. (Function not yet written)")
 
 def move(format_tuple, input_dict):
     logging_fn()
@@ -822,6 +851,7 @@ def move(format_tuple, input_dict):
     if location_entry: # so if it's 'move to graveyard', it just treats it as 'go to'.
         go(format_tuple, input_dict, location_entry["instance"])
         return
+    print(f"Cannot process {input_dict} in def move() End of function, unresolved.")
 
 def turn(format_tuple, input_dict):
     logging_fn()
@@ -835,8 +865,8 @@ def turn(format_tuple, input_dict):
             return
 
     if cardinal_entry:
-
         turn_cardinal(cardinal_entry["instance"])
+        return
 
     if semantic_entry and semantic_entry["str_name"] == "around" and len(format_tuple) == 2:
         invert_cardinals = {
@@ -845,14 +875,17 @@ def turn(format_tuple, input_dict):
             "east": "west",
             "west": "east"
             }
+
         new_cardinal_str = invert_cardinals[loc.current.name]
         new_cardinal = loc.by_cardinal(new_cardinal_str)
         turn_cardinal(new_cardinal)
+        return
 
     if direction_entry and direction_entry["str_name"] in ("left", "right"):
         turn_cardinal(direction_entry["str_name"])
+        return
 
-
+    print(f"Cannot process {input_dict} in def turn() End of function, unresolved.")
     #return "new_cardinal", new_cardinal
 
 def take(format_tuple, input_dict):
@@ -937,8 +970,13 @@ def take(format_tuple, input_dict):
                 else:
                     print(f"The {assign_colour(noun_inst)} doesn't seem to be in {container_inst.name}.")
 
+    else:
+        print(f"Cannot process {input_dict} in def take() End of function, unresolved.")
+        return
+
     if added_to_inv:
         print(f"{assign_colour(noun_inst)} is now in your inventory.")
+        return
 
 def put(format_tuple, input_dict, location=None):
     logging_fn()
@@ -988,6 +1026,7 @@ def put(format_tuple, input_dict, location=None):
                 print(text)
             return
 
+
     #print(f"Parts: {parts}")
     if isinstance(parts, ItemInstance):
         a=parts
@@ -1008,19 +1047,25 @@ def put(format_tuple, input_dict, location=None):
         if c == location:
             move_a_to_b(a=a, b=b, action=action_word, direction=sem_or_dir, current_loc=location)
 
+    print(f"Cannot process {input_dict} in def put() End of function, unresolved.")
+
 def throw(format_tuple, input_dict):
     logging_fn()
     # verb_noun == where do you want to throw it (unless context),
     # verb_noun_dir == throw ball up (check if 'dir' makes sense)
     # verb_noun_dir_noun  == throw ball at tree
-    pass
+
+    print(f"Cannot process {input_dict} in def throw() End of function, unresolved. (Function not yet written)")
+
 
 def push(format_tuple, input_dict):
     logging_fn()
     # verb_noun == to move things out the way in general
     # verb_noun_dir == #push box left
     # verb_noun_dir_noun == push box away from cabinet
-    pass
+
+    print(f"Cannot process {input_dict} in def push() End of function, unresolved. (Function not yet written)")
+
 
 def drop(format_tuple, input_dict):
     logging_fn()
@@ -1077,7 +1122,7 @@ def set_action(format_tuple, input_dict):
     # verb_noun_dir == set item down == drop
     # verb_noun_dir_noun == set item on fire if noun2 == 'fire' == burn
     # verb_dir_noun_sem_noun set on fire with item
-    pass
+    print(f"Cannot process {input_dict} in def set() End of function, unresolved. (Function not yet written)")
 
 
 
@@ -1095,14 +1140,15 @@ def use_item_w_item(format_tuple, input_dict):
                 if noun_entry["instance"].name == input_dict[3]["verb"]["instance"].children:
                     print(f"input_dict[3]['verb']['instance']: {input_dict[3]['verb']['instance']} == child")
 
-
+    print(f"Cannot process {input_dict} in def use_item_w_item() End of function, unresolved. (Function partially written but doesn't do anything.)")
 
 def use_item(format_tuple, input_dict):
     logging_fn()
     print(f"format_tuple = {format_tuple}")
     if len(format_tuple) == 4:
         use_item_w_item(format_tuple, input_dict)
-    pass
+        return
+    print(f"Cannot process {input_dict} in def use_item() End of function, unresolved. (Function not yet written)")
 
 
 def router(viable_format, inst_dict):

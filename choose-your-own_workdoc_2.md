@@ -1310,3 +1310,74 @@ to mark a part that can be removed.
 (That's a location description, but there's no actual 'shrine' object to use yet for an example. Scenery doesn't exist yet.)
 
 Also I've spent a couple of days working on the test class. I do think it's going to work. Need to rewrite so much but it's worth it. So I tell myself.
+
+4.06pm Added failure prints to the functions that don't have all-inclusive if/else statements, so if they come to the end of the function unresolved it prints the dict and fn name. Should make it easier to track down random failures that I'm not expecting.
+
+
+11.45am 16/1/26
+
+{'breakable': False,
+ 'can_examine': False,
+ 'current_loc': None,
+ 'description': "It's a stone ground",
+ 'exceptions': {'starting_location': 'west Graveyard'},
+ 'id': 'c6a7ba6f-1e29-42a1-9115-f2daf097dab6',
+ 'is_horizontal_surface': False,
+ 'is_vertical_surface': False,
+ 'item_type': {'static', 'all_items'},
+ 'name': 'stone ground',
+ 'starting_location': 'east Graveyard'}
+
+ Hm. Just noticed it's added 'exceptions: the exception' instead up updating the actual exceptioned field.
+
+
+Hm.
+
+ITEM: stone ground
+{'description': "It's a stone ground",
+ 'exceptions': {},
+ 'id': '428f46ca-eb9f-4860-a8ac-7205838754eb',
+ 'item_type': {'static', 'all_items'},
+ 'name': 'stone ground',
+ 'starting_location': 'north Graveyard'}
+ITEM: headstones
+ITEM: box
+ITEM: stone ground
+{'description': "It's a stone ground",
+ 'id': '62600240-c50d-4223-8b52-d4a54e2ad831',
+ 'item_type': {'static', 'all_items'},
+ 'name': 'stone ground'}
+ITEM: stone ground
+{'breakable': False,
+ 'can_examine': False,
+ 'current_loc': None,
+ 'description': "It's a stone ground",
+ 'exceptions': {},
+ 'id': 'bb718a6c-3587-467e-9e37-e56accc9fc2b',
+ 'is_horizontal_surface': False,
+ 'is_vertical_surface': False,
+ 'item_type': {'static', 'all_items'},
+ 'name': 'stone ground',
+ 'starting_location': 'west Graveyard'}
+
+ So I can fix that, but, all the earlier ones are missing the item_type attributes.
+
+
+from midway, before sending it on to testReg.init_items(loc_items, descriptions)
+loc_items[item]: {'id': 'ad3c364b-182d-4c7e-a925-0bb51b0b7e37', 'name': 'stone ground', 'item_type': {'all_items', 'static'}, 'starting_location': 'north Graveyard', 'current_loc': None, 'is_horizontal_surface': False, 'is_vertical_surface': False, 'can_examine': False, 'breakable': False, 'description': "It's a stone ground", 'exceptions': {}}
+
+
+[NOT IN by_name: loc_items[item]: {'item_type': ['static'], 'exceptions': {'starting_location': 'east Graveyard'}}
+FLAG IN GET(EXCEPTIONS) not dict: starting_location
+east Graveyard
+item: starting_location: v: east Graveyard
+item in self already: starting_location, v: east Graveyard
+Found in by_name: loc_items[item]: {'id': '3e32c20d-014c-469f-83a8-2fe82802ab5e', 'name': 'stone ground', 'item_type': {'static', 'all_items'}, 'is_horizontal_surface': False, 'is_vertical_surface': False, 'can_examine': False, 'breakable': False, 'starting_location': 'east Graveyard', 'current_loc': None, 'description': "It's a stone ground", 'exceptions': {'starting_location': 'west Graveyard'}}
+
+1.24pm
+
+--------
+--------
+--------
+
+Deleted a whole swath of logs over the previous couple of hours, I just removed the part where it tried to get the attributes from existing instances entirely. I'm not exactly sure why it broke, but it did, and this fixes it. I'll look into it again later with fresh eyes.
