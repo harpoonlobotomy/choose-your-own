@@ -1,0 +1,31 @@
+{
+  "gold key": {
+    "name": "gold key",
+    "item_type": "{'key', 'can_pick_up', 'all_items'}",
+    "starting_location": null,
+    "current_loc": null,
+    "is_key": true,
+    "can_pick_up": true,
+    "item_size": 0,
+    "started_contained_in": null,
+    "contained_in": null,
+    "description": "a bright gold key, quite new-looking"
+  },
+  "stone ground": {
+    "name": "stone ground",
+    "item_type": "{'all_items', 'static', 'flooring'}",
+    "starting_location": "north Graveyard",
+    "current_loc": "north Graveyard",
+    "can_examine": false,
+    "breakable": false,
+    "is_horizontal_surface": true,
+    "description": "stony ground, a mixture of small pebbles and rough broken rubble"
+  },
+  "earring": {
+    "name": "earring",
+    "item_type": "{'all_items', 'can_pick_up'}",
+    "can_pick_up": true,
+    "item_size": 0,
+    "description": "a single silver earring with a small blue stone dangling from a short chain"
+  }
+}

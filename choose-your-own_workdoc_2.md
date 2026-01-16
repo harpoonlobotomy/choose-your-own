@@ -1381,3 +1381,41 @@ Found in by_name: loc_items[item]: {'id': '3e32c20d-014c-469f-83a8-2fe82802ab5e'
 --------
 
 Deleted a whole swath of logs over the previous couple of hours, I just removed the part where it tried to get the attributes from existing instances entirely. I'm not exactly sure why it broke, but it did, and this fixes it. I'll look into it again later with fresh eyes.
+
+
+5.55pm
+
+{'id': '9901ea49-34b1-439b-b8a4-178ae5ec676f',
+ 'name': 'gold key',
+ 'description': "It's a gold key",
+ 'current_loc': 'graveyard north',
+ 'contained_in': None,
+ 'item_size': 0,
+ 'item_type': {'all_items', 'key', 'can_pick_up'},
+ 'starting_location': 'graveyard north',
+ 'started_contained_in': None}
+
+ Working on dynamic simple item generation. Not working properly yet, it's not applying all the tags like it should, but getting there.
+
+ At item-gen, the new key item is:
+
+ SELF: {'id': '9901ea49-34b1-439b-b8a4-178ae5ec676f', 'name': 'gold key', 'item_type': {'all_items', 'key', 'can_pick_up'}, 'starting_location': 'graveyard north', 'current_loc': 'graveyard north', 'is_key': True, 'can_pick_up': True, 'item_size': 0, 'started_contained_in': None, 'contained_in': None}
+
+So the data is added, but for some reason not preserved. Will have to check my dict-formatting func, it's likely an issue there.
+Tis cool. though. It stops, asks for item_type(s), then generates the new item accordingly.
+
+
+9.46pm
+
+And now it checks if you like it or not, then adds it to the JSON if so.
+
+The following item(s) have been confirmed for future use:
+Text: earring, type: <class 'str'>
+Text: {'id': 'a13fb652-6ba8-46a6-acec-c8ec8b1d8bde', 'name': 'earring', 'item_type': {'all_items', 'can_pick_up'}, 'starting_location': None, 'current_loc': None, 'can_pick_up': True, 'item_size': 0, 'started_contained_in': <ItemInstance
+box (ea05874a-e72d-485a-bb60-ec398ca091d7)>, 'contained_in': <ItemInstance box (ea05874a-e72d-485a-bb60-ec398ca091d7)>, 'description': 'a single silver earring with a small blue stone dangling from a short chain'}, type: <class 'dict'>
+Popped dict: {'name': 'earring', 'item_type': "{'all_items', 'can_pick_up'}", 'can_pick_up': True, 'item_size': 0, 'description': 'a single silver earring with a small blue stone dangling from a short chain'}
+KEY: earring
+
+It'll prompt for you to add a description to any location-based item that doesn't already have one, and the once it's saved it'll check the JSON for that description and use it again in the future.
+
+Later I'll add the regular items to the same file and compile them somehow so it's just one main file, but for now while I'm playing this is good.

@@ -1,5 +1,13 @@
 import uuid
 from pprint import pprint
+from itemRegistry import ItemInstance
+import printing
+from dynamic_data import generated_items
+
+temp_items = generated_items.test_items
+
+global updated
+updated = set()
 
 standard = "standard"
 static = "static"
@@ -8,19 +16,23 @@ container = "container"
 event = "event"
 trigger = "trigger"
 
+confirmed_items = {}
+
 type_defaults = { # gently ordered - will overwrite earlier attrs with later ones (eg 'is horizontal surface' for flooring with overwrite 'static''s.)
     "standard": {},
-    "static": {"is_horizontal_surface": False, "is_vertical_surface": False, "can_examine": False, "breakable": False},
+    "static": {"can_examine": False, "breakable": False}, # removed [["is_horizontal_surface": False, "is_vertical_surface": False]] becaue I'm not going to be searching for the lack of horizontal surfaces...
     "all_items": {"starting_location": None, "current_loc": None},
-    "container": {"is_open": False, "can_be_closed": True, "can_be_locked": {"is_locked": True, "requires_key": None}},
-    "can_pick_up": {"item_size": 0, "started_contained_in": None, "contained_in": None},
-    "event": {"event": None, "event_type": {"item_triggered": {"event_key": None}}},
-    "trigger": {"trigger_type": {"plot_advance": None}, "trigger_target": None, "is_exhausted": False},
-    "flooring": {"is_horizontal_surface": True}
-}
+    "container": {"is_open": False, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False},
+    "key": {"is_key": True},
+    "can_pick_up": {"can_pick_up": True, "item_size": 0, "started_contained_in": None, "contained_in": None},
+    "event": {"event": None, "event_type": "item_triggered", "event_key": None},
+    "trigger": {"trigger_type": "plot_advance", "trigger_target": None, "is_exhausted": False},
+    "flooring": {"is_horizontal_surface": True},
+    "wall": {"is_vertical_surface": True}#,
+    #"exterior": {"is_interior": False} ## Can be set scene-wide, so 'all parts of 'graveyard east' are exterior unless otherwise mentioned'. (I say 'can', I mean 'will be when I set it up')
+}## Removed all the interior dicts. They're not necessary and will actually get in the way - having the type defaults exposed is far more beneficial.
 
 size = "item_size"
-
 box_desc = "It's a box. Boxy box."
 
 descriptions = {
@@ -31,34 +43,95 @@ descriptions = {
 }
 
 test_items = {
+    "everything": {"item_type": set((static, container, can_pick_up, event, trigger, "flooring"))},
+    "earring": {"item_type": set((can_pick_up,)), "exceptions": {"started_contained_in": "box"}},
     "box": {"item_type": set((container, can_pick_up)), "exceptions": {"can_be_locked": False}},
-    "locked box": {"item_type": set((container, can_pick_up)), "exceptions": {}},#"starting_location": "east graveyard"}},
-    "cabinet": {"item_type": set((static, event)), "exceptions": {"event_key": "box", "trigger_target": "box"}},
+    #"gold key": {"item_type": set(("key",)), "exceptions": {"starting_location": "some other place"}},
+    "locked box": {"item_type": set((container, can_pick_up)), "exceptions": {"requires_key": "gold key", "starting_location": "east graveyard"}},
+    "cabinet": {"item_type": set((static, event)), "exceptions": {"can_examine": True, "event_key": "box", "trigger_target": "box"}},
     "wall": {"item_type": set((static,)), "exceptions": {"is_vertical_surface": True}},
     "elephant": {"item_type": set((standard,)), "exceptions": {size:10}},
-    "stone ground": {"item_type": set((static, "flooring")), "exceptions": {}}
+    "stone ground": {"item_type": set((static, "flooring"))}
 }
 
 ## Do I want "exceptions": {"is_vertical_surface": True}
 #or
 #"item_type": set((static, "flooring") ??
 
-locations = {"Graveyard": {"east": {"items": ["stone ground"]}, "west": {"items": ["stone ground"]}, "north": {"items": ["stone ground"]}, "south": {"items": ["stone ground"]}}, #, "headstones"
-            "OtherPlace": {"east": {"items": None }, "west": {"items": None }, "north": {"items": None }, "south": {"items": None }},
-            "Mermaid Grotto": {"east": {"items": None }, "west": {"items": None }, "north": {"items": None }, "south": {"items": None }}
+locations = {"Graveyard": {"east": {"items": ["stone ground", "grave"]}, "west": {"items": ["stone ground"]}, "north": {"items": ["stone ground"]}, "south": {"items": ["stone ground", "headstones"]}},
+            "OtherPlace": {"east": {"items": ["everything", "grandfather clock"]}, "west": {"items": ["birdbath"]}, "north": {"items": "merry-go-round"}, "south": {"items": "rocking chair"}},
+            "Mermaid Grotto": {"east": {"items": ["sandy ground"]}, "west": {"items": ["sandy ground"]}, "north": {"items": ["sandy ground"]}, "south": {"items": ["sandy ground"]}}
             }
+
+flag_keys = ("id", "name", "description", "current_loc", "is_open", "can_be_closed", "can_be_locked", "is_locked", "requires_key", "is_key", "can_pick_up", "can_examine", "breakable", "contained_in", "item_size", "item_type", "is_horizontal_surface", "is_vertical_surface", "event", "event_type", "item_triggered", "event_key", "trigger_target", "trigger_type", "plot_advance", "is_exhausted", "starting_location", "started_contained_in", "extra")
+
+use_generated = True
+ ## just a shortcut for a min while I test TODO remember to delete later
+gen_items = {}
+
+def use_generated_items(input_=None):
+
+    import json
+    json_file = "dynamic_data/generated_items.json"
+    with open(json_file, 'r') as file:
+        data = json.load(file)
+    data_keys = list(data)
+    global gen_items
+    gen_items = data
+
+    if input_ == None:
+        keys = data_keys
+    elif isinstance(input_, str):
+        keys = set((input_,))
+        print(f"data[input_]:")
+        print(f"{data[input_]}")
+        entry = {}
+        entry[input_] = data[input_]
+        return entry
+
+    elif isinstance(input_, set|list|tuple):
+        keys = set(i for i in input_)
+    elif isinstance(input_, dict):
+        keys = set(input_)
+
+        for key in keys:
+            if key in data_keys:
+                print(f"JSON entry: \n{data[key]}")
+                print(f"Memory entry: \n{input_[key]}")
+                print("Type 'm' to update the JSON with the memory entry, otherwise the JSON will be kept as-is.")
+                test=input()
+                if test == "m":
+                    data[key] = input_[key]
+
+    printing.print_red(f"Data keys: {data_keys}")
+    printing.print_red(f"keys: {keys}")
+
+    #with open(json_file, 'w') as file:
+    #    json.dump(data, file, indent=2)
 
 class testInstances:
 
     def __init__(self, definition_key, attr):
 
-        #type_defaults["container"]["closed"]["locked"]
         self.id = self.id = str(uuid.uuid4())
         self.name = definition_key
+        #print(f"ATTR: {attr}")
+        for attribute in attr:
+            if attribute == "item_type":
+                item = attr[attribute]
+                if isinstance(item, str):
+                    #print(f"ATTRIBUTE: {item}")
+                    _, item = item.split("{")
+                    item, _ = item.split("}")
+                    #print(f"ATTRIBUTE: {item}")
+                    item = item.replace("'", "")
+                    parts = item.split(", ")
+                    attr["item_type"] = set(parts)
+
         self.item_type = set(attr["item_type"])
         self.starting_location = None
-        #print(f"attr item type: {attr["item_type"]}")
-        #print(f"self.item_type: {self.item_type}")
+        self.current_loc = None
+
         if "all_items" not in self.item_type:
             self.item_type.add("all_items")
         if test_items.get(self.name):
@@ -68,54 +141,42 @@ class testInstances:
                     self.item_type.add(cat)
 
         for item_type in type_defaults:
+            #print(f"item type in type_defaults: {item_type}")
             if item_type in self.item_type:
-        #print(f"self.item_types: {self.item_type}, type: {type(self.item_type)}")
-        #for item_type in self.item_type:
-                print(f"\n\n Item type: {item_type} for item {self.name}, id: {self.id}")
-                #print(f"item_type: {item_type}, type: {type(item_type)}")
+                #print(f"This item_type is in self.item_type: {item_type}")
+
                 for flag in type_defaults[item_type]:
-                    print(f"\nFLAG: {flag}\n")
-                    if isinstance(type_defaults[item_type][flag], dict):
-                        if flag in attr["exceptions"]:
-                        #f attr["exceptions"].get(flag):
-                            setattr(self, flag, attr["exceptions"][flag])
-                        else:
-                            if flag == "exceptions":
-                                print(f"Flag == exceptions and is a dict: {flag}")
-                            else:
-                                setattr(self, flag, type_defaults[item_type][flag])
-                            for sub_flag in type_defaults[item_type][flag]:
-                                if sub_flag in attr["exceptions"]:
-                                #if attr["exceptions"].get(flag):
-                                    setattr(self, sub_flag, attr["exceptions"][sub_flag])
-                                else:
-                                    setattr(self, sub_flag, type_defaults[item_type][flag][sub_flag])
-                    else:
-                        if flag == "exceptions":
-                            print("Flg == exceptions")
-                        elif attr.get("exceptions"):
-                            if flag in attr["exceptions"]:
-                                print(f"FLAG IN GET(EXCEPTIONS) not dict: {flag}")
-                                print("attr['exceptions'][flag]: ", attr["exceptions"][flag])
-                            #f attr["exceptions"].get(flag):
-                                #if not flag == "starting_location":
-                                #new_text = ( + "WOO" if isinstance(attr["exceptions"][flag], str) else attr["exceptions"][flag])
-                                setattr(self, flag, attr["exceptions"][flag])
-                                print(f"After setattr(self, flag, attr['exceptions'][flag] for  {self}: ", getattr(self, flag))
-                            else:
-                                setattr(self, flag, type_defaults[item_type][flag])
-                        else:
-                            #if not hasattr(self, flag):
-                            #    setattr(self, flag, type_defaults[item_type][flag])
-                            if item_type == "all_items" and flag == "starting_location": ## manually keep the location for location-based items when it might be overwritten by types otherwise. This is a bad solution though because why is it overwriting types anyway?  Or right, because it can't differentiate between types-data and inserted data.
-                                # Oh, that's the advantage of using the exceptions. Yeah that makes sense why I put that in now. Okay. I can't use the exceptions for starting location though, can I?
-                                #I mean why not.  Okay. Will look into it.
-                                setattr(self, flag, attr[flag])
+                    #print(f"Flag `{flag}` in item type `{item_type}` for `{self.name}`. Flag type: {type(type_defaults[item_type][flag])}")
+                    setattr(self, flag, type_defaults[item_type][flag])
+           # else:
+                #print(f"This item type is not in self.item_type: {item_type}")
+                #print(f"self.item_types: {self.item_type}, type: {self.item_type}")
 
-                            else:
-                                setattr(self, flag, type_defaults[item_type][flag]) ## So with this we jsut overwrite in this case. So if I have two categories  that overwrite each other, this is where it does that (ie flooring overwrites the )
+        for item in attr:
+            if item != "exceptions":
+                if not hasattr(self, item):
+                    setattr(self, item, attr[item])
 
-        print(f"INSTANCE CREATED: {self}")
+        if attr.get("exceptions"):
+            #print(f"EXCEPTIONS for `{self.name}`. `{attr.get("exceptions")}`")
+            for flag in attr.get("exceptions"):
+                if isinstance(flag, dict):
+                    for sub_flag in type_defaults[item_type][flag]:
+                        if sub_flag in attr["exceptions"]:
+                            setattr(self, sub_flag, attr["exceptions"][sub_flag])
+                        else:
+                            setattr(self, sub_flag, type_defaults[item_type][flag][sub_flag])
+                else:
+                    setattr(self, flag, attr["exceptions"][flag])
+
+        if self.starting_location:
+            self.current_loc = self.starting_location
+
+        if hasattr(self, "started_contained_in"):
+            self.contained_in = self.started_contained_in
+
+        #printing.print_yellow(f"SELF: {vars(self)}")
+        #print(f"INSTANCE CREATED: {self}")
 
     def __repr__(self):
         return f"<ItemInstance {self.name} ({self.id})>"
@@ -124,91 +185,219 @@ class testRegistry:
     def __init__(self):
 
         self.instances = set()
-        self.by_name = {}        # definition_key -> set of instance IDs
-        self.standard = set() ## should these be dicts by name? Hm.
-        self.containers = set() ## Maybe these categories shouldn't be here, actually. Maybe they
-        self.triggers = set()
-        # I can't think of a case where I'd need these to be global categories. When will I ever need  a set of all containers world-wide? anything that isn't explicitly location-based will surely have the itemInstance already...
+        self.by_name = {}        # definition_key -> set of instances
+        self.by_id = {}
+        self.by_location = {}    # cardinalinst (when implemented, str for now), > instances
+        self.temp_items = set() # just exists as a place to live for dynamic item generation so it doesn't mess with for loops. Should be empty, only used temporarily and then cleared (contents added to self.instances) after the current loop.
 
-        # so the above three are for all items in those categories, unilaterally. by_loc_cat is functionally duplicating that information but categorised into location-specific categories. I imagine that's what'll be useful in practice, eg:
-        # checking if there any triggers in the scene, to check if anything needs to update (weak example)
-        # checking for local open containers: self.by_loc_cat>containers>is_open
-        # oh that's interesting. Expansive dict chain of location>type>is_open... Maybe. Not sure.
-        self.by_loc_cat = dict()
-        #self.by_loc_cat["standard"].setdefault(self.is_open, dict())  # (cardinalInstance) -> (item_type) > set of instances
+    def init_single(self, item_name, item_entry):
+        inst = testInstances(item_name, item_entry)
+        self.instances.add(inst)
+        self.by_name[inst.name] = inst
+        self.by_id[inst.id] = inst
 
-#        self.by_loc_cat["east graveyard"]["container"]["open"] = "glass_jar_obj"
-#        self.by_loc_cat["east graveyard"]["container"]["closed"]["locked"] = "ivory_chest"
+        if not descriptions.get(item_name):
+            if not item_entry.get("description") or item_entry.get("description") == f"It's a {item_name}":
+                printing.print_yellow(f"Item `{item_name}` does not have a description, do you want to write one?. Enter it here, or hit enter to cancel.")
+                while True:
+                    test=input()
+                    if test and test != "":
+                        print("Is this correct? 'y' to accept this description, 'n' to try again or nothing to cancel.")
+                        trial = test
+                        new_test = input()
+                        if new_test == "y":
+                            descriptions[item_name] = trial
+                            updated.add(inst)
+                            break
 
-    def init_items(self, test_items, descriptions):
+                    elif test == "":
+                        break
+            elif item_entry.get("description") and item_entry.get("description") != f"It's a {item_name}":
+                descriptions[item_name] = item_entry.get("description")
 
-        def init_single(item_name, item_entry):
-            inst = testInstances(item_name, item_entry)
-            self.instances.add(inst)
-            self.by_name[inst.name] = inst
-
-            #for item in test_items[inst.name]["exceptions"]:
-            #print(f"test_items[inst.name]: {test_items[inst.name]}")
-            #for item, v in test_items[inst.name].items():
-            #    if item == "starting_location" or item == "exceptions":
-            ##        print("item == starting location")
-            #        continue
-            #    if not hasattr(inst, item):
-            #        setattr(inst, item, v)
-
-            setattr(inst, "description", (descriptions.get(item_name) if descriptions.get(item_name) else f"It's a {item_name}"))
-
-        if isinstance(test_items, dict):
-            for item_name, item_entry in test_items.items():
-                init_single(item_name, item_entry)
-
-    def set_loc_cat(self, location):
+        setattr(inst, "description", (descriptions.get(item_name) if descriptions.get(item_name) else f"It's a {item_name}"))
+        return inst
 
 
-        self.by_loc_cat[location] = {}
-        for item_type in type_defaults:
-            self.by_loc_cat[location][item_type] = {}
-            #print(f"item_type: {item_type}")
-            for flag in type_defaults[item_type]:
-                #print(f"flag: {flag}")
-                if isinstance(type_defaults[item_type][flag], dict):
-                    self.by_loc_cat[location][item_type][flag]={}
-                    for sub_flag in type_defaults[item_type][flag]:
-                        #print(f"sub_flag: {sub_flag}")
-                        self.by_loc_cat[location][item_type][flag][sub_flag] = set()#type_defaults[item_type][flag][sub_flag]
+    def init_items(self, item_data):
+
+        if isinstance(item_data, dict):
+            for item_name, item_entry in item_data.items():
+                inst = self.init_single(item_name, item_entry)
+
+        elif isinstance(item_data, str):
+            item_entry = {}
+            #item_entry[item] = ({"item_type": [static]})
+            if test_items.get(item):
+                item_entry[item] = test_items[item]
+            else:
+                item_entry[item] = ({"item_type": [static]})
+
+            #print(f"item_entry: {item_entry[item]}")
+            inst = self.init_single(item_data, item_entry[item])
+
+        return inst
+
+    def new_item_from_str(self, item_name, input_str):
+
+        if not isinstance(input_str, str):
+            print(f"new_item_from_str requires a string input, not {type(input_str)}")
+            return
+
+        if " " in input_str.strip():
+            parts = input_str.strip().split(" ")
+            parts = (i for i in parts if i != None and i in list(type_defaults))
+            new_str = set(parts)
+
+        elif input_str in list(type_defaults):
+            new_str = set((input_str))
+
+        else:
+            print(f"Input is not valid: {input_str}")
+            return item_name
+
+        new_item_dict = {}
+        new_item_dict[item_name] = ({"item_type": new_str})
+        ## this will have live locations later, for now just spoofing it ## TODO don't forget to updat this once env_data is plugged in.
+        new_item_dict[item_name]["exceptions"] = {"starting_location": "graveyard north"}
+
+        inst = self.init_items(new_item_dict)
+        self.instances.add(inst)
+        self.temp_items.add(inst)
+
+        printing.print_green(text=vars(inst), bg=False, invert=True)
+        return inst
+
+    def add_to_gen_items(self, instance):
+        #print(f"Temp items: {temp_items}")
+        key = instance.name
+        entry = vars(instance)
+        #temp_items.update(entry)
+        printing.printkind(key)
+        printing.printkind(entry)
+
+        pop_me = set()
+        for header, item in entry.items():
+            if header in ("starting_location", "current_loc", "id", "contained_in", "started_contained_in"): # listing the container variants because idk why the 'isinstance' below isn't working yet.
+                pop_me.add(header)
+            elif isinstance(item, set):
+                entry[header] = str(item)
+            elif isinstance(item, ItemInstance):
+                pop_me.add(header)
+
+        if pop_me:
+            for header in pop_me:
+                entry.pop(header)
+
+        print(f"Popped dict: {entry}")
+
+        import json
+        json_file = "dynamic_data/generated_items.json"
+        with open(json_file, 'r') as file:
+            print(f"KEY: {key}")
+            data = json.load(file)
+            data[key] = entry
+
+        with open(json_file, 'w') as file:
+            json.dump(data, file, indent=2)
+        #generated_items.test_items[key] = (entry)
+        #print(f"Temp items: {generated_items.test_items}")
+
+    def item_by_name(self, item_name) -> testInstances:
+
+        if isinstance(item_name, testInstances):
+            return item_name
+
+        items = self.by_name.get(item_name)
+        if isinstance(items, testInstances):
+            return items
+    # later, disambiguate. For now, cheat and just take the first.
+        elif items != None:
+            return items[0]
+
+
+        if use_generated:
+            generated_entry = use_generated_items(item_name)
+            if generated_entry:
+                inst = self.init_items(generated_entry)
+                if inst:
+                    print(f"\nGENERATED: {inst}\n")
+                    printing.print_yellow("Are you happy with this item?")
+                    pprint(f"VARS: {vars(inst)}")
+                    test = input()
+                    if test in ("y", "yes"):
+                        confirmed_items[item_name] = inst
+                    return inst
                 else:
-                    self.by_loc_cat[location][item_type][flag] = set()#type_defaults[item_type][flag]
+                    print(f"Failed to generate instance from {generated_entry}")
+            else:
+                print(f"No generated entry for {item_name}; continuing.\n")
+
+        printing.print_red(f"\nNothing found for item name `{item_name}` in def item_by_name.", invert=True)
+        printing.print_red("Do you want to create a new instance with this name?", invert=True)
+        printing.print_red("please enter ' <type_default_key> ' to create a new instance of that type now.", invert=True)
+        printing.print_green(f"Options: {list(type_defaults)}")
+        printing.print_red("Entering nothing will skip this process.\n", invert=True)
+
+        test = input()
+
+        if test:
+            instance = self.new_item_from_str(item_name, test)
+            if instance and isinstance(instance, testInstances):
+                self.temp_items.add(instance)
+                self.add_to_gen_items(instance)
+                return instance
+            else:
+                print(f"Failed to create instance for {item_name}. Returning item_name instead.")
+                return item_name
+        else:
+            print("Returning string instead.")
+            return item_name
+
+    def clean_children(self):
+
+        target_flags = ("contained_in", "requires_key", "event_key", "trigger_target")
+
+        def cleaning_loop():
+            itemlist = frozenset(self.by_id)
+            for item_id in itemlist:
+                item = self.by_id.get(item_id)
+                for flag in target_flags:
+                    if hasattr(item, flag) and getattr(item, flag) not in (False, None):
+                        target_obj = self.item_by_name(getattr(item, flag))
+                        if target_obj:
+                            if flag == "contained_in":
+                                if hasattr(item, "started_contained_in") and item.started_contained_in == item.contained_in:
+                                    item.started_contained_in = target_obj
+                            setattr(item, flag, target_obj)
+
+                        else:
+                            print(f"Missing an instance for `{item.name}`'s  `{flag}`: {getattr(item, flag)}")
+
+        starting_count = len(self.instances)
+
+        #try:
+        cleaning_loop()
+        #except Exception as E:
+        #    print(f"Exception: {E}")
+
+        if len(self.instances) == starting_count:
+            print("Huh, count is the same.")
+
+
+       # for item in self.instances:
+       #         #print(f"item.contained_in: {item.contained_in}")
+       #         parent_obj = self.item_by_name(item.contained_in)
+       #         if hasattr(item, "started_contained_in"):
+       #             #print("item.started_contained_in == item.contained_in ?")
+       #             #print(item.started_contained_in, item.contained_in)
+       #             if item.started_contained_in == item.contained_in:
+       #                 item.started_contained_in = parent_obj
+       #         item.contained_in = parent_obj
 
 
 testReg = testRegistry()
 """
-# So I've just realised that these:
-self.by_loc_cat[location][item_type][flag][sub_flag] = set()
-never get populated.
-So need to write a new function to add them in.
-It can't be done at init, because the location data is a separate pass.
-So, init all items, once done, init items to locations, then at that step add them to the relevant sets.
-If relevant_tag != None, add the item to that set.
-Is there any reason to only add them to end sequence?
-As in,
-
-if I have self.by_loc_cat[graveyard_east][container][closed][locked]
-is there any reason not to add "ivory jar" to each of those that is true?
-Right now those containers are just dicts with the end of the chain being sets, but I could just add "items: set()" to each dict level and add the item to each layer.
-
-So instead of "ivory jar" being only in
-self.by_loc_cat[graveyard_east][container][closed][locked].add(ivory_jar)
-if would be
-self.by_loc_cat[graveyard_east]["items"].add(ivory_jar)
-self.by_loc_cat[graveyard_east][container]["items"].add(ivory_jar)
-self.by_loc_cat[graveyard_east][container][closed]["items"].add(ivory_jar)
-self.by_loc_cat[graveyard_east][container][closed][locked]["items"].add(ivory_jar)
-
-Because there'll be times when I need all containers, or all closed (whether locked or not), etc.
-But this seems extremely wasteful, especially at scale.
-
-Perhaps there's a straightforward way to pull all children from all subsequent depths. So 'get all children of anything below graveyard_east/container'. Hm.
-
 indexed view:
 def items_in(container=None, *, open=None, locked=None):
     for item in self.by_location[graveyard_east]:
@@ -226,108 +415,135 @@ for i in items_in(container=True, open=True):
 So indexed view is definitely what I need. The duplication and even deep nesting is just going to be messy.
 
     """
-def init_testreg():
+#def init_testreg():
 
-    #for loc in locations:
-    #    testReg.set_loc_cat(loc)
-
-
-    #print(testReg.by_loc_cat)
-
-    #testReg.init_items(test_items, descriptions)
-    #for item in testReg.instances:
-        #pprint(vars(item))
-
-    return
-    #print(f"test by_name: {testReg.by_name}")
-    for loc in locations:
-        if loc != "Graveyard":
-            continue
-        for cardinal in locations[loc]:
-            print(f"\n\nCARDINAL:: {cardinal}\n\n\n")
-            if locations[loc][cardinal].get("items"):
-
-                for item in locations[loc][cardinal]["items"]:
-                    loc_items = {}
-                    print(f"ITEM: {item}, cardinal/loc: {cardinal + " " + loc}")
-                    #if item not in testReg.by_name:
-                        #print(f"Item {item} not in by_name")
-                    if not test_items.get(item):
-                        loc_items[item] = test_items[item]
-                    else:
-                        loc_items[item] = ({"item_type": [static]})
-
-                    if loc_items[item].get("exceptions"):
-                        loc_items[item]["exceptions"].update({"starting_location": cardinal + " " + loc})
-                    else:
-                        loc_items[item]["exceptions"] = {"starting_location": cardinal + " " + loc}
-
-                    #print(f"[NOT IN by_name: loc_items[item]: {loc_items[item]}")
-                    #else:
-                    #    #print("ELSE::::")
-#
-                    #    else:
-                    #        #print(f"item: {item}, type: {type(item)}")
-                    #        inst = testReg.by_name.get(item)
-                    #        loc_items[item] = vars(inst)
-                    #        loc_items[item]["exceptions"] = {}
-#
-                    #    if not loc_items[item].get("exceptions"):
-                    #        loc_items[item]["exceptions"] = {}
-                    #    loc_items[item]["exceptions"].update({"starting_location": cardinal + " " + loc})
-                    #    loc_items[item]["starting_location"] = cardinal + " " + loc
-                    #    loc_items[item].pop("id")
-                    #    print(f"Found in by_name: loc_items[item]: {loc_items[item]}")
+### Okay so I need to apply defaults first, guaranteed, then apply exceptions. I think that's why event_key is failing.
 
 
-                    testReg.init_items(loc_items, descriptions)
 if __name__ == "__main__":
-    init_testreg()
+    #init_testreg()
 
     def get_loc_items(loc, cardinal=None):
-
         if cardinal == None:
             for cardinal in ("north", "south", "east", "west"):
                 if locations[loc][cardinal].get("items"):
                     for item in locations[loc][cardinal]["items"]:
                         loc_items = {}
-                        print(f"ITEM: {item}, cardinal/loc: {cardinal + " " + loc}")
                         if test_items.get(item):
                             loc_items[item] = test_items[item]
+                        elif gen_items.get(item):
+                            loc_items[item] = gen_items.get(item)
                         else:
                             loc_items[item] = ({"item_type": [static]})
-                        loc_items[item]["starting_location"] = cardinal + " " + loc
-                        testReg.init_items(loc_items, descriptions)
+
+                        loc_items[item].setdefault("exceptions", {}).update({"starting_location": cardinal + " " + loc})
+                        testReg.init_items(loc_items)# doing one at a time otherwise different loc items will overwrite
+
+    use_generated_items(input_=None)
+
+    for item in test_items:
+        if gen_items.get(item):
+           print(f"gen_items item: {gen_items.get(item)}")
+           temp = {}
+           temp[item] = gen_items.get(item)
+           item = temp
+        testReg.init_items(item)
 
     get_loc_items("Graveyard")
 
-    for item in testReg.instances:
-        if item.name == "stone ground":
-            #print(f"ITEM: {item.name}")
-            from pprint import pprint
-            pprint(vars(item))
-            #exit()
-"""
-ITEM: stone ground
-{'breakable': False,
- 'can_examine': False,
- 'current_loc': None,
- 'description': "It's a stone ground",
- 'exceptions': {'starting_location': 'south Graveyard'},
- 'id': 'f17b9c4f-6c49-43ed-bd98-133fae7d1852',
- 'is_horizontal_surface': False,
- 'is_vertical_surface': False,
- 'item_type': {'all_items', 'static'},
- 'name': 'stone ground',
- 'starting_location': 'north Graveyard'}
+    def print_ordered_vars(item):
+        vars_dict = vars(item)
 
-vs
+        temp_queue = dict()
+        new_queue = dict()
+        for item in vars_dict:
+            #print(f"\033[4;35;47mItem in vars dict: {item} \033[0m")
+            temp_queue[item] = vars_dict[item]
 
-ITEM: stone ground
-{'description': "It's a stone ground",
- 'exceptions': {},
- 'id': 'f5641b8e-7e5d-4f74-a976-1da7c0810680',
- 'item_type': {'static', 'all_items'},
- 'name': 'stone ground',
- 'starting_location': 'south Graveyard'}
+        leftovers = list(i for i in list(temp_queue) if i not in flag_keys)
+
+        for k in leftovers:
+            val = vars_dict[k]
+            if isinstance(val, dict):
+                new_queue[k] = True
+            else:
+                new_queue[k] = val
+
+        for k in flag_keys:
+            if k in temp_queue:
+                new_queue[k] = temp_queue[k]
+
+        pprint(new_queue, sort_dicts=False)
+        print("\n")
+
+        if leftovers:
+            printing.print_green(leftovers)
+            print("\n")
+
+
+    testReg.clean_children()
+    #for item in testReg.instances:
+    #    print_ordered_vars(item)
+
+
+    def indexed_view(included=None, excluded=None):
+
+        def clarify(group):
+            if isinstance(group, set|list|tuple):
+                for flag_name in group:
+                    if flag_name not in flag_keys:
+                        print(f"Attribute name {flag_name} not in flag_keys. Consider adding it.")
+
+
+    if confirmed_items or updated:
+        printing.print_red("The following item(s) have been confirmed for future use:")
+
+        test_generated_items = True
+        if confirmed_items:
+            for item in confirmed_items:
+                if test_generated_items:
+                    print(f"Item name: {item}")
+                    printing.print_green(text=f"Item data: {vars(confirmed_items[item])}",  invert=True)
+                    printing.print_red("If you want to confirm them as permanent items, please type 'yes' after the item data is printed.", invert=True)
+
+                    test = input()
+                    if test.lower() == "yes":
+                        print("Item confirmed. Will add this to the permanent document.")
+                        testReg.add_to_gen_items(confirmed_items[item])
+                    else:
+                        continue
+
+        if updated:
+            for inst in updated:
+
+                testReg.add_to_gen_items(inst) # currently only does one at a time, would be better to batch it internally. Tomorrow.
+
+            #use_generated_items(input_=None):
+
+
+
+       # if included:
+#
+       # if excluded:
+       # indexed view:
+
 """
+container
+can_open
+can_lock
+
+
+"""
+#def items_in(container=None, *, open=None, locked=None):
+#    for item in self.by_location[graveyard_east]:
+#        if container is not None and item.container is not container:
+#            continue
+#        if open is not None and item.is_open != open:
+#            continue
+#        if locked is not None and item.is_locked != locked:
+#            continue
+#        yield item
+#
+#for i in items_in(container=True, open=True):
+#    ...
+#
