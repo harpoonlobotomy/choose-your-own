@@ -3,9 +3,8 @@
 import random
 from itemRegistry import registry
 import choices
+from logger import logging_fn
 import misc_utilities
-
-
 """
 Sample start:
 Starting items: ['paperclip', 'puzzle magazine']
@@ -33,37 +32,29 @@ def test_for_weird():
 def set_inventory():
 
     if game.w_value != 0:
-        registry.pick_up("severed tentacle", game.inventory)
-        #print(f"back after item management: game.inventory :: {game.inventory}")
-        game.weirdness = True # what's the point of both weirdness and w_value? I guess w_value allows for severity later on.
+        registry.pick_up("severed tentacle", game.inventory, starting_objects=True)
+        game.weirdness = True
 
-    return
+def loadout():
 
-def loadout(): # for random starting items, game, etc (could be renamed
-    ##
-#        something like this being used maybe  , exclude_none=True
     paperclip_list = registry.instances_by_name("paperclip")
 
-    _, game.inventory = registry.pick_up(paperclip_list[0], game.inventory)
-    #_, game.inventory = registry.pick_up(paperclip_list[0], game.inventory) ## duped because I was testing the plural inventory system.
-    #_, game.inventory = registry.pick_up(paperclip_list[0], game.inventory)
-#
-    _, game.inventory = registry.pick_up(registry.random_from("magazine"), game.inventory)
+    _, game.inventory = registry.pick_up(paperclip_list[0], game.inventory, starting_objects=True)
+
+    _, game.inventory = registry.pick_up(registry.random_from("magazine"), game.inventory, starting_objects=True)
     game.carryweight = 12
-    #print(f"Game inventory after managizine added: {game.inventory}")
-    starting_items = registry.instances_by_category("starting") ## starting items == list of instances
-    #print(f"starting items: {starting_items}, type: {type(starting_items)}")
+
+    starting_items = registry.instances_by_category("starting") ## starting items ==
+
     if game.carryweight-3 > 5:
         k = random.randint(5, game.carryweight-3) # changed to set max at game.carryweight, so I don't need to pop them later.
         if k > int(len(starting_items)):
             k=len(starting_items)
-        #print(f"random int from 3_to_game.vol: {k}, game.carryweight: {game.carryweight}")
-        #print(f"starting_items: {starting_items}")
         temp_inventory = random.sample(list(starting_items), k)
         for item in temp_inventory:
             if item == None:
                 continue
-            _, game.inventory = registry.pick_up(item, game.inventory)
+            _, game.inventory = registry.pick_up(item, game.inventory, starting_objects=True)
 
 def calc_emotions():
     counter = 0
@@ -89,132 +80,38 @@ def calc_emotions():
         return "doing quite well"
 
 def load_world(relocate=False, rigged=False, new_loc=None):
+    logging_fn()
+    print("Starting load_world in set_up_game.py\n\n")
     from env_data import locRegistry as loc, weatherdict
     rigged = True
-    rig_place = "graveyard"#"a city hotel room"#
+    rig_place = "test shrine"#"a city hotel room"#
     rig_weather = "perfect"
     rig_time = "midnight"
 
-
-    if loc.current != None:
-        loc.last_loc = loc.current # changed from game.last_loc
-
-    #loc.show_name(new_loc, "<Start of load_world>")
+    if loc.currentPlace != None:
+        loc.last_loc = loc.currentPlace # changed from game.last_loc
 
     if rigged:
         game.time=rig_time
         game.weather=rig_weather
         if new_loc and relocate:
             loc.set_current(new_loc)
-            #loc.show_name(loc.current, "<new_loc and relocate>")
         else:
             loc.set_current(rig_place)
-            #loc.show_name(loc.current, "<not new_loc and relocate>")
     elif not relocate:
-            game.time = random.choice(choices.time_of_day) ## should only be random at run start, not relocation.
+            game.time = random.choice(choices.time_of_day)
             weatherlist = list(weatherdict.keys())
-            game.weather = random.choice(weatherlist)#"fine", "stormy", "thunderstorm", "raining", "cloudy", "perfect", "a heatwave"))
-            #loc.show_name(loc.current, "<not rigged or relocate before random>")
+            game.weather = random.choice(weatherlist)#
             loc.set_current(random.choice(list(loc.places.values())))
-            #loc.show_name(loc.current, "<not rigged or relocate after random>")
-            #"your home", "the city centre", "a small town", "the nature reserve", "the back alley", "a hospital", "a friend's house", "graveyard"))
 
     else:
-    #print(f"loc_list: {loc_list}")
-        #print(f"current loc: {loc.current.name}")
         if new_loc:
-            loc.current = new_loc
+            loc.currentPlace = new_loc
 
-    if not getattr(loc, "current_cardinal"):
-        facing = loc.by_cardinal(game.facing_direction)
-        loc.current_cardinal = facing
-    #loc.show_name(new_loc)
-    #game.pops = random.choice(("few", "many"))
-    game.bad_weather = weatherdict[game.weather].get("bad_weather")
-
-    return loc.current
-
-def set_text_speed():
-    from misc_utilities import do_print, do_input
-    do_print("[Default test printing speed is 1. 0.1 is very slow, 2 is very fast.]")
-    new_text_speed = 0
-    while True:
-        text=do_input()
-        if text is None or text == "":
-            do_print("No new value entered, keeping current text speed. \n")
-            return
-        try:
-            text=float(text)
-            if isinstance(text, float):
-                new_text_speed = text
-        except:
-            pass
-
-        if new_text_speed:
-            if 0.1<=new_text_speed<=2:
-                return new_text_speed
-
-        do_print(f"Please enter a text speed between 0.1 and 2.0, or 'enter' to keep current default ({game.text_speed}).")
-
-def set_luck():
-    from misc_utilities import do_print, do_input
-    do_print("Note: The game is calibrated to the default luck value (1). Reducing this value makes the game harder, while increasing it the value makes it easier.")
-    do_print("Please enter the luck value (from 0.1 to 2):")
-    new_luck_value=0
-    while True:
-        text=do_input()
-        if text=="":
-            do_print("Keeping current luck value.")
-            return
-        try:
-            new_luck=float(text)
-            if isinstance(new_luck, float):
-                new_luck_value = new_luck
-        except:
-            pass
-        if new_luck_value:
-            if 0.1<=new_luck_value<=2:
-                return new_luck_value
-
-        do_print(f"Please enter a luck value between 0.1 and 2.0 or 'enter' to keep current default ({game.luck}).")
+    return loc.currentPlace
 
 def init_settings(manual=False):
-    from misc_utilities import do_print
-    need_update=False
-    import json
-    with open("settings.json") as f:
-        data = json.load(f)
-
-    if data["initialised"] and not manual:
-        game.text_speed = data["text_speed"]
-        game.luck=data["luck"]
-        game.loop=data["loop"]
-    else:
-        if not manual:
-            do_print("First time setup:")
-
-        do_print(f"   To change text speed, enter a number (0.1 to 2), or hit enter to continue with current speed ({game.text_speed}). Default is (1)")
-        new_speed=set_text_speed()
-        if new_speed != None and new_speed != game.text_speed:
-            game.text_speed=new_speed
-            data["text_speed"]=new_speed # note: don't forget to write to the json again.
-            need_update=True
-            do_print(f"     Text speed set to {game.text_speed}.")
-        do_print(f"   To change luck value, enter a number (0.1 to 2), or hit enter to continue with current luck value ({game.luck}). Default is (1).")
-        new_luck=set_luck()
-        if new_luck != None and new_luck != game.luck: ## need a version of this that works for in-game setings update too.
-            game.luck=new_luck
-            data["luck"]=new_luck
-            need_update=True # not needed here as we have to update the initialised setting regardless, else it'll run this every time..
-            do_print(f"     Luck value set to {game.luck}.")
-        if not manual:
-            do_print("     These settings can be changed later by typing 'settings' in-game.")
-        data["initialised"] = True
-        if (manual and need_update) or not manual: #not sure if this is right.
-            with open("settings.json", "w+") as f:
-                json.dump(data, f)
-        do_print("  Settings updated. Returning.")
-
+    print("No settings in this version.")
 
 def init_game():
 

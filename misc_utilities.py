@@ -1,7 +1,20 @@
+from env_data import cardinalInstance, placeInstance
 from itemRegistry import ItemInstance
 from logger import logging_fn
 
 ## utilities to be used by any script at any point
+
+accessible_dict = {
+    0: "accessible",
+    1: "in a closed local/accessible container",
+    2: "in a locked local/accessible container",
+    3: "in an open container in your inventory",
+    4: "in an open container accessible locally, can pick up but not drop",
+    5: "in inventory",
+    6: "not at current location",
+    7: "other error, investigate",
+}
+
 
 cardinal_cols = {
     "north": "red",
@@ -209,6 +222,32 @@ def clean_separation_result(result:list, to_print=False):
 
 ### END STRING MANIPULATION
 
+def look_around():
+    from env_data import locRegistry as loc
+    from choose_a_path_tui_vers import get_items_at_here
+    from itemRegistry import registry
+
+    print(loc.currentPlace.overview)
+    print(f"You're facing {assign_colour(loc.current, card_type="name")}. {loc.current.long_desc}")
+
+    is_items = registry.get_item_by_location()
+    #is_items = get_items_at_here(print_list=False, place=loc.current)
+
+    applicable_items = []
+    confirmed_items = []
+
+    if is_items:
+        for item in is_items:
+            #print(f"ITEM: {item}, type: {type(item)}")
+            _, _, reason_val, meaning = registry.check_item_is_accessible(item)
+            #print(f"REASON VAL FOR `{item}`: {reason_val}")
+            if reason_val == 0:
+                applicable_items.append(item)
+        print(assign_colour("\nYou see a few scattered objects in this area:", "b_white"))
+        is_items = ", ".join(col_list(applicable_items))
+        print(f"   {is_items}")
+
+
 
 ### INVENTORY LIST MANAGEMENT (possible all should be in item_management instead, but keeping here for now.)
 
@@ -223,7 +262,7 @@ def get_inst_list_names(inventory_inst_list) -> list:
 def from_inventory_name(test:str, inst_inventory:list=None) -> ItemInstance:
 
     if isinstance(test, ItemInstance):
-        return inst
+        test = test.name
 
     if inst_inventory == None:
         from set_up_game import game ## might break
@@ -235,11 +274,12 @@ def from_inventory_name(test:str, inst_inventory:list=None) -> ItemInstance:
         if inst.name == cleaned_name:
             return inst
     #print(f"Inst inventory: {inst_inventory}")
-    logging_fn(traceback=True)
+    logging_fn()
     print(f"Could not find inst `{test}` in inst_inventory.")
     input()
 
-def is_item_in_container(inventory_list, item):
+
+def is_item_in_container(item, inventory_list=None):
 
     inst = None
     if isinstance(item, ItemInstance) and item != None:
@@ -253,14 +293,18 @@ def is_item_in_container(inventory_list, item):
     if hasattr(inst, "contained_in"):
         container = inst.contained_in
         return container, inst
-    return None, None
+    return None, inst
 
-def generate_clean_inventory(inventory_inst_list, will_print = False, coloured = False):
+def generate_clean_inventory(inventory_inst_list=None, will_print = False, coloured = False):
 
     from itemRegistry import registry
     from tui.tui_update import update_text_box
     from config import enable_tui
     tui_enabled = enable_tui
+
+    if inventory_inst_list == None:
+        from set_up_game import game
+        inventory_inst_list = game.inventory
 
     no_xval_inventory_names = []
     inv_list = get_inst_list_names(inventory_inst_list)
@@ -269,7 +313,6 @@ def generate_clean_inventory(inventory_inst_list, will_print = False, coloured =
 
     inventory_names = []
     for i, item_name in enumerate(inv_list):
-
         if item_name in inventory_names:
             if item_name in checked:
                 continue
@@ -292,7 +335,7 @@ def generate_clean_inventory(inventory_inst_list, will_print = False, coloured =
                 no_xval_inventory_names.append(item_name)
             """
             children=None
-            has_parent, child_inst = is_item_in_container(inventory_inst_list, item_name) # is it a child
+            has_parent, child_inst = is_item_in_container(item_name, inventory_inst_list) # is it a child
             if not has_parent:
                 inst = from_inventory_name(item_name, inventory_inst_list)
                 if registry.by_container.get(inst):
@@ -363,7 +406,7 @@ def separate_loot(child_input=None, parent_input=None, inventory=[]): ## should 
 
 ### COLOUR ASSIGNMENT
 
-def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=False, not_bold=False, caps=False):
+def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=False, not_bold=False, caps=False, card_type = None):
 
     from tui.colours import Colours
 
@@ -417,20 +460,28 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
 
     def check_instance_col(item):
         from itemRegistry import registry
-        if isinstance(item, ItemInstance):
-            entry:ItemInstance = item
+        if isinstance(item, ItemInstance|placeInstance|cardinalInstance):
+            entry = item
 
             if entry and entry.colour != None:
                 colour=entry.colour
-                item=item.name
                 bld=True
+                if not isinstance(item, cardinalInstance):
+                    item=item.name
             else:
                 colour=cardinals[Colours.colour_counter%len(cardinals)]
                 colour=cardinal_cols[colour] # TODO: is there any reason fo this to be separate? Can't we just use the %len directly against cardinal_cols?
                 Colours.colour_counter += 1
 
-                item=registry.register_name_colour(item, colour)
-                bld=True
+                if isinstance(item, ItemInstance):
+                    item=registry.register_name_colour(item, colour)
+                    bld=True
+                elif isinstance(item, placeInstance|cardinalInstance):
+                    item.colour=colour
+                    if not isinstance(item, cardinalInstance):
+                        item = item.name
+                    bld=True
+
             return colour, item, bld
 
     if item in cardinals:
@@ -438,7 +489,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
         bld=True
 
 
-    elif isinstance(item, str) or isinstance(item, ItemInstance):
+    elif isinstance(item, str) or isinstance(item, ItemInstance|placeInstance|cardinalInstance):
         from itemRegistry import registry
         if isinstance(item, str):
 
@@ -454,7 +505,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
                     colour, item, bld = check_instance_col(item)
                     #colour = item.colour
 
-        if isinstance(item, ItemInstance): # changing to elif breaks non-instance colours entirely.
+        if isinstance(item, ItemInstance|placeInstance|cardinalInstance): # changing to elif breaks non-instance colours entirely.
             colour, item, bld = check_instance_col(item)
 
         elif isinstance(colour, (int, float)):
@@ -482,6 +533,16 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
 
     if not_bold:
         bld=False
+
+    if card_type:
+        if card_type == "name":
+            item = item.name
+        elif card_type == "ern_name":
+            item = item.ern_name
+        elif card_type == "place_name":
+            item = item.place_name
+    elif isinstance(item, cardinalInstance):
+        item = item.name
 
     coloured_text=Colours.c(item, colour, bg, bold=bld, italics=ita, underline=u_line, invert=invt, no_reset=no_reset)
     return coloured_text
@@ -525,8 +586,8 @@ def do_print(text=None, end=None, do_edit_list=False, print_func=None):
     #    do_edit_list=True
 
     update_text_box(to_print=text, edit_list=do_edit_list) ## enable_tui removed from here, instead tui_update pulls it itself.
-    if end != "no": # bit weak but it'll do, lets me force no extra newlines even with the messy af print sequence I hae for now.
-        update_text_box(to_print="  ")
+#    if end != "no": # bit weak but it'll do, lets me force no extra newlines even with the messy af print sequence I hae for now.
+#        update_text_box(to_print="  ")
 
 def do_input():
 
@@ -535,17 +596,17 @@ def do_input():
     MOVE_UP = "\033[A"
     HIDE = "\033[?25l"
 
-    print(SHOW, end='') ## is this right? Not sure...
-    text=input()
     move_up = MOVE_UP
     import config
     enable_tui=config.enable_tui
     if enable_tui:
+        print(SHOW, end='') ## is this right? Not sure...
         move_up = ""
+    text=input()
 
-    if text == "" or text == None:
-        do_print(assign_colour(f"{move_up}{HIDE}(Chosen: <NONE>)", "yellow"))
-    else:
-        do_print(assign_colour(f'{move_up}{HIDE}Chosen: ({text.strip()})', 'yellow'))
+    #if text == "" or text == None:
+    #    do_print(assign_colour(f"{move_up}{HIDE}(Chosen: <NONE>)", "yellow"))
+    #else:
+    #    do_print(assign_colour(f'{move_up}{HIDE}Chosen: ({text.strip()})', 'yellow'))
     return text
 

@@ -17,6 +17,9 @@ if __name__ == "__main__":
             verb_membrane.run_membrane(input_str)
             print(f"(That was number {i})\n")
     else:
-        from choose_a_path_tui_vers import temp_run
-        temp_run()
+        from isolated_test import run
+        #from verbRegistry import verbs
+        #print(f"VERBS: {verbs.verbs}")
+        run()
+
 

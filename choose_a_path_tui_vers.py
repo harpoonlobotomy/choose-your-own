@@ -1,3 +1,5 @@
+## I'm not really sure what the identify of this particular script is in the new version. It used to be the core of everything because it held the loops, but the loops aren't used anymore...
+
 from os import system
 import random
 
@@ -5,7 +7,6 @@ from misc_utilities import assign_colour, col_list, generate_clean_inventory, ge
 
 from set_up_game import load_world, set_up, init_settings
 from choices import choose, time_of_day, night, trip_over, emphasis
-
 
 from item_definitions import container_limit_sizes, detail_data
 from itemRegistry import ItemInstance, registry
@@ -18,8 +19,8 @@ import config
 
 from verb_membrane import run_membrane
 
-#from verb_membrane import run_membrane
-#print("Importing choose_a_path_tui_vers.py")
+from env_data import locRegistry as loc
+
 
 user_prefs = r"D:\Git_Repos\Choose_your_own\path_userprefs.json"
 run_again = False
@@ -33,7 +34,6 @@ def do_clearscreen():
     if clear_screen:
         system("cls")
 
-
 def slowLines(txt, speed=0.1, end=None, edit=False):
     if isinstance(txt, str) and txt.strip=="":
         edit=True
@@ -44,28 +44,26 @@ def slowWriting(txt, speed=0.001, end=None, edit=False): # Just keeping this her
 
 def get_visited_map():
 
-    for place_name, place_obj in loc.places.items():
+    for place_obj in loc.places:
         if place_obj.visited:
-            location = loc.places[place_name]
-            do_print(f"Visited {place_name}. \n {assign_colour(f'Description: {location.overview}', "b_yellow")}")
-            get_items_at_here(place=place_name, print_list=True)
+            do_print(f"Visited {place_obj.name}. \n {assign_colour(f'Description: {place_obj.overview}', "b_yellow")}")
+            for cardinal in loc.cardinals[place_obj]:
+                cardinal_inst = loc.cardinals[place_obj][cardinal]
+                items = get_items_at_here(place=cardinal_inst, print_list=False, return_coloured=True)
+                if items:
+                    items = ", ".join(items)
+                    print(f"Items at {cardinal_inst.place_name}: {items}")
 
-    do_print("End of Past Visits.")
+    do_print("\nEnd of Past Visits.")
 
 
-def get_items_at_here(print_list=False, return_coloured=True, place=None) -> list:
+def get_items_at_here(print_list=False, return_coloured=True, place=loc.current) -> list: # default to current_cardinal as place, otherwise you have to state what you want.
 
-    instance_objs_at = []
-    if place != None:
-        for direction in ["north", "east", "south", "west"]:
-            temp = registry.instances_by_location(loc.places[loc.current].the_name, direction)
-            #print(f"Temp (get_items_at_here): {temp}")
-            if temp:
-                instance_objs_at = instance_objs_at + temp
-
-    else:
-        instance_objs_at = (registry.instances_by_location((loc.current), loc.current_cardinal))
+    instance_objs_at = (registry.get_item_by_location(place))
         #print(f"Instance objs at: {instance_objs_at}")
+
+    #if not instance_objs_at:
+    #    print(f"There are no items at {place.place_name}")
 
     to_print_list = []
     coloured_list = []
@@ -80,60 +78,6 @@ def get_items_at_here(print_list=False, return_coloured=True, place=None) -> lis
         if return_coloured:
             return coloured_list
     return to_print_list
-
-
-def add_item_to_container(container:ItemInstance):
-
-    if "container" in container.flags:
-        container_size = container.container_limits
-        container_size = container_limit_sizes[container_size]
-
-        def get_suitable_items():
-            add_x_to = []
-            inv_list = []
-            for item in game.inventory:
-                item_size = item.item_size
-                item_size = container_limit_sizes[item_size]
-                if item_size < container_size:
-                    #print(f"Item size {item}, {item_size}, < container size {container.name}, container_size: {container_size}")
-                    add_x_to.append(item)
-                    inv_list, _ = generate_clean_inventory(add_x_to)
-            return inv_list, add_x_to
-
-        done=False
-        while not done:
-            inv_list, add_x_to = get_suitable_items()
-            test = option(inv_list, preamble=f"Choose an object to put inside {assign_colour(container, switch=True)} or hit enter when done:", print_all=True)
-            if test == "" or test == None:
-                do_print(assign_colour(f"(Chosen: <NONE>) [add_item_to_container]", "yellow"))
-                done=True
-                break
-            cleaned, alignment = compare_input_to_options(inv_list, input=test, inventory=game.inventory, use_last=False)
-
-            if cleaned:
-                outcome_ref = alignment.get(cleaned)
-                #print(f"Cleaned: {cleaned}, alignment: {alignment}")
-                if outcome_ref:
-                    #print(f"outcome ref: {outcome_ref}")
-                    instance = outcome_ref.get("instance")
-                    if not instance:
-                        print("no instance ")
-                        instance = from_inventory_name(cleaned, add_x_to)
-                else:
-                    instance = from_inventory_name(test, add_x_to)
-                    #print(f"instance from alignment: {instance}")
-                #print(f"outcome: {outcome}, alignment: {outcome_ref}")
-                #instance = from_inventory_name(test, add_x_to)
-                #print(f"Instance from from_inventory_name: {instance}")
-                #exit()
-                result = [(f"Added [child] to [new_container]", assign_colour(instance), assign_colour(container))]
-                from misc_utilities import clean_separation_result
-                clean_separation_result(result, to_print=True)
-                registry.move_item(instance, new_container=container)
-                game.inventory.remove(instance)
-
-
-
 
 def do_action(action:str, inst:ItemInstance|str)->list:
     logging_fn()
@@ -161,7 +105,7 @@ def do_action(action:str, inst:ItemInstance|str)->list:
 
     elif "add to" in action:
 
-        add_item_to_container(inst)
+        registry.add_item_to_container(inst)
 
         # currently not tracking how 'full' a container is, so implement that and then check against it.
         # then list any items that would fit and let user choose from that list, and then add that to the container and remove from open inventory. (though currently, open inventory includes in-container items.)
@@ -182,7 +126,7 @@ def do_action(action:str, inst:ItemInstance|str)->list:
             drop_loot(named=inst)
 
     elif "pick up" in action:
-        _, test_inventory = registry.pick_up(inst, game.inventory, loc.current, loc.current_cardinal)
+        _, test_inventory = registry.pick_up(inst, game.inventory, loc.currentPlace, loc.current)
         if test_inventory != None:
             game.inventory = test_inventory
             return game.inventory
@@ -348,8 +292,8 @@ def god_mode():
                 except Exception as e:
                     do_print(f"Cannot set {text}: {e}.")
         if "done" in text or text == "":
-            if text == "":
-                do_print(assign_colour(f"(Chosen: <NONE>) [god_mode]", "yellow"))
+            #if text == "":
+                #do_print(assign_colour(f"(Chosen: <NONE>) [god_mode]", "yellow"))
             do_print("Returning to game with changes made.")
             break
 
@@ -371,66 +315,65 @@ def user_input():
 
     if text != None:
         text=text.strip()
-    if text.lower() == "godmode":
-        do_print("Allowing input to set parameters. Please type 'done' or hit enter on a blank line when you're finished.")
-        god_mode()
-        do_print()
-        return "done"
-    if text.lower() == "help":
-        do_print()
-        slowWriting(f"  Type words to progress, 'i' for 'inventory', 'd' to describe the environment, 'settings' for settings, 'show visited' to see where you've been this run: - that's about it.")
-        do_print()
-        return "done"
-    if text.lower()== "settings":
-        do_print("Settings:")
-        init_settings(manual=True)
-        do_print()
-        return "done"
+    #if text.lower() == "godmode":
+    #    do_print("Allowing input to set parameters. Please type 'done' or hit enter on a blank line when you're finished.")
+    #    god_mode()
+    #    do_print()
+    #    return "done"
+    #if text.lower() == "help":
+    #    do_print()
+    #    slowWriting(f"  Type words to progress, 'i' for 'inventory', 'd' to describe the environment, 'settings' for settings, 'show visited' to see where you've been this run: - that's about it.")
+    #    do_print()
+    #    return "done"
+    #if text.lower()== "settings":
+    #    do_print("Settings:")
+    #    init_settings(manual=True)
+    #    do_print()
+    #    return "done"
     if text.lower() == "stats":
-        do_print(f"    weird: [{game.weirdness}]. location: [{assign_colour(loc.current.name, 'loc')}]. time: [{game.time}]. weather: [{game.weather}]. checks: {game.checks}")
+        do_print(f"    weird: [{game.weirdness}]. location: [{assign_colour(loc.currentPlace.name, 'loc')}]. time: [{game.time}]. weather: [{game.weather}]. checks: {game.checks}")
         inventory_names = get_inst_list_names(game.inventory)
         do_print(f"    inventory: {inventory_names}, inventory weight: [{len(inventory_names)}], carryweight: [{game.carryweight}]")
         do_print(f"    Player data: {game.player}")
         do_print()
-        return "done"
-    if text.lower() == "i":
-        # removed the print line from here, goes from 3 blank lines between i and inventory to 1.
-        do_inventory()
-        return "inventory_done"
-    if text.lower() == "d" or text.lower() == "description": ##TODO: make this a function instead of having it here. This is silly.
-        #loc_data = places[game.place]
-        do_print(assign_colour(f"[ Describe location. ]", "yellow"))
-        slowWriting(f"[{assign_colour(smart_capitalise(loc.current.name), 'loc')}]  {loc.current.overview}")
-        obj = getattr(loc.current, loc.current_cardinal)
-        slowWriting(f"You're facing {assign_colour(loc.current_cardinal)}. {obj}")
-        do_print(end='')
-        is_items = get_items_at_here(print_list=False)
-        if is_items:
-            do_print(assign_colour("You see a few scattered objects in this area:", "b_white"))
-            get_items_at_here(print_list=True)
-        return "done"
-    if text.lower() == "show visited":
+    #if text.lower() == "i":
+    #    # removed the print line from here, goes from 3 blank lines between i and inventory to 1.
+    #    do_inventory()
+    #if text.lower() == "d" or text.lower() == "description": ##TODO: make this a function instead of having it here. This is silly.
+    #    #loc_data = places[game.place]
+    #    do_print(assign_colour(f"[ Describe location. ]", "yellow"))
+    #    slowWriting(f"[{assign_colour(smart_capitalise(loc.current.name), 'loc')}]  {loc.current.overview}")
+    #    obj = getattr(loc.current, loc.current_cardinal.name)
+    #    slowWriting(f"You're facing {assign_colour(loc.current_cardinal)}. {obj}")
+    #    do_print(end='')
+    #    is_items = get_items_at_here(print_list=False, place=loc.current_cardinal)
+    #    if is_items:
+    #        do_print(assign_colour("You see a few scattered objects in this area:", "b_white"))
+    #        is_items = ", ".join(col_list(is_items))
+    #        print(f"   {is_items}")
+    #        #get_items_at_here(print_list=True)
+    #    text=None
+    if text and text.lower() == "show visited":
         get_visited_map()
-        return "done"
-    if text.lower().startswith("drop "):
-        #do_print(f"Text starts with drop: {text}")
-        textparts=text.split()[1:]
-        #do_print(f"textparts: {textparts}, len: {len(textparts)}")
-        if len(textparts) > 1:
-            textparts = " ".join(textparts[0:])
-        else:
-            textparts = textparts[0]
-        do_action("drop", textparts)
+        text = None
+    #if text.lower().startswith("drop "):
+    #    #do_print(f"Text starts with drop: {text}")
+    #    textparts=text.split()[1:]
+    #    #do_print(f"textparts: {textparts}, len: {len(textparts)}")
+    #    if len(textparts) > 1:
+    #        textparts = " ".join(textparts[0:])
+    #    else:
+    #        textparts = textparts[0]
+    #    do_action("drop", textparts)
         #item = instance_name_in_inventory(textparts)
         #if item:
         #    drop_loot(item)
-        return "drop_done"
-    if text and text.lower() in ("exit", "quit", "stop", "q"):
-        # Should add the option of saving and returning later.
-        ##TODO: Need to work on this. Not urgently, but I'd at least like the setup done so it's an option conceptually; pretty much save everything in game, registry and item_management (or at least the data required to reconstruct). Will be a project in itself. Maybe tomorrow.
-
-        do_print("Okay, bye now!")
-        exit()
+#    if text and text.lower() in ("exit", "quit", "stop", "q"):
+#        # Should add the option of saving and returning later.
+#        ##TODO: Need to work on this. Not urgently, but I'd at least like the setup done so it's an option conceptually; pretty much save everything in game, registry and item_management (or at least the data required to reconstruct). Will be a project in itself. Maybe tomorrow.
+#
+#        do_print("Okay, bye now!")
+#        exit()
     else:
         return text
 
@@ -439,6 +382,7 @@ def option(*values, no_lookup=None, print_all=False, none_possible=True, preambl
 
     if preamble:
         print(preamble)
+    print("\n")
     test=user_input()
 
     response = run_membrane(test)
@@ -507,7 +451,7 @@ def outcomes(state, activity):
             dropped = "everything"
         else:
             dropped = random.choice((game.inventory))
-            loc.current.items.append(dropped)
+            loc.currentPlace.items.append(dropped)
         item = dropped
     return outcome
 
@@ -516,7 +460,7 @@ def drop_loot(named:ItemInstance|str=None, forced_drop=False)->str:
 
     if forced_drop:
         test = random.choice((game.inventory))
-        _, test_inventory = registry.drop(test, loc.current, loc.current_cardinal, game.inventory)
+        _, test_inventory = registry.drop(test, loc.currentPlace, loc.current, game.inventory)
         if test_inventory != None:
             game.inventory = test_inventory
         if config.enable_tui:
@@ -540,7 +484,7 @@ def drop_loot(named:ItemInstance|str=None, forced_drop=False)->str:
         inst_test=from_inventory_name(test)
 
     if inst_test != None:
-        _, test_inventory = registry.drop(test, loc.current, loc.current_cardinal, game.inventory)
+        _, test_inventory = registry.drop(test, game.inventory)
         if test_inventory != None:
             game.inventory = test_inventory
         slowWriting(f"Dropped {assign_colour(test)}.")
@@ -589,13 +533,13 @@ def get_loot(value=None, random=True, named="", message:str=None):
             items_list = registry.instances_by_name(named) ## wait I didn't even provide a name here. wtf...
             print(f"items list: {items_list}")
             for inst in items_list:
-                if inst != instance_name_in_inventory(named) and registry.instances_by_location(loc.current, loc.current_cardinal):
+                if inst != instance_name_in_inventory(named) and registry.get_item_by_location(loc.currentPlace, loc.current):
 
                     item_inst=inst
                 elif inst.contained_in: ## does this need to be hasattr()? Probably.
                     print(f"inst.contained_in: {inst.contained_in}")
                     container = inst.contained_in
-                    if container.location == {loc.current: loc.current_cardinal}: ## don't know if this'll work and it only works for one level of parent depth
+                    if container.location == {loc.currentPlace: loc.current}: ## don't know if this'll work and it only works for one level of parent depth
                         item_inst=inst
                 if item_inst == None: # if all else fails,
                     print(f"Failed to find item too much. Defaulting to item[0], {item[0]}")
@@ -622,7 +566,7 @@ def get_loot(value=None, random=True, named="", message:str=None):
 
     if message:
         message = message.replace("[item]", assign_colour(item, None, nicename=registry.nicename(item)))
-        message = message.replace("[place]", loc.current.name)
+        message = message.replace("[place]", loc.currentPlace.name)
         slowWriting(message)
 
     if item:
@@ -676,7 +620,7 @@ def have_a_rest():
 
 def get_hazard():
     logging_fn()
-    inside = getattr(loc.current, "inside")
+    inside = getattr(loc.currentPlace, "inside")
     if inside:
         options = trip_over["any"] + trip_over["inside"]
     else:
@@ -689,7 +633,7 @@ def relocate(need_sleep=None):
     logging_fn()
     options = []
 
-    current_loc = loc.current
+    current_loc = loc.currentPlace
     current_weather = game.weather
 
 
@@ -727,25 +671,25 @@ def relocate(need_sleep=None):
 
         load_world(relocate=True, new_loc=new_location)
         if config.enable_tui:
-            update_infobox(location=loc.current, weather=game.weather, t_o_d=game.time, day=game.day_number)
+            update_infobox(location=loc.currentPlace, weather=game.weather, t_o_d=game.time, day=game.day_number)
 
-    if loc.current==current_loc:
-        print(f"loc.places[loc.current]: {loc.current.name}")
-        do_print(f"You decided to stay at {assign_colour(loc.current.the_name, 'loc')} a while longer.")
+    if loc.currentPlace==current_loc:
+        print(f"loc.places[loc.current]: {loc.currentPlace.name}")
+        do_print(f"You decided to stay at {assign_colour(loc.currentPlace.the_name, 'loc')} a while longer.")
     else:
-        slowWriting(f"You make your way to {assign_colour(loc.current.the_name, 'loc')}. It's {game.time}, the weather is {game.weather}, and you're feeling {game.emotional_summary}.")
-        if loc.current.visited:
-            slowWriting(f"You've been here before... It was {loc.current.first_weather} the first time you came.")
-            if loc.current.first_weather == game.weather:
+        slowWriting(f"You make your way to {assign_colour(loc.currentPlace.the_name, 'loc')}. It's {game.time}, the weather is {game.weather}, and you're feeling {game.emotional_summary}.")
+        if loc.currentPlace.visited:
+            slowWriting(f"You've been here before... It was {loc.currentPlace.first_weather} the first time you came.")
+            if loc.currentPlace.first_weather == game.weather:
                 do_print(weatherdict[game.weather].get("same_weather"))
         else:
-            loc.current.visited = True # maybe a counter instead of a bool. Maybe returning x times means something. No idea what. Probably not.
-            loc.current.first_weather = current_weather
+            loc.currentPlace.visited = True # maybe a counter instead of a bool. Maybe returning x times means something. No idea what. Probably not.
+            loc.currentPlace.first_weather = current_weather
 
     if need_sleep:
         decision = option("rest", "look", preamble="You're getting exhausted. You can look around if you like but the sleep deprivation's getting to you.")
         if decision == "rest":
-            if loc.current.inside == False:
+            if loc.currentPlace.inside == False:
                 sleep_outside()
             else:
                 sleep_inside()
@@ -756,10 +700,10 @@ def relocate(need_sleep=None):
 
 def sleep_outside():
     logging_fn()
-    if getattr(loc.current, "nature"):
+    if getattr(loc.currentPlace, "nature"):
         slowWriting("You decide to spend a night outside in nature.")
     else:
-        slowWriting(f"You decide to spend a night outside in {assign_colour(loc.current.the_name, 'loc')}.")
+        slowWriting(f"You decide to spend a night outside in {assign_colour(loc.currentPlace.the_name, 'loc')}.")
     if not game.bad_weather:
         slowWriting("Thankfully, the weather isn't terrible at least.")
         slowWriting("You sleep until morning.")
@@ -779,7 +723,7 @@ def sleep_outside():
 
 def sleep_inside():
     logging_fn()
-    slowWriting(f"Deciding to hunker down in {assign_colour(loc.current.the_name, 'loc')} for the night, you find the comfiest spot you can and try to rest.")
+    slowWriting(f"Deciding to hunker down in {assign_colour(loc.currentPlace.the_name, 'loc')} for the night, you find the comfiest spot you can and try to rest.")
     risk = roll_risk(10, 21)
     outcome = outcomes(risk, "sleep")
     slowWriting(outcome)
@@ -801,7 +745,7 @@ def location_item_interaction(item_name):
 
     item_entry = registry.instances_by_name(item_name)
     if item_entry:
-        local_items = registry.instances_by_location(loc.current, loc.current_cardinal)
+        local_items = registry.get_item_by_location(loc.currentPlace, loc.current)
         for item in item_entry:
             if item in local_items and item not in game.inventory:
                 ### TODO: and item not in container that is in inventory
@@ -835,7 +779,7 @@ def location_item_interaction(item_name):
 def look_around(status=None):
     logging_fn()
     item = None
-    place = loc.current
+    place = loc.currentPlace
     time = game.time
     weather = game.weather
 
@@ -854,7 +798,7 @@ def look_around(status=None):
                         slowWriting("The light flickers on - you can see.")
                         look_light(reason="electricity")
 
-            test=option("yes", "no", preamble=f"It's too dark to see much of anything in {assign_colour(loc.current.the_name, 'loc')}, and without a torch or some other light source, you might trip over something. Do you want to keep looking?")
+            test=option("yes", "no", preamble=f"It's too dark to see much of anything in {assign_colour(loc.currentPlace.the_name, 'loc')}, and without a torch or some other light source, you might trip over something. Do you want to keep looking?")
             if test in yes:
                 slowWriting("Determined, you peer through the darkness.")
                 outcome = roll_risk()
@@ -872,15 +816,15 @@ def look_around(status=None):
                     get_loot(2, random=True, message=f"Once your eyes adjust a bit, you manage to make out more shapes than you expected - you find [item].")
             if test in no:
                 slowWriting("Thinking better of it, you decide to keep the advanced investigations until you have more light. What now, though?")
-            test = option("stay here", "move on", preamble=f"You could stay and sleep in {assign_colour(loc.current.the_name, 'loc')} until morning, or go somewhere else to spend the wee hours. What do you do?")
+            test = option("stay here", "move on", preamble=f"You could stay and sleep in {assign_colour(loc.currentPlace.the_name, 'loc')} until morning, or go somewhere else to spend the wee hours. What do you do?")
             if test in ("sleep", "stay", "stay here"):
-                if loc.current.inside == False:
+                if loc.currentPlace.inside == False:
                     sleep_outside()
                 else:
                     sleep_inside()
             else:
                 slowWriting(f"Keeping in mind that it's {time} and {weather}, where do you want to go?")
-                print(f"game.place before relocate: {loc.current.name}")
+                print(f"game.place before relocate: {loc.currentPlace.name}")
                 relocate()
 
         else:
@@ -899,16 +843,9 @@ def look_around(status=None):
         elif reason == None:
             reason = "the sun"
         if skip_intro==False:
-            slowWriting(f"Using the power of {reason}, you're able to look around {assign_colour(loc.current.the_name, 'loc')} without too much fear of a tragic demise.")
+            slowWriting(f"Using the power of {reason}, you're able to look around {assign_colour(loc.currentPlace.the_name, 'loc')} without too much fear of a tragic demise.")
         while True:
-            obj = loc.current_cardinal ## TODO: put the directional descriptions on the cardinal objects themselves.
-            #print(f"\n{obj}\n")
-            if obj == None or obj == "None":
-                do_print("This description hasn't been written yet... It should have some ")
-                exit()
-            else:
-                do_print(f"You're facing {assign_colour(loc.current_cardinal.long_desc)}. {obj}\n")
-            remainders = list(x for x in game.cardinals if x is not loc.current_cardinal)
+            remainders = list(x for x in game.cardinals if x is not loc.current)
 
             text=None
             is_done=False
@@ -920,16 +857,16 @@ def look_around(status=None):
 
                 if text != None:
                     if text == "leave":
-                        slowWriting(f"You decide to move on from {assign_colour(loc.current.the_name, 'loc')}")
+                        slowWriting(f"You decide to move on from {assign_colour(loc.currentPlace.the_name, 'loc')}")
                         relocate()
 
                     if text in game.cardinals or text[:1] in [i[:1] for i in game.cardinals]:
                         if text in remainders:
-                            loc.current_cardinal=text
-                            remainders = list(x for x in game.cardinals if x is not loc.current_cardinal)
+                            loc.current=text
+                            remainders = list(x for x in game.cardinals if x is not loc.current)
                             look_light("turning")
                         else:
-                            do_print(f"You're already facing {loc.current_cardinal}")
+                            do_print(f"You're already facing {loc.current}")
 
                     if local_items and text in local_items:
                         location_item_interaction(text)
@@ -956,12 +893,12 @@ def look_around(status=None):
         look_dark()
 
 ## ==== Actual start here ===
-    inside = getattr(loc.current, "inside")
+    inside = getattr(loc.currentPlace, "inside")
     if inside:
         add_text="outside "
     else:
         add_text=""
-    slowWriting(f"With the weather {add_text}{game.weather}, you decide to look around the {loc.current_cardinal} of {assign_colour(loc.current.the_name, 'loc')}.")
+    slowWriting(f"With the weather {add_text}{game.weather}, you decide to look around the {loc.current} of {assign_colour(loc.currentPlace.the_name, 'loc')}.")
     if time in night:
         slowWriting(f"It's {game.time}, so it's {random.choice(emphasis["low"])} dark.")
         look_dark()
@@ -984,36 +921,29 @@ def new_day():
 def describe_loc():
     logging_fn()
 
-    loc_data = loc.current
-    slowWriting(f"You take a moment to take in your surroundings. {loc_data.overview}")
-    test=option(game.cardinals, "go elsewhere", print_all=True, preamble="Pick a direction to investigate, or go elsewhere?")
-    ## TODO: I miss when it used to print 'chosen: (go elsewhere)' if I entered 'g'. Need to get that back.
-    if test in game.cardinals:
-        loc.current_cardinal = test
-        look_around()
-    else:
-        slowWriting(f"You decide to leave {assign_colour(loc.current.the_name, 'loc')}")
-        relocate()
+    slowWriting(f"You take a moment to take in your surroundings. {loc.currentPlace.overview}")
+    #test=option(game.cardinals, "go elsewhere", print_all=True, preamble="Pick a direction to investigate, or go elsewhere?")
+    ### TODO: I miss when it used to print 'chosen: (go elsewhere)' if I entered 'g'. Need to get that back.
+    #if test in game.cardinals:
+    #    loc.current_cardinal = test
+    #    look_around()
+    #else:
+    #    slowWriting(f"You decide to leave {assign_colour(loc.current.the_name, 'loc')}")
+    #    relocate()
 
 def inner_loop(speed_mode=False):
     logging_fn()
 
-    loc.current.visited = True
-    loc.current.first_weather = game.weather
+    loc.currentPlace.visited = True
+    loc.currentPlace.first_weather = game.weather
 
     if not speed_mode:
-        slowWriting(f"You wake up in {assign_colour(loc.current.a_name, 'loc')}, right around {game.time}. You find have a bizarrely good sense of cardinal directions; how odd.")
-        slowWriting(f"`{game.playername}`, you think to yourself, `is it weird to be in {assign_colour(loc.current.the_name, 'loc')} at {game.time}, while it's {game.weather}?`")
+        slowWriting(f"You wake up in {assign_colour(loc.currentPlace.a_name, 'loc')}, right around {game.time}. You find have a bizarrely good sense of cardinal directions; how odd.")
+        slowWriting(f"`{game.playername}`, you think to yourself, `is it weird to be in {assign_colour(loc.currentPlace.the_name, 'loc')} at {game.time}, while it's {game.weather}?`")
         do_print()
         describe_loc()
-
-    test=option("stay here", "go elsewhere", preamble="What do you want to do? Stay here and look around, or go elsewhere?")
-    #turning these off, so it's determined by typed input, not reliant on the entered keywords. Will change the fn sig later.
-    #if test in ("stay", "stay here", "look"):
-    #    slowWriting("You decide to look around a while.")
-    #    look_around()
-    #else:
-    #    relocate()
+    while True:
+        test=option()
 
 def intro():
 
@@ -1051,51 +981,52 @@ def run():
 
     test = None
     global loc
-    while test != "quit":
-        from env_data import locRegistry as loc
-        #do_clearscreen()
-        playernm = ""
+    from env_data import locRegistry as loc
+    #do_clearscreen()
+    playernm = ""
 
-        test_mode=True
-        if test_mode:
-            playernm = "Testbot"
-            enable_tui = False
-        else:
-            intro()
-            do_print()
-            slowWriting("What's your name?")
-            while  playernm == "":
-                playernm = do_input()
-        global game
-        game = set_up(weirdness=True, bad_language=True, player_name=playernm)
+    test_mode=False#True
+    if test_mode:
+        playernm = "Testbot"
+        enable_tui = False
+    else:
+        intro()
+        do_print()
+        slowWriting("What's your name?")
+        while  playernm == "":
+            playernm = do_input()
+    global game
+    game = set_up(weirdness=True, bad_language=True, player_name=playernm)
 
-        #do_clearscreen()
+    #do_clearscreen()
 
-        if config.enable_tui:
-            from tui.tui_elements import run_tui_intro
-            player_name = run_tui_intro(play_intro=False)
+    if config.enable_tui:
+        from tui.tui_elements import run_tui_intro
+        player_name = run_tui_intro(play_intro=False)
 
-            if player_name:
-                game.playername = player_name
+        if player_name:
+            game.playername = player_name
 
-            world = (loc.current, game.weather, game.time, game.day_number)
-            player = (game.player, game.carryweight, game.playername)
-            add_infobox_data(print_data = True, backgrounds = False, inventory=None, playerdata=player, worldstate=world)
-            print_commands(backgrounds=False)
-            update_infobox(hp_value=game.player["hp"], name=game.playername, carryweight_value=game.carryweight, location=loc.current.name, weather=game.weather, t_o_d=game.time, day=game.day_number)
+        world = (loc.currentPlace, game.weather, game.time, game.day_number)
+        player = (game.player, game.carryweight, game.playername)
+        add_infobox_data(print_data = True, backgrounds = False, inventory=None, playerdata=player, worldstate=world)
+        print_commands(backgrounds=False)
+        update_infobox(hp_value=game.player["hp"], name=game.playername, carryweight_value=game.carryweight, location=loc.currentPlace.name, weather=game.weather, t_o_d=game.time, day=game.day_number)
 
-            add_infobox_data(print_data = True, inventory=game.inventory)
+        add_infobox_data(print_data = True, inventory=game.inventory)
 
-        ## Add glass jar to inventory for container tests
-        #game.carryweight += 5
-        #inst = registry.instances_by_name("glass jar")
-        #_, game.inventory = registry.pick_up(inst, game.inventory)
+    ## Add glass jar to inventory for container tests
+    #game.carryweight += 5
+    #inst = registry.instances_by_name("glass jar")
+    #_, game.inventory = registry.pick_up(inst, game.inventory)
 
-        if not test_mode:
-            slowWriting("[[ Type 'help' for controls and options. ]]")
-            do_print()
+    if not test_mode:
+        slowWriting("[[ Type 'help' for controls and options. ]]")
+        do_print()
 
-        inner_loop(speed_mode=test_mode)
+    #while test != "quit":
+    print()
+    inner_loop(speed_mode=test_mode)
 
 
 def temp_run():
@@ -1106,22 +1037,22 @@ def temp_run():
 
 
 
-if __name__ == "__main__":
-    #do_clearscreen()
-    import sys
-    if sys.argv:
-        #print(f"sys.argv: {sys.argv}")
-
-        if len(sys.argv) == 2:
-            #disable_tui_test = sys.argv[1] ## at present the content doesn't matter, either it's plain and uses tui, or python choose_a_path disable_tui (where 'disable_tui' can be literally anything). Works for the moment.
-            enable_tui = False
-            config.enable_tui = False
-        else:
-            enable_tui = True
-            config.enable_tui = True
-
-
-
-    enable_tui = False
-    config.enable_tui = False
-    run()
+#if __name__ == "__main__":
+#    #do_clearscreen()
+#    import sys
+#    if sys.argv:
+#        #print(f"sys.argv: {sys.argv}")
+#
+#        if len(sys.argv) == 2:
+#            #disable_tui_test = sys.argv[1] ## at present the content doesn't matter, either it's plain and uses tui, or python choose_a_path disable_tui (where 'disable_tui' can be literally anything). Works for the moment.
+#            enable_tui = False
+#            config.enable_tui = False
+#        else:
+#            enable_tui = True
+#            config.enable_tui = True
+#
+#
+#
+#    enable_tui = False
+#    config.enable_tui = False
+#    run()

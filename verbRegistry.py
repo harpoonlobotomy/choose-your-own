@@ -48,6 +48,8 @@ class VerbInstance:
         self.distinction = attr.get("distinction") if attr.get("distinction") else None
         self.colour = None
 
+    def __repr__(self):
+        return f"<verbInstance {self.name} ({self.id})>"
 
 class VerbRegistry:
     """
@@ -58,7 +60,8 @@ class VerbRegistry:
     def __init__(self):
 
         self.verbs = {}      # id -> VerbInstance
-        self.by_name = {}        # verb_key -> verb
+        self.meta_verbs = {}
+        self.all_meta_verbs = {}
         self.by_format = {}        # format -> set of verbs
         self.by_alt_words = {}
         self.list_null_words = set()
@@ -72,8 +75,8 @@ class VerbRegistry:
     def create_verb_instance(self, verb_key:str, attr:dict)->VerbInstance:
 
         inst = VerbInstance(verb_key, attr)
+        self.verbs[verb_key]=inst
         self.name = verb_key
-        self.by_name.setdefault(verb_key, list()).append(inst)
         for alt_word in attr["alt_words"]:
             if alt_word == "":
                 continue
@@ -181,7 +184,19 @@ class Parser:
                 canonical = None # reset to None here just so I can test_print the prior 'canonical' for word parts.
                 #print(f"idx {idx}, word: {word}")
 
-                if word in initial or f"a {word}" in initial:
+                if word in verbs.all_meta_verbs:
+                    if word not in verbs.meta_verbs:
+                        for key_word in verbs.meta_verbs:
+                            #print(f"key_word: {key_word}, type: {type(key_word)}")
+                            if word in verbs.meta_verbs[key_word].get("alt_words"):
+                                word = key_word
+                                kinds.add("meta")
+                                canonical = word
+                    else:
+                        kinds.add("meta")
+                        canonical = word
+
+                elif word in initial or f"a {word}" in initial:
                     #print(f"Word in initial: {word}")
                     if word in word_phrases and (word_phrases.get(word) and parts[0] in word_phrases.get(word)):
                         #print(f"canonical in word phrases: {canonical}")
@@ -201,16 +216,7 @@ class Parser:
                         kinds.add("null")
                         canonical = word
 
-                        #print(f"canonical after word phrases: {canonical}")
-
-                    #elif word == "up" and idx == 1: ## temporarily doing this for 'pick up x'
-                    #    if parts[0] == "pick":
-                    #        kinds.add("null")
-                    #        canonical = word
                     else:
-                        #print(f"canonical after word phrases: {canonical}")
-                        #print(f"Word in else: {word}")
-                        #print(f"directions: {directions}")
                         if word in cardinals:
                             kinds.add("cardinal")
                             canonical = word
@@ -229,6 +235,7 @@ class Parser:
 
                 else:
                     if word in verbs.all_verbs:
+                        #print(f"word in verb.all_verbs: {verbs}")
                         if word in word_phrases and word_phrases.get(word) and parts[0] in word_phrases.get(word):
                             kinds.add("null")
                             canonical = word
@@ -254,9 +261,12 @@ class Parser:
                         kinds.add("noun")
                         canonical = word
 
+                    if word in verbs.meta_verbs:
+                        kinds.add("meta")
+                        canonical = word
+
 
                 if canonical != None:
-                    #print(f"canonical: {canonical}")
                     tokens.append(Token(idx, word, kinds, canonical))
                     potential_match = True
                 else:
@@ -316,12 +326,14 @@ class Parser:
             # normal token
             return list(kinds)
 
-    def get_viable_verb(token):
+    def get_viable_verb(token, force_location=False):
         word = token.text
+        if force_location:
+            word="go"
         viable_instance = None
         #print(f"Word: {word}")
-        if verbs.by_name.get(word):
-            viable_instance = (verbs.by_name.get(word)[0])
+        if verbs.verbs.get(word):
+            viable_instance = verbs.verbs.get(word)
         else:
             #print(f"verbs.by_alt_words: ")
             #print(verbs.by_alt_words)
@@ -357,23 +369,42 @@ class Parser:
                     reformed_dict[matched] = {sequence[matched]: token.canonical}
                     matched += 1
 
-        return reformed_dict
+        return reformed_dict, sequence
 
     def get_sequences_from_tokens(tokens) -> list:
+
         sequences = [[]]
         verb_instances = []
+        meta_instances = []
+        verb_entry = None
+
         for i, token in enumerate(tokens):
             options = Parser.token_role_options(token)
+            #print(f"Options: {options}")
+            if len(tokens) in (1, 2):
+                #print(f"Token.kind: {token.kind}, type: {type(token.kind)}")
+                if list(token.kind)[0] in ("location", "direction"):
+                    #print(f"Token kind: {token.kind}")
+                    instance = Parser.get_viable_verb(token, force_location=True)
+                    verb_instances.append({i:instance})
+                if list(token.kind)[0] == "cardinal":
+                    #print(f"Token: {token}")
+                    instance = Parser.get_viable_verb(token, force_location=True)
+                    verb_instances.append({i:instance})
+            #print(f"Options: {options}")
             if "verb" in options:
                 instance = Parser.get_viable_verb(token)
                 verb_instances.append({i:instance})
                 #print(f"verb instance: {instance}")
                 #print(f"Name: {instance.name}")
+            if "meta" in options:
+                #print(i, token)
+                meta_instances.append({i:token})
 
             new_sequences = []
 
             for seq in sequences:
-
+                #print(f"seq: {seq}")
                 for opt in options:
                     if opt is None:
                         new_sequences.append(seq)
@@ -384,19 +415,55 @@ class Parser:
         #test_print(f"Sequences: {sequences}", print_true=True)
 
         if not verb_instances:
-            print("No verb_instance found in get_sequences_from_tokens. Returning None.")
-            print(f"TOKENS: {tokens}")
-            return None, None
+            if not meta_instances:
+                print("No verb_instance or meta_instance found in get_sequences_from_tokens. Returning None.")
+                print(f"TOKENS: {tokens}")
+                return None, None
+
+        #print(f"verb instances: {verb_instances}")
+        #print(f"meta instances: {meta_instances}")
+        if len(verb_instances) == 1:
+            verb_entry = verb_instances
 
         #print(f"Verb instances: {verb_instance}")
         viable_sequences = []
+
         for seq in sequences:
             if seq:
-                for verb_entry in verb_instances:
-                    for verb in verb_entry.values():
-                        if tuple(seq) in verb.formats and seq not in viable_sequences:
-                            #print(f"This sequence is compatible with verb_instance {verb.name}: {seq}")
-                            viable_sequences.append(seq)
+                #print(f"SEQ: {seq}")
+                if verb_instances: ## wtf, 'verb_entry' doesn't exist at this point...
+                    for verb_entry in verb_instances:
+                        #print(f"for verb entry {verb_entry} in verb instances:")
+                        for verb in verb_entry.values():
+                            #print(f"VERB: {verb}")
+                            #print(f"seq: {seq}, type: {type(seq)}, verb.formats: {verb.formats}, viable_sequences: {viable_sequences}")
+                            if tuple(seq) in verb.formats and seq not in viable_sequences:
+                                #print(f"This tuple sequence is compatible with verb_instance {verb.name}: {seq}")
+                                viable_sequences.append(seq)
+                            elif seq in viable_sequences and seq not in viable_sequences: # needed because I think single-entry tuples don't count in the above?
+                                #print(f"This non-tuple sequence is compatible with verb_instance {verb.name}: {seq}")
+                                viable_sequences.append(seq)
+
+                elif meta_instances:
+                    for entry in meta_instances:
+                        #print(f"ENTRY: {entry}")
+                        for verb in entry.values():
+                            #print(f"META: {verb}")
+                            #print(f"seq: {seq}, type: {type(seq)}, verb.kind: {verb.kind}, viable_sequences: {viable_sequences}")
+                            #print(f"Verb.formats: {verb.kind}")
+                            if tuple(seq) in verb.kind and seq not in viable_sequences:
+                                #print(f"This sequence is compatible with verb_instance {verb.name}: {seq}")
+                                viable_sequences.append(seq)
+                            #else:
+                            #    print(f"SEQ: {seq}, type: {type(seq)}")
+                            #    print(f"verb.kind: {verb.kind}, type: {type(verb.kind)}")
+                            elif set(seq) == verb.kind and seq not in viable_sequences:
+                                #print(f"SEQ: {seq}, type: {type(seq)}")
+                                #print(f"verb.kind: {verb.kind}, type: {type(verb.kind)}") ## so metas options come out as sets, not tuples. Need to look into why. Certainly something I did. #TODO
+                                #print(f"This sequence is compatible with verb_instance {verb.name}: {seq}")
+                                viable_sequences.append(seq)
+
+
 
         #if not viable_sequences:
         """
@@ -429,12 +496,11 @@ class Parser:
 
         #print(f"Format key: {format_key}")
         items = verbs.by_format.get(format_key) # gets verb names that match the format key
+
         #print(f"Items: {items}")
         #print("by alt words: ", verbs.by_alt_words.get(verb_name))
         if items and verb_name in items:
-            #print(f"Verb in items: {verb_name}")
-
-            verb_obj = verbs.by_name.get(verb_name)[0]
+            verb_obj = verbs.verbs.get(verb_name)
             if not verb_obj:
                 verb_obj = verbs.by_alt_words.get(verb_name)[0] ## Currently just takes the first. I think this is fine for now, later would like to set some minor refinement rules (such as the 'if 'fire' in noun token, then 'burn' instead of 'place' if 'burn' in by_alt_words options. But for now this is fine.)
             #print(f"verb_obj: {verb_obj}")
@@ -451,8 +517,12 @@ class Parser:
 
         else:
             verb_obj = verbs.by_alt_words.get(verb_name)[0]
+            #print(f"verb_obj: {verb_obj}")
             if verb_obj and verb_obj.name in items:
+                #print("verb obj and verb_obj.name in items == true")
                 return verb_obj, format_key
+            else:
+                print(f"verb obj is {verb_obj} with name `{verb_obj.name}` but not in items: {items}")
         return None, format_key
 
     def build_dict(confirmed_verb, tokens, initial_dict, format_key):
@@ -463,12 +533,12 @@ class Parser:
 
         dict_for_output = initial_dict
         #print(f"Format key: {format_key}")
-        for i, item in enumerate(format_key[0]):
+        for i, item in enumerate(format_key):
             #print(f"Word type: {item}, type: {type(item)}")
             item_name = initial_dict[i][item]
             #print(f"item_name: {item_name}")
             if item == "verb":
-                verb, _ = Parser.resolve_verb(tokens, item_name, format_key[0])
+                verb, _ = Parser.resolve_verb(tokens, item_name, format_key)
                 #resolve_verb(tokens, verb_name, format_key)
                 if verb:
                     #print(f"Verb::: {verb}, verb_name: {verb.name}")
@@ -487,28 +557,7 @@ class Parser:
             else:
                 dict_for_output[i]={item:{"instance":None, "str_name":item_name}}
 
-        #print(f"Build dict: {initial_dict}")
-        #for token_index, data in initial_dict.items():
-        #    print(f"Token index: {token_index}, data: {data}")
-        #    #   idx: `0`, kind: `{'verb': 'drop'}`
-        #    for kind, entry in data.items():
-        #        print(f"kind: {kind}, entry: {entry}")
-        #        #   k: `verb`, v: `drop`
-        #        if kind == "verb":
-        #            for item in confirmed_verb:
-        #                for value in item.values():
-        #                    print(f"item: {item}")
-        #                    print(f"value: {value}")
-        #                    if value.name == entry:
-        #                        print(f"Confirmed verb: {confirmed_verb}")
-        #                        print(format_key[token_index])
-        #                        print(f"Kind is verb: {entry}")
-        #                        dict_for_output[token_index][kind]=confirmed_verb
-        #            #print(f"entry {token_index} is confirmed verb {confirmed_verb.name}")
-        #        print_refined.append(entry)
-        #print(f"Dict for output: {dict_for_output}")
-        #print(f"RESULT: [[ '{"' '".join(print_refined)}' ]]")
-        return format_key, dict_for_output, tokens # including tokens for any minor input detail that might matter later.
+        return dict_for_output, tokens # including tokens for any minor input detail that might matter later.
 
 
     def input_parser(self, input_str): # temporarily adding 'items' just so I can test with any item from the item dict without having to add to inventory/location first. Purely for testing convenience.
@@ -547,14 +596,14 @@ class Parser:
         for sequence in sequences:
             if len(sequence) == token_count:
                 length_checked_sequences.append(sequence)
-
-        initial_dict = Parser.generate_initial_dict(tokens, length_checked_sequences)
+        #print(f"Length_checked_sequences: {length_checked_sequences}, len: {len(length_checked_sequences)}")
+        initial_dict, sequence = Parser.generate_initial_dict(tokens, length_checked_sequences) # culls to just the first sequence. Doesn't deal with 'picking the best version' if there's more than one yet. Needs to in the future.
 
         #print(f"length checked sequences: {length_checked_sequences}")
         #print("initial_dict", initial_dict)
-        viable_formats, dict_for_output, tokens = self.build_dict(verb_instances, tokens, initial_dict, length_checked_sequences)
+        dict_for_output, tokens = self.build_dict(verb_instances, tokens, initial_dict, sequence)
         #print(f"dict for output; {dict_for_output}")
-        return viable_formats, dict_for_output
+        return sequence, dict_for_output
 
     # -------------
 
@@ -566,10 +615,16 @@ sizes = ["big", "small", "tiny", "enormous", "massive", "little"]
 
 def initialise_verbRegistry():
 
-    from verb_definitions import get_verb_defs, allowed_null, semantics, formats
+    from verb_definitions import get_verb_defs, allowed_null, semantics, formats, meta_verbs
 
     verb_defs_dict, verb_set = get_verb_defs()
     verbs.all_verbs = verb_set
+    verbs.meta_verbs = meta_verbs
+    verbs.all_meta_verbs = set(meta_verbs)
+    for meta in meta_verbs:
+        if "alt_words" in meta_verbs[meta]:
+            for alt_word in meta_verbs[meta]["alt_words"]:
+                verbs.all_meta_verbs.add(alt_word)
     verbs.formats = set(formats.values())
     verbs.adjectives = set(i.lower() for i in colours) | set(i.lower() for i in sizes)
     verbs.semantics = set(i for i in semantics)
@@ -582,51 +637,9 @@ def initialise_verbRegistry():
 
     for item_name, attr in verb_defs_dict.items():
         verbs.create_verb_instance(item_name, attr)
-        #verb_inst = verbs.by_name.get(item_name)[0]
-        #print(f"Verb inst: {verb_inst}")
-        #print("formats: ")
-        #print(verb_inst.formats) # list of sets
-        #exit()
 
         if attr.get("null_words"):
             for word in attr.get("null_words"):
                 if word.lower() != None:
-                    #print(f"Word in null words: {word}")
                     verbs.list_null_words.add(word)
 
-
-if __name__ == "__main__":
-    initialise_all()
-    test=True
-    action_test=True
-    if test:
-
-        from set_up_game import set_up ## might break
-        set_up(weirdness=True, bad_language=True, player_name="Testing")
-
-
-        if action_test:
-            test_str_list = ["drop the paperclip"]
-            #test_str_list = ["go to the graveyard", "pick up the paperclip", "put batteries in wallet", "GET PAPER SCRAP FROM JAR", "place the batteries on the jar"]
-        else:
-            test_str_list = []#"go to the graveyard", "pick up the paperclip", "watch the watch", "look at watch", "put batteries in wallet", "look at batteries with wallet", "watch watch with watch", "pick up red wallet", "drop batteries in jar", "take paper scrap", "get paper scrap with number from jar", "get paper scrap from jar", "GET PAPER SCRAP FROM JAR", "place the batteries on the jar"]
-        #test_str_list = ["verb noun dir noun"]
-
-        for item in test_str_list:
-            test_str = item
-            test_print(f"\nTEST STRING: `{test_str}`", print_true=True)
-            from item_definitions import item_defs_dict
-            items = list(item_defs_dict.keys())
-            viable_formats, dict_for_output = Parser.input_parser(Parser, test_str)
-
-            if action_test:
-                print("Initialising verb membrane: ")
-                #result_dict:
-
-
-##  >   router(noun_inst, verb_inst, reformed_dict)
-                #verb_name, reformed_dict, format, tokens = parser_output
-                print(f"Reformed dict before route_verbs: {dict_for_output}")
-                #v_actions.route_verbs(dict_for_output)
-            #'winning format: ('verb', 'noun', 'direction', 'noun')
-            #Reformed list: ('put', ('verb', 'noun', 'direction', 'noun'), {0: 'place', 1: 'batteries', 2: 'on', 3: 'glass jar'}, [Token(idx=0, text='place', kind={'verb'}, canonical='place'), Token(idx=1, text='the', kind={'null'}, canonical='the'), Token(idx=2, text='batteries', kind={'noun'}, canonical='batteries'), Token(idx=3, text='on', kind={'null', 'direction'}, canonical='on'), Token(idx=4, text='the', kind={'null'}, canonical='the'), Token(idx=5, text='jar', kind={'noun'}, canonical='glass jar')])'

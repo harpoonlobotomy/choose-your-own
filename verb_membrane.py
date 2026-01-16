@@ -16,6 +16,8 @@
 # Then sends the format and dict onward to verb_actions.
 
 from itemRegistry import ItemInstance, registry
+from logger import logging_fn
+from verbRegistry import VerbInstance
 
 movable_objects = ["put", "take", "combine", "separate", "throw", "push", "drop", "set", "move"]
 
@@ -46,62 +48,42 @@ combine_parts = {("put", "into"), ("add", "to") # thinking about this for more s
 
    #exit()
 
-######## The supplement membrane bit that sends out the calls externally.
+def check_noun_actions(noun_inst, verbname):
 
-def send_calls(response): # probably ditching this. Was an interesting idea maybe, but I'm not sure there's any point. I can fix the input-print elsewhere. (I think.)
-
-    response_dict = {
-        "describe": ["describe", "look"],
-        "player_moved": ["new_cardinal", "new_location"],
-        "nothing": ["no_change", "no change"]
-    }
-
-    #print(f"RESPONSE:: {response}")
-
-    if response:
-
-        call, details = response
-        if call in response_dict["nothing"]:
-            print("Nothing.")
-        if call in response_dict["describe"]:
-            if details == "environment": # This could be done inside the look function so easily... Why does this exist here...?
-                # Maybe we keep this for things tha do something other than print...
-                from env_data import locRegistry as loc
-                #print(loc.current.description)
-                print(loc.current.overview)
-            elif isinstance(details, ItemInstance):
-                from interactions.item_interactions import look_at
-                look_at(response)
-
-
-##### The main membrane bit that figures it out ########
+    #print(f"Verb inst name: {verb_inst.name}")
+    #print(f"noun inst actions: {noun_inst.verb_actions}")
+    if isinstance(verbname, VerbInstance):
+        verbname = verbname.name
+    if verbname == "look": # always pass 'look'
+        return noun_inst.name
+    for action in noun_inst.verb_actions:
+        if flag_actions.get(action):
+            if verbname in flag_actions[action]:
+                #print(f"{action}: Verb inst name in flag_actions for noun: ({noun_inst.name}): {verb_inst.name}")
+                return noun_inst.name
 
 def get_noun_instances(dict_from_parser, viable_formats):
 
-    def check_noun_actions(noun_inst, verb_inst):
 
-        print(f"Verb inst name: {verb_inst.name}")
-        print(f"noun inst actions: {noun_inst.verb_actions}")
-        if verb_inst.name == "look": # always pass 'look'
-            return noun_inst.name
-        for action in noun_inst.verb_actions:
-            if flag_actions.get(action):
-                if verb_inst.name in flag_actions[action]:
-                    #print(f"{action}: Verb inst name in flag_actions for noun: ({noun_inst.name}): {verb_inst.name}")
-                    return noun_inst.name
-
-    def check_cardinals(entry, data, format):
+    def check_cardinals(entry, dict, format):
 
         from env_data import locRegistry
+        loc_inst = None
+        for _, dict_entry in dict.items():
+            for k, v in dict_entry.items():
+                if k == "location":
+                    loc_inst = v.get("instance")
+                    if not loc_inst:
+                        #print(f"V: {v}")
+                        loc_name = v.get("str_name")
+                        #print(f"loc_name canonical: {loc_name}")
+                        loc_inst = locRegistry.by_name[loc_name]
 
-        if not data.get("location"):
-            loc_inst = locRegistry.current
-            card_inst = locRegistry.cardinals[loc_inst][entry["str_name"]]
-            #print(f"card_inst: {card_inst}")
-        else:
-            print("Oops. You gave a location I'm not currently at, I can't deal.")
-            exit()
-
+        if loc_inst == None:
+            loc_inst = locRegistry.currentPlace
+        card = entry['str_name']
+        #print(f"locRegistry.cardinals[loc_inst]: {locRegistry.cardinals[loc_inst]}")
+        card_inst = locRegistry.cardinals[loc_inst][card]
         dict_from_parser[idx][kind] = ({"instance": card_inst, "str_name": entry["str_name"]})
         return dict_from_parser
 
@@ -109,7 +91,6 @@ def get_noun_instances(dict_from_parser, viable_formats):
     #    print("More than one viable format. I can't handle that yet. Exiting.")
     #    print(viable_formats)
     #    exit()
-
 
     verb = None
     #print(f"dict_from_parser: {dict_from_parser}")
@@ -122,6 +103,9 @@ def get_noun_instances(dict_from_parser, viable_formats):
                     #print(f"Verb: {verb}")
                     #print(f"Verb type: {type(verb)}")
                     #print(f"Verb.name in get_noun_instances: `{verb.name}`")
+                if "meta" in kind and verb == None:
+                    verb = entry["instance"]
+                    #print(f"meta Verb: {verb}")
 
         suitable_nouns = 0
 
@@ -137,12 +121,15 @@ def get_noun_instances(dict_from_parser, viable_formats):
                         print(f"No found ItemInstance for {entry}")
                     else:
                         #print(f"Noun inst: {noun_inst}")
-                        noun_name = check_noun_actions(noun_inst[0], verb)
+                        noun_name = check_noun_actions(noun_inst[0], verb) ## I feel like this should be left for later. If I can't take the headstone, let that be something for 'take' to do, no?
+                        # Wait, no. I need to do it here so the parser actually works. Right.
                         if noun_name:
                             dict_from_parser[idx][kind] = ({"instance": noun_inst[0], "str_name": name})
                             suitable_nouns += 1
                         else:
-                            print(f"You can't {verb.name} the {entry}")
+    ## NOTE: Added this here so all nouns pass even if they will fail later, which entirely removes the point of the allowed noun_actions. But, I can better tailor failure messages within each later action-fn. So I think I'm going with it for now.
+                            dict_from_parser[idx][kind] = ({"instance": noun_inst[0], "str_name": name})
+                            #print(f"You can't `{verb.name}` the {entry["str_name"]}")
                             suitable_nouns -= 10
 
                 elif kind == "location":
@@ -159,12 +146,13 @@ def get_noun_instances(dict_from_parser, viable_formats):
                         #locRegistry.place_cardinals[place_instance_obj][cardinal_direction_str]
                 elif kind == "cardinal":
                     #print(f"Kind is cardinal: {entry}")
-                    dict_from_parser = check_cardinals(entry, data, viable_formats)
+                    dict_from_parser = check_cardinals(entry, dict_from_parser, viable_formats)
 
+        #print(f"dict_from_parser in geT_noun_instances: {dict_from_parser}")
         return dict_from_parser
     return None
 
-class Membrane:
+class Membrane: ## it really holds so much duplicate data, it needs to be trimmed down. I'm not using it like I thought/as was intended.
     ## To hold the general dicts/lists etc as a central point, so verbRegistry and itemRegistry can get data from item_definitions/verb_definitions from here instead of directly. Also other custom data, like the formats-by-type dict etc.
     # So to clarify: itemRegistry is all item objects, and currently has item actions but those will be moved out.
     # verbRegistry is really just for parsing, but the parsing is format + verb based so the name can stay I guess.
@@ -198,7 +186,7 @@ class Membrane:
             compound_locs[word] = tuple(word.split())
         self.compound_locations = compound_locs
         self.directions = directions
-        self.cardinals = set(cardinals) ## does membrane nede these or not?
+        self.cardinals = set(cardinals) ## does membrane need these or not?
 
         def get_format_sublists(all_formats):
 
@@ -220,7 +208,7 @@ class Membrane:
             return new_format_dict
 
         self.formats = formats
-        self.format_sublists = get_format_sublists(formats)
+        #self.format_sublists = get_format_sublists(formats) ## these aren't used /at all/
 
 
 
@@ -230,31 +218,57 @@ test_input_list = ["take the paperclip", "pick up the glass jar", "put the paper
 
 def run_membrane(input_str=None):
 
-    #while input_str != "quit":
+    def loop(input_str):
+
+        logging_fn()
+
+        response = (None, None)
+
+        while "logging" in input_str:
+            if input_str != None and "logging" in input_str:
+                from logger import logging_config
+                logging_config["function_logging"] = not logging_config["function_logging"]
+                if logging_config["function_logging"] == True:
+                    print("Logging Enabled\n")
+                else:
+                    print("Logging Disabled\n")
+                if "args" in input_str:
+                    logging_config["args"] = not logging_config["args"]
+                    if logging_config["args"] == True:
+                        print("Args Printing Enabled\n")
+                    else:
+                        print("Args Printing Disabled\n")
+                logging_fn()
+                input_str = input()
+
         if input_str == None:
             input_str = input()
 
         from verbRegistry import Parser
-        viable_formats, dict_from_parser = Parser.input_parser(Parser, input_str)
+        viable_format, dict_from_parser = Parser.input_parser(Parser, input_str)
 
-        inst_dict = get_noun_instances(dict_from_parser, viable_formats)
+        inst_dict = get_noun_instances(dict_from_parser, viable_format)
 
         if inst_dict:
             from verb_actions import router
-            #print(f"inst_dict going to router: {inst_dict}")
-            #exit()
-            response = router(viable_formats, inst_dict)
+            response = router(viable_format, inst_dict)
 
-            send_calls(response)
-            ## Move list of key response terms to here from def option()
-            # Then this can do the initial directions, and just let it continue back accordingly.
+        return response
 
-            # I really need to figure out the 'baseline' that it returns to when an action is completed. Currently it's in a constant state of falling, there's no resting state.
+    from config import run_tests
 
-            return response
-    #exit()
 
-#membrane, membrane_data = initialise_membrane()
+    if run_tests:
+        from time import sleep
+        test_inputs = ["get scroll", "open scroll", "go to east graveyard", "get glass jar", "put glass jar in scroll", "put scroll in glass jar"]
+        for i, input_str in enumerate(test_inputs):
+            sleep(.3)
+            loop(input_str)
 
-# failed: "wipe the window with the damp newspaper", "push the pile of rocks", "pull the forked tree branch",
+            print()
+            if i == len(test_inputs)-1:
+                run_tests = False
+
+    else:
+        loop(input_str)
 
