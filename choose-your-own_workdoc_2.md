@@ -1430,3 +1430,27 @@ Also, have neatened up the dynamic description printing quite a bit, very please
 
 Ooooor I hook it up to the new item class, and give that the item defs dict. Should probably do that one tbh. Will just copy over the parts that definitely work from itemRegistry.
 Oh god I'm going to have to rename it again. Neh this time I'm just going to overwrite it with the new version once it's slightly functional and go from there.
+
+4:33pm
+
+ITEM ENTRY: {'exceptions': {'flammable': None, 'item_size': 'small_flat_things'}, 'name': 'a 5 pound note', 'description': 'A small amount of legal tender. Could be useful if you find a shop.', 'dupe': None, 'loot_type': 'medium_loot', 'item_type': {'fragile', 'can_pick_up'}}
+inst description: A small amount of legal tender. Could be useful if you find a shop.
+ITEM ENTRY: {'exceptions': {'can_read': None, 'flammable': None, 'item_size': 'small_flat_things', 'print_on_investigate': True}, 'name': 'a scrap of paper with a number written on it', 'description': 'A small scrap of torn, off-white paper with a hand-scrawled
+phone number written on it.', 'loot_type': 'medium_loot', 'item_type': {'fragile', 'books_paper', 'can_pick_up'}}
+inst description: A small scrap of torn, off-white paper with a hand-scrawled phone number written on it.
+ITEM ENTRY: {'exceptions': {'is_locked': None, 'is_charged': None, 'item_size': 'palm_sized'}, 'name': 'a mobile phone', 'description': "A mobile phone. You don't think it's yours. Doesn't seem to have a charge.", 'fragile': None, 'can_lock': None, 'key': 'mobile_passcode', 'loot_type': 'great_loot', 'item_type': {'container', 'can_pick_up', 'electronics'}}
+inst description: A mobile phone. You don't think it's yours. Doesn't seem to have a charge.
+
+{'id': '736ca1ba-d140-4ea9-9a23-0d925269a81d', 'name': 'mobile phone', 'description': "A mobile phone. You don't think it's yours. Doesn't seem to have a charge.", 'item_type': {'container', 'can_pick_up', 'electronics', 'all_items'}, 'starting_location': None,
+'current_loc': None, 'alt_names': {}, 'is_hidden': False, 'is_open': False, 'can_be_opened': True, 'can_be_closed': True, 'can_be_locked': True, 'is_locked': None, 'requires_key': False, 'starting_children': None, 'container_limits': None, 'name_no_children': None, 'description_no_children': None, 'can_pick_up': True, 'item_size': 'palm_sized', 'started_contained_in': None, 'contained_in': None, 'can_be_charged': True, 'is_charged': None, 'takes_batteries': False, 'has_batteries': False, 'fragile': None, 'can_lock': None, 'key': 'mobile_passcode', 'loot_type': 'great_loot'}
+
+
+Result: Messy and it repeats more than I think it out to, but it works. Successfully takes me existing item_defs and converts them into this new format.
+
+
+5.07pm
+
+Hm.
+{'id': '3ace1f57-33a4-48b7-9c3c-53168b9fcf77', 'name': 'paper scrap with number', 'description': 'A small scrap of torn, off-white paper with a hand-scrawled phone number written on it.', 'item_type': {'all_items', 'books_paper', 'fragile', 'can_pick_up'}, 'starting_location': None, 'current_loc': None, 'alt_names': {}, 'is_hidden': False, 'can_pick_up': True, 'item_size': 'small_flat_things', 'started_contained_in': None, 'contained_in': None, 'broken_name': None, 'flammable': True, 'can_break': True, 'print_on_investigate': True, 'can_read': True, 'loot_type': 'medium_loot'}
+
+This paper scrap is accurately marked as flammable. 
