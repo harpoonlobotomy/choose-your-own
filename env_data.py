@@ -110,9 +110,10 @@ loc_dict = {
                 },
         "east": {"short_desc": "a variety of headstones",
                 "long_desc": "You see a variety of headstones, most quite worn and decorated by clumps of moss. There's a glass jar being used as a vase in front of one of the headstones, with dried flowers left long ago.", # details here depending on weather. if raining, the dried flowers are saturated and heavy. If sunny, they're crispy, etc. Not close to implementing that yet.
-                "long_desc_dict": {"generic" :{"You see a variety of headstones, most quite worn and decorated by clumps of moss. "},
-                              "glass_jar": {"There's a glass jar being used as a vase in front of one of the headstones"},
-                              "dried_flowers": {"dried flowers left long ago."}}, # details here depending on weather. if raining, the dried flowers are saturated and heavy. If sunny, they're crispy, etc. Not close to implementing that yet.}
+                "long_desc_dict": {"generic" :"You see a variety of headstones, most quite worn and decorated by ",
+                              "moss": "clumps of [[]]",
+                              "glass jar": f"a [[]] being used as a vase in front of one of the headstones",
+                              "dried flowers": "some [[]] left long ago"},
                 "east_actions": None,
                 },
         "south": {"short_desc": "a mausoleum",
@@ -121,7 +122,7 @@ loc_dict = {
                 },
         "west": {
                 "short_desc": "what looks like a work shed of some kind",
-                "long_desc": "There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble.",
+                "long_desc": "There's a work shed, with a wheelbarrow outside and a large padlock on the door.",
                 "actions": None
                 },
         "exitwall": "north",
@@ -145,7 +146,7 @@ loc_dict = {
         "exitwall": "north",
             },
     "shrine": {
-        "descrip": "A small PPPshrineEEE, built into the underhang of a cliff face..",
+        "descrip": "A small PPPshrineEEE, built into the underhang of a cliff face.",
         "inside": False, "electricity": False, "nature": True,
         "north": {"short_desc": "A wooden shrine, with aged fabric flags and various trinkets",
                 "long_desc": "The shrine itself is fragile looking, with candles still not burnt down entirely.",# There are scrolls on the main surface, and two jars; one on the desk, and the other on the ground beside it.",

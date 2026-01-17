@@ -84,7 +84,7 @@ def load_world(relocate=False, rigged=False, new_loc=None):
     print("Starting load_world in set_up_game.py\n\n")
     from env_data import locRegistry as loc, weatherdict
     rigged = True
-    rig_place = "test shrine"#"a city hotel room"#
+    rig_place = "shrine"#"a city hotel room"#
     rig_weather = "perfect"
     rig_time = "midnight"
 
