@@ -2,13 +2,9 @@
   "gold key": {
     "name": "gold key",
     "item_type": "{'key', 'can_pick_up', 'all_items'}",
-    "starting_location": null,
-    "current_loc": null,
     "is_key": true,
     "can_pick_up": true,
     "item_size": 0,
-    "started_contained_in": null,
-    "contained_in": null,
     "description": "a bright gold key, quite new-looking"
   },
   "stone ground": {

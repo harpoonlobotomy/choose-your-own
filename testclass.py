@@ -1,3 +1,4 @@
+from email.iterators import typed_subpart_iterator
 import uuid
 from pprint import pprint
 from itemRegistry import ItemInstance
@@ -5,9 +6,6 @@ import printing
 from dynamic_data import generated_items
 
 temp_items = generated_items.test_items
-
-global updated
-updated = set()
 
 standard = "standard"
 static = "static"
@@ -31,6 +29,85 @@ type_defaults = { # gently ordered - will overwrite earlier attrs with later one
     "wall": {"is_vertical_surface": True}#,
     #"exterior": {"is_interior": False} ## Can be set scene-wide, so 'all parts of 'graveyard east' are exterior unless otherwise mentioned'. (I say 'can', I mean 'will be when I set it up')
 }## Removed all the interior dicts. They're not necessary and will actually get in the way - having the type defaults exposed is far more beneficial.
+
+def testing_t_defaults_against_item_defs():
+
+    all_flags_in_type_default = set()
+    for type in type_defaults:
+        for flag in type_defaults[type]:
+            all_flags_in_type_default.add(flag)
+
+    print(f"all flags in type_default: {all_flags_in_type_default}")
+
+    def_flags_in_t_def = set()
+    all_def_flags = set()
+    from item_definitions import item_defs_dict
+    for item, val in item_defs_dict.items():
+        for flag, content in val.items():
+            if flag == "" or flag == None:
+                continue
+            if flag == "flags":
+                for flagname in content:
+                    if flagname in all_flags_in_type_default:
+                        def_flags_in_t_def.add(flagname)
+                    else:
+                        all_def_flags.add(flagname)
+            else:
+                if flag in all_flags_in_type_default:
+                    def_flags_in_t_def.add(flag)
+                else:
+                    all_def_flags.add(flag)
+
+    print(f"Flags matching in type_default: {def_flags_in_t_def}")
+    print(f"Flags in item_defs but not default_types: {all_def_flags - all_flags_in_type_default}")
+
+"""
+all flags in type_default: {'event_type', 'starting_location', 'is_open', 'current_loc', 'can_pick_up', 'breakable', 'can_be_locked', 'trigger_target', 'can_be_closed', 'started_contained_in', 'requires_key', 'can_examine', 'is_exhausted', 'is_vertical_surface', 'item_size', 'contained_in', 'event_key', 'is_horizontal_surface', 'is_key', 'is_locked', 'trigger_type', 'event'}
+
+Flags matching in type_default: {'is_key', 'starting_location', 'item_size', 'is_locked', 'started_contained_in', 'can_pick_up'}
+
+Flags in item_defs but not default_types: {'can_combine', '', 'can_open', 'is_charged', 'alt_names', 'is_hidden', 'key', 'dupe', 'print_on_investigate', 'special_traits', 'needs_key_to_lock', 'starting_children', 'container', 'fragile', 'loot_type', 'description', 'name', 'panacea', 'container_limits', 'dirty', 'description_no_children', 'takes_batteries', 'can_consume', 'flammable', 'name_children_removed', 'combine_with', 'weird', 'can_remove_from', 'is_closed', 'can_read', 'can_lock'}
+
+So, I need to figure out which of these need to be just in a item.flags.get() situation vs those which need to be properly attributed. Something like takes_batteries is the former, dirty (or 'is_dirty' as it'll be corrected) is probably the latter but iffy, while 'description_no_children' can just go to container-type.
+
+Basically I want to quickly write something to look at the existing flags and generate a new item defs dict using those new tags in line with the new class, and reusing as many elements as possible.
+
+First, planning grouping.
+
+('key') and ('container') are default_types already, so if an item has that flag it has to have that default_type regardless. " 'description', 'name'," are taken care of elsewhere too. (Not currently included in the default_type, but in the item init)
+
+('can_open', 'needs_key_to_lock', 'starting_children', 'container_limits', 'description_no_children', 'name_children_removed','is_closed', 'can_lock')
+These are all the ones that should be under container, but I need to clear them out/rename them, etc.
+
+Maybe a 'books_paper' type, for 'can_read', 'flammable' defaults.
+books_paper = ('print_on_investigate', 'flammable', 'can_read')
+
+(is_hidden) should apply to anything can_pick_up probably, they're the most likely category to be hidden. Or maybe just add it as a mass flag in all_items.
+
+('can_combine') will be implemented later once I have some actual item combinations (in the sense of 'take a and b and they're a different combined object, c', not just containers.)
+
+('loot_type') might need to be renamed but should keep its current function.
+
+('can_be_charged', 'is_charged', 'takes_batteries') should be in an 'electronics' default_type.
+
+('alt_names', 'special_traits') should be added to everything by default.
+
+('fragile') should be its own type, with 'broken_name: <brokenname>' connecting it to the 'broken variant' of the item if it has one. Maybe 'damageable' is a more accurate word for it, for things that can burn, break, etc. It's a bad word but more accurate. Will think on a better alternative.
+
+('dupe') isn't implemented at all yet I don't think. I don't think there's much of a need for it as the instances system works like that by default now. If I have 5x paperclips in a location it should just create 5 instances. Will have to check if that works in the new class, it'll need adjusting if not.
+
+('panacea') is a special tag, not implemented yet but I like the idea of it. For now put it in 'special traits ={}'; not used for anything but keeping it there so I remember to use it later.
+
+('dirty') probably won't be a default_type flag, though maybe a location-type one. Need to implement location-types (so, 'dirty alleyway' applies 'dirty' to the things in it, 'mermaid grotto' makes things wet, etc. Not sure how/if it'll be used but I have the 'clean' verb in verbreg so might as well have a conceptual use for it.)
+
+('can_consume'), as above for 'dirty'. Although maybe... 'food_drink' category? can_consume, 'can_spoil', 'effect' (ie gain/lose health, etc), is_safe:bool. Mm, I like that.
+
+('weird') I'm probably just going to leave out. Or maybe just add it to special_traits. I really like the idea of a layered experience, where depending on xyz things are different on a game-tone level, but it's double the work and I just want to get the basics running again for now.
+
+"""
+
+
+#testing_t_defaults_against_item_defs()
 
 size = "item_size"
 box_desc = "It's a box. Boxy box."
@@ -189,6 +266,8 @@ class testRegistry:
         self.by_id = {}
         self.by_location = {}    # cardinalinst (when implemented, str for now), > instances
         self.temp_items = set() # just exists as a place to live for dynamic item generation so it doesn't mess with for loops. Should be empty, only used temporarily and then cleared (contents added to self.instances) after the current loop.
+        self.confirmed_items = {} # as above, will probably merge them later.
+        self.updated = set() # again, can probably be merged with the above. Doesn't need to be part of this class at all, it's purely here for convenience because I'm tired.
 
     def init_single(self, item_name, item_entry):
         inst = testInstances(item_name, item_entry)
@@ -207,7 +286,7 @@ class testRegistry:
                         new_test = input()
                         if new_test == "y":
                             descriptions[item_name] = trial
-                            updated.add(inst)
+                            self.updated.add(inst)
                             break
 
                     elif test == "":
@@ -238,11 +317,19 @@ class testRegistry:
 
         return inst
 
-    def new_item_from_str(self, item_name, input_str):
+    def new_item_from_str(self, item_name:str, input_str:str=None)->str|testInstances:
+
+        if not input_str:
+            print(f"Please enter the default_types you want to assign to `{item_name}`")
+            input_str = input()
 
         if not isinstance(input_str, str):
             print(f"new_item_from_str requires a string input, not {type(input_str)}")
             return
+
+        if input_str == "" or input_str == None:
+            print(f"Blank input skin, returning {item_name} unchanged. No instance created.")
+            return input_str
 
         if " " in input_str.strip():
             parts = input_str.strip().split(" ")
@@ -326,7 +413,7 @@ class testRegistry:
                     pprint(f"VARS: {vars(inst)}")
                     test = input()
                     if test in ("y", "yes"):
-                        confirmed_items[item_name] = inst
+                        self.confirmed_items[item_name] = inst
                     return inst
                 else:
                     print(f"Failed to generate instance from {generated_entry}")
@@ -385,16 +472,19 @@ class testRegistry:
             print("Huh, count is the same.")
 
 
-       # for item in self.instances:
-       #         #print(f"item.contained_in: {item.contained_in}")
-       #         parent_obj = self.item_by_name(item.contained_in)
-       #         if hasattr(item, "started_contained_in"):
-       #             #print("item.started_contained_in == item.contained_in ?")
-       #             #print(item.started_contained_in, item.contained_in)
-       #             if item.started_contained_in == item.contained_in:
-       #                 item.started_contained_in = parent_obj
-       #         item.contained_in = parent_obj
+    def edit_item(self, instance):
+        if not isinstance(instance, testInstances):
+            if isinstance(instance, str):
+                print("Edit item needs an Instance object. Will attempt to find by name.")
+                instance = self.item_by_name(instance)
+                if not isinstance(instance, testInstances):
+                    print(f"Could not find item {instance} by name.")
 
+            else:
+                print(f"I can't do anything with an instance of type {type(instance)}. Cannot process {instance}")
+                return
+
+        #self.new_item_from_str(self, item_name, input_str=None)
 
 testReg = testRegistry()
 """
@@ -424,20 +514,26 @@ if __name__ == "__main__":
     #init_testreg()
 
     def get_loc_items(loc, cardinal=None):
+        """
+        Now currently, items are stored and they tell env_data where they live. It does make more sense to place them via location not via the item itself.
+
+        I think I want to have a separate dict for it, like I have here in my test setup. Otherwise I have to double-back through all the items anyway to add instances
+        """
         if cardinal == None:
             for cardinal in ("north", "south", "east", "west"):
                 if locations[loc][cardinal].get("items"):
-                    for item in locations[loc][cardinal]["items"]:
-                        loc_items = {}
-                        if test_items.get(item):
-                            loc_items[item] = test_items[item]
-                        elif gen_items.get(item):
-                            loc_items[item] = gen_items.get(item)
+                    for item_name in locations[loc][cardinal]["items"]:
+                        loc_item = {}
+                        if test_items.get(item_name):
+                            loc_item[item_name] = test_items[item_name]
+                        elif gen_items.get(item_name):
+                            loc_item[item_name] = gen_items.get(item_name)
                         else:
-                            loc_items[item] = ({"item_type": [static]})
+                            loc_item[item_name] = ({"item_type": [static]})
 
-                        loc_items[item].setdefault("exceptions", {}).update({"starting_location": cardinal + " " + loc})
-                        testReg.init_items(loc_items)# doing one at a time otherwise different loc items will overwrite
+                        loc_item[item_name].setdefault("exceptions", {}).update({"starting_location": cardinal + " " + loc})
+                        inst = testReg.init_single(item_name, loc_item[item_name])# definition_key, attr
+                        #testReg.init_items(loc_item)# doing one at a time otherwise different loc items will overwrite
 
     use_generated_items(input_=None)
 
@@ -449,7 +545,7 @@ if __name__ == "__main__":
            item = temp
         testReg.init_items(item)
 
-    get_loc_items("Graveyard")
+    #get_loc_items("Graveyard")
 
     def print_ordered_vars(item):
         vars_dict = vars(item)
@@ -495,7 +591,7 @@ if __name__ == "__main__":
                         print(f"Attribute name {flag_name} not in flag_keys. Consider adding it.")
 
 
-    if confirmed_items or updated:
+    if testReg.confirmed_items or testReg.updated:
         printing.print_red("The following item(s) have been confirmed for future use:")
 
         test_generated_items = True
@@ -513,24 +609,10 @@ if __name__ == "__main__":
                     else:
                         continue
 
-        if updated:
-            for inst in updated:
-
+        if testReg.updated:
+            for inst in testReg.updated:
                 testReg.add_to_gen_items(inst) # currently only does one at a time, would be better to batch it internally. Tomorrow.
 
-            #use_generated_items(input_=None):
-
-
-
-       # if included:
-#
-       # if excluded:
-       # indexed view:
-
-"""
-container
-can_open
-can_lock
 
 
 """
@@ -547,3 +629,4 @@ can_lock
 #for i in items_in(container=True, open=True):
 #    ...
 #
+"""

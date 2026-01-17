@@ -168,7 +168,7 @@ item_defs_dict = {
     "anxiety meds": {"name": "a bottle of anxiety meds", "description": "none yet", "flags":[CAN_CONSUME], "item_size": A_FEW_MARBLES, "loot_type": "starting"},
     "regional map": {"name": "a regional map", "description": "none yet", "flags":[CAN_READ, ""], "item_size": SMALLER_THAN_APPLE, "loot_type": "starting"},
     "unlabelled cream": {"name": "an unlabelled cream", "description": "none yet", "flags":list(), "item_size": SMALLER_THAN_APPLE, "loot_type": "starting"}, ## any item not used during starting should be put onto a value list so it can be found later.
-    "batteries": {"name": "a set of batteries", "description": "none yet", "flags":list(DUPE), "item_size": A_FEW_MARBLES, "loot_type": ["starting", "medium_loot"]}, ## need to allow for lists
+    "batteries": {"name": "a set of batteries", "description": "none yet", "flags":[DUPE], "item_size": A_FEW_MARBLES, "loot_type": ["starting", "medium_loot"]}, ## need to allow for lists
     "costume jewellery": {"name": "a bit of costume jewellery", "description": "Pretty but probably not too expensive. Gold metal with dark red gems.", "flags":[FRAGILE], "item_size": A_FEW_MARBLES, "loot_type": "minor_loot"},
     "plastic bag": {"name": "a sturdy plastic bag", "description": "a used plastic bag from a grocery store. No holes, at least.", "flags":[CONTAINER, FLAMMABLE, DUPE], "container_limits": BIGGER_THAN_BASKETBALL, "item_size": SMALLER_THAN_APPLE, "loot_type": "minor_loot"},
     "pretty rock": {"name": "a pretty rock", "description": f"A particularly pretty rock. A nice {get_random_col()} colour and {random.choice(texture_list)} texture, pleasant to hold.", "flags":[DUPE], "item_size": A_FEW_MARBLES, "loot_type": "minor_loot"},
@@ -178,7 +178,7 @@ item_defs_dict = {
                     "flags":[CAN_READ, FLAMMABLE], "item_size": SMALL_FLAT_THINGS, "print_on_investigate": True, "loot_type": "medium_loot"},
     "mobile phone": {"name": "a mobile phone", "description": "A mobile phone. You don't think it's yours. Doesn't seem to have a charge.", "flags":[FRAGILE, LOCKED, CAN_LOCK, CAN_BE_CHARGED], KEY:"mobile_passcode", "item_size": PALM_SIZED, "loot_type": "great_loot"},
     "wallet": {"name": "a wallet, with cash", "description": f"A worn leather wallet with around 30 {currency} inside. No identification or cards.", "flags":[CAN_OPEN, CONTAINER], "container_limits": SMALL_FLAT_THINGS, "item_size": PALM_SIZED, "loot_type": "great_loot"},
-    "the exact thing": {"name": "the exact thing you've been needing", "description": "It's the exact thing you need for the thing you need it for. But only once.", "flags":list(PANACEA), "item_size": SMALL_FLAT_THINGS, "loot_type": "special_loot"},
+    "the exact thing": {"name": "the exact thing you've been needing", "description": "It's the exact thing you need for the thing you need it for. But only once.", "flags":[PANACEA], "item_size": SMALL_FLAT_THINGS, "loot_type": "special_loot"},
     "severed tentacle": {"name": "a severed tentacle", "description":"none yet", "flags":[WEIRD], "item_size": SMALLER_THAN_BASKETBALL, "loot_type": "weird"}
     }
 
