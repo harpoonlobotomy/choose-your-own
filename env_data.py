@@ -61,7 +61,8 @@ leave_options = str("'leave', 'stay', preamble='Do you want to leave, or stay?'"
 loc_dict = {
     ## Could roll for descriptions. Not always different, but would be interesting. Functionally a perception check.
     # I could do stats... like, for looking for things etc. Actual perception checks, instead of mostly luck based.
-    "city hotel room": {"descrip": "You're in a 'budget' hotel room; small but pleasant enough, at least to sleep in. The sound of traffic tells you you're a couple of floors up at least, and the carpet is well-trod", "inside":True,
+    "city hotel room": {"descrip": "You're in a 'budget' PPPhotel roomEEE; small but pleasant enough, at least to sleep in. The sound of traffic tells you you're a couple of floors up at least, and the carpet is well-trod", "inside":True,
+            "alt_names": ["hotel room"],
             "electricity": True, "nature": False,
             "north": {"short_desc": "There's a queen-size bed, simple but clean looking,",
                       "long_desc": f"The bed looks nice enough - nothing fancy, but not a disaster either. Two pillows, a spare blanket at the foot of the bed. There's a small bedside drawer to each side, and a painting above the bed.",
@@ -78,7 +79,8 @@ loc_dict = {
             "exitwall": "west",
             },
 
-    "forked tree branch": {"descrip": "You've climbed up a gnarled old tree, and found a relatively safe place to sit, in the fork of its broad branches. This needs more description but that's all that's written for now.", "inside":False,
+    "forked tree branch": {"descrip": "You've climbed up a gnarled old tree to a PPPforked tree branchEEE, and found a relatively safe place to sit in its broad branches.", "inside":False,
+            "alt_names": ["gnarled old tree", "forked branch"],
             "electricity": False, "nature": True,
             "north": {"short_desc": "The northern tree parts are ",
                 "long_desc": "This is the north part of a tree...",
@@ -128,7 +130,7 @@ loc_dict = {
         "exitwall": "north",
             },
     "pile of rocks": {
-        "descrip": "Pile of rocks.",
+        "descrip": "PPPPile of rocksEEE.",
         "inside": False, "electricity": False, "nature": True,
         "north": {"short_desc": "The",
                 "long_desc": "You",
@@ -146,7 +148,7 @@ loc_dict = {
         "exitwall": "north",
             },
     "shrine": {
-        "descrip": "A small PPPshrineEEE, built into the underhang of a cliff face.",
+        "descrip": "Sheltered from the rain you see a small PPPshrineEEE, built into the underhang of a cliff face.",
         "inside": False, "electricity": False, "nature": True,
         "north": {"short_desc": "A wooden shrine, with aged fabric flags and various trinkets",
                 "long_desc": "The shrine itself is fragile looking, with candles still not burnt down entirely.",# There are scrolls on the main surface, and two jars; one on the desk, and the other on the ground beside it.",
@@ -172,6 +174,7 @@ class cardinalInstance:
         self.place_name = cardinal + " " + loc.name # eg "east graveyard"        },
         self.ern_name = cardinal + "ern " + loc.name # eg "eastern graveyard"
         self.place = loc
+        self.alt_names = (loc_dict[loc.name].get("alt_names") if loc_dict[loc.name].get("alt_names") else None)
         self.short_desc = (loc_dict[loc.name][cardinal].get("short_desc") if loc_dict[loc.name].get(cardinal) else None)
         self.long_desc = (loc_dict[loc.name][cardinal].get("long_desc") if loc_dict[loc.name].get(cardinal) else None)
         self.colour = None
@@ -195,6 +198,7 @@ class placeInstance:
         self.name = name
         self.a_name = "a " + name
         self.the_name = "the " + name
+        self.alt_names = {}
         self.visited = False
         self.first_weather = None
         self.description = loc_dict.get(name, {}).get("descrip")
@@ -203,7 +207,12 @@ class placeInstance:
         self.cardinals = {}
 
         for attr, value in loc_dict.get(name, {}).items():
-            setattr(self, attr, value)
+            if attr == "alt_names":
+                continue
+                for name in value:
+                    self.by_alt_names[name] = self
+            else:
+                setattr(self, attr, value)
 
         for attr in ("inside", "electricity", "nature"):
             value = loc_dict[name].get(attr)
@@ -231,6 +240,7 @@ class placeRegistry:
 
         self.places = set()
         self.by_name = {}
+        self.by_alt_name = {}
         self.route = list() # store everywhere you go for a game, in order. Could be interesting to use later.
         self.last_loc = None # used for history tracking, just track place, not card.
         self.cardinals = {} # locRegistry.cardinals[place_instance_obj][cardinal_direction_str]
@@ -303,14 +313,17 @@ class placeRegistry:
 
     def place_by_name(self, loc_name):
 
-        loc_inst = self.by_name[loc_name]
+        loc_inst = self.by_name.get(loc_name)
+        if not loc_inst:
+            loc_inst = self.by_alt_name.get(loc_name)
 
         if isinstance(loc_inst, placeInstance):
             #print(f"loc_inst in place_by_name: {loc_inst}")
             #print(f"loc_inst.name in place_by_name: {loc_inst.name}")
             return loc_inst
+
         print(f"LOC INST: {loc_inst}, type: {type(loc_inst)}")
-        print(f"Failed to get item instance for {loc_name}. Please investigate. Exiting from env_data.")
+        print(f"Failed to get placeInstance for {loc_name}. Please investigate. Exiting from env_data.")
         exit()
 
     def show_name(self, loc, text=""):
@@ -329,10 +342,12 @@ class placeRegistry:
 
 
     def by_cardinal(self, cardinal_str:str, loc=None) -> cardinalInstance:
+        if " " in cardinal_str:
+            [loc, cardinal_str] = cardinal_str.split(" ")
         if loc == None:
             loc = self.currentPlace
         elif isinstance(loc, str):
-            loc = self.place_by_name(self, loc)
+            loc = self.place_by_name(loc)
         cardinal_inst = locRegistry.cardinals[loc][cardinal_str]
         return cardinal_inst
 
@@ -345,6 +360,10 @@ def initialise_placeRegistry():
         place = placeInstance(name)
         locRegistry.places.add(place)
         locRegistry.by_name[name] = place
+        if loc_dict[name].get("alt_names"):
+            for altname in loc_dict[name]["alt_names"]:
+                locRegistry.by_alt_name[altname]=place
+        locRegistry.by_alt_name
         locRegistry.cardinals[place] = locRegistry.add_cardinals(place)
         ## add cardinals to place instance so it's directly referable.
         cardinals_dict = {}

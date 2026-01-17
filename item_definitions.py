@@ -150,8 +150,8 @@ item_defs_dict = {
     "dried flowers": {"name": "some dried flowers", "description": "a bunch of old flowers, brittle and pale; certainly not as vibrant as you imagine they once were.", "started_contained_in": "glass jar",
                     "flags":[CAN_PICKUP, FLAMMABLE], CAN_REMOVE_FROM:"glass jar", "item_size": SMALLER_THAN_APPLE, "starting_location": {graveyard: "east"}},
     "moss": {"name": "a few moss clumps", "description": "a few clumps of mostly green moss.", "flags":[CAN_PICKUP], "special_traits": MOSS_TRAIT, "item_size": A_FEW_MARBLES, "starting_location": {graveyard: "east"}}, # moss trait: will dry up after a few days
-    "headstone": {"name":"a carved headstone", "description": "a simple stone headstone, engraved with the name `J.W. Harstott`.", "flags":[DIRTY], "starting_location": {graveyard: "east"}},
-    "TV set": {"name": "a television set", "description": "A decent looking TV set, probably a few years old but appears to be well kept. Currently turned off. This model has a built-in DVD player.",
+    "headstone": {"name":"a carved headstone", "description": "a simple stone headstone, engraved with the name `J.W. Harstott`.", "flags":[DIRTY], "starting_location": {graveyard: "east"}, "alt_names": ["gravestone"]},
+    "TV set": {"name": "a television set", "description": "A decent looking TV set, probably a few years old but appears to be well kept. Currently turned off. This model has a built-in DVD player.", "alt_names": ["television", "tv set", "tv"],
                     "flags":[CAN_COMBINE], COMBINE_WITH: "DVD", "starting_location": {city: "east"}}, # need to be able to add a DVD to this maybe.
     "window": {"name":"a window", "description":"a window, facing out of the hotel room and down over the street below. Currently closed.", "flags":[CAN_OPEN, FRAGILE],
                     "starting_location": {city:"east"}},
@@ -185,12 +185,14 @@ item_defs_dict = {
 
 def get_item_defs(item_name=None):
     #print("\n" * 10)
+    #print(f"ITEM NAME: {item_name}")
     if item_name:
         attr=item_defs_dict.get(item_name)
         return attr
     else:
         for item, attr in item_defs_dict.items():
             #print(f"Item: {item}, attr: {attr}")
+
             if "loot_type" in list(attr):
                 item_data = item_defs_dict[item]
                 if not CAN_PICKUP in item_data["flags"]:
@@ -217,3 +219,4 @@ def get_item_defs(item_name=None):
 
     return item_defs_dict
 
+#print(get_item_defs(item_name="TV set"))

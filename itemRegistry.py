@@ -32,6 +32,7 @@ class ItemInstance:
         self.name:str = definition_key
         self.nicename:str = attr["name"]
         self.item_type = "standard" ## have it here and/or in the registry. I guess both? covers the 'is_container' thing neatly enough.
+        self.alt_names = set()
 
         self.colour = None
         self.description:str = attr["description"]
@@ -39,6 +40,11 @@ class ItemInstance:
         self.verb_actions = set()
         self.contained_in = None
         self.location:cardinalInstance = None
+
+        if attr.get("alt_names"):
+            self.alt_names = set(i for i in attr.get("alt_names"))
+        else:
+            self.alt_names = None
 
  #     INITIAL FLAG MANAGEMENT
 
@@ -123,6 +129,8 @@ class itemRegistry:
 
         self.by_location = {}  # (cardinalInstance) -> set of instance IDs
         self.by_name = {}        # definition_key -> set of instance IDs
+        self.by_alt_names = {} # less commonly used variants. Considering just adding them to 'by name' though, I can't imagine it matters if they're alt or original names... # changed mind, nope. Not duplicating them randomly for no good reason. Just an alt:name lookup.
+
         self.by_category = {}        # category (loot value) -> set of instance IDs
         self.by_container = {}
         self.inst_to_names_dict = {}
@@ -198,6 +206,10 @@ class itemRegistry:
 
         # Index by name
         self.by_name.setdefault(definition_key, list()).append(inst)
+
+        if attr.get("alt_names"):
+            for altname in attr.get("alt_names"):
+                self.by_alt_names[altname] = definition_key
 
         return inst
 
@@ -413,9 +425,15 @@ class itemRegistry:
 
     def instances_by_name(self, definition_key:str)->list:
         logging_fn()
+
         if self.by_name.get(definition_key):
             return self.by_name.get(definition_key)
 
+        elif self.by_alt_names.get(definition_key):
+            print(f"self.by_alt_names.get(definition_key): {self.by_alt_names.get(definition_key)}")
+            return self.by_name.get(self.by_alt_names.get(definition_key))
+
+        print(f"self.by_alt_names: {self.by_alt_names}")
 
     def instances_by_container(self, container:ItemInstance)->list:
         logging_fn()

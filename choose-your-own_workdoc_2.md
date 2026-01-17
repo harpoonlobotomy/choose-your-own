@@ -1419,3 +1419,14 @@ KEY: earring
 It'll prompt for you to add a description to any location-based item that doesn't already have one, and the once it's saved it'll check the JSON for that description and use it again in the future.
 
 Later I'll add the regular items to the same file and compile them somehow so it's just one main file, but for now while I'm playing this is good.
+
+
+1.47pm 17/1/26
+Have added alt_name support for items, so if someone times 'tv' or 'television' it'll find item.name "TV set".
+
+Note: Need to add an arg in assign_colour to let it use the instance to get the colour data, but still use the input str for printing. Won't be hard, just have to remember to. Really need to start using that todo list again.
+
+Also, have neatened up the dynamic description printing quite a bit, very pleased with it now. Still only running in isolation, but for the moment I'm going to hook it up to the existing item class and let it go from there.
+
+Ooooor I hook it up to the new item class, and give that the item defs dict. Should probably do that one tbh. Will just copy over the parts that definitely work from itemRegistry.
+Oh god I'm going to have to rename it again. Neh this time I'm just going to overwrite it with the new version once it's slightly functional and go from there.
