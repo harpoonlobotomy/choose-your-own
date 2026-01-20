@@ -11,8 +11,6 @@ container = "container"
 event = "event"
 trigger = "trigger"
 
-confirmed_items = {}
-
 json_to_edit = "dynamic_data/generated_items.json"
 json_primary = "dynamic_data/items_main.json"
 
@@ -20,6 +18,11 @@ import json
 
 with open(json_primary, 'r') as file:
     item_defs = json.load(file)
+
+def gen_print(text_input = ""):
+    print_generated = False
+    if print_generated:
+        print(text_input)
 
 def do_print(text_input = ""):
     print_things = False
@@ -151,8 +154,8 @@ test_items = {
     #"stone ground": {"item_type": set((static, "flooring"))}
 }
 
-locations = {"Graveyard": {"east": {"items": ["stone ground", "grave"]}, "west": {"items": ["raven", "stone ground"]}, "north": {"items": ["stone ground"]}, "south": {"items": ["stone ground", "headstone"]}},
-            "OtherPlace": {"east": {"items": ["grandfather clock"]}, "west": {"items": ["birdbath"]}, "north": {"items": ["merry-go-round"]}, "south": {"items": ["rocking chair"]}},
+locations = {"Graveyard": {"east": {"items": ["stone ground", "grave", "dessicated skeleton"]}, "west": {"items": ["raven", "stone ground"]}, "north": {"items": ["stone ground"]}, "south": {"items": ["stone ground", "headstone"]}},
+            "OtherPlace": {"east": {"items": ["grandfather clock"]}, "west": {"items": ["birdbath"]}, "north": {"items": ["merry-go-round", "empty plastic cup"]}, "south": {"items": ["rocking chair"]}},
             "Mermaid Grotto": {"east": {"items": ["comb", "trident", "wardrobe", "cabinet", "sandy ground"]}, "west": {"items": ["sandy ground"]}, "north": {"items": ["sandy ground"]}, "south": {"items": ["sandy ground"]}}
             }
 
@@ -206,31 +209,57 @@ class testInstances:
 
     def clean_item_types(self, attr):
 
-        if isinstance(self.item_type, str):
-            self.item_type = set((self.item_type,))
-        if isinstance(self.item_type, list):
-            self.item_type = set(self.item_type)
-
         if isinstance(attr, str):
             if "{" in attr:
                 _, type_item = attr.split("{")
                 type_item, _ = type_item.split("}")
                 type_item = type_item.replace("'", "")
                 parts = type_item.split(", ")
-                for part in parts:
-                    if part not in self.item_type:
-                        self.item_type.add(part)
-
+                self.item_type = self.item_type | set(parts)
+                #for part in parts:
+                #    if part != None:
+                #        self.item_type.add(part)
             else:
                 self.item_type.add(attr)
 
         elif isinstance(attr, set|list|tuple):
             do_print(f"ITEM set/list/tuple: {attr}")
-            if isinstance(attr, list|set):
-                if len(attr) == 1:
-                    attr = set(attr)
-            for item_type in attr:
-                self.item_type.add(item_type)
+            self.item_type = self.item_type | set(attr)
+            #for item_type in attr:
+            #    self.item_type.add(item_type)
+
+    def get_item_types(self, attr):
+
+        self.item_type = set()
+
+        if attr.get("item_type"):
+            self.clean_item_types(attr["item_type"])
+
+        #if item_defs.get(self.name): ## Surely if item_defs[self.name] exists, it will be in attr by now already. This shouldn't be necessary.
+        #    item_types = item_defs[self.name].get("item_type")
+        #    if isinstance(item_types, set):
+        #        for kind in item_types:
+        #            if kind in self.item_type:
+        #                continue
+        #            else:
+        #                self.clean_item_types(kind)
+        #    else:
+        #        self.clean_item_types(item_types)
+
+        if test_items.get(self.name):
+            item_types = test_items[self.name].get("item_type")
+            self.clean_item_types(item_types)
+            #if isinstance(item_types, set):
+            #    for kind in item_types:
+            #        if kind in self.item_type:
+            #            continue
+            #        else:
+            #else:
+            #    self.clean_item_types(kind) ## for how long have I had 'kind' here when it's just pulling from the previous entry.... damn.
+
+        if "all_items" not in self.item_type:
+            self.item_type.add("all_items")
+
 
     def __init__(self, definition_key, attr):
 
@@ -250,18 +279,20 @@ class testInstances:
                     self.nicename = definition_key
                 else:
                     self.nicename = "a " + definition_key
-        #self.nicename = ("a " + attr.get("name") if (attr.get('name') and attr.get("name") and not attr.get("name").startswith(" a")) else "a " + definition_key)
 
-        #print(f"attr desc: { attr.get("description")}")
         self.description = attr.get("description")
         if not self.description or self.description == None:
             test = item_defs.get(definition_key)
             if test:
                 self.description = test
             else:
-                test = descriptions.get(definition_key)
+                test = use_generated_items(definition_key)
                 if test:
                     self.description = test
+                else:
+                    test = descriptions.get(definition_key)
+                    if test:
+                        self.description = test
 
         if not self.description:
             printing.print_yellow(f"attr.get('description'): {attr.get('description')}\n  Item `{definition_key}` does not have a description, do you want to write one?. Enter it here, or hit enter to cancel.")
@@ -282,38 +313,12 @@ class testInstances:
                 else:
                     break
 
-        self.item_type = set()
-        if attr.get("item_type"):
-            self.clean_item_types(attr["item_type"])
-
-
         self.starting_location = None
         self.current_loc = None
 
-        if test_items.get(self.name):
-            item_types = test_items[self.name].get("item_type")
-            if isinstance(item_types, set):
-                for kind in item_types:
-                    if kind in self.item_type:
-                        continue
-                    else:
-                        self.clean_item_types(kind)
-            else:
-                self.clean_item_types(kind)
+        self.get_item_types(attr)
 
-        if item_defs.get(self.name):
-            item_types = item_defs[self.name].get("item_type")
-            if isinstance(item_types, set):
-                for kind in item_types:
-                    if kind in self.item_type:
-                        continue
-                    else:
-                        self.clean_item_types(kind)
-            else:
-                self.clean_item_types(item_types)
 
-        if "all_items" not in self.item_type:
-            self.item_type.add("all_items")
 
         for item in attr:
             if item != "exceptions":
@@ -428,50 +433,36 @@ class testRegistry:
 
         return inst
 
-    #def new_item_from_item_defs(self, item_name, item_dict): # temp function while I convert things. No need to keep it long term, I'll adapt how I write the item defs going forward.
-#
-    #    #inst = self.init_items(item_dict)
-    #    inst = self.init_single(item_name, item_dict[item_name])
-    #    self.temp_items.add(inst)
-#
-    #    printing.print_green(text=vars(inst), bg=False, invert=True)
-    #    return inst
-
 
     def new_item_from_str(self, item_name:str, input_str:str=None, loc_cardinal=None, partial_dict=None)->str|testInstances:
-        print("NEW_ITEM_FROM_STR -------------==============------------")
         if not input_str:
-            print(f"Please enter the default_types you want to assign to `{item_name}`")
+            print("\n")
+            printing.print_green(f"Options: {list(type_defaults)}", invert=True)
+            print(f"Please enter the default_types you want to assign to `{item_name}` (eg ' key, can_pick_up, fragile ' )")
             input_str = input()
 
         if not isinstance(input_str, str):
             print(f"new_item_from_str requires a string input, not {type(input_str)}")
             return
 
-        if input_str == "" or input_str == None:
-            print(f"Blank input skin, returning {item_name} unchanged. No instance created.")
-            return input_str
-
-        print(f"INPUT STR: {input_str}, len: {len(input_str)}")
 
         if " " in input_str.strip():
-            print(f"Input str has a space: {input_str}, type: {type(input_str)}")
+            input_str = input_str.replace(",", "")
             parts = input_str.strip().split(" ")
-            parts = (i for i in parts if i != None and i in list(type_defaults))
+            parts = set(i for i in parts if i != None and i in list(type_defaults))
             if len(parts) > 1:
-                print(f"Parts len >1 : {parts}, type: {type(parts)}")
+                gen_print(f"Parts len >1 : {parts}, type: {type(parts)}")
                 new_str = set(parts)
             else:
-                new_str = set((parts))
+                new_str = set([parts])
 
         elif input_str in list(type_defaults):
-            print(f"Input str in type_defaults: {input_str}, type: {type(input_str)}")
-            new_str = set()
-            new_str.add(input_str)
+            gen_print(f"Input str in type_defaults: {input_str}, type: {type(input_str)}")
+            new_str = set([input_str])
 
         else:
-            print(f"Input is not valid: {input_str}")
-            return item_name
+            gen_print(f"No valid input [`{input_str}`]. Defaulting to item_type = ['static']")
+            new_str = set(["static"])
 
         if not loc_cardinal:
             loc_cardinal = "graveyard north"
@@ -486,11 +477,6 @@ class testRegistry:
                 exit()
 
             new_item_dict[item_name].update({"item_type": new_str})
-            #if new_item_dict[item_name].get("item_type"):
-            #    new_item_dict[item_name]["item_type"].add(new_str) # might fail,
-                ## Need a standalone utility for 'merge item type items from str
-            # for the moment, ignore the item types given in the dict and instead use the inputted str. Assume the partial_dict will be from env_data, just having name + description.
-
 
         else:
             new_item_dict = {}
@@ -508,12 +494,10 @@ class testRegistry:
         return inst
 
     def add_to_gen_items(self, instance):
-        #print(f"Temp items: {temp_items}")
-        print(f"Add to gen_items: {instance}")
+        print(f"Adding to {json_to_edit}: {instance.name}")
 
         key = instance.name
         entry = vars(instance)
-        #temp_items.update(entry)
         printing.printkind(key)
         printing.printkind(entry)
 
@@ -533,13 +517,13 @@ class testRegistry:
         #print(f"Popped dict: {entry}")
 
         with open(json_to_edit, 'r') as file:
-            print(f"KEY: {key}")
             data = json.load(file)
             data[key] = entry
 
         with open(json_to_edit, 'w') as file:
             json.dump(data, file, indent=2)
-        print(f"Data written to {json_to_edit}.")
+
+        print(f"\nEntry for {key} written to {json_to_edit}.\n")
 
 
     def create_item_by_name(self, item_name) -> testInstances:
@@ -547,44 +531,47 @@ class testRegistry:
         item = item_defs.get(item_name)
 
         if item:
-            print(f"item_by_name: \n {item}, name: {item_name}\n\n")
+            gen_print(f"item_by_name: \n {item}, name: {item_name}\n\n")
             inst = self.init_single(item_name, item)
-            print(f"\nGENERATED from item_defs entry: {inst}\n")
-            return inst
+            if inst:
+                gen_print(f"\nGENERATED from item_defs entry: {inst}\n")
+                return inst
+            else:
+                print(f"Failed to generate {item_name} from item_defs")
 
         else:
             gen_entry = use_generated_items(item_name)
             if gen_entry:
                 inst = self.init_items(gen_entry, item_name)
                 if inst:
-                    print(f"\nGENERATED from generated_entry: {inst}\n")
+                    gen_print(f"\nGENERATED from generated_entry: {inst}\n")
                     return inst
                 else:
-                    print(f"Failed to generate instance from {gen_entry}")
-
+                    print(f"Failed to generate {item_name} from test_items")
             elif test_items.get(item_name):
-                    print(f"`{item_name}` found in test_items.")
-                    inst = self.init_items(test_items[item_name], item_name)
+                gen_print(f"`{item_name}` found in test_items.")
+                inst = self.init_items(test_items[item_name], item_name)
+                if inst:
+                    gen_print(f"\nGENERATED from test_items: {inst}\n")
+                    return inst
+                else:
+                    print(f"Failed to generate {item_name} from test_items")
 
-        print(f"No generated entry for {item_name}; continuing.\n")
+        gen_print(f"No generated entry for {item_name}; continuing.\n")
 
-        printing.print_red(f"Nothing found for item name `{item_name}` in def item_by_name.", invert=True)
-        printing.print_red("Do you want to create a new instance with this name?", invert=True)
-        printing.print_red("please enter -type_default key(s)- to create a new instance of that type now.", invert=True)
-        printing.print_green(f"Options: {list(type_defaults)}")
-        printing.print_red("Entering nothing will skip this process.\n", invert=True)
+        printing.print_red(f"Nothing found for item name `{item_name}` in item_by_name.", invert=True)
+        printing.print_red("Please enter the desired type-default key(s) to create a new instance of that type.", invert=True)
+        printing.print_green(f"\nOptions: {list(type_defaults)}")
+        printing.print_red("Entering nothing will skip this process and no instance wil be created.\n", invert=True)
 
         test = input()
 
         if test:
             instance = self.new_item_from_str(item_name, test)
             if instance and isinstance(instance, testInstances):
-                self.temp_items.add(instance)
-                print(f"Adding `{item_name}` to generated_items.json")
-                self.add_to_gen_items(instance) ## This adds to the generated items json immediately. Not sure if i want to do this.
-                print(f"Done, returning instance `{instance}` from create_item_by_name.")
-                print(f"Done, returning instance `{instance}` from create_item_by_name.")
-                print(f"Done, returning instance `{instance}` from create_item_by_name.")
+                gen_print(f"Adding `{item_name}` to generated_items.json")
+                self.add_to_gen_items(instance)
+                gen_print(f"Done; returning instance `{instance}` from create_item_by_name.")
                 return instance
 
 
@@ -600,11 +587,9 @@ class testRegistry:
             if inventory:
                 if isinstance(items, testInstances) and items in inventory: # because sometimes it returns a single item, not a set.
                     return items
-                #check inv for named item
                 for item in inventory:
                     if item in items:
                         return item
-
 
             if local:
                 if isinstance(items, testInstances) and items in local.items: # because sometimes it returns a single item, not a set.
@@ -615,11 +600,11 @@ class testRegistry:
                         return item
 
             if not inventory and not local: # written like this so it fails if we were looking for local items.
-                if isinstance(items, testInstances): # because sometimes it returns a single item, not a set.
+                if isinstance(items, testInstances):
                     return items
             #elif items != None:
-                return items[0]
-
+                #return items[0]
+                # turning off the 'return items[0], because that's probably never what we're going to want.
         else:
             if not inventory and not local: # written like this so it fails if we were looking for local items. If I'm looking for 'suitcase' locally, it shouldn't invent it. Really maybe the lookup shouldn't link to creation at all. Yeah actually this is true. create should always create.
             # Maybe some kind of loaded register, so it generates items when a new location is accessed and only then. Not sure about that.
@@ -643,7 +628,7 @@ class testRegistry:
                     exit() # for now just hard quit if this ever happens, it definitely shouldn't.
                 ## Use the item_indexed lookup for this instead. This is just temporary.
                 if hasattr(item, "contained_in") and getattr(item, "contained_in") not in (False, None):
-                    print(f"Create_item_by_name for contained_in: {item}")
+                    gen_print(f"Create_item_by_name for contained_in: {item}")
                     target_obj = self.create_item_by_name(getattr(item, "contained_in"))
                     if target_obj:
                         if hasattr(item, "started_contained_in") and item.started_contained_in == item.contained_in:
@@ -654,28 +639,28 @@ class testRegistry:
                         exit()
 
                 if hasattr(item, "starting_children") and item.starting_children != None: # Could probably tie this up in the above loop, and viable child should have a viable parent. I guess this enables me to add the either as either parent or child and have it found, rather than always having to add it to one in particular. Esp with the item gen, that's nice.
-                    print(f"Create_item_by_name for starting_children: {item}")
+                    gen_print(f"Create_item_by_name for starting_children: {item}")
         # Except, if the child already exists as an itemdef/gen_item entry, then it gets created twice and alignment gets messy.
 
-                    print(f"Item: {item}, item.starting_children: {item.starting_children}")
+                    gen_print(f"Item: {item}, item.starting_children: {item.starting_children}")
                     instance_children = []
                     if isinstance(item.starting_children, list|set|tuple):
                         for child in item.starting_children:
-                            print(f"create_item_by_name: {child}")
+                            gen_print(f"create_item_by_name: {child}")
                             target_obj = self.create_item_by_name(child)
-                            print(f"target object after create_item_by_name from list: {target_obj}")
+                            gen_print(f"target object after create_item_by_name from list: {target_obj}")
                             if target_obj:
                                 instance_children.append(target_obj)
                         if len(instance_children) == len(item.starting_children):
-                            print(f"All children found/created as instances: {instance_children}")
+                            gen_print(f"All children found/created as instances: {instance_children}")
                             item.starting_children = instance_children
                         else:
-                            print(f"Not all children found/made as instances. Str list:\n   {item.starting_children}\nInstance list:\n    {instance_children}")
+                            gen_print(f"Not all children found/made as instances. Str list:\n   {item.starting_children}\nInstance list:\n    {instance_children}")
                             exit() # again, right now hard exit if this ever fails. Need to see why if it does.
             # Was going to do keys here too, but I don't think I will. Maybe do those at runtime, they're not as widely relevant as children so maybe just do that identification when looked for? Though having said that, that means I have to be aware of whenever they might be checked for... Yeah I should do it here actually.
                     elif isinstance(item.starting_children, str):
                         target_obj = self.create_item_by_name(item.starting_children)
-                        print(f"target object after create_item_by_name with str: {target_obj}")
+                        gen_print(f"target object after create_item_by_name with str: {target_obj}")
                         if target_obj:
                             item.starting_children = list(target_obj)
                         else:
@@ -740,32 +725,33 @@ if __name__ == "__main__":
                 if loc_dict[loc.lower()].get(cardinal):
                     if loc_dict[loc.lower()][cardinal].get("long_desc_dict"):
                         for item in loc_dict[loc.lower()][cardinal]["long_desc_dict"]:
+                            skip_add = False
                             if item != "generic":
-                                if testReg.by_name.get(item):
-                                    continue
                                 if item_defs.get(item):
-                                    print(f"`{item}` found in item_defs.")
+                                    gen_print(f"`{item}` found in item_defs.")
                                     loc_item[item] = item_defs.get(item)
                                     loc_item[item].setdefault("exceptions", {}).update({"starting_location": cardinal + " " + loc})
                                     inst = testReg.init_single(item, loc_item[item])
-                                    print(f"\nINST GENERATED (item_dict by_cardinal): {vars(inst)}\n")
+                                    gen_print(f"\nINST GENERATED (item_dict by_cardinal): {vars(inst)}\n")
                                 else:
                                     if gen_items.get(item):
-                                        print(f"`{item}` found in generated_items.")
+                                        gen_print(f"`{item}` found in generated_items.")
                                         loc_item[item] = gen_items[item]
-                                        print(f"GEN ITEMS {item}: {gen_items[item]}")
+                                        gen_print(f"GEN ITEMS {item}: {gen_items[item]}")
+                                        skip_add = True
                                     elif test_items.get(item):
-                                        print(f"`{item}` found in test_items.")
+                                        gen_print(f"`{item}` found in test_items.")
                                         loc_item[item] = test_items[item]
                                     else:
-                                        print(f"Item {item} not found in item_defs, generating from blank.")
+                                        gen_print(f"Item {item} not found in item_defs, generating from blank.")
                                         loc_item[item] = ({"item_type": [static]})
-                                        testReg.new_item_from_str(item_name=item, loc_cardinal=(loc + cardinal))
+                                        inst = testReg.new_item_from_str(item_name=item, loc_cardinal=(loc + " " + cardinal))
                                         continue
 
                                     loc_item[item].setdefault("exceptions", {}).update({"starting_location": cardinal + " " + loc})
                                     inst = testReg.init_single(item, loc_item[item])
-                                    testReg.temp_items.add(inst)
+                                    if not skip_add:
+                                        testReg.temp_items.add(inst)
 
             from env_data import loc_dict
             if cardinal == None:
@@ -775,26 +761,28 @@ if __name__ == "__main__":
                             skip_add = False
                             loc_item = {}
                             if item_defs.get(item_name):
-                                print(f"`{item_name}` found in item_defs.")
+                                gen_print(f"`{item_name}` found in item_defs.")
                                 loc_item[item_name] = item_defs.get(item_name)
                                 skip_add = True
                             elif gen_items.get(item_name):
-                                print(f"`{item_name}` found in generated_items.")
+                                gen_print(f"`{item_name}` found in generated_items.")
                                 loc_item[item_name] = gen_items[item_name]
-                                print(f"GEN ITEMS {item_name}: {gen_items[item_name]}")
-                                #skip_add = True
+                                gen_print(f"GEN ITEMS {item_name}: {gen_items[item_name]}")
+                                skip_add = True
                             elif test_items.get(item_name):
-                                print(f"`{item_name}` found in test_items.")
+                                gen_print(f"`{item_name}` found in test_items.")
                                 loc_item[item_name] = test_items[item_name]
                             else:
-                                print(f"`{item_name}` making from blank.")
+                                gen_print(f"Item {item_name} not found in item_defs, generating from blank.")
                                 loc_item[item_name] = ({"item_type": [static]})
+                                inst = testReg.new_item_from_str(item_name=item_name, loc_cardinal=(loc + " " + cardinal))
+                                continue
 
                             loc_item[item_name].setdefault("exceptions", {}).update({"starting_location": cardinal + " " + loc})
                             #print("About to go to init_single:")
                             #print(f"item_name: {item_name}, loc_item: {loc_item}")
                             inst = testReg.init_single(item_name, loc_item[item_name])
-                            print(f"\nINST GENERATED: {vars(inst)}\n")
+                            gen_print(f"\nINST GENERATED: {vars(inst)}\n")
                             if not skip_add:
                                 testReg.temp_items.add(inst)
 
@@ -960,17 +948,16 @@ if __name__ == "__main__":
     #exit()
     def add_confirms():
 
-        print(f"testReg.temp_items: {testReg.temp_items}")
         for item in testReg.temp_items:
             if hasattr(item, "name"):
                 testReg.confirmed_items[item.name] = item
 
         if testReg.confirmed_items or testReg.updated:
-            printing.print_red("The following item(s) have been confirmed for future use:")
+            printing.print_red("The following item(s) have been updated or are new entries:")
 
             test_generated_items = True
             if testReg.confirmed_items:
-                print(f"There are confirmed items: {testReg.confirmed_items}")
+                print(f"There are new items: {testReg.confirmed_items}")
                 for item in testReg.confirmed_items:
                     if test_generated_items:
                         print(f"Item name: {item}")
@@ -979,14 +966,14 @@ if __name__ == "__main__":
 
                         test = input()
                         if test.lower() in ("y", "yes"):
-                            print("Item confirmed. Will add this to generated_items.json.")
+                            print("\nItem confirmed.")
                             testReg.add_to_gen_items(testReg.confirmed_items[item])
                         else:
                             continue
 
             if testReg.updated:
                 for inst in testReg.updated:
-                    if not inst in confirmed_items:
+                    if not inst in testReg.confirmed_items:
                         if isinstance(inst, testInstances):
                             testReg.add_to_gen_items(inst) # currently only does one at a time, would be better to batch it internally. Tomorrow.
 
