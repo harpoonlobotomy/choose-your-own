@@ -539,8 +539,53 @@ if __name__ == "__main__":
         else:
             print("No changes to update. Ending.")
 
-    edit_dict()
+    #edit_dict()
 
+    def add_gen_to_main():
+        items_main = "dynamic_data/items_main.json"
+        to_add = set()
+        with open(items_main, 'r') as main_file:
+            main_data = json.load(main_file)
+        with open(json_file, 'r') as file:
+            data = json.load(file)
+
+        add_all_new = False
+        print("Do you want to automatically add any new items?")
+        test = input()
+        if test == "y":
+            add_all_new = True
+
+        for item in data:
+            if main_data.get(item):
+                if main_data[item] == data[item]:
+                    print(f"Item `{item}`is identical to that in main., skipping.")
+                else:
+                    print(f"Item `{item}` already in main dict. Replace?\n Existing in main: {main_data[item]}, Gen version: {data[item]}")
+                    test = input()
+                    if test == "y":
+                        to_add.add(item)
+            else:
+                if add_all_new:
+                    to_add.add(item)
+                else:
+                    print(f"Item `{item}` not in main. Enter 'y' to add it.")
+                    test = input()
+                    if test == "y":
+                        to_add.add(item)
+        if to_add:
+            for item_name in to_add:
+                main_data[item_name] = data[item_name]
+                to_add.add(item)
+
+            print(f"About to add ({to_add}) to the main file. Enter anything to abort:")
+            test = input()
+            if test == "" or test == None:
+                with open(items_main, 'w') as main_file:
+                    json.dump(main_data, main_file, indent=2)
+        else:
+            print("Nothing to add, all entries in main dict and/or no changes made.")
+
+    add_gen_to_main()
 """
 #def items_in(container=None, *, open=None, locked=None):
 #    for item in self.by_location[graveyard_east]:

@@ -107,7 +107,8 @@ loc_dict = {
         "inside": False, "electricity": False, "nature": True,
         "north": {"short_desc": "The entrance gates are",
                 "long_desc": "You think you could leave through the large wrought-iron gates to the north. They're imposing but run-down; this graveyard doesn't get as much love as it could.",
-
+                "long_desc_dict": {"generic" : "There's a high fence surrounding the hallowed ground, heavy wrought-iron keeping the spirits in.", "gate": "large wrought-iron [[]],  imposing but run-down,", "padlock": "an old dark-metal [[]] on a chain holding the gate closed."},
+                ## NOTE: Add text for 'is not present' somewhere. The alt text for when things change.
                 "actions": leave_options,
                 },
         "east": {"short_desc": "a variety of headstones",
@@ -209,8 +210,7 @@ class placeInstance:
         for attr, value in loc_dict.get(name, {}).items():
             if attr == "alt_names":
                 continue
-                for name in value:
-                    self.by_alt_names[name] = self
+
             else:
                 setattr(self, attr, value)
 
@@ -313,7 +313,7 @@ class placeRegistry:
 
     def place_by_name(self, loc_name):
 
-        loc_inst = self.by_name.get(loc_name)
+        loc_inst = self.by_name.get(loc_name.lower())
         if not loc_inst:
             loc_inst = self.by_alt_name.get(loc_name)
 
@@ -351,6 +351,18 @@ class placeRegistry:
         cardinal_inst = locRegistry.cardinals[loc][cardinal_str]
         return cardinal_inst
 
+    def get_card_inst_from_strings(self, location):
+
+        if not isinstance(location, cardinalInstance):
+            location_str, card_str = next(iter(location.items())) # strings from dict
+            place = self.place_by_name(location_str)
+            cardinal_inst = self.by_cardinal(cardinal_str=card_str, loc=place)
+        else:
+            cardinal_inst = location
+
+        return cardinal_inst
+
+
 locRegistry = placeRegistry()
 
 
@@ -379,24 +391,14 @@ def initialise_placeRegistry():
 if "__main__" == __name__:
 
     initialise_placeRegistry()
-    #for loc in locRegistry.places:
-    #locRegistry.add_place_cardinals()
 
     locRegistry.set_current("graveyard")
-    #print(locRegistry.by_cardinal("north").place_name) ## This works. Really like this.
-
     place = locRegistry.place_by_name("graveyard")
-    #for cardinal in locRegistry.place_cardinals[place]: ## this all works currently.
-    #    print(f"place_cardinal: {cardinal}, type: {type(cardinal)}")
-    #    print(locRegistry.place_cardinals[place][cardinal])
-    #
+
     place_cardinals = locRegistry.cardinals[place]
-    #for card in place_cardinals:
-    #    print("place_cardinals[card]: ", place_cardinals[card])
-    #
-    print(place_cardinals["east"].place_name) ## works, prints "east graveyard"
-    place = place_cardinals["east"].place ## returns graveyard instance
-    print(place.name) ## works, prints "east graveyard"
-    #
-    print("place.cardinals['north'].long_desc: ", place.cardinals["north"].long_desc) ## this works now with the cardinal instances
-    print(place.overview) # and this is working again.
+
+    print(place_cardinals["east"].place_name)
+    place = place_cardinals["east"].place
+    print(place.name)
+    print("place.cardinals['north'].long_desc: ", place.cardinals["north"].long_desc)
+    print(place.overview)

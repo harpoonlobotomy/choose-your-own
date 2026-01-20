@@ -10,17 +10,17 @@ print("Item registry is being run right now.")
 sleep(.5)
 
 
-def get_card_inst_from_strings(location):
-    from env_data import locRegistry as loc
-    if not isinstance(location, cardinalInstance):
-        location_str, card_str = next(iter(location.items())) # strings from dict
-        place = loc.place_by_name(location_str)
-        cardinal_inst = loc.by_cardinal(cardinal_str=card_str, loc=place)
-    else:
-        cardinal_inst = location
-
-    return cardinal_inst
-
+#def get_card_inst_from_strings(location):
+#    from env_data import locRegistry as loc
+#    if not isinstance(location, cardinalInstance):
+#        location_str, card_str = next(iter(location.items())) # strings from dict
+#        place = loc.place_by_name(location_str)
+#        cardinal_inst = loc.by_cardinal(cardinal_str=card_str, loc=place)
+#    else:
+#        cardinal_inst = location
+#
+#    return cardinal_inst
+#
 class ItemInstance:
     """
     Represents a single item in the game world or player inventory.
@@ -126,7 +126,6 @@ class itemRegistry:
         #sleep(1)
 
         self.instances = {}      # id -> ItemInstance
-
         self.by_location = {}  # (cardinalInstance) -> set of instance IDs
         self.by_name = {}        # definition_key -> set of instance IDs
         self.by_alt_names = {} # less commonly used variants. Considering just adding them to 'by name' though, I can't imagine it matters if they're alt or original names... # changed mind, nope. Not duplicating them randomly for no good reason. Just an alt:name lookup.
@@ -196,6 +195,7 @@ class itemRegistry:
         if location:
             if not hasattr(inst, "contained_in") or inst.contained_in == None:
                 #print(f"Item {inst.name} has a location.")
+                from env_data import get_card_inst_from_strings
                 cardinal_inst = get_card_inst_from_strings(location)
                 #print(f"CARDINAL INST IF LOCATION: {cardinal_inst}, {cardinal_inst.name}")
                 self.by_location.setdefault(cardinal_inst, set()).add(inst)

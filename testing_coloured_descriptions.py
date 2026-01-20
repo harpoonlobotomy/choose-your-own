@@ -49,6 +49,9 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                                 else:
                                     test = long_dict[item]
                                 long_desc.append(test)
+                    else:
+                        from testclass import testReg
+                        testReg.create_item_by_name(item)
                     #print(f"APPENDING TEST: {long_desc}")
         else:
             if loc_dict[location].get(cardinal) and loc_dict[location][cardinal].get("long_desc"):
@@ -80,6 +83,7 @@ def init_loc_descriptions():
     compiled_cardinals = {}
 
     for location in loc_dict:
+        print(f"LOCATION IN LOC_DICT: {location}")
         area_descrip = (format_descrip(d_type="area_descrip", description=loc_dict[location]["descrip"], location=location))
         output = []
         desc_dict[location] = {}

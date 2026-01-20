@@ -1429,7 +1429,7 @@ Note: Need to add an arg in assign_colour to let it use the instance to get the 
 Also, have neatened up the dynamic description printing quite a bit, very pleased with it now. Still only running in isolation, but for the moment I'm going to hook it up to the existing item class and let it go from there.
 
 Ooooor I hook it up to the new item class, and give that the item defs dict. Should probably do that one tbh. Will just copy over the parts that definitely work from itemRegistry.
-Oh god I'm going to have to rename it again. Neh this time I'm just going to overwrite it with the new version once it's slightly functional and go from there.
+Oh god I'm going to have to rename it again.  Neh this time I'm just going to overwrite it with the new version once it's slightly functional and go from there.
 
 4:33pm
 
@@ -1453,4 +1453,112 @@ Result: Messy and it repeats more than I think it out to, but it works. Successf
 Hm.
 {'id': '3ace1f57-33a4-48b7-9c3c-53168b9fcf77', 'name': 'paper scrap with number', 'description': 'A small scrap of torn, off-white paper with a hand-scrawled phone number written on it.', 'item_type': {'all_items', 'books_paper', 'fragile', 'can_pick_up'}, 'starting_location': None, 'current_loc': None, 'alt_names': {}, 'is_hidden': False, 'can_pick_up': True, 'item_size': 'small_flat_things', 'started_contained_in': None, 'contained_in': None, 'broken_name': None, 'flammable': True, 'can_break': True, 'print_on_investigate': True, 'can_read': True, 'loot_type': 'medium_loot'}
 
-This paper scrap is accurately marked as flammable. 
+This paper scrap is accurately marked as flammable.
+
+Okay so this tells me it's just taking the original starting location from the inst in by_name and copying that. Doesn't explain why removing the 'exceptions' gets rid of all the other attr but w/e. Will figure it out.
+
+
+5.14pm, 18/1/16
+Have been working on it. Also added a 'add the new items to the real dict' function, and cleaned up a little, separated the dict-editing from the generation. Can now run edit_dict on existing dicts, specify fields to edit, etc.
+
+I had descriptions etc written for headstones, grave etc. I have no idea where those descriptions are gone, I can't find record of them.
+
+9.49pm
+
+Note: For actual game - graveyard starts locked, need to find the key to move on.
+Related note: Need to check against events to see if things can be acted on. eg can't move from graveyard until an event is met. So not just that you need to key for the padlock, but that you can't fast-travel away until travel is unrestricted.
+
+Descriptions for items:
+When needed:
+default == based on the default state (eg padlock == child of gate)
+if_no_parent == based on missing expected parent (parent-specific, not just 'is child')
+if_no_child == based on missing expected child (child-specific as above)
+
+
+3.55pm
+Okay so it's not working properly. I changed a few things today and one of them's gone wrong -
+
+
+GENERATED: <TestInstances mummified mouse (1dce50f0-c994-4e31-bbd4-d820e9be5925)>
+
+target object after create_item_by_name from list: <TestInstances mummified mouse (1dce50f0-c994-4e31-bbd4-d820e9be5925)>
+All children found/created as instances: [<TestInstances mummified mouse (1dce50f0-c994-4e31-bbd4-d820e9be5925)>]
+generated_entry:
+ {'grandfather clock': {'name': 'grandfather clock', 'nicename': 'a grandfather clock', 'description': "An antique-looking grandfather clock, silent. Maybe it's in need of a wind. ", 'item_type': "{'container', 'all_items', 'static'}", 'alt_names': {}, 'is_hidden': False, 'can_examine': False, 'breakable': False, 'is_open': False, 'can_be_opened': True, 'can_be_closed': True, 'can_be_locked': True, 'is_locked': True, 'requires_key': True, 'starting_children': ['mummified
+mouse'], 'container_limits': 4, 'name_no_children': None, 'description_no_children': None}, 'mummified mouse': {'name': 'mummified mouse', 'nicename': 'a mummified mouse', 'description': "The tiny, dried body of a long-dead mouse, curled
+up. You could think it was sleeping if it wasn't so frail and stiff.", 'item_type': "{'fragile', 'can_pick_up', 'all_items', 'food_drink'}", 'broken_name': None, 'flammable': True, 'can_break': True, 'can_pick_up': True, 'item_size': 0, 'alt_names': {}, 'is_hidden': False, 'can_consume': True, 'can_spoil': True, 'is_safe': True, 'effect': None}}, name: True
+
+
+Failed to generate instance from {'grandfather clock': {'name': 'grandfather clock', 'nicename': 'a grandfather clock', 'description': "An antique-looking grandfather clock, silent. Maybe it's in need of a wind. ", 'item_type': "{'container', 'all_items', 'static'}", 'alt_names': {}, 'is_hidden': False, 'can_examine': False, 'breakable': False, 'is_open': False, 'can_be_opened': True, 'can_be_closed': True, 'can_be_locked': True, 'is_locked': True, 'requires_key': True, 'starting_children': ['mummified mouse'], 'container_limits': 4, 'name_no_children': None, 'description_no_children': None}, 'mummified mouse': {'name': 'mummified mouse', 'nicename': 'a mummified mouse', 'description': "The tiny, dried body of a long-dead mouse, curled up. You could think it was sleeping if it wasn't so frail and stiff.", 'item_type': "{'fragile', 'can_pick_up', 'all_items', 'food_drink'}", 'broken_name': None, 'flammable': True, 'can_break': True, 'can_pick_up': True, 'item_size': 0, 'alt_names': {}, 'is_hidden': False, 'can_consume': True, 'can_spoil': True, 'is_safe': True, 'effect': None}}
+No generated entry for True; continuing.
+
+Nothing found for item name `True` in def item_by_name.
+Do you want to create a new instance with this name?
+please enter -type_default key(s)- to create a new instance of that type now.
+Options: ['standard', 'static', 'all_items', 'container', 'key', 'can_pick_up', 'event', 'trigger', 'flooring', 'wall', 'food_drink', 'fragile', 'electronics', 'books_paper']
+Entering nothing will skip this process.
+
+
+
+It's adding the dict entry of mummified mouse, not the child obj. Hm.
+Just prior to this I was having this issue:
+
+  Item `mummified mouse` does not have a description, do you want to write one?. Enter it here, or hit enter to cancel.
+The tiny, dried body of a long-dead mouse, curled up. You could think it was sleeping if it wasn't so frail and stiff.
+Is this correct? 'y' to accept this description, 'n' to try again or anything else to cancel.
+y
+Inst after self.init_items(): <TestInstances mummified mouse (2f67f6ff-9556-4a87-a55a-5d4a76c2ce9c)>, type: <class '__main__.testInstances'>
+{'id': '2f67f6ff-9556-4a87-a55a-5d4a76c2ce9c', 'name': 'mummified mouse', 'nicename': 'a mummified mouse', 'description': "The tiny, dried body of a long-dead mouse, curled up. You could think it was sleeping if it wasn't so frail and stiff.", 'item_type': {'fragile', 'can_pick_up', 'all_items', 'food_drink'}, 'starting_location': 'graveyard north', 'current_loc': 'graveyard north', 'broken_name': None, 'flammable': False, 'can_break': True, 'can_pick_up': True, 'item_size': 0, 'started_contained_in': None, 'contained_in': None, 'alt_names': {}, 'is_hidden': False, 'can_consume': True, 'can_spoil': True, 'is_safe': True, 'effect': None}
+Add to gen_items: <TestInstances mummified mouse (2f67f6ff-9556-4a87-a55a-5d4a76c2ce9c)>
+Text: mummified mouse, type: <class 'str'>
+Text: {'id': '2f67f6ff-9556-4a87-a55a-5d4a76c2ce9c', 'name': 'mummified mouse', 'nicename': 'a mummified mouse', 'description': "The tiny, dried body of a long-dead mouse, curled up. You could think it was sleeping if it wasn't so frail and stiff.", 'item_type': {'fragile', 'can_pick_up', 'all_items', 'food_drink'}, 'starting_location': 'graveyard north', 'current_loc': 'graveyard north', 'broken_name': None, 'flammable': False, 'can_break': True, 'can_pick_up': True, 'item_size': 0, 'started_contained_in': None, 'contained_in': None, 'alt_names': {}, 'is_hidden': False, 'can_consume': True, 'can_spoil': True, 'is_safe': True, 'effect': None}, type: <class 'dict'>
+Exception: 'testInstances' object has no attribute 'id'
+
+and so in trying to fix that may have broken this a little.
+
+
+Okay tracing it back.
+
+So it started off generating correctly:
+
+`grandfather clock` found in generated_items.
+GEN ITEMS grandfather clock: {'name': 'grandfather clock', 'nicename': 'a grandfather clock', 'description': "An antique-looking grandfather clock, silent. Maybe it's in need of a wind. ", 'item_type': "{'container', 'all_items', 'static'}", 'alt_names': {}, 'is_hidden': False, 'can_examine': False, 'breakable': False, 'is_open': False, 'can_be_opened': True, 'can_be_closed': True, 'can_be_locked': True, 'is_locked': True, 'requires_key': True, 'starting_children': ['mummified mouse'], 'container_limits': 4, 'name_no_children': None, 'description_no_children': None}
+About to go to init_single:
+
+INST GENERATED: {'id': 'ec3e6339-9c23-42ef-bb2e-a85efc12e8c7', 'name': 'grandfather clock', 'nicename': 'a grandfather clock', 'description': "An antique-looking grandfather clock, silent. Maybe it's in need of a wind. ", 'item_type': {'static', 'container', 'all_items'}, 'starting_location': 'east OtherPlace', 'current_loc': 'east OtherPlace', 'alt_names': {}, 'is_hidden': False, 'can_examine': False, 'breakable': False, 'is_open': False, 'can_be_opened': True, 'can_be_closed': True, 'can_be_locked': True, 'is_locked': True, 'requires_key': True, 'starting_children': ['mummified mouse'], 'container_limits': 4, 'name_no_children': None, 'description_no_children': None}
+
+Then at this point when it gets to clean_children:
+Item.starting_children: None
+generated_entry:
+ {'grandfather clock': {'name': 'grandfather clock', 'nicename': 'a grandfather clock', 'description': "An antique-looking grandfather clock, silent. Maybe it's in need of a wind. ", 'item_type': "{'container', 'all_items', 'static'}", 'alt_names': {}, 'is_hidden': False, 'can_examine': False, 'breakable': False, 'is_open': False, 'can_be_opened': True, 'can_be_closed': True, 'can_be_locked': True, 'is_locked': True, 'requires_key': True, 'starting_children': ['mummified
+mouse'], 'container_limits': 4, 'name_no_children': None, 'description_no_children': None}, 'mummified mouse': {'name': 'mummified mouse', 'nicename': 'a mummified mouse', 'description': "The tiny, dried body of a long-dead mouse, curled
+up. You could think it was sleeping if it wasn't so frail and stiff.", 'item_type': "{'fragile', 'can_pick_up', 'all_items', 'food_drink'}", 'broken_name': None, 'flammable': True, 'can_break': True, 'can_pick_up': True, 'item_size': 0, 'alt_names': {}, 'is_hidden': False, 'can_consume': True, 'can_spoil': True, 'is_safe': True, 'effect': None}}, name: False
+
+
+5.30pm
+okay next:
+Adding `ornate silver key` to generated_items.json
+Add to gen_items: <TestInstances ornate silver key (07a61206-d9e4-4f52-ba1a-15711a867137)>
+Text: ornate silver key, type: <class 'str'>
+Text: {'id': '07a61206-d9e4-4f52-ba1a-15711a867137', 'name': 'ornate silver key', 'nicename': 'a ornate silver key', 'description': 'an ornate silver key with `VI` pressed into the head.', 'item_type': {'key', 'all_items', 'can_pick_up'}, 'starting_location': 'graveyard north', 'current_loc': 'graveyard north', 'is_key': True, 'alt_names': {}, 'is_hidden': False, 'can_pick_up': True, 'item_size': 0, 'started_contained_in': None, 'contained_in': None}, type: <class 'dict'>Exception: 'testInstances' object has no attribute 'id'
+
+this issue only happens when adding a new entry to generated_items.json.
+the item gets added correctly, but then this error.
+
+
+Data written to dynamic_data/generated_items.json.
+#  ^-- added this print at the very end of add_to_gen_items() so it's happening after that.
+Exception: 'testInstances' object has no attribute 'id
+
+
+
+New side issue:
+
+key
+NEW_ITEM_FROM_STR -------------==============------------
+new_item_from_str:
+ {'ornate silver key': {'item_type': {'e', 'k', 'y'}, 'exceptions': {'starting_location': 'graveyard north'}}}, ornate silver key
+
+If only one defautl type is entered, it thinks its a set again and breaks the string. Goddamn I hate this. Why can't just stay a fucking set?
+
+Okay, fixed now. I just manually create the set and then .add the inst to it. Stupid workaround but needs must. Can't figure out how to make it be a set containing one word otherwise. Too tired. Bleh.
