@@ -83,7 +83,7 @@ def init_loc_descriptions():
     compiled_cardinals = {}
 
     for location in loc_dict:
-        print(f"LOCATION IN LOC_DICT: {location}")
+        #print(f"LOCATION IN LOC_DICT: {location}")
         area_descrip = (format_descrip(d_type="area_descrip", description=loc_dict[location]["descrip"], location=location))
         output = []
         desc_dict[location] = {}
@@ -135,7 +135,7 @@ def init_loc_descriptions():
                         #print(f"LONG DESC len 3: {long_desc}")
                         long_description = (f"{long_desc[0]}{', '.join(long_desc[1:-1])}, and {long_desc[-1]}")
                         #print(f"Parts: long_desc[0]: {long_desc[0]} // long_desc[1:-1]: {long_desc[1:-1]} // long_desc[-1]: {long_desc[-1]}")
-                    new_desc = area_descrip + "\n" + f"You're facing {assign_colour(cardinal)}. " + long_description
+                    new_desc = f"You're facing {assign_colour(cardinal)}. " + long_description
                     compiled_cardinals[location][cardinal] = new_desc
 
         #print(f"OUTPUT: {output}")

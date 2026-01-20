@@ -582,7 +582,7 @@
   "gate": {
     "name": "gate",
     "nicename": "a gate",
-    "description": "A large wrought-iron gate, imposing but run-down.",
+    "description": "Heavy wrought iron bars with little decoration, held closed with a padlock on a heavy chain.",
     "item_type": "{'static', 'all_items', 'container'}",
     "can_examine": false,
     "breakable": false,

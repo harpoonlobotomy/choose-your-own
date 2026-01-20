@@ -32,8 +32,6 @@ class ItemInstance:
         self.name:str = definition_key
         self.nicename:str = attr["name"]
         self.item_type = "standard" ## have it here and/or in the registry. I guess both? covers the 'is_container' thing neatly enough.
-        self.alt_names = set()
-
         self.colour = None
         self.description:str = attr["description"]
         self.starting_location:dict = attr.get("starting_location")
@@ -195,8 +193,8 @@ class itemRegistry:
         if location:
             if not hasattr(inst, "contained_in") or inst.contained_in == None:
                 #print(f"Item {inst.name} has a location.")
-                from env_data import get_card_inst_from_strings
-                cardinal_inst = get_card_inst_from_strings(location)
+                from env_data import locRegistry as loc
+                cardinal_inst = loc.by_cardinal_str(location)
                 #print(f"CARDINAL INST IF LOCATION: {cardinal_inst}, {cardinal_inst.name}")
                 self.by_location.setdefault(cardinal_inst, set()).add(inst)
                 #print(f"SELF.BY_LOCATION: {self.by_location}")
@@ -407,7 +405,7 @@ class itemRegistry:
             loc_cardinal = loc.current
 
         elif isinstance(loc_cardinal, str):
-            loc_cardinal = loc.by_cardinal(loc_cardinal)
+            loc_cardinal = loc.by_cardinal_str(loc_cardinal)
 
         elif isinstance(loc_cardinal, placeInstance):
             print(f"Loc_cardinal in get_item_by_location is a Place: {loc_cardinal}")
@@ -433,7 +431,7 @@ class itemRegistry:
             print(f"self.by_alt_names.get(definition_key): {self.by_alt_names.get(definition_key)}")
             return self.by_name.get(self.by_alt_names.get(definition_key))
 
-        print(f"self.by_alt_names: {self.by_alt_names}")
+        #print(f"self.by_alt_names: {self.by_alt_names}")
 
     def instances_by_container(self, container:ItemInstance)->list:
         logging_fn()

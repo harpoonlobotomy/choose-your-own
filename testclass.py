@@ -230,45 +230,22 @@ class testInstances:
 
     def get_item_types(self, attr):
 
-        self.item_type = set()
-
         if attr.get("item_type"):
             self.clean_item_types(attr["item_type"])
-
-        #if item_defs.get(self.name): ## Surely if item_defs[self.name] exists, it will be in attr by now already. This shouldn't be necessary.
-        #    item_types = item_defs[self.name].get("item_type")
-        #    if isinstance(item_types, set):
-        #        for kind in item_types:
-        #            if kind in self.item_type:
-        #                continue
-        #            else:
-        #                self.clean_item_types(kind)
-        #    else:
-        #        self.clean_item_types(item_types)
 
         if test_items.get(self.name):
             item_types = test_items[self.name].get("item_type")
             self.clean_item_types(item_types)
-            #if isinstance(item_types, set):
-            #    for kind in item_types:
-            #        if kind in self.item_type:
-            #            continue
-            #        else:
-            #else:
-            #    self.clean_item_types(kind) ## for how long have I had 'kind' here when it's just pulling from the previous entry.... damn.
 
         if "all_items" not in self.item_type:
             self.item_type.add("all_items")
 
-
     def __init__(self, definition_key, attr):
 
-        #print(f"definition_key: {definition_key}, attr: {attr}")
         self.id = str(uuid.uuid4())
         self.name = definition_key
-        if attr.get("nicename"):
-            self.nicename = attr["nicename"]
-        else:
+        self.nicename = attr.get("nicename")
+        if not self.nicename:
             if attr.get("name"):
                 if attr.get("name").startswith("a "):
                     self.nicename = attr.get("name")
@@ -281,6 +258,7 @@ class testInstances:
                     self.nicename = "a " + definition_key
 
         self.description = attr.get("description")
+
         if not self.description or self.description == None:
             test = item_defs.get(definition_key)
             if test:
@@ -313,12 +291,11 @@ class testInstances:
                 else:
                     break
 
-        self.starting_location = None
-        self.current_loc = None
+        self.starting_location = None ## TODO change to current_loc once integrated to main script.
+        self.current_loc = None # TODO maybe change to just 'self.loc' and assume 'current'?
 
+        self.item_type = set()
         self.get_item_types(attr)
-
-
 
         for item in attr:
             if item != "exceptions":
@@ -339,7 +316,7 @@ class testInstances:
                     for sub_flag in type_defaults[item_type][flag]:
                         if attr["exceptions"][flag].get(sub_flag) == None and type_defaults[item_type][flag].get(sub_flag) != None:
                             continue
-                        if sub_flag in attr["exceptions"]:
+                        if sub_flag in attr["exceptions"]: # does it ever nest this deeply anymore? Possibly. need to test.
                             setattr(self, sub_flag, attr["exceptions"][sub_flag])
                         else:
                             setattr(self, sub_flag, type_defaults[item_type][flag][sub_flag])
@@ -359,6 +336,23 @@ class testInstances:
         if hasattr(self, "started_contained_in"):
             self.contained_in = self.started_contained_in
 
+        if hasattr(self, "starting_children"):
+            self.children = self.starting_children
+
+        self.colour = None
+        self.verb_actions = set() ## TODO: Will need to copy this mostly verbatim from itemRegistry.
+
+        if hasattr(self, "print_on_investigate"):
+            self.verb_actions.add("print_on_investigate")
+            from item_definitions import detail_data
+            details = self.name + "_details"
+            details = details.replace(" ", "_")
+            details_data = detail_data.get(details)
+            if details_data:
+                self.description_detailed = details_data
+            else:
+                print(f"No detailed description found for {self.name}, though it's supposed to be readable.")
+
     def __repr__(self):
         return f"<TestInstances {self.name} ({self.id})>"
 
@@ -371,7 +365,6 @@ class testRegistry:
         self.by_id = {}
         self.by_location = {}    # cardinalinst (when implemented, str for now), > instances
         self.temp_items = set() # just exists as a place to live for dynamic item generation so it doesn't mess with for loops. Should be empty, only used temporarily and then cleared (contents added to self.instances) after the current loop.
-        self.confirmed_items = {} # as above, will probably merge them later.
         self.updated = set() # again, can probably be merged with the above. Doesn't need to be part of this class at all, it's purely here for convenience because I'm tired.
 
     def init_single(self, item_name, item_entry):
@@ -948,39 +941,45 @@ if __name__ == "__main__":
     #exit()
     def add_confirms():
 
+        confirmed_items = {}
         for item in testReg.temp_items:
             if hasattr(item, "name"):
-                testReg.confirmed_items[item.name] = item
+                confirmed_items[item.name] = item
 
-        if testReg.confirmed_items or testReg.updated:
+        if confirmed_items or testReg.updated:
             printing.print_red("The following item(s) have been updated or are new entries:")
 
             test_generated_items = True
-            if testReg.confirmed_items:
-                print(f"There are new items: {testReg.confirmed_items}")
-                for item in testReg.confirmed_items:
+            if confirmed_items:
+                print(f"There are new items: {confirmed_items}")
+                for item in confirmed_items:
                     if test_generated_items:
                         print(f"Item name: {item}")
                         printing.print_red(f"If you want to add the {item} to generated_items, please type 'yes' after the item data is printed.", invert=True)
-                        printing.print_green(text=f"Item data: {vars(testReg.confirmed_items[item])}",  invert=True)
+                        printing.print_green(text=f"Item data: {vars(confirmed_items[item])}",  invert=True)
 
                         test = input()
                         if test.lower() in ("y", "yes"):
                             print("\nItem confirmed.")
-                            testReg.add_to_gen_items(testReg.confirmed_items[item])
+                            testReg.add_to_gen_items(confirmed_items[item])
                         else:
                             continue
+                        print(f"Finished adding new items to {json_to_edit}")
+
 
             if testReg.updated:
                 for inst in testReg.updated:
-                    if not inst in testReg.confirmed_items:
+                    if not inst in confirmed_items:
                         if isinstance(inst, testInstances):
                             testReg.add_to_gen_items(inst) # currently only does one at a time, would be better to batch it internally. Tomorrow.
 
                     elif isinstance(inst, str):
                         if testReg.by_name.get(inst):
                             testReg.add_to_gen_items(testReg.by_name.get(inst)) # currently only does one at a time, would be better to batch it internally. Tomorrow.
+                print(f"Finished adding updated items to {json_to_edit}.")
 
+            printing.print_blue("\n.                      Fin.                       .", invert=True)
+            print()
 
     add_confirms()
 

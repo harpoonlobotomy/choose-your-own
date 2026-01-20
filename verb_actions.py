@@ -359,7 +359,7 @@ def turn_cardinal(prospective_cardinal, turning = True):
         for k, v in turning_dict.items():
             if v == new_int:
                 #print(f"V == new_int: {v}")
-                prospective_cardinal = loc.by_cardinal(k)
+                prospective_cardinal = loc.by_cardinal_str(k)
                 #print(f"Prospective cardinal is now: {prospective_cardinal.name}")
 
 
@@ -373,7 +373,7 @@ def turn_cardinal(prospective_cardinal, turning = True):
                 prospective_cardinal = test
 
     if isinstance(prospective_cardinal, str):
-        prospective_cardinal = loc.by_cardinal(prospective_cardinal)
+        prospective_cardinal = loc.by_cardinal_str(prospective_cardinal)
 
 
     #print(f"prospective cardinal going to loc test: {prospective_cardinal}")
@@ -877,7 +877,7 @@ def turn(format_tuple, input_dict):
             }
 
         new_cardinal_str = invert_cardinals[loc.current.name]
-        new_cardinal = loc.by_cardinal(new_cardinal_str)
+        new_cardinal = loc.by_cardinal_str(new_cardinal_str)
         turn_cardinal(new_cardinal)
         return
 

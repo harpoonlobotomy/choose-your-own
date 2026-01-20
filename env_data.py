@@ -341,26 +341,32 @@ class placeRegistry:
             print(loc)
 
 
-    def by_cardinal(self, cardinal_str:str, loc=None) -> cardinalInstance:
-        if " " in cardinal_str:
-            [loc, cardinal_str] = cardinal_str.split(" ")
+    def by_cardinal_str(self, cardinal_str:str|dict, loc=None) -> cardinalInstance:
+
+        if isinstance(cardinal_str, dict):
+            loc, cardinal_str = next(iter(cardinal_str.items()))
+        elif isinstance(cardinal_str, str):
+            if " " in cardinal_str:
+                [loc, cardinal_str] = cardinal_str.split(" ")
+
         if loc == None:
             loc = self.currentPlace
         elif isinstance(loc, str):
             loc = self.place_by_name(loc)
+
         cardinal_inst = locRegistry.cardinals[loc][cardinal_str]
         return cardinal_inst
 
-    def get_card_inst_from_strings(self, location):
-
-        if not isinstance(location, cardinalInstance):
-            location_str, card_str = next(iter(location.items())) # strings from dict
-            place = self.place_by_name(location_str)
-            cardinal_inst = self.by_cardinal(cardinal_str=card_str, loc=place)
-        else:
-            cardinal_inst = location
-
-        return cardinal_inst
+    #def get_card_inst_from_strings(self, location): ## by_cardinal_str instead! I don't think anything else called this.
+#
+    #    if not isinstance(location, cardinalInstance):
+    #        location_str, card_str = next(iter(location.items())) # strings from dict
+    #        place = self.place_by_name(location_str)
+    #        cardinal_inst = self.by_cardinal_str(cardinal_str=card_str, loc=place)
+    #    else:
+    #        cardinal_inst = location
+#
+    #    return cardinal_inst
 
 
 locRegistry = placeRegistry()

@@ -60,14 +60,14 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
             exit()
 
     if new_location and isinstance(new_location, placeInstance) and not new_cardinal:
-        new_card_inst = loc.by_cardinal(loc.current.name, new_location)
+        new_card_inst = loc.by_cardinal_str(loc.current.name, new_location)
         loc.set_current(loc = new_location, cardinal=new_card_inst)
 
     elif new_cardinal and isinstance(new_cardinal, cardinalInstance):
         if new_location:
             loc.set_current(loc = new_location, cardinal=new_cardinal)
         else:
-            new_cardinal = loc.by_cardinal(new_cardinal)
+            new_cardinal = loc.by_cardinal_str(new_cardinal)
             loc.set_current(cardinal=new_cardinal)
 
     print(f"You're now facing {assign_colour(loc.current, card_type="place_name")}")
