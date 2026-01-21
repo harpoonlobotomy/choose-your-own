@@ -5,7 +5,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Optional
 
-from initialise_all import initialise_all
+import generate_locations
 from verb_actions import get_current_loc
 
 print("Verb registry is being run right now.")
@@ -287,6 +287,23 @@ class Parser:
                             tokens.append(Token(idx, word, kinds, canonical))
                     if not canonical:
                         print(f"No canonical for idx `{idx}`, word `{word}`")
+                        print("Please enter a word type if you would like to add a new noun/verb/location")
+                        test = input()
+                        if test in ("noun", "verb", "location", "loc"):
+                            if test == "location" or test == "loc":
+                                from generate_locations import generate_new_location
+                                generate_new_location(word)
+                                #import json
+                                #temp_defs = "dynamic_data/temp_defs.json"
+                                #with open(temp_defs, 'r') as file:
+                                #    temp_def_dict = json.load(file)
+                                #    temp_def_dict[word] = new_dict#({"kinds":["location"], "canonical": word})
+                                #with open(temp_defs, 'w') as file:
+                                #    json.dump(temp_def_dict, file, indent=2)
+
+
+                            tokens.append(Token(idx, word, [test], word))
+
                     #print(f"verbs.compound_words: {verbs.compound_words}")
 
                         ## Set up a fn where it tests the results tuple of compound_word, whichever compound_word in compound_matches has the best ration of (matches, total_parts) wins.)
@@ -642,4 +659,3 @@ def initialise_verbRegistry():
             for word in attr.get("null_words"):
                 if word.lower() != None:
                     verbs.list_null_words.add(word)
-

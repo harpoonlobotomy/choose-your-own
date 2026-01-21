@@ -34,7 +34,6 @@ class ItemInstance:
         self.description:str = attr.get("description")
         self.starting_location:dict = attr.get("starting_location") # currently is styr
         self.verb_actions = set()
-        self.contained_in = None
         self.location:cardinalInstance = None
 
         if attr.get("alt_names"):
@@ -74,6 +73,8 @@ class ItemInstance:
 ###
         if "container" in self.item_type:
             self.verb_actions.add("is_container")
+            if hasattr(self, "starting_children"):
+                registry.new_parents.add(self.id)
              ### This just adds the string name, not the id like it needs to.
             #self.children = list() ## Maybe we create all instances first, then add 'children' afterwards, otherwise they won't be initialised yet. Currently this works because I've listed the parents first in the item defs.
 
@@ -104,6 +105,8 @@ class itemRegistry:
 
         self.temp_items = set()
         self.updated = set()
+
+        self.new_parents = set() ## new_parents, ID is added to all containers. Then after initial generation, force a parent/child check.
 
         import json
         json_primary = "dynamic_data/items_main.json" # may break things
@@ -153,6 +156,9 @@ class itemRegistry:
         if item_entry.get("alt_names"):
             for altname in item_entry.get("alt_names"):
                 self.by_alt_names[altname] = item_name
+
+        if hasattr(inst, "starting_children") and inst.starting_children != None:
+            self.new_parents.add(inst.id)
 
         return inst
 
@@ -298,9 +304,12 @@ class itemRegistry:
             def get_children(child_parent, parent):
                 #print(f"parent: {parent}, item.starting_children: {parent.starting_children}")
                 instance_children = []
+                instance_count = 0
                 target_child = None
                 if isinstance(parent.starting_children, list|set|tuple):
                     for child in parent.starting_children:
+                        if isinstance(child, ItemInstance):
+                            instance_count += 1
                         if child_parent.get(child):
                             if child_parent[child] == parent.name:
                                 #print("Child/parent pair already exists, skipping.")
@@ -319,9 +328,11 @@ class itemRegistry:
                     if len(instance_children) == len(parent.starting_children):
                         #print(f"All children found/created as instances: {instance_children}")
                         parent.starting_children = instance_children
+                        registry.new_parents.remove(parent.id)
                     else:
-                        if len(instance_children) + len(child_parent) == len(parent.starting_children):
+                        if (len(instance_children) + len(child_parent) == len(parent.starting_children)) or (len(parent.starting_children) == instance_count):
                             print("All children found or already parented to this parent.")
+                            registry.new_parents.remove(parent.id)
                         else:
                             print(f"Not all children found/made as instances. Str list:\n   {parent.starting_children}\nInstance list:\n    {instance_children}\nchild/parent dict: {child_parent}")
                             exit() # again, right now hard exit if this ever fails. Need to see why if it does.
@@ -336,7 +347,9 @@ class itemRegistry:
                         target_child.contained_in = parent
                         if not hasattr(parent, "children"):
                             parent.children = set()
-                            parent.children.add(target_child)
+                        parent.children.add(target_child)
+                        registry.new_parents.remove(parent.id)
+
                     else:
                         print(f"Failed to find child for {parent}'s {parent.starting_children} (from str).")
                         exit()
@@ -349,8 +362,7 @@ class itemRegistry:
                     if hasattr(parent, "starting_children") and parent.starting_children != None:
                         print(f"Parent {parent} has starting child/ren: {parent.starting_children}")
                         get_children(child_parent, parent)
-                    print("vars:")
-                    print(f"{vars(parent)}")
+
 
                 else:
                     print("Currently the parent of a child needs to be iteminstance.")
@@ -375,6 +387,9 @@ class itemRegistry:
                         item.contained_in = target_obj
                         print(f"Item {item} contained in: {item.contained_in}")
                         child_parent[item.name] = target_obj.name
+                        if not hasattr(target_obj, "children"):
+                            target_obj.children = set()
+                        target_obj.children.add(item)
                     else:
                         print(f"Missing an instance for `{item.name}`'s  `{"contained_in"}`: {getattr(item, "contained_in")}")
                         exit()
@@ -383,7 +398,7 @@ class itemRegistry:
                     print(f"Create_item_by_name for starting_children: {item}")
         # Except, if the child already exists as an itemdef/gen_item entry, then it gets created twice and alignment gets messy.
 
-                    child_parent = get_children(item, child_parent)
+                    child_parent = get_children(child_parent, item)
 
                 if hasattr(item, "requires_key") and not isinstance(getattr(item, "requires_key"), bool):
                     target_obj = self.create_item_by_name(item.requires_key)
@@ -651,9 +666,17 @@ class itemRegistry:
 
         if "container" in inst.item_type:
             #print(f"Container in inst.flags: {inst}")
-            children = self.instances_by_container(inst)
+            all_children = True
+            if hasattr(inst, "children") and hasattr(inst, "starting_children"):
+                for child in inst.starting_children:
+                    if child in inst.children:
+                        print(f"Child {child.name} is present in parent {inst.name}.")
+                    else:
+                        all_children = False
+            #children = self.instances_by_container(inst)
+            if not all_children:
             #print(f"children: {children}")
-            if not children:
+            #if not children:
                 if hasattr(inst, "description_no_children") and inst.description_no_children != None:
                     description = inst.description_no_children # works now. If it's a container with no children, it prints this instead.
                 # still need to make it non-binary but that can happen later. This'll do for now.
@@ -988,6 +1011,8 @@ def get_loc_items_dict(loc=None, cardinal=None):
                                 inst = registry.init_single(item, loc_item[item])
                                 if not skip_add:
                                     registry.temp_items.add(inst)
+                                if registry.new_parents:
+                                    registry.clean_children(inst)
 
         if cardinal == None:
             for cardinal in CARDINALS:

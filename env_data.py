@@ -319,7 +319,6 @@ class placeRegistry:
         print(f"Loc name in place_by_name: {loc_name}")
         loc_inst = self.by_name.get(loc_name.lower())
         if not loc_inst:
-            print(f"self.by_alt_name: {self.by_alt_name}")
             loc_inst = self.by_alt_name.get(loc_name)
 
         if isinstance(loc_inst, placeInstance):
@@ -376,27 +375,31 @@ class placeRegistry:
 
 locRegistry = placeRegistry()
 
+def add_new_loc(name, reset_current=True):
+    place = placeInstance(name)
+    locRegistry.places.add(place)
+    locRegistry.by_name[name] = place
+    #print(f"loc_dict[name]::::: {loc_dict[name]}")
+    if loc_dict[name].get("alt_names"):
+        #print(f"loc_dict[name] for {name} has alt names: {loc_dict[name].get("alt_names")}")
+        for altname in loc_dict[name]["alt_names"]:
+            locRegistry.by_alt_name[altname]=place
+
+    locRegistry.cardinals[place] = locRegistry.add_cardinals(place)
+    ## add cardinals to place instance so it's directly referable.
+    cardinals_dict = {}
+    for card in cardinals_list:
+        cardinal_inst = cardinalInstance(card, place)
+        cardinals_dict[card] = cardinal_inst
+    place.cardinals=cardinals_dict
+    if reset_current:
+        locRegistry.set_current(place)
 
 def initialise_placeRegistry():
 
-    for name in loc_dict.keys():
-        place = placeInstance(name)
-        locRegistry.places.add(place)
-        locRegistry.by_name[name] = place
-        #print(f"loc_dict[name]::::: {loc_dict[name]}")
-        if loc_dict[name].get("alt_names"):
-            #print(f"loc_dict[name] for {name} has alt names: {loc_dict[name].get("alt_names")}")
-            for altname in loc_dict[name]["alt_names"]:
-                locRegistry.by_alt_name[altname]=place
 
-        locRegistry.cardinals[place] = locRegistry.add_cardinals(place)
-        ## add cardinals to place instance so it's directly referable.
-        cardinals_dict = {}
-        for card in cardinals_list:
-            cardinal_inst = cardinalInstance(card, place)
-            cardinals_dict[card] = cardinal_inst
-        place.cardinals=cardinals_dict
-        locRegistry.set_current(place)
+    for name in loc_dict.keys():
+        add_new_loc(name)
 
 
         #place.set_scene_descrip(name, place)
@@ -408,11 +411,12 @@ def get_descriptions(place):
     place.overview = description_dict.get(place.name).get("overview")
     if not isinstance(place.overview, str):
         place.overview = list(place.overview)[0]
-    if place.overview:
-        print(f"SELF OVERVIEW IN ENV_DATA: {place.overview}")
-    else:
+    if not place.overview:
+        #print(f"SELF OVERVIEW IN ENV_DATA: {place.overview}")
+    #else:
         print("Failed to get self.overview.")
         print(f"Did this part work at least? ``{description_dict.get(place.name)}``")
+
 
 def get_loc_descriptions():
     for place in locRegistry.places:
@@ -428,8 +432,8 @@ if "__main__" == __name__:
 
     place_cardinals = locRegistry.cardinals[place]
 
-    print(place_cardinals["east"].place_name)
+    #print(place_cardinals["east"].place_name)
     place = place_cardinals["east"].place
-    print(place.name)
-    print("place.cardinals['north'].long_desc: ", place.cardinals["north"].long_desc)
+    #print(place.name)
+    #print("place.cardinals['north'].long_desc: ", place.cardinals["north"].long_desc)
     #print(place.overview)

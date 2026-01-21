@@ -776,13 +776,13 @@ def get_loc_items_dict(loc=None, cardinal=None):
 
 
 def add_confirms():
-
+    from itemRegistry import registry
     confirmed_items = {}
-    for item in testReg.temp_items:
+    for item in registry.temp_items:
         if hasattr(item, "name"):
             confirmed_items[item.name] = item
 
-    if confirmed_items or testReg.updated:
+    if confirmed_items or registry.updated:
         printing.print_red("The following item(s) have been updated or are new entries:")
 
         test_generated_items = True

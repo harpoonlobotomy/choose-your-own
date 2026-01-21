@@ -1658,3 +1658,49 @@ Ah, finally saw it. That's why it keeps failing.
 
 
 6.29 Fiiiiiinally. Got the flowers out of the jar. Added a straight 'children' set for containers to use, separate from starting_children.
+
+
+8.37
+look at jar
+INVENTORY LIST IN RUN_CHECK: [<ItemInstance severed tentacle (b65bbc12-a5c5-47b7-93ae-4d11a8a87d6b)>, <ItemInstance paperclip (8fa97de2-798a-4ae9-89d3-4dccdbc8f4c2)>, <ItemInstance mail order catalogue (3f4f9448-80f1-4978-8f20-c9aba14c8927)>, <ItemInstance paperclip (ac6f78c0-11ea-4176-9415-2b62f3c111b1)>, <ItemInstance glass jar (54c3855c-c8e2-4e6a-a272-26f38500958f)>]
+items_at_cardinal: {<ItemInstance moss (ad23872e-6971-455c-9e27-b1304517689a)>}, type: <class 'set'>
+Look at item MEANING: in inventory
+You look at the glass jar.
+A glass jar, now empty aside from some bits of debris.
+
+Hm. So - apparently it's not generating the flowers early enough. I'm not sure why.
+
+If I 'take flowers from jar' it invents the flowers, but they need to be present as soon as the parent is activated.
+Thought I'd done that but clearly not.
+
+6.51pm
+Okay, fixed it. Now the description is accurate, and the parenting holds up. I probably repeat the parenting checks too often now, but it was being tricksy so I'll just skim it off later.
+
+At least for the moment, have switched the parenting check from
+
+children = self.instances_by_container(inst)
+
+to
+
+for child in inst.starting_children:
+    if child in inst.children:
+        print(f"Child {child.name} is present in parent {inst.name}.")
+    else:
+        all_children = False
+
+so it checks not just 'is it empty' but 'are its starting children gone'.
+Currently is still binary, but it'll do for now. I'll do a version like I did with the dynamic scene descriptions later.
+
+
+7.32 wrote myself a little function for adding locations on the fly. No descriptions etc, but I can name a location then choose to make it. It's cool.
+
+Also, just saw another issue with why the parent children aren't working:
+
+[init_single] ITEM ENTRY: {'name': 'some dried flowers', 'description': 'a bunch of old flowers, brittle and pale; certainly not as vibrant as you imagine they once were.', 'item_type': "{'can_pick_up', 'fragile', 'all_items'}", 'alt_names': {}, 'is_hidden': False, 'can_pick_up': True, 'item_size': 'smaller_than_apple', 'broken_name': None, 'flammable': True, 'can_break': True, 'can_remove_from': 'glass jar'}
+Create_item_by_name for starting_children: <ItemInstance glass jar (41061f91-f985-485e-ab99-6a6be90db639)>
+Exception: 'dict' object has no attribute 'starting_children'
+:: Clean children:: parent: None
+Create_item_by_name for starting_children: <ItemInstance glass jar (41061f91-f985-485e-ab99-6a6be90db639)>
+Exception: 'dict' object has no attribute 'starting_children'
+
+At some point it's sending a dict instead of an instance.

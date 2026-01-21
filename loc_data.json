@@ -1,7 +1,7 @@
 {
   "city hotel room": {
     "alt_names": [
-    "hotel room"
+      "hotel room"
     ],
     "north": {
       "item_desc": {},
@@ -241,5 +241,53 @@
       }
     },
     "descrip": "Sheltered from the rain you see a small PPPshrineEEE, built into the underhang of a cliff face."
+  },
+  "church": {
+    "alt_names": [],
+    "north": {
+      "item_desc": {},
+      "short_desc": "",
+      "long_desc": "",
+      "items": {
+        "": {
+          "description": "",
+          "is_hidden": false
+        }
+      }
+    },
+    "east": {
+      "item_desc": {},
+      "short_desc": "",
+      "long_desc": "",
+      "items": {
+        "": {
+          "description": "",
+          "is_hidden": false
+        }
+      }
+    },
+    "south": {
+      "item_desc": {},
+      "short_desc": "",
+      "long_desc": "",
+      "items": {
+        "": {
+          "description": "",
+          "is_hidden": false
+        }
+      }
+    },
+    "west": {
+      "item_desc": {},
+      "short_desc": "",
+      "long_desc": "",
+      "items": {
+        "": {
+          "description": "",
+          "is_hidden": false
+        }
+      }
+    },
+    "descrip": "It's a PPPchurchEEE."
   }
 }

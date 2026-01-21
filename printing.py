@@ -25,6 +25,11 @@ def print_green(text, bg=True, invert=False):
     colour = 32
     print_col(text, colour, bg, invert)
 
+def print_blue(text, bg=True, invert=False):
+
+    colour = 34
+    print_col(text, colour, bg, invert)
+
 def print_yellow(text, bg=False, invert=False):
 
     colour = 33

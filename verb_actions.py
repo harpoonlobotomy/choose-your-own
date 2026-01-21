@@ -466,6 +466,9 @@ def go(format_tuple, input_dict): ## move to a location/cardinal/inside
             if direction_entry["str_name"] in ("left", "right"):
                 turn_cardinal(direction_entry["str_name"])
             else:
+                print("If this does not have a location, it breaks. Why am I still using location_entry etc after determining they don't exist. Works if the direction is something internal, but not if I just type 'go to church', a location that doesn't exist.")
+                #if len(format_tuple) == 3:
+                print(f"FORMAT TUPLE: {format_tuple}")
                 new_relocate(new_location=location_entry["instance"], new_cardinal = cardinal_entry["instance"])
 
         else:
