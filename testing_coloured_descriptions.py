@@ -27,6 +27,7 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
             new_descrip = first_part + assign_colour(locRegistry.place_by_name(placename)) + last_part
             if new_descrip[-1] != ".":
                 new_descrip = new_descrip + "."
+            print(f"new_descrip/area_descrip: {new_descrip}")
             return new_descrip
         else:
             return description
@@ -42,13 +43,14 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                     #print(f"LONG  DESC GENERIC : {long_desc}")
                 else:
                     if itemRegistry.registry.instances_by_name(item):
-                        if itemRegistry.registry.get_item_by_location(f"{location} {cardinal}"):
-                            if itemRegistry.registry.instances_by_name(item)[0] in itemRegistry.registry.get_item_by_location(f"{location} {cardinal}"):
-                                if "[[]]" in long_dict[item]:
-                                    test = long_dict[item].replace("[[]]", assign_colour(item))
-                                else:
-                                    test = long_dict[item]
-                                long_desc.append(test)
+                        local_items = itemRegistry.registry.get_item_by_location(f"{location} {cardinal}")
+                        if local_items and itemRegistry.registry.instances_by_name(item)[0] in local_items:
+                            #if itemRegistry.registry.instances_by_name(item)[0] in itemRegistry.registry.get_item_by_location(f"{location} {cardinal}"):
+                            if "[[]]" in long_dict[item]:
+                                test = long_dict[item].replace("[[]]", assign_colour(item))
+                            else:
+                                test = long_dict[item]
+                            long_desc.append(test)
                     else:
                         from testclass import testReg
                         testReg.create_item_by_name(item)
@@ -56,8 +58,11 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
         else:
             if loc_dict[location].get(cardinal) and loc_dict[location][cardinal].get("long_desc"):
                 long_desc.append(loc_dict[location][cardinal].get("long_desc"))
-
+    print(f"long_desc: {long_desc}")
     return long_desc
+
+def generate_overview(location):
+    format_descrip(d_type="area_descrip", description="", location = None, cardinal = None)
 
 ##area_descrip = format_descrip(d_type="area_descrip", description=loc_dict[location]["descrip"])
 #long_desc = format_descrip(d_type="cardinal_descrip")

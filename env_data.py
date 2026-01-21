@@ -6,6 +6,10 @@
 
 from logger import traceback_fn
 
+import json
+loc_data_json = "loc_data.json"
+with open(loc_data_json, 'r') as loc_data_file:
+    loc_dict = json.load(loc_data_file)
 
 cardinals_list = ["north", "south", "east", "west"]
 # a little section for weather. This is a weird, environment-data file. idk.
@@ -58,112 +62,112 @@ leave_options = str("'leave', 'stay', preamble='Do you want to leave, or stay?'"
 #"overview": "{descrip}. {n_desc} to the north. To the east is {e_desc}, to the south is {s_desc}, and to the west is {w_desc}."
 
 # n_desc is now short_desc
-loc_dict = {
-    ## Could roll for descriptions. Not always different, but would be interesting. Functionally a perception check.
-    # I could do stats... like, for looking for things etc. Actual perception checks, instead of mostly luck based.
-    "city hotel room": {"descrip": "You're in a 'budget' PPPhotel roomEEE; small but pleasant enough, at least to sleep in. The sound of traffic tells you you're a couple of floors up at least, and the carpet is well-trod", "inside":True,
-            "alt_names": ["hotel room"],
-            "electricity": True, "nature": False,
-            "north": {"short_desc": "There's a queen-size bed, simple but clean looking,",
-                      "long_desc": f"The bed looks nice enough - nothing fancy, but not a disaster either. Two pillows, a spare blanket at the foot of the bed. There's a small bedside drawer to each side, and a painting above the bed.",
-                    "actions": leave_options,},
-            "east": {"short_desc": "a television and two decent sized windows overlooking the city",
-                    "long_desc": "Against the wall is a large television, sitting between two decent sized windows overlooking the city. The curtains are drawn.", # details here depending on weather. if raining, the dried flowers are saturated and heavy. If sunny, they're crispy, etc. Not close to implementing that yet.
-                    "actions": None,},
-            "south": {"short_desc": "a door, likely to a bathroom",
-                      "long_desc": "There's a door, lightly sun-yellowed. Nondescript; fair to assume it's a bathroom door.",
-                    "actions": None},
-            "west": {"short_desc": "the door out of the room, likely to the hallway",
-                    "long_desc": "There's a standard hotel room door, with the fire escape route poster on the back and an empty coat hook.",
-                    "actions": None},
-            "exitwall": "west",
-            },
-
-    "forked tree branch": {"descrip": "You've climbed up a gnarled old tree to a PPPforked tree branchEEE, and found a relatively safe place to sit in its broad branches.", "inside":False,
-            "alt_names": ["gnarled old tree", "forked branch"],
-            "electricity": False, "nature": True,
-            "north": {"short_desc": "The northern tree parts are ",
-                "long_desc": "This is the north part of a tree...",
-                "actions": leave_options,
-                },
-            "east": {"short_desc": "an eastern tree part",
-                "long_desc": "This is the east of a forked tree. Not sure what's here. Maybe a bird's nest..", # details here depending on weather. if raining, the dried flowers are saturated and heavy. If sunny, they're crispy, etc. Not close to implementing that yet.
-                "east_actions": None,
-                },
-            "south": {"short_desc": "a southern tree part",
-                "long_desc": "South of a tree. Should probably be the exit.",
-                "actions": None,
-                },
-            "west": {
-                "short_desc": "what looks like a a western tree part",
-                "long_desc": "West of the tree. Maybe a very nice view...",
-                "actions": None
-                },
-            "exitwall": "north",
-            },
-
-    "graveyard": {
-        "descrip": "You see a rather poorly kept PPPgraveyardEEE - smaller than you might have expected given the scale of the gate and fences",
-        "inside": False, "electricity": False, "nature": True,
-        "north": {"short_desc": "The entrance gates are",
-                "long_desc": "You think you could leave through the large wrought-iron gates to the north. They're imposing but run-down; this graveyard doesn't get as much love as it could.",
-                "long_desc_dict": {"generic" : "There's a high fence surrounding the hallowed ground, heavy wrought-iron keeping the spirits in.", "gate": "large wrought-iron [[]],  imposing but run-down,", "padlock": "an old dark-metal [[]] on a chain holding the gate closed."},
-                ## NOTE: Add text for 'is not present' somewhere. The alt text for when things change.
-                "actions": leave_options,
-                },
-        "east": {"short_desc": "a variety of headstones",
-                "long_desc": "You see a variety of headstones, most quite worn and decorated by clumps of moss. There's a glass jar being used as a vase in front of one of the headstones, with dried flowers left long ago.", # details here depending on weather. if raining, the dried flowers are saturated and heavy. If sunny, they're crispy, etc. Not close to implementing that yet.
-                "long_desc_dict": {"generic" :"You see a variety of headstones, most quite worn and decorated by ",
-                              "moss": "clumps of [[]]",
-                              "glass jar": f"a [[]] being used as a vase in front of one of the headstones",
-                              "dried flowers": "some [[]] left long ago"},
-                "east_actions": None,
-                },
-        "south": {"short_desc": "a mausoleum",
-                "long_desc": "There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble.",
-                "actions": None,
-                },
-        "west": {
-                "short_desc": "what looks like a work shed of some kind",
-                "long_desc": "There's a work shed, with a wheelbarrow outside and a large padlock on the door.",
-                "actions": None
-                },
-        "exitwall": "north",
-            },
-    "pile of rocks": {
-        "descrip": "PPPPile of rocksEEE.",
-        "inside": False, "electricity": False, "nature": True,
-        "north": {"short_desc": "The",
-                "long_desc": "You",
-                },
-        "east": {"short_desc": "a",
-                "long_desc": "You",
-                },
-        "south": {"short_desc": "a",
-                "long_desc": "There",
-                },
-        "west": {
-                "short_desc": "what",
-                "long_desc": "There",
-                },
-        "exitwall": "north",
-            },
-    "shrine": {
-        "descrip": "Sheltered from the rain you see a small PPPshrineEEE, built into the underhang of a cliff face.",
-        "inside": False, "electricity": False, "nature": True,
-        "north": {"short_desc": "A wooden shrine, with aged fabric flags and various trinkets",
-                "long_desc": "The shrine itself is fragile looking, with candles still not burnt down entirely.",# There are scrolls on the main surface, and two jars; one on the desk, and the other on the ground beside it.",
-                },
-        "east": {"short_desc": "a small 'interior' wall of the underhang",
-                "long_desc": "The underhang's east wall is damp with spray from the waterfall outside, but otherwise unremarkable",
-                },
-        "south": {"short_desc": "open air",
-                "long_desc": "The sky and fields beyond; nothing much to do here except leave.",
-                },
-        "west": None,
-        "exitwall": "south",
-            }
-        }
+#loc_dict = {
+#    ## Could roll for descriptions. Not always different, but would be interesting. Functionally a perception check.
+#    # I could do stats... like, for looking for things etc. Actual perception checks, instead of mostly luck based.
+#    "city hotel room": {"descrip": "You're in a 'budget' PPPhotel roomEEE; small but pleasant enough, at least to sleep in. The sound of traffic tells you you're a couple of floors up at least, and the carpet is well-trod", "inside":True,
+#            "alt_names": ["hotel room"],
+#            "electricity": True, "nature": False,
+#            "north": {"short_desc": "There's a queen-size bed, simple but clean looking,",
+#                      "long_desc": f"The bed looks nice enough - nothing fancy, but not a disaster either. Two pillows, a spare blanket at the foot of the bed. There's a small bedside drawer to each side, and a painting above the bed.",
+#                    "actions": leave_options,},
+#            "east": {"short_desc": "a television and two decent sized windows overlooking the city",
+#                    "long_desc": "Against the wall is a large television, sitting between two decent sized windows overlooking the city. The curtains are drawn.", # details here depending on weather. if raining, the dried flowers are saturated and heavy. If sunny, they're crispy, etc. Not close to implementing that yet.
+#                    "actions": None,},
+#            "south": {"short_desc": "a door, likely to a bathroom",
+#                      "long_desc": "There's a door, lightly sun-yellowed. Nondescript; fair to assume it's a bathroom door.",
+#                    "actions": None},
+#            "west": {"short_desc": "the door out of the room, likely to the hallway",
+#                    "long_desc": "There's a standard hotel room door, with the fire escape route poster on the back and an empty coat hook.",
+#                    "actions": None},
+#            "exitwall": "west",
+#            },
+#
+#    "forked tree branch": {"descrip": "You've climbed up a gnarled old tree to a PPPforked tree branchEEE, and found a relatively safe place to sit in its broad branches.", "inside":False,
+#            "alt_names": ["gnarled old tree", "forked branch"],
+#            "electricity": False, "nature": True,
+#            "north": {"short_desc": "The northern tree parts are ",
+#                "long_desc": "This is the north part of a tree...",
+#                "actions": leave_options,
+#                },
+#            "east": {"short_desc": "an eastern tree part",
+#                "long_desc": "This is the east of a forked tree. Not sure what's here. Maybe a bird's nest..", # details here depending on weather. if raining, the dried flowers are saturated and heavy. If sunny, they're crispy, etc. Not close to implementing that yet.
+#                "east_actions": None,
+#                },
+#            "south": {"short_desc": "a southern tree part",
+#                "long_desc": "South of a tree. Should probably be the exit.",
+#                "actions": None,
+#                },
+#            "west": {
+#                "short_desc": "what looks like a a western tree part",
+#                "long_desc": "West of the tree. Maybe a very nice view...",
+#                "actions": None
+#                },
+#            "exitwall": "north",
+#            },
+#
+#    "graveyard": {
+#        "descrip": "You see a rather poorly kept PPPgraveyardEEE - smaller than you might have expected given the scale of the gate and fences",
+#        "inside": False, "electricity": False, "nature": True,
+#        "north": {"short_desc": "The entrance gates are",
+#                "long_desc": "You think you could leave through the large wrought-iron gates to the north. They're imposing but run-down; this graveyard doesn't get as much love as it could.",
+#                "long_desc_dict": {"generic" : "There's a high fence surrounding the hallowed ground, heavy wrought-iron keeping the spirits in.", "gate": "large wrought-iron [[]],  imposing but run-down,", "padlock": "an old dark-metal [[]] on a chain holding the gate closed."},
+#                ## NOTE: Add text for 'is not present' somewhere. The alt text for when things change.
+#                "actions": leave_options,
+#                },
+#        "east": {"short_desc": "a variety of headstones",
+#                "long_desc": "You see a variety of headstones, most quite worn and decorated by clumps of moss. There's a glass jar being used as a vase in front of one of the headstones, with dried flowers left long ago.", # details here depending on weather. if raining, the dried flowers are saturated and heavy. If sunny, they're crispy, etc. Not close to implementing that yet.
+#                "long_desc_dict": {"generic" :"You see a variety of headstones, most quite worn and decorated by ",
+#                              "moss": "clumps of [[]]",
+#                              "glass jar": f"a [[]] being used as a vase in front of one of the headstones",
+#                              "dried flowers": "some [[]] left long ago"},
+#                "east_actions": None,
+#                },
+#        "south": {"short_desc": "a mausoleum",
+#                "long_desc": "There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble.",
+#                "actions": None,
+#                },
+#        "west": {
+#                "short_desc": "what looks like a work shed of some kind",
+#                "long_desc": "There's a work shed, with a wheelbarrow outside and a large padlock on the door.",
+#                "actions": None
+#                },
+#        "exitwall": "north",
+#            },
+#    "pile of rocks": {
+#        "descrip": "PPPPile of rocksEEE.",
+#        "inside": False, "electricity": False, "nature": True,
+#        "north": {"short_desc": "The",
+#                "long_desc": "You",
+#                },
+#        "east": {"short_desc": "a",
+#                "long_desc": "You",
+#                },
+#        "south": {"short_desc": "a",
+#                "long_desc": "There",
+#                },
+#        "west": {
+#                "short_desc": "what",
+#                "long_desc": "There",
+#                },
+#        "exitwall": "north",
+#            },
+#    "shrine": {
+#        "descrip": "Sheltered from the rain you see a small PPPshrineEEE, built into the underhang of a cliff face.",
+#        "inside": False, "electricity": False, "nature": True,
+#        "north": {"short_desc": "A wooden shrine, with aged fabric flags and various trinkets",
+#                "long_desc": "The shrine itself is fragile looking, with candles still not burnt down entirely.",# There are scrolls on the main surface, and two jars; one on the desk, and the other on the ground beside it.",
+#                },
+#        "east": {"short_desc": "a small 'interior' wall of the underhang",
+#                "long_desc": "The underhang's east wall is damp with spray from the waterfall outside, but otherwise unremarkable",
+#                },
+#        "south": {"short_desc": "open air",
+#                "long_desc": "The sky and fields beyond; nothing much to do here except leave.",
+#                },
+#        "west": None,
+#        "exitwall": "south",
+#            }
+#        }
 
 
 import uuid
@@ -218,16 +222,17 @@ class placeInstance:
             value = loc_dict[name].get(attr)
             setattr(self, attr, value) # might work?
 
-    def set_scene_descrip(self, name, loc):
-        if loc_dict[name].get("descrip"):
-            from misc_utilities import assign_colour
-        ## I need to amend this for whether each part exists or not...
-            if self.cardinals.get("west").short_desc != None: # hardcoded for the moment. TODO: Make this dynamic. Or I guess account for any missing version? But better if it's dynamic. Maybe a check for how many parts there are and then generate based on that?
-                self.overview = f"{loc_dict[name]["descrip"]}.{"\033[0m"} \n{self.cardinals["north"].short_desc} to the {assign_colour("north")}. To the {assign_colour("east")} is {self.cardinals["east"].short_desc}, to the {assign_colour("south")} is {self.cardinals["south"].short_desc}, and to the {assign_colour("west")} is {self.cardinals["west"].short_desc}."
-            else:
-                self.overview = f"{loc_dict[name]["descrip"]}.{"\033[0m"} \n{self.cardinals["north"].short_desc} to the {assign_colour("north")}. To the {assign_colour("east")} is {self.cardinals["east"].short_desc}, and to the {assign_colour("south")} is {self.cardinals["south"].short_desc}."
-            return self.overview
-#
+    #def set_scene_descrip(self, name, loc):
+    #    ## place.set_scene_descrip(name, place) ## <- calls here
+    #    if loc_dict[name].get("descrip"):
+    #        from misc_utilities import assign_colour
+    #    ## I need to amend this for whether each part exists or not...
+    #        if self.cardinals.get("west").short_desc != None: # hardcoded for the moment. TODO: Make this dynamic. Or I guess account for any missing version? But better if it's dynamic. Maybe a check for how many parts there are and then generate based on that?
+    #            self.overview = f"{loc_dict[name]["descrip"]}.{"\033[0m"} \n{self.cardinals["north"].short_desc} to the {assign_colour("north")}. To the {assign_colour("east")} is {self.cardinals["east"].short_desc}, to the {assign_colour("south")} is {self.cardinals["south"].short_desc}, and to the {assign_colour("west")} is {self.cardinals["west"].short_desc}."
+    #        else:
+    #            self.overview = f"{loc_dict[name]["descrip"]}.{"\033[0m"} \n{self.cardinals["north"].short_desc} to the {assign_colour("north")}. To the {assign_colour("east")} is {self.cardinals["east"].short_desc}, and to the {assign_colour("south")} is {self.cardinals["south"].short_desc}."
+    #        return self.overview
+
     def visit(self):
         self.visited = True
 
@@ -313,6 +318,7 @@ class placeRegistry:
 
     def place_by_name(self, loc_name):
 
+        print(f"Loc name in place_by_name: {loc_name}")
         loc_inst = self.by_name.get(loc_name.lower())
         if not loc_inst:
             loc_inst = self.by_alt_name.get(loc_name)
@@ -390,7 +396,8 @@ def initialise_placeRegistry():
             cardinals_dict[card] = cardinal_inst
         place.cardinals=cardinals_dict
         locRegistry.set_current(place)
-        place.set_scene_descrip(name, place)
+
+        #place.set_scene_descrip(name, place)
 
 
 
@@ -407,4 +414,4 @@ if "__main__" == __name__:
     place = place_cardinals["east"].place
     print(place.name)
     print("place.cardinals['north'].long_desc: ", place.cardinals["north"].long_desc)
-    print(place.overview)
+    #print(place.overview)

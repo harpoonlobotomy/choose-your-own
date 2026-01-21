@@ -15,7 +15,7 @@ trigger = "trigger"
 confirmed_items = {}
 
 import json
-json_file = "dynamic_data/generated_items.json"
+gen_items_file = "dynamic_data/generated_items.json"
 
 ##  !! container limits come from container_limit_sizes in item defs
 
@@ -388,7 +388,7 @@ if __name__ == "__main__":
 
     def edit_dict(named_item=""):
 
-        with open(json_file, 'r') as file:
+        with open(gen_items_file, 'r') as file:
             data = json.load(file)
 
         print("Do you want to change a particular field?")
@@ -534,19 +534,20 @@ if __name__ == "__main__":
             print("Write to file now?")
             test = input()
             if test in ("yes", "y"):
-                with open(json_file, 'w') as file:
+                with open(gen_items_file, 'w') as file:
                     json.dump(data, file, indent=2)
         else:
             print("No changes to update. Ending.")
 
     #edit_dict()
 
-    def add_gen_to_main():
+    def add_gen_to_main(): # Will now (optionally) clear gen_items.
         items_main = "dynamic_data/items_main.json"
         to_add = set()
+        to_delete = set()
         with open(items_main, 'r') as main_file:
             main_data = json.load(main_file)
-        with open(json_file, 'r') as file:
+        with open(gen_items_file, 'r') as file:
             data = json.load(file)
 
         add_all_new = False
@@ -558,12 +559,19 @@ if __name__ == "__main__":
         for item in data:
             if main_data.get(item):
                 if main_data[item] == data[item]:
-                    print(f"Item `{item}`is identical to that in main., skipping.")
+                    print(f"Item `{item}`is identical to that in main. Do you want to remove it from gen_items?")
+                    test = input()
+                    if test in ("yes", "y"):
+                        to_delete.add(item)
                 else:
                     print(f"Item `{item}` already in main dict. Replace?\n Existing in main: {main_data[item]}, Gen version: {data[item]}")
                     test = input()
                     if test == "y":
                         to_add.add(item)
+                    print("Do you want to remove the item from gen_items?")
+                    test = input()
+                    if test == "y":
+                        to_delete.add(item)
             else:
                 if add_all_new:
                     to_add.add(item)
@@ -572,16 +580,32 @@ if __name__ == "__main__":
                     test = input()
                     if test == "y":
                         to_add.add(item)
-        if to_add:
-            for item_name in to_add:
-                main_data[item_name] = data[item_name]
-                to_add.add(item)
 
-            print(f"About to add ({to_add}) to the main file. Enter anything to abort:")
-            test = input()
-            if test == "" or test == None:
-                with open(items_main, 'w') as main_file:
-                    json.dump(main_data, main_file, indent=2)
+        if to_add or to_delete:
+            if to_add:
+                for item_name in to_add:
+                    main_data[item_name] = data[item_name]
+                    to_add.add(item)
+
+                print(f"About to add ({to_add}) to the main file. Enter anything to abort:")
+                test = input()
+                if test == "" or test == None:
+                    with open(items_main, 'w') as main_file:
+                        json.dump(main_data, main_file, indent=2)
+                print("Do you want to remove these items from the gen_items file?")
+                test = input()
+                if test in ("y", "yes"):
+                    for item_name in to_add:
+                        data.pop(item_name)
+                with open(gen_items_file, 'w') as file:
+                    json.dump(data, file, indent=2)
+
+            if to_delete:
+                for item_name in to_delete:
+                    if data.get(item_name):
+                        data.pop(item_name)
+                with open(gen_items_file, 'w') as file:
+                    json.dump(data, file, indent=2)
         else:
             print("Nothing to add, all entries in main dict and/or no changes made.")
 

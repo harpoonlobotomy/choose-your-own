@@ -538,17 +538,17 @@
     "is_hidden": false,
     "can_examine": false,
     "breakable": false
-  },
-  "raven": {
+},
+"raven": {
     "name": "raven",
     "nicename": "a raven",
     "description": "A raven, sleek and black. You're pretty sure it knows your secrets.",
+    "item_type": "{'can_pick_up', 'food_drink' 'all_items', 'can_speak'}",
     "alt_names": {},
     "is_hidden": false,
     "can_examine": false,
-    "breakable": false},
-    "item_type": "{'static', 'all_items', 'living_creature'}",
-
+    "breakable": false
+  },
   "rocking chair": {
     "name": "a wooden rocking chair",
     "description": "a simple but well-made rocking chair.",
@@ -609,8 +609,8 @@
     "alt_names": {},
     "is_hidden": false
   },
-    "padlock": {
-    "name" : "padlock",
+  "padlock": {
+    "name": "padlock",
     "nicename": "a padlock",
     "description": "An old dark-metal padlock.",
     "item_type": "{'can_pick_up', 'fragile', 'all_items', 'trigger'}",
@@ -628,5 +628,81 @@
     "trigger_type": "plot_advance",
     "trigger_target": null,
     "is_exhausted": false
+  },
+  "ornate silver key": {
+    "name": "ornate silver key",
+    "nicename": "a ornate silver key",
+    "description": "an ornate silver key with small `VI` pressed into the head.",
+    "item_type": "{'key', 'all_items', 'can_pick_up'}",
+    "is_key": true,
+    "alt_names": {},
+    "is_hidden": false,
+    "can_pick_up": true,
+    "item_size": 0
+  },
+  "mummified mouse": {
+    "name": "mummified mouse",
+    "nicename": "a mummified mouse",
+    "description": "The tiny, dried body of a long-dead mouse, curled up. You could think it was sleeping if it wasn't so frail and stiff.",
+    "item_type": "{'fragile', 'can_pick_up', 'all_items', 'food_drink'}",
+    "broken_name": null,
+    "flammable": true,
+    "can_break": true,
+    "can_pick_up": true,
+    "item_size": 0,
+    "alt_names": {},
+    "is_hidden": false,
+    "can_consume": true,
+    "can_spoil": true,
+    "is_safe": true,
+    "effect": null
+  },
+  "desiccated skeleton": {
+    "name": "desiccated skeleton",
+    "nicename": "a desiccated skeleton",
+    "description": "A sunbleached skeleton, with most of its bones present.",
+    "item_type": "{'container', 'all_items', 'static', 'event', 'fragile'}",
+    "is_open": false,
+    "can_be_opened": true,
+    "can_be_closed": true,
+    "can_be_locked": true,
+    "is_locked": true,
+    "requires_key": false,
+    "starting_children": null,
+    "container_limits": 4,
+    "name_no_children": null,
+    "description_no_children": null,
+    "alt_names": {},
+    "is_hidden": false,
+    "can_examine": false,
+    "breakable": false,
+    "event": null,
+    "event_type": "item_triggered",
+    "event_key": null,
+    "broken_name": null,
+    "flammable": false,
+    "can_break": true
+  },
+  "grandfather clock": {
+    "name": "grandfather clock",
+    "nicename": "a grandfather clock",
+    "description": "An antique-looking grandfather clock, silent. Maybe it's in need of a wind. ",
+    "item_type": "{'container', 'all_items', 'static'}",
+    "alt_names": {},
+    "is_hidden": false,
+    "can_examine": false,
+    "breakable": false,
+    "is_open": false,
+    "can_be_opened": true,
+    "can_be_closed": true,
+    "can_be_locked": true,
+    "is_locked": true,
+    "requires_key": "ornate silver key",
+    "starting_children": [
+      "mummified mouse"
+    ],
+    "container_limits": 4,
+    "name_no_children": null,
+    "description_no_children": null
   }
 }

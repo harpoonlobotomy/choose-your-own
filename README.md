@@ -19,4 +19,7 @@ Need to so some actual story planning. So far it's just been vague outlines of l
 Will draw out some plot ideas and how the locations contribute.
 Theoretically I'd like 3 layered plots, independent but interlinked (at least thematically). Had the idea of basically colour-coding the clues; everything for plot A is somehow blue, everything for plot b is somehow green, etc. Not sure how to work it in but it'd be a way to differentiate between the clues, but with the colour-coding itself needing to be recognised as significant. Will think on it.
 
+----------
+Well it's 21/1/26, and while I've worked on this a lot, I've not updated this at all.
+The game is now instance-based, and while I'm reworking how the locations + items work again at present, it's coming along well. Currently there's still no game, but once the established (basic) mechanics are sturdy, then I'll start working on that.
 

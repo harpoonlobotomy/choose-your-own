@@ -7,34 +7,25 @@ from logger import logging_fn, traceback_fn
 from env_data import locRegistry as loc
 
 print("Item registry is being run right now.")
-sleep(.5)
+#sleep(.5)
 
 
-#def get_card_inst_from_strings(location):
-#    from env_data import locRegistry as loc
-#    if not isinstance(location, cardinalInstance):
-#        location_str, card_str = next(iter(location.items())) # strings from dict
-#        place = loc.place_by_name(location_str)
-#        cardinal_inst = loc.by_cardinal(cardinal_str=card_str, loc=place)
-#    else:
-#        cardinal_inst = location
-#
-#    return cardinal_inst
-#
 class ItemInstance:
     """
     Represents a single item in the game world or player inventory.
     """
 
-    def __init__(self, definition_key:str, container_data:list, item_size:str, attr:dict):
+    def __init__(self, definition_key:str, attr:dict):
+        print(f"definition_key: {definition_key}, attr: {attr}")
         #print(f"Init in item instance is running now. {definition_key}")
         self.id = str(uuid.uuid4())  # unique per instance
         self.name:str = definition_key
-        self.nicename:str = attr["name"]
-        self.item_type = "standard" ## have it here and/or in the registry. I guess both? covers the 'is_container' thing neatly enough.
+        self.nicename:str = attr.get("name")
+        print(f"ATTR: {attr}")
+        self.item_type = attr["item_type"] ## have it here and/or in the registry. I guess both? covers the 'is_container' thing neatly enough.
         self.colour = None
-        self.description:str = attr["description"]
-        self.starting_location:dict = attr.get("starting_location")
+        self.description:str = attr.get("description")
+        self.starting_location:dict = attr.get("starting_location") # currently is styr
         self.verb_actions = set()
         self.contained_in = None
         self.location:cardinalInstance = None
@@ -46,46 +37,22 @@ class ItemInstance:
 
  #     INITIAL FLAG MANAGEMENT
 
-        self.flags = attr["flags"]      # any runtime flags (open/locked/etc)
+        for attribute in ("can_pick_up", "can_be_opened", "print_on_investigate", "can_be_locked"):
+            if hasattr(self, attribute):
+                    self.verb_actions.add(attribute)
+        #    self.started_contained_in = attr.get("contained_in")  # parent instance id if inside a container
+        #    if self.started_contained_in:
+        #        self.contained_in = self.started_contained_in ## do this later like testclass does
+        #else:
+        #    self.can_pick_up=False
 
-        if "can_consume" in self.flags:
-            self.can_consume = True
+            #self.needs_key = attr.get("key")
+#
+            #if "needs_key_to_lock" in self.flags:
+            #    self.needs_key_to_lock = (attr.get("key") if attr.get("key") else True)
 
-        if "can_pick_up" in self.flags:
-            self.can_pick_up = True
-            self.verb_actions.add("can_pick_up")
-            self.item_size = item_size
-            self.started_contained_in = attr.get("contained_in")  # parent instance id if inside a container
-            if self.started_contained_in:
-                self.contained_in = self.started_contained_in
-        else:
-            self.can_pick_up=False
-
-        if "can_open" in self.flags:
-            self.verb_actions.add("can_open")
-            if not "is_closed" in self.flags: # currently nothing uses this, but here to allow for it later.
-                self.is_open = True
-            else:
-                self.is_open = False
-
-        if "can_lock" in self.flags:
-            self.verb_actions.add("can_lock")
-            if "is_locked" in self.flags: # like 'starts_open', currently not used but here for later.
-                self.is_locked = True
-            else:
-                self.is_locked = False
-
-            self.needs_key = attr.get("key")
-
-            if "needs_key_to_lock" in self.flags:
-                self.needs_key_to_lock = (attr.get("key") if attr.get("key") else True)
-
-        if "can_be_charged" in self.flags:
+        if hasattr(self, "can_be_charged"):
             self.verb_actions.add("can_charge")
-            if "is_charged" in self.flags:
-                self.is_charged = True
-            else:
-                self.is_charged = False
 
         if "print_on_investigate" in attr:
             self.verb_actions.add("print_on_investigate")
@@ -98,16 +65,10 @@ class ItemInstance:
             self.description_detailed = details_data
 
 ###
-        if container_data:
+        if "container" in self.item_type:
             self.verb_actions.add("is_container")
-            description_no_children, name_children_removed, container_limits, starting_children = container_data
-            self.description_no_children = description_no_children
-            self.name_children_removed=name_children_removed
-            self.container_limits=container_limits
-            if starting_children:
-
-                self.starting_children = starting_children ### This just adds the string name, not the id like it needs to.
-            self.children = list() ## Maybe we create all instances first, then add 'children' afterwards, otherwise they won't be initialised yet. Currently this works because I've listed the parents first in the item defs.
+             ### This just adds the string name, not the id like it needs to.
+            #self.children = list() ## Maybe we create all instances first, then add 'children' afterwards, otherwise they won't be initialised yet. Currently this works because I've listed the parents first in the item defs.
 
     def __repr__(self):
         return f"<ItemInstance {self.name} ({self.id})>"
@@ -123,39 +84,46 @@ class itemRegistry:
         #print(f"Init in lootregistry is running now.") ## it only seems to be running once.
         #sleep(1)
 
-        self.instances = {}      # id -> ItemInstance
-        self.by_location = {}  # (cardinalInstance) -> set of instance IDs
-        self.by_name = {}        # definition_key -> set of instance IDs
+        self.instances = set()  # CHANGE: Is now a set.
+        self.by_id = {}    # id -> ItemInstance
+        self.by_location = {}  # (cardinalInstance) -> set of instances
+        self.by_name = {}        # definition_key -> set of instances
         self.by_alt_names = {} # less commonly used variants. Considering just adding them to 'by name' though, I can't imagine it matters if they're alt or original names... # changed mind, nope. Not duplicating them randomly for no good reason. Just an alt:name lookup.
 
         self.by_category = {}        # category (loot value) -> set of instance IDs
         self.by_container = {}
-        self.inst_to_names_dict = {}
-        self.is_container = bool(True) ## This must be wrong. idk. I tried something else earlier and it didn't work. ## Doesn't work because this is registry, this would need to be applied to the instance (which it already is). Delete this later.
+
         self.plural_words = {}
 
     # -------------------------
     # Creation / deletion
     # -------------------------
 
+    def init_single(self, item_name, item_entry): ## Will replace create_instance directly.
+        print(f"[init_single] ITEM NAME: {item_name}")
+        print(f"[init_single] ITEM ENTRY: {item_entry}")
+        inst = ItemInstance(item_name, item_entry)
+        self.instances.add(inst)
+        self.by_name[inst.name] = inst
+        self.by_id[inst.id] = inst
+
+        return inst
+
     def create_instance(self, definition_key, attr):
         logging_fn()
 
-        if "container" in attr["flags"]:
-            container_data = (attr.get("description_no_children"), attr.get("name_children_removed"), attr.get("container_limits"), attr.get("starting_children"))
-        else:
-            container_data=None
+
 
 #        if "starting_location" in attr:
 #            primary_category="starting_location"
 #        else:
 #            primary_category="loot_type"
 
-        location = attr.get("starting_location")
 
-        inst = ItemInstance(definition_key, container_data, attr.get("item_size"), attr)#nicename, primary_category, is_container, can_pick_up, description, location, contained_in, item_size, container_data)
-        self.instances[inst.id] = inst
-        self.attributes = attr
+        inst = ItemInstance(definition_key, attr)#nicename, primary_category, is_container, can_pick_up, description, location, contained_in, item_size, container_data)
+
+        self.instances.add(inst)
+        self.by_id[inst.id] = inst
 
         loot_type = attr.get("loot_type")
 
@@ -167,29 +135,25 @@ class itemRegistry:
             else:
                 self.by_category.setdefault(loot_type, set()).add(inst)
 
-        if container_data:
-            self.is_container=True
-            self.by_container.setdefault(inst, set())
-        else:
-            self.is_container=False
-
-        if attr.get("started_contained_in"):
-
-            parent_name =attr.get("started_contained_in")
-            parent_obj_list = self.instances_by_name(parent_name) # TODO: I've cut a lot of the comments from this section. Still needs a rework though.
-            if parent_obj_list:
-                for prospective_parent in parent_obj_list:
-                    #print(f"Prospective parent: {prospective_parent}")
-                    pros_children = prospective_parent.starting_children
-                    if inst.name in pros_children:
-                        if not inst in self.instances_by_container(prospective_parent):
-                            inst.contained_in = prospective_parent
-                            self.by_container[prospective_parent].add(inst)
-                        else:
-                            continue # if already there, try another prospective parent. Don't know if this'll work on not yet.
+        #if attr.get("started_contained_in"):
+#
+        #    parent_name =attr.get("started_contained_in")
+        #    parent_obj_list = self.instances_by_name(parent_name) # TODO: I've cut a lot of the comments from this section. Still needs a rework though.
+        #    if parent_obj_list:
+        #        for prospective_parent in parent_obj_list:
+        #            #print(f"Prospective parent: {prospective_parent}")
+        #            pros_children = prospective_parent.starting_children
+        #            if inst.name in pros_children:
+        #                if not inst in self.instances_by_container(prospective_parent):
+        #                    inst.contained_in = prospective_parent
+        #                    self.by_container[prospective_parent].add(inst)
+        #                else:
+        #                    continue # if already there, try another prospective parent. Don't know if this'll work on not yet.
 
 
         # Index by location ## Do this at the end, so can check container status - if in a container, don't add it to the location. Let it be in the container exclusively.
+        location = attr.get("starting_location")
+
         if location:
             if not hasattr(inst, "contained_in") or inst.contained_in == None:
                 #print(f"Item {inst.name} has a location.")
@@ -632,36 +596,50 @@ class itemRegistry:
 
 # setup
 registry = itemRegistry()
-inventory = []
 
+#if __name__ == "__main__":
 
-def get_all_flags():
-    all_attr_flags=set()
-    flag_items=set()
-    from item_definitions import get_item_defs
-    for item_name, attr in get_item_defs.items():
-        for item_name, data in attr.items():
-            all_attr_flags.add(item_name)
-            if item_name == "flags":
-                for item in data:
-                    flag_items.add(item)
-    print(f"all attr flags: {all_attr_flags}")
-    print(f"Flag items: {flag_items}")
+    #inventory = []
 
-get_flags=False
-if get_flags:
-    get_all_flags()
+    #def get_all_flags():
+    #    all_attr_flags=set()
+    #    flag_items=set()
+    #    from item_definitions import get_item_defs
+    #    for item_name, attr in get_item_defs.items():
+    #        for item_name, data in attr.items():
+    #            all_attr_flags.add(item_name)
+    #            if item_name == "flags":
+    #                for item in data:
+    #                    flag_items.add(item)
+    #    print(f"all attr flags: {all_attr_flags}")
+    #    print(f"Flag items: {flag_items}")
+#
+    #get_flags=False
+    #if get_flags:
+    #    get_all_flags()
 
 
 def initialise_itemRegistry():
-    from item_definitions import get_item_defs
+
+    from env_data import initialise_placeRegistry
+    initialise_placeRegistry()
+
+    import json
+    json_primary = "dynamic_data/items_main.json"
+    with open(json_primary, 'r') as file:
+        item_defs = json.load(file)
+
+    #from item_definitions import get_item_defs
     registry.complete_location_dict()
     plural_word_dict = {}
     #print("Running `initialise_itemRegistry`.")
-    for item_name, attr in get_item_defs().items():
+    for item_name, attr in item_defs.items():
         registry.create_instance(item_name, attr)
         if len(item_name.split()) > 1:
             plural_word_dict[item_name] = tuple(item_name.split())
 
     registry.add_plural_words(plural_word_dict)
 
+    print(f"Plural words: {registry.plural_words}")
+
+initialise_itemRegistry()

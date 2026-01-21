@@ -1562,3 +1562,25 @@ new_item_from_str:
 If only one defautl type is entered, it thinks its a set again and breaks the string. Goddamn I hate this. Why can't just stay a fucking set?
 
 Okay, fixed now. I just manually create the set and then .add the inst to it. Stupid workaround but needs must. Can't figure out how to make it be a set containing one word otherwise. Too tired. Bleh.
+
+
+7.03am
+Starting on working on converting the itemRegistry to the new system. Am basically going to retrofit it - the verbRegistry has very specific expectations, so I need to make sure I don't break it too hard or I'll be fixing it all week.
+
+Thing one:
+Removing the 'self.flags' reference, because the new format doesn't have that at all.
+
+Also, the itemReg doesn't have the new item generation. Might rejig the testclass to make it a generated-item setup, sending the completed dict to itemRegistry instead of generating the item instance. Or make an item instance that is added immediately to itemReg in the format it expects, either way.
+
+But for now - making the exact calls match as closely as I can (eg instead of if "can_pick_up" in self.flags:", apply all attr to self then check if hasattr(self, can_pick_up)).
+
+
+# NOTE: "can_open" from old version. New version uses "can_be_opened". Need to update either the item defs or the verbReg/parser.
+# "can_lock" is now "can_be_locked".
+
+old self.needs_key_to_lock == new "requires_key"
+
+
+9.00am
+
+long_desc_dict == item_desc

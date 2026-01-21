@@ -1,0 +1,275 @@
+{
+  "city hotel room": {
+    "descrip": "You're in a 'budget' PPPhotel roomEEE; small but pleasant enough, at least to sleep in. The sound of traffic tells you you're a couple of floors up at least, and the carpet is well-trod",
+    "north": {
+      "item_desc": {
+        "generic": null
+      },
+      "short_desc": "There's a queen-size bed, simple but clean looking,",
+      "long_desc": "The bed looks nice enough - nothing fancy, but not a disaster either. Two pillows, a spare blanket at the foot of the bed. There's a small bedside drawer to each side, and a painting above the bed.",
+      "items": {
+        "": {
+          "description": null,
+          "is_hidden": false
+        }
+      }
+    },
+    "east": {
+      "item_desc": {
+        "generic": null
+      },
+      "short_desc": "a television and two decent sized windows overlooking the city",
+      "long_desc": "Against the wall is a large television, sitting between two decent sized windows overlooking the city. The curtains are drawn.",
+      "items": {
+        "": {
+          "description": null,
+          "is_hidden": false
+        }
+      }
+    },
+    "south": {
+      "item_desc": {
+        "generic": null
+      },
+      "short_desc": "a door, likely to a bathroom",
+      "long_desc": "There's a door, lightly sun-yellowed. Nondescript; fair to assume it's a bathroom door.",
+      "items": {
+        "": {
+          "description": null,
+          "is_hidden": false
+        }
+      }
+    },
+    "west": {
+      "item_desc": {
+        "generic": null
+      },
+      "short_desc": "the door out of the room, likely to the hallway",
+      "long_desc": "There's a standard hotel room door, with the fire escape route poster on the back and an empty coat hook.",
+      "items": {
+        "": {
+          "description": null,
+          "is_hidden": false
+        }
+      }
+    }
+  },
+  "forked tree branch": {
+    "descrip": "You've climbed up a gnarled old tree to a PPPforked tree branchEEE, and found a relatively safe place to sit in its broad branches.",
+    "north": {
+      "item_desc": {
+        "generic": null
+      },
+      "short_desc": "The northern tree parts are ",
+      "long_desc": "This is the north part of a tree...",
+      "items": {
+        "": {
+          "description": null,
+          "is_hidden": false
+        }
+      }
+    },
+    "east": {
+      "item_desc": {
+        "generic": null
+      },
+      "short_desc": "an eastern tree part",
+      "long_desc": "This is the east of a forked tree. Not sure what's here. Maybe a bird's nest..",
+      "items": {
+        "": {
+          "description": null,
+          "is_hidden": false
+        }
+      }
+    },
+    "south": {
+      "item_desc": {
+        "generic": null
+      },
+      "short_desc": "a southern tree part",
+      "long_desc": "South of a tree. Should probably be the exit.",
+      "items": {
+        "": {
+          "description": null,
+          "is_hidden": false
+        }
+      }
+    },
+    
+    "west": {
+      "item_desc": {
+        "generic": null
+      },
+      "short_desc": "what looks like a a western tree part",
+      "long_desc": "West of the tree. Maybe a very nice view...",
+      "items": {
+        "": {
+          "description": null,
+          "is_hidden": false
+        }
+      }
+    }
+  },
+  "graveyard": {
+    "north": {
+      "item_desc": {
+        "generic": "There's a high fence surrounding the hallowed ground, heavy wrought-iron keeping the spirits in.",
+        "gate": "large wrought-iron [[]],  imposing but run-down,",
+        "padlock": "an old dark-metal [[]] on a chain holding the gate closed."
+      },
+      "short_desc": "The entrance gates are",
+      "long_desc": "You think you could leave through the large wrought-iron gates to the north. They're imposing but run-down; this graveyard doesn't get as much love as it could.",
+      "items": {
+        "": {
+          "description": null,
+          "is_hidden": false
+        }
+      }
+    },
+    "east": {
+      "item_desc": {
+        "generic": "You see a variety of headstones, most quite worn and decorated by ",
+        "moss": "clumps of [[]]",
+        "glass jar": "a [[]] being used as a vase in front of one of the headstones",
+        "dried flowers": "some [[]] left long ago"
+      },
+      "short_desc": "a variety of headstones",
+      "long_desc": "You see a variety of headstones, most quite worn and decorated by clumps of moss. There's a glass jar being used as a vase in front of one of the headstones, with dried flowers left long ago.",
+      "items": {
+        "": {
+          "description": null,
+          "is_hidden": false
+        },
+        "dessicated skeleton": {
+          "description": null,
+          "is_hidden": true
+        }
+      }
+    },
+    "descrip": "You see a rather poorly kept PPPgraveyardEEE - smaller than you might have expected given the scale of the gate and fences",
+    "alt_names": [],
+    "south": {
+      "item_desc": {
+        "generic": null
+      },
+      "short_desc": "a mausoleum",
+      "long_desc": "There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble.",
+      "items": {
+        "": {
+          "description": null,
+          "is_hidden": false
+        }
+      }
+    },
+    "west": {
+      "item_desc": {
+        "generic": null
+      },
+      "short_desc": "what looks like a work shed of some kind",
+      "long_desc": "There's a work shed, with a wheelbarrow outside and a large padlock on the door.",
+      "items": {
+        "": {
+          "description": null,
+          "is_hidden": false
+        }
+      }
+    }
+  },
+  "pile of rocks": {
+    "descrip": "PPPPile of rocksEEE.",
+    "north": {
+      "item_desc": {
+        "generic": null
+      },
+      "short_desc": "The",
+      "long_desc": "You",
+      "items": {
+        "": {
+          "description": null,
+          "is_hidden": false
+        }
+      }
+    },
+    "east": {
+      "item_desc": {
+        "generic": null
+      },
+      "short_desc": "a",
+      "long_desc": "You",
+      "items": {
+        "": {
+          "description": null,
+          "is_hidden": false
+        }
+      }
+    },
+    "south": {
+      "item_desc": {
+        "generic": null
+      },
+      "short_desc": "a",
+      "long_desc": "There",
+      "items": {
+        "": {
+          "description": null,
+          "is_hidden": false
+        }
+      }
+    },
+    "west": {
+      "item_desc": {
+        "generic": null
+      },
+      "short_desc": "what",
+      "long_desc": "There",
+      "items": {
+        "": {
+          "description": null,
+          "is_hidden": false
+        }
+      }
+    }
+  },
+  "shrine": {
+    "descrip": "Sheltered from the rain you see a small PPPshrineEEE, built into the underhang of a cliff face.",
+    "north": {
+      "item_desc": {
+        "generic": null
+      },
+      "short_desc": "A wooden shrine, with aged fabric flags and various trinkets",
+      "long_desc": "The shrine itself is fragile looking, with candles still not burnt down entirely.",
+      "items": {
+        "": {
+          "description": null,
+          "is_hidden": false
+        }
+      }
+    },
+    "east": {
+      "item_desc": {
+        "generic": null
+      },
+      "short_desc": "a small 'interior' wall of the underhang",
+      "long_desc": "The underhang's east wall is damp with spray from the waterfall outside, but otherwise unremarkable",
+      "items": {
+        "": {
+          "description": null,
+          "is_hidden": false
+        }
+      }
+    },
+    "south": {
+      "item_desc": {
+        "generic": null
+      },
+      "short_desc": "open air",
+      "long_desc": "The sky and fields beyond; nothing much to do here except leave.",
+      "items": {
+        "": {
+          "description": null,
+          "is_hidden": false
+        }
+      }
+    }
+  }
+}

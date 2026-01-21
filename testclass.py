@@ -1,3 +1,14 @@
+# Rename this to item_generation or something.
+
+## Changing it so this class is just for generating new items. So perhaps the item dict is generated through here, checked, and the dict is sent over to itemRegistry?
+
+# Or maybe add generate the items here entirely. Really not sure.
+
+# Need to change it here a little. Instead of creating them one at a time, I want to collect the item_defs items, gen_items items, then batch create them. Maybe all item defs, all gen items? That doesn't matter so much I guess.
+
+# I need to figure out where the loc items are going to be stored. Separate file or env_data.
+# Well I guess there should to be two lists. One for the cardinal loc descriptions in env_data, and a separate list for simply added items. I think maybe that's the best way of doing it.
+
 import uuid
 from pprint import pprint
 from itemRegistry import ItemInstance
@@ -14,6 +25,9 @@ trigger = "trigger"
 json_to_edit = "dynamic_data/generated_items.json"
 json_primary = "dynamic_data/items_main.json"
 
+
+CARDINALS = ["north", "east", "south", "west"]
+
 import json
 
 with open(json_primary, 'r') as file:
@@ -28,6 +42,8 @@ def do_print(text_input = ""):
     print_things = False
     if print_things:
         print(text_input)
+
+## Move these dicts to a json. Use this class to store those dicts + act from them.
 
 type_defaults = { # gently ordered - will overwrite earlier attrs with later ones (eg 'is horizontal surface' for flooring with overwrite 'static''s.)
     "standard": {},
@@ -44,10 +60,15 @@ type_defaults = { # gently ordered - will overwrite earlier attrs with later one
     "fragile": {"broken_name": None, "flammable": False, "can_break": True},
     "electronics": {"can_be_charged": True, "is_charged": False, "takes_batteries": False, "has_batteries": False},
     "books_paper": {'print_on_investigate': True, 'flammable': True, 'can_read': True},
+    "can_speak" : {'can_speak': True, 'speaks_common': True}
 
     #{"special_traits: set("dirty", "wet", "panacea", "dupe", "weird", "can_combine")}, # aka random attr storage I'm not using yet
     #"exterior": {"is_interior": False} ## Can be set scene-wide, so 'all parts of 'graveyard east' are exterior unless otherwise mentioned'. (I say 'can', I mean 'will be when I set it up')
 }## Removed all the interior dicts. They're not necessary and will actually get in the way - having the type defaults exposed is far more beneficial.
+
+#location_defaults = { ## Oh, actually: use this `"Graveyard": {"east": {"items":  and add 'loc_tags' : ["dirty"]}` there. "locations" dict.
+#    "graveyard": {"all_cardinals": ["dirty"]} ## to add tags per location. Won't be relevant often, but sometimes.
+#}
 
 all_flags_in_type_default = set() # temporarily putting this out here.
 for cat_type in type_defaults:
@@ -136,7 +157,6 @@ def testing_t_defaults_against_item_defs(per_item=True, item_name=""):
         print(f"Flags in item_defs but not default_types: {all_def_flags - all_flags_in_type_default}")
         return all_flags_in_type_default
 
-
 #testing_t_defaults_against_item_defs(per_item=True)
 
 size = "item_size"
@@ -154,11 +174,11 @@ test_items = {
     #"stone ground": {"item_type": set((static, "flooring"))}
 }
 
-locations = {"Graveyard": {"east": {"items": ["stone ground", "grave", "dessicated skeleton"]}, "west": {"items": ["raven", "stone ground"]}, "north": {"items": ["stone ground"]}, "south": {"items": ["stone ground", "headstone"]}},
-            "OtherPlace": {"east": {"items": ["grandfather clock"]}, "west": {"items": ["birdbath"]}, "north": {"items": ["merry-go-round", "empty plastic cup"]}, "south": {"items": ["rocking chair"]}},
-            "Mermaid Grotto": {"east": {"items": ["comb", "trident", "wardrobe", "cabinet", "sandy ground"]}, "west": {"items": ["sandy ground"]}, "north": {"items": ["sandy ground"]}, "south": {"items": ["sandy ground"]}}
-            }
-
+#locations = {"Graveyard": {"east": {"items": ["stone ground", "grave", "dessicated skeleton"]}, "west": {"items": ["raven", "stone ground"]}, "north": {"items": ["stone ground"]}, "south": {"items": ["stone ground", "headstone"]}},
+#            "OtherPlace": {"east": {"items": ["grandfather clock"]}, "west": {"items": ["birdbath"]}, "north": {"items": ["merry-go-round", "empty plastic cup"]}, "south": {"items": ["rocking chair"]}},
+#            "Mermaid Grotto": {"east": {"items": ["comb", "trident", "wardrobe", "cabinet", "sandy ground"]}, "west": {"items": ["sandy ground"]}, "north": {"items": ["sandy ground"]}, "south": {"items": ["sandy ground"]}}
+#            }
+#
 flag_keys = ("id", "name", "description", "current_loc", "is_open", "can_be_closed", "can_be_locked", "is_locked", "requires_key", "is_key", "can_pick_up", "can_examine", "breakable", "contained_in", "item_size", "item_type", "is_horizontal_surface", "is_vertical_surface", "event", "event_type", "item_triggered", "event_key", "trigger_target", "trigger_type", "plot_advance", "is_exhausted", "starting_location", "started_contained_in", "extra")
 
 use_generated = False
@@ -168,6 +188,10 @@ def use_generated_items(input_=None):
     altered = False
     with open(json_to_edit, 'r') as file:
         gen_items = json.load(file)
+
+    if not gen_items or gen_items == {}:
+        return
+
     data_keys = list(gen_items)
 
     if input_ == None:
@@ -364,8 +388,8 @@ class testRegistry:
         self.by_name = {}        # definition_key -> set of instances
         self.by_id = {}
         self.by_location = {}    # cardinalinst (when implemented, str for now), > instances
-        self.temp_items = set() # just exists as a place to live for dynamic item generation so it doesn't mess with for loops. Should be empty, only used temporarily and then cleared (contents added to self.instances) after the current loop.
-        self.updated = set() # again, can probably be merged with the above. Doesn't need to be part of this class at all, it's purely here for convenience because I'm tired.
+        self.temp_items = set()
+        self.updated = set()
 
     def init_single(self, item_name, item_entry):
         do_print(f"[init_single] ITEM NAME: {item_name}")
@@ -698,13 +722,18 @@ for i in items_in(container=True, open=True):
 So indexed view is definitely what I need. The duplication and even deep nesting is just going to be messy.
 
     """
-#def init_testreg():
-
 
 if __name__ == "__main__":
-    #init_testreg()
 
     def get_loc_items(loc=None, cardinal=None):
+
+        json_primary = "dynamic_data/items_main.json"
+        with open(json_primary, 'r') as file:
+            item_defs = json.load(file)
+
+        loc_data_json = "loc_data.json"
+        with open(loc_data_json, 'r') as file:
+            loc_dict = json.load(file)
 
         def get_cardinal_items(loc, cardinal):
 
@@ -716,8 +745,9 @@ if __name__ == "__main__":
                     print(f"Location {loc} not in env_data.")
                     return
                 if loc_dict[loc.lower()].get(cardinal):
-                    if loc_dict[loc.lower()][cardinal].get("long_desc_dict"):
-                        for item in loc_dict[loc.lower()][cardinal]["long_desc_dict"]:
+                    if loc_dict[loc.lower()][cardinal].get("item_desc"):
+                        for item in loc_dict[loc.lower()][cardinal]["item_desc"]:
+                            loc_item = {}
                             skip_add = False
                             if item != "generic":
                                 if item_defs.get(item):
@@ -746,9 +776,9 @@ if __name__ == "__main__":
                                     if not skip_add:
                                         testReg.temp_items.add(inst)
 
-            from env_data import loc_dict
             if cardinal == None:
-                for cardinal in ("north", "south", "east", "west"):
+                for cardinal in CARDINALS:
+                    """
                     if locations[loc][cardinal].get("items"): ## This is just getting items from 'locations' dict here, not from the main dict. Will probably transition to only adding items to the loc entries there to avoid doubling up, but it is really convenient to add it elsewhere. Not sure.
                         for item_name in locations[loc][cardinal]["items"]:
                             skip_add = False
@@ -778,18 +808,14 @@ if __name__ == "__main__":
                             gen_print(f"\nINST GENERATED: {vars(inst)}\n")
                             if not skip_add:
                                 testReg.temp_items.add(inst)
-
+                    """
                     from_single_cardinal(loc, cardinal)
             else:
                 from_single_cardinal(loc, cardinal)
 
         if loc == None:
-            from env_data import locRegistry
-            for loc in locRegistry.places:
+            for loc in loc_dict:
                 get_cardinal_items(loc, cardinal)
-            for loc in locations:
-                get_cardinal_items(loc, cardinal)
-
         else:
             get_cardinal_items(loc, cardinal)
 
@@ -870,7 +896,7 @@ if __name__ == "__main__":
                         if flag_name not in flag_keys:
                             print(f"Attribute name {flag_name} not in flag_keys. Consider adding it.")
 
-    main_test()
+    #main_test()
 
     def get_types_from_flags(itemname=""):
 
@@ -981,7 +1007,7 @@ if __name__ == "__main__":
             printing.print_blue("\n.                      Fin.                       .", invert=True)
             print()
 
-    add_confirms()
+    #add_confirms()
 
     def clean_dict(named_item=pick_item):
 
@@ -1109,6 +1135,90 @@ if __name__ == "__main__":
                 print(f"Updated {json_primary}")
 
     #edit_dict()
+
+    def make_location_data_json(): ## Will probably never need this again. Leaving it here for now anyway.
+
+        ## "item_desc" == "item_desc" in old vers.
+        #  "items:{}" == new, to replace 'locations' in testclass as the place to add simple items to locations (can be entirely new or referencing item_defs, doesn't matter. Only difference is they don't have location-specific descriptions and may or may not be player-visible.)
+        from env_data import loc_dict
+
+        ## Really, the dict in location_items could just be held in memory if I generated it each time. But it's a convenient way to have it to edit without having to deal with the main env_data file. Still feels wasteful though.
+
+        # I mean... I could just have the dict here and reference /this/ from env_data. Save duplicating it. That would be better, right? I really don't know.
+
+        loc_base = {}
+    #    for place in loc_dict:
+    #        loc_base.setdefault(place, {})
+    #        print(f"PLACE: {place}")
+    #        for cardinal in loc_dict[place]:
+    #            if cardinal in CARDINALS and loc_dict[place][cardinal] != None:
+    #                for entry in loc_dict[place][cardinal]:
+    #                    print(f"ENTRY: {entry}")
+    #                    if entry == "item_desc":
+    #                        loc_base[place][cardinal] = loc_dict[place][cardinal]
+#
+        #print(f"loc_base: {loc_base}")
+
+        # if you want to edit the final dictand not draw from the original in env_data:
+
+        loc_items_json = "loc_data.json"
+        with open(loc_items_json, 'r') as loc_items_file:
+            loc_items = json.load(loc_items_file)
+            # combine the entries if they already exist. Don't know if I need this at all, I'm probably just doing it initially here.
+            # OR, automatically grab items from env_data's loc items in item_desc, and add them here. That's probably a good one.
+            loc_dict = loc_items
+
+        if loc_items:
+            for place in loc_items:
+                if place in loc_dict:
+                    print(f"place: {place}")
+                    for cardinal in loc_dict[place]:
+                        if cardinal in CARDINALS and loc_dict[place][cardinal] != None:
+                            print(f"cardinal: {cardinal}")
+                        #loc_base[place][cardinal] = loc_dict[place][cardinal]
+                            loc_base[place][cardinal] = {}
+                            if loc_dict[place].get(cardinal):
+                                for field in loc_dict[place].get(cardinal):
+                                    if "actions" in field:
+                                        continue
+                                    if "item_desc" in field: # for now, until it's changed in env_data or that dict is removed entirely.
+                                        loc_base[place][cardinal]["item_desc"] = loc_dict[place][cardinal].get(field)
+                                        continue
+                                    else:
+                                        loc_base[place][cardinal]["item_desc"] = ({"generic": None})
+                                    if field in ("short_desc", "long_desc"):
+                                        loc_base[place][cardinal][field] = loc_dict[place][cardinal].get(field)
+                                if not loc_dict[place][cardinal].get("items"):
+                                    loc_base[place][cardinal]["items"] = {"": {"description": None, "is_hidden": False}} # empty template. Adding is_hidden here so I have a straightforward location-specific hidden flag, makes sense. Everything else can be from item gen or item_defs.
+                                if not loc_dict[place][cardinal].get("alt_names"):
+                                    loc_base[place][cardinal]["alt_names"] = []
+
+                        elif cardinal == "descrip":
+                            print(f"descrip: {loc_base[place][cardinal]}")
+                            loc_base[place][cardinal] = loc_dict[place][cardinal]
+
+                        #if cardinal in loc_dict[place]:
+                            #continue
+                        #if loc_items[place].get(cardinal) in (None, {}):
+                        #else:
+                        #    loc_base[place][cardinal] = loc_items[place].get(cardinal)
+                        #    if loc_items[place].get(cardinal) != None:
+                        #        loc_base[place][cardinal] = loc_items[place].get(cardinal)
+                                #print(f"Existing cardinal: {place} {cardinal}: {loc_items[place].get(cardinal)}")
+                                #for part in loc_items[place][cardinal]:
+                                #    print(f"PART: {part}")
+                else:
+                    print(f"Entry in JSON but not in env_data location: {place}")
+                    loc_base.setdefault(place, {}).update(loc_items[place])
+
+        #else:
+            #print("Target JSON is empty. Writing loc_base to empty target JSON.")
+        with open(loc_items_json, 'w') as loc_items_file:
+            json.dump(loc_base, loc_items_file, indent=2)
+        print(f"Written to {loc_items_json}")
+
+    #make_location_data_json()
+
 
 """
 #def items_in(container=None, *, open=None, locked=None):
