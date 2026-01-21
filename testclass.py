@@ -1170,6 +1170,7 @@ if __name__ == "__main__":
 
         if loc_items:
             for place in loc_items:
+                loc_base[place] = {}
                 if place in loc_dict:
                     print(f"place: {place}")
                     for cardinal in loc_dict[place]:
@@ -1184,17 +1185,16 @@ if __name__ == "__main__":
                                     if "item_desc" in field: # for now, until it's changed in env_data or that dict is removed entirely.
                                         loc_base[place][cardinal]["item_desc"] = loc_dict[place][cardinal].get(field)
                                         continue
-                                    else:
-                                        loc_base[place][cardinal]["item_desc"] = ({"generic": None})
-                                    if field in ("short_desc", "long_desc"):
-                                        loc_base[place][cardinal][field] = loc_dict[place][cardinal].get(field)
+
+                                    #if field in ("short_desc", "long_desc"):
+                                    loc_base[place][cardinal][field] = loc_dict[place][cardinal].get(field)
                                 if not loc_dict[place][cardinal].get("items"):
                                     loc_base[place][cardinal]["items"] = {"": {"description": None, "is_hidden": False}} # empty template. Adding is_hidden here so I have a straightforward location-specific hidden flag, makes sense. Everything else can be from item gen or item_defs.
                                 if not loc_dict[place][cardinal].get("alt_names"):
                                     loc_base[place][cardinal]["alt_names"] = []
 
                         elif cardinal == "descrip":
-                            print(f"descrip: {loc_base[place][cardinal]}")
+                            print(f"descrip: {loc_dict[place].get(cardinal)}")
                             loc_base[place][cardinal] = loc_dict[place][cardinal]
 
                         #if cardinal in loc_dict[place]:
@@ -1217,7 +1217,8 @@ if __name__ == "__main__":
             json.dump(loc_base, loc_items_file, indent=2)
         print(f"Written to {loc_items_json}")
 
-    #make_location_data_json()
+    make_location_data_json()
+
 
 
 """

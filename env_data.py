@@ -63,8 +63,8 @@ leave_options = str("'leave', 'stay', preamble='Do you want to leave, or stay?'"
 
 # n_desc is now short_desc
 #loc_dict = {
-#    ## Could roll for descriptions. Not always different, but would be interesting. Functionally a perception check.
-#    # I could do stats... like, for looking for things etc. Actual perception checks, instead of mostly luck based.
+##    ## Could roll for descriptions. Not always different, but would be interesting. Functionally a perception check.
+##    # I could do stats... like, for looking for things etc. Actual perception checks, instead of mostly luck based.
 #    "city hotel room": {"descrip": "You're in a 'budget' PPPhotel roomEEE; small but pleasant enough, at least to sleep in. The sound of traffic tells you you're a couple of floors up at least, and the carpet is well-trod", "inside":True,
 #            "alt_names": ["hotel room"],
 #            "electricity": True, "nature": False,
@@ -168,7 +168,7 @@ leave_options = str("'leave', 'stay', preamble='Do you want to leave, or stay?'"
 #        "exitwall": "south",
 #            }
 #        }
-
+#
 
 import uuid
 
@@ -314,13 +314,12 @@ class placeRegistry:
                 self.current = cardinal
                 #print("self.current_cardinal.name: ", self.current_cardinal.place_name)
 
-
-
     def place_by_name(self, loc_name):
 
         print(f"Loc name in place_by_name: {loc_name}")
         loc_inst = self.by_name.get(loc_name.lower())
         if not loc_inst:
+            print(f"self.by_alt_name: {self.by_alt_name}")
             loc_inst = self.by_alt_name.get(loc_name)
 
         if isinstance(loc_inst, placeInstance):
@@ -384,10 +383,12 @@ def initialise_placeRegistry():
         place = placeInstance(name)
         locRegistry.places.add(place)
         locRegistry.by_name[name] = place
+        #print(f"loc_dict[name]::::: {loc_dict[name]}")
         if loc_dict[name].get("alt_names"):
+            #print(f"loc_dict[name] for {name} has alt names: {loc_dict[name].get("alt_names")}")
             for altname in loc_dict[name]["alt_names"]:
                 locRegistry.by_alt_name[altname]=place
-        locRegistry.by_alt_name
+
         locRegistry.cardinals[place] = locRegistry.add_cardinals(place)
         ## add cardinals to place instance so it's directly referable.
         cardinals_dict = {}
@@ -397,8 +398,25 @@ def initialise_placeRegistry():
         place.cardinals=cardinals_dict
         locRegistry.set_current(place)
 
+
         #place.set_scene_descrip(name, place)
 
+def get_descriptions(place):
+
+    from testing_coloured_descriptions import loc_descriptions
+    description_dict = loc_descriptions() ## now for now I might do this once and reuse it, but practically, we want to regenerate it at each call in case something's changed. For now just implementation is a fine goal.
+    place.overview = description_dict.get(place.name).get("overview")
+    if not isinstance(place.overview, str):
+        place.overview = list(place.overview)[0]
+    if place.overview:
+        print(f"SELF OVERVIEW IN ENV_DATA: {place.overview}")
+    else:
+        print("Failed to get self.overview.")
+        print(f"Did this part work at least? ``{description_dict.get(place.name)}``")
+
+def get_loc_descriptions():
+    for place in locRegistry.places:
+        get_descriptions(place)
 
 
 if "__main__" == __name__:

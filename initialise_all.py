@@ -14,6 +14,8 @@ def initialise_all():
     itemRegistry.initialise_itemRegistry()
     print("initialised itemregistry")
 
+    env_data.get_loc_descriptions()
+
     import verbRegistry
     verbRegistry.initialise_verbRegistry()
     print("initialised verbregistry")

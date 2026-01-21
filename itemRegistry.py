@@ -16,12 +16,13 @@ class ItemInstance:
     """
 
     def __init__(self, definition_key:str, attr:dict):
-        print(f"definition_key: {definition_key}, attr: {attr}")
+        #print(f"definition_key: {definition_key}, attr: {attr}")
         #print(f"Init in item instance is running now. {definition_key}")
         self.id = str(uuid.uuid4())  # unique per instance
         self.name:str = definition_key
         self.nicename:str = attr.get("name")
-        print(f"ATTR: {attr}")
+        #print(f"ATTR: {attr}")
+        print(f"THIS ITEM DOES NOT HAVE ITEM TYPE:??? {self.name}")
         self.item_type = attr["item_type"] ## have it here and/or in the registry. I guess both? covers the 'is_container' thing neatly enough.
         self.colour = None
         self.description:str = attr.get("description")
@@ -104,21 +105,49 @@ class itemRegistry:
         print(f"[init_single] ITEM ENTRY: {item_entry}")
         inst = ItemInstance(item_name, item_entry)
         self.instances.add(inst)
-        self.by_name[inst.name] = inst
+
+        if not self.by_name.get(inst.name):
+            self.by_name[inst.name] = []
+            self.by_name[inst.name].append(inst)
+        #self.by_name[inst.name] = inst
         self.by_id[inst.id] = inst
 
+        loot_type = item_entry.get("loot_type")
+
+        if loot_type: # Works with multiple categories now. So, starting loot also has a value. Currently it's always added, it doesn't remove something from the pool just because it was in the starting loot. May need to reevaluate, but functions okay for now.
+
+            if isinstance(loot_type, list):
+                for option in loot_type:
+                    self.by_category.setdefault(option, set()).add(inst)
+            else:
+                self.by_category.setdefault(loot_type, set()).add(inst)
+        location = item_entry.get("starting_location")
+
+        if location:
+            if not hasattr(inst, "contained_in") or inst.contained_in == None:
+                #print(f"Item {inst.name} has a location.")
+                from env_data import locRegistry as loc
+                cardinal_inst = loc.by_cardinal_str(location)
+                #print(f"CARDINAL INST IF LOCATION: {cardinal_inst}, {cardinal_inst.name}")
+                self.by_location.setdefault(cardinal_inst, set()).add(inst)
+                #print(f"SELF.BY_LOCATION: {self.by_location}")
+                inst.location = cardinal_inst
+
+        #self.by_name[item_name], {}).setdefault().append(inst)
+
+        if item_entry.get("alt_names"):
+            for altname in item_entry.get("alt_names"):
+                self.by_alt_names[altname] = item_name
         return inst
+
 
     def create_instance(self, definition_key, attr):
         logging_fn()
-
-
 
 #        if "starting_location" in attr:
 #            primary_category="starting_location"
 #        else:
 #            primary_category="loot_type"
-
 
         inst = ItemInstance(definition_key, attr)#nicename, primary_category, is_container, can_pick_up, description, location, contained_in, item_size, container_data)
 
@@ -376,19 +405,18 @@ class itemRegistry:
             traceback_fn()
             return
 
-        items_at_cardinal = None
-
         if isinstance(loc_cardinal, cardinalInstance):
             items_at_cardinal = self.by_location.get(loc_cardinal)
-
-        if items_at_cardinal:
-            return items_at_cardinal
+            print(f"items_at_cardinal: {items_at_cardinal}, type: {type(items_at_cardinal)}")
+            if items_at_cardinal:
+                return items_at_cardinal
 
 
     def instances_by_name(self, definition_key:str)->list:
         logging_fn()
 
         if self.by_name.get(definition_key):
+            print(f"self.by_name.get(definition_key): {self.by_name.get(definition_key)}")
             return self.by_name.get(definition_key)
 
         elif self.by_alt_names.get(definition_key):
@@ -634,12 +662,13 @@ def initialise_itemRegistry():
     plural_word_dict = {}
     #print("Running `initialise_itemRegistry`.")
     for item_name, attr in item_defs.items():
-        registry.create_instance(item_name, attr)
+        registry.init_single(item_name, attr)
+        #registry.create_instance(item_name, attr)
         if len(item_name.split()) > 1:
             plural_word_dict[item_name] = tuple(item_name.split())
 
     registry.add_plural_words(plural_word_dict)
 
-    print(f"Plural words: {registry.plural_words}")
+    #print(f"Plural words: {registry.plural_words}")
 
 initialise_itemRegistry()

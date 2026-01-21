@@ -1584,3 +1584,17 @@ old self.needs_key_to_lock == new "requires_key"
 9.00am
 
 long_desc_dict == item_desc
+
+10.58am
+Need to update this:
+local_items = itemRegistry.registry.get_item_by_location(f"{location} {cardinal}")
+
+Currently it fails to check local_items, need to update locations in itemRegistry for it to work. Just noting it here so I hopefully don't forget. The basic scene descriptions are working again.
+
+1.59pm
+## print(f"items_at_cardinal: {items_at_cardinal}, type: {type(items_at_cardinal)}")
+Still no items. Items aren't being added to self.by_location (because I haven't set it up yet), that's the next major thing.
+
+The input parsing is working though. So that's very very nice.
+
+
