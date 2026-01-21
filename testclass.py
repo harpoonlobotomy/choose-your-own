@@ -11,9 +11,7 @@
 
 import uuid
 from pprint import pprint
-from itemRegistry import ItemInstance
 import printing
-from env_data import locRegistry as loc
 
 standard = "standard"
 static = "static"
@@ -704,6 +702,123 @@ class testRegistry:
 
 
 testReg = testRegistry()
+
+def get_loc_items_dict(loc=None, cardinal=None):
+
+    json_primary = "dynamic_data/items_main.json"
+    with open(json_primary, 'r') as file:
+        item_defs = json.load(file)
+
+    loc_data_json = "loc_data.json"
+    with open(loc_data_json, 'r') as file:
+        loc_dict = json.load(file)
+
+    loc_items_dict = {}
+
+    def get_cardinal_items(loc, cardinal):
+
+        gen_items = use_generated_items()
+
+        def from_single_cardinal(loc, cardinal):
+
+            if not loc_dict.get(loc.lower()):
+                print(f"Location {loc} not in env_data.")
+                return
+            if loc_dict[loc.lower()].get(cardinal):
+
+                if loc_dict[loc.lower()][cardinal].get("item_desc"):
+                    for item in loc_dict[loc.lower()][cardinal]["item_desc"]:
+                        loc_item = {}
+                        skip_add = False
+                        if item != "generic":
+                            if item_defs.get(item):
+                                gen_print(f"`{item}` found in item_defs.")
+                                loc_item[item] = item_defs.get(item)
+                                loc_item[item].setdefault("exceptions", {}).update({"starting_location": cardinal + " " + loc})
+                                inst = testReg.init_single(item, loc_item[item])
+                                gen_print(f"\nINST GENERATED (item_dict by_cardinal): {vars(inst)}\n")
+                            else:
+                                if gen_items.get(item):
+                                    gen_print(f"`{item}` found in generated_items.")
+                                    loc_item[item] = gen_items[item]
+                                    gen_print(f"GEN ITEMS {item}: {gen_items[item]}")
+                                    skip_add = True
+                                elif test_items.get(item):
+                                    gen_print(f"`{item}` found in test_items.")
+                                    loc_item[item] = test_items[item]
+                                else:
+                                    gen_print(f"Item {item} not found in item_defs, generating from blank.")
+                                    loc_item[item] = ({"item_type": [static]})
+                                    inst = testReg.new_item_from_str(item_name=item, loc_cardinal=(loc + " " + cardinal))
+                                    continue
+
+                                loc_item[item].update({"starting_location": cardinal + " " + loc})
+                                loc_items_dict[loc][cardinal][item] = loc_item[item]
+                                inst = testReg.init_single(item, loc_item[item])
+                                if not skip_add:
+                                    testReg.temp_items.add(inst)
+
+        if cardinal == None:
+            for cardinal in CARDINALS:
+                loc_items_dict[loc][cardinal] = {}
+                from_single_cardinal(loc, cardinal)
+        else:
+            loc_items_dict[loc][cardinal] = {}
+            from_single_cardinal(loc, cardinal)
+
+    if loc == None:
+        for loc in loc_dict:
+            loc_items_dict[loc] = {}
+            get_cardinal_items(loc, cardinal)
+    else:
+        loc_items_dict[loc] = {}
+        get_cardinal_items(loc, cardinal)
+
+
+def add_confirms():
+
+    confirmed_items = {}
+    for item in testReg.temp_items:
+        if hasattr(item, "name"):
+            confirmed_items[item.name] = item
+
+    if confirmed_items or testReg.updated:
+        printing.print_red("The following item(s) have been updated or are new entries:")
+
+        test_generated_items = True
+        if confirmed_items:
+            print(f"There are new items: {confirmed_items}")
+            for item in confirmed_items:
+                if test_generated_items:
+                    print(f"Item name: {item}")
+                    printing.print_red(f"If you want to add the {item} to generated_items, please type 'yes' after the item data is printed.", invert=True)
+                    printing.print_green(text=f"Item data: {vars(confirmed_items[item])}",  invert=True)
+
+                    test = input()
+                    if test.lower() in ("y", "yes"):
+                        print("\nItem confirmed.")
+                        testReg.add_to_gen_items(confirmed_items[item])
+                    else:
+                        continue
+                    print(f"Finished adding new items to {json_to_edit}")
+
+
+        if testReg.updated:
+            for inst in testReg.updated:
+                if not inst in confirmed_items:
+                    if isinstance(inst, testInstances):
+                        testReg.add_to_gen_items(inst) # currently only does one at a time, would be better to batch it internally. Tomorrow.
+
+                elif isinstance(inst, str):
+                    if testReg.by_name.get(inst):
+                        testReg.add_to_gen_items(testReg.by_name.get(inst)) # currently only does one at a time, would be better to batch it internally. Tomorrow.
+            print(f"Finished adding updated items to {json_to_edit}.")
+
+        printing.print_blue("\n.                      Fin.                       .", invert=True)
+        print()
+
+#add_confirms()
+
 """
 indexed view:
 def items_in(container=None, *, open=None, locked=None):
@@ -961,53 +1076,7 @@ if __name__ == "__main__":
 
         return pick_item
 
-
     pick_item = None#get_types_from_flags()
-
-    #exit()
-    def add_confirms():
-
-        confirmed_items = {}
-        for item in testReg.temp_items:
-            if hasattr(item, "name"):
-                confirmed_items[item.name] = item
-
-        if confirmed_items or testReg.updated:
-            printing.print_red("The following item(s) have been updated or are new entries:")
-
-            test_generated_items = True
-            if confirmed_items:
-                print(f"There are new items: {confirmed_items}")
-                for item in confirmed_items:
-                    if test_generated_items:
-                        print(f"Item name: {item}")
-                        printing.print_red(f"If you want to add the {item} to generated_items, please type 'yes' after the item data is printed.", invert=True)
-                        printing.print_green(text=f"Item data: {vars(confirmed_items[item])}",  invert=True)
-
-                        test = input()
-                        if test.lower() in ("y", "yes"):
-                            print("\nItem confirmed.")
-                            testReg.add_to_gen_items(confirmed_items[item])
-                        else:
-                            continue
-                        print(f"Finished adding new items to {json_to_edit}")
-
-
-            if testReg.updated:
-                for inst in testReg.updated:
-                    if not inst in confirmed_items:
-                        if isinstance(inst, testInstances):
-                            testReg.add_to_gen_items(inst) # currently only does one at a time, would be better to batch it internally. Tomorrow.
-
-                    elif isinstance(inst, str):
-                        if testReg.by_name.get(inst):
-                            testReg.add_to_gen_items(testReg.by_name.get(inst)) # currently only does one at a time, would be better to batch it internally. Tomorrow.
-                print(f"Finished adding updated items to {json_to_edit}.")
-
-            printing.print_blue("\n.                      Fin.                       .", invert=True)
-            print()
-
-    #add_confirms()
 
     def clean_dict(named_item=pick_item):
 
@@ -1089,6 +1158,7 @@ if __name__ == "__main__":
 
             printing.printkind(key)
             printing.printkind(entry)
+            from itemRegistry import ItemInstance
 
             pop_me = set()
             for header, item in entry.items():
@@ -1217,7 +1287,7 @@ if __name__ == "__main__":
             json.dump(loc_base, loc_items_file, indent=2)
         print(f"Written to {loc_items_json}")
 
-    make_location_data_json()
+    #make_location_data_json()
 
 
 

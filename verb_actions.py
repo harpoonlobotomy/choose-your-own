@@ -135,7 +135,7 @@ def check_lock_open_state(noun_inst, verb_inst):
     is_closed = is_locked = locked_have_key = False
 
     inst, container, reason_val, meaning = registry.check_item_is_accessible(noun_inst) ## checks if the item is accessible, not if it itself is locked. It only checks the lock/key for the containing obj.
-    #print(f"MEANING (initial): {meaning}")
+    print(f"MEANING for {noun_inst} ({reason_val}): {meaning}")
     #print(f"reason val: {reason_val}")
     if reason_val in (0, 3, 4, 5): # all 'not closed/locked container options
         if hasattr(noun_inst, "is_open"):
@@ -435,6 +435,10 @@ def meta(format_tuple, input_dict):
         print("Okay, quitting the game. Goodbye!\n\n")
         exit()
         return
+    elif meta_verb == "update_json":
+        from testclass import add_confirms
+        add_confirms()
+        return
     print(f"Cannot process {input_dict} in def meta() End of function, unresolved. (Function not yet written)")
 
 def go(format_tuple, input_dict): ## move to a location/cardinal/inside
@@ -728,6 +732,7 @@ def open_close(format_tuple, input_dict):
                 noun_count = format_tuple.count("noun")
                 if noun_count < 2:
                     print(f"You need a key to lock the {assign_colour(noun_inst)}")
+                    return
                 else:
                     a, sem_or_dir, b = three_parts_a_x_b(input_dict)
                     if b == key_inst:
@@ -736,9 +741,11 @@ def open_close(format_tuple, input_dict):
                         noun_inst.is_locked = True
                         return
                 print(f"You need a key to lock the {assign_colour(noun_inst)}")
+                return
             else:
                 print(f"You closed and locked the {assign_colour(noun_inst)}")
                 noun_inst.is_locked = True
+                return
 
     else:
         if is_closed:
@@ -749,6 +756,7 @@ def open_close(format_tuple, input_dict):
             noun_inst.is_open = True
             noun_inst.is_locked = False
             print_children_in_container(noun_inst)
+            return
 
         elif locked_and_have_key:
             if verb_entry["instance"].name in ("close", "lock"):
@@ -756,11 +764,13 @@ def open_close(format_tuple, input_dict):
                 return
             if verb_entry["instance"].name == "open":
                 print(assign_colour("You need to unlock it before you can open it. You do have the key, though...", "description"))
+                return
             elif verb_entry["instance"].name == "unlock":
                 print(f"You use the {noun_inst.needs_key} to unlock the {noun_inst.in_container}")
                 noun_inst.is_open=True
                 noun_inst.is_locked=False
                 print_children_in_container(noun_inst)
+                return
         else:
             if verb_entry["instance"].name in ("close", "lock"):
                 if noun_inst.is_open:
@@ -770,10 +780,13 @@ def open_close(format_tuple, input_dict):
                 return
             if noun_inst.is_open:
                 print(f"{assign_colour(noun_inst)} is already open.")
+                return
             elif verb_entry["instance"].name == "open":
                 print(assign_colour("You need to unlock it before you can open it. What you need should be around somewhere...", "description"))
+                return
             elif verb_entry["instance"].name == "unlock":
                 print(assign_colour("You need to find something to unlock it with first.", "description"))
+                return
 
     print(f"Cannot process {input_dict} in def open_close() End of function, unresolved.")
 
@@ -897,7 +910,7 @@ def take(format_tuple, input_dict):
         added_to_inv = False
 
         inst, container, reason_val, meaning = registry.check_item_is_accessible(noun_inst)
-        #print(f"TAKE: Meaning: {meaning}")
+        print(f"TAKE: {reason_val} Meaning: {meaning}")
         if reason_val not in (0, 3, 4, 5):
             print(f"Sorry, you can't take the {assign_colour(noun_inst)} right now.")
             return 1, added_to_inv
@@ -909,15 +922,23 @@ def take(format_tuple, input_dict):
             import verb_membrane
             can_pickup = verb_membrane.check_noun_actions(noun_inst, "take")
             if can_pickup:
+                print(f"CAN PICK UP {noun_inst}")
+                print("VARS noun_inst")
+                print(vars(noun_inst))
                 if hasattr(noun_inst, "can_pick_up"):
+                    print("hasattr(noun_inst, 'can_pick_up'):")
+                    print(f"{hasattr(noun_inst, 'can_pick_up')}:")
                     if noun_inst.can_pick_up:
+                        print("noun_inst.can_pick_up")
                         if reason_val in (3, 4):
                             registry.move_from_container_to_inv(noun_inst, inventory=game.inventory, parent=container)
                             if noun_inst in game.inventory:
                                 added_to_inv = True
                                 return 0, added_to_inv
                         elif reason_val == 0:
+                            print("About to try to pick up")
                             registry.pick_up(noun_inst, inventory_list=game.inventory) ## the can_take function shouldn't be doing this part.
+                            print("Did pick_up")
                             if noun_inst in game.inventory:
                                 added_to_inv = True
                                 return 0, added_to_inv
@@ -952,7 +973,7 @@ def take(format_tuple, input_dict):
             container_inst = inst_from_idx(input_dict[container_idx], "noun")
 
             inst, container, reason_val, reason = registry.check_item_is_accessible(noun_inst)
-            #print(f"REASON: {reason_val} / {reason}")
+            print(f"REASON: {reason_val} / {reason}")
             if reason_val not in (0, 3, 4):
                 #print(f"Cannot take {noun_inst.name}.")
                 #print(f"Reason code: {reason_val}")
@@ -1160,8 +1181,7 @@ def router(viable_format, inst_dict):
         for data in v.values():
             quick_list.append(data["str_name"])
     MOVE_UP = "\033[A"
-    print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {" ".join(quick_list)}  ]]\033[0m\n')
-
+    #print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {" ".join(quick_list)}  ]]\033[0m\n') ## TODO put this back on when the testing's done.
     #print(f"Dict for output: {inst_dict}")
 
     for data in inst_dict.values():

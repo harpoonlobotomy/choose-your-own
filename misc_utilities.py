@@ -291,6 +291,11 @@ def is_item_in_container(item, inventory_list=None):
         print(f"Failed to get instance for {item}, type: {type(item)}")
         exit()
     if hasattr(inst, "contained_in"):
+        print(f"Hasattr contained_in: {inst}:inst.contained_in {inst.contained_in}")
+        if inst.contained_in != None:
+            print("Not necessary but I want to see:")
+            print("inst.contained_in's vars:")
+            print(f"{vars(inst.contained_in)}")
         container = inst.contained_in
         return container, inst
     return None, inst

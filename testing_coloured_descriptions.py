@@ -59,10 +59,12 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                             local_items = itemRegistry.registry.get_item_by_location(f"{location} {cardinal}")
                             print(f"itemRegistry.registry.instances_by_name(item)[0] : {itemRegistry.registry.instances_by_name(item)[0]}")
                             if local_items and itemRegistry.registry.instances_by_name(item)[0] in local_items:
-                                #if itemRegistry.registry.instances_by_name(item)[0] in itemRegistry.registry.get_item_by_location(f"{location} {cardinal}"):
+                                item_inst = itemRegistry.registry.instances_by_name(item)[0]
+                            #if itemRegistry.registry.instances_by_name(item)[0] in itemRegistry.registry.get_item_by_location(f"{location} {cardinal}"):
+
                                 if "[[]]" in long_dict[item]:
+                                    test = long_dict[item].replace("[[]]", assign_colour(item_inst))
                                     print(f'"[[]]" in long_dict[item] and local: {long_dict[item]}')
-                                    test = long_dict[item].replace("[[]]", assign_colour(item))
                                 else:
                                     test = long_dict[item]
                                 long_desc.append(test)

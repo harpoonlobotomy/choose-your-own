@@ -37,11 +37,16 @@ def set_inventory():
 
 def loadout():
 
-    paperclip_list = registry.instances_by_name("paperclip")
+    paperclip_inst = registry.get_item_from_defs("paperclip")
+    #paperclip_list = registry.instances_by_name("paperclip")
 
-    _, game.inventory = registry.pick_up(paperclip_list[0], game.inventory, starting_objects=True)
+    _, game.inventory = registry.pick_up(paperclip_inst, game.inventory, starting_objects=True)
 
-    _, game.inventory = registry.pick_up(registry.random_from("magazine"), game.inventory, starting_objects=True)
+    ### Need to get list of item def entries with 'magazine'
+    magazines = registry.item_def_by_attr(loot_type="magazine")
+    #print(f"MAGAZINES: {magazines}")
+    mag_choice = random.choice(magazines)
+    _, game.inventory = registry.pick_up(mag_choice, game.inventory, starting_objects=True)
     game.carryweight = 12
 
     starting_items = registry.instances_by_category("starting") ## starting items ==

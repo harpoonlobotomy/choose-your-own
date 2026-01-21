@@ -115,20 +115,26 @@ def get_noun_instances(dict_from_parser, viable_formats):
                 #print(f"GET NOUN INSTANCES::: Kind: {kind}, entry: {entry}")
                 if kind == "noun":
                     name = entry["str_name"]
-                    noun_inst = registry.instances_by_name(name)
+                    noun_inst = registry.instances_by_name(name) ## NOTE: This won't hold for long. Different instances may have different attr.
                     if not noun_inst:
                         suitable_nouns -= 10
+                        if name in registry.item_defs:
+                            noun_inst = registry.init_single(name, registry.item_defs[name])
+                    if not noun_inst:
                         print(f"No found ItemInstance for {entry}")
                     else:
                         #print(f"Noun inst: {noun_inst}")
-                        noun_name = check_noun_actions(noun_inst[0], verb) ## I feel like this should be left for later. If I can't take the headstone, let that be something for 'take' to do, no?
+                        if not isinstance(noun_inst, ItemInstance):
+                            noun_inst = noun_inst[0]
+                            #noun_name = check_noun_actions(noun_inst, verb)
                         # Wait, no. I need to do it here so the parser actually works. Right.
+                        noun_name = check_noun_actions(noun_inst, verb) ## I feel like this should be left for later. If I can't take the headstone, let that be something for 'take' to do, no?
                         if noun_name:
-                            dict_from_parser[idx][kind] = ({"instance": noun_inst[0], "str_name": name})
+                            dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": name})
                             suitable_nouns += 1
                         else:
     ## NOTE: Added this here so all nouns pass even if they will fail later, which entirely removes the point of the allowed noun_actions. But, I can better tailor failure messages within each later action-fn. So I think I'm going with it for now.
-                            dict_from_parser[idx][kind] = ({"instance": noun_inst[0], "str_name": name})
+                            dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": name})
                             #print(f"You can't `{verb.name}` the {entry["str_name"]}")
                             suitable_nouns -= 10
 

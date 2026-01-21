@@ -1597,4 +1597,64 @@ Still no items. Items aren't being added to self.by_location (because I haven't 
 
 The input parsing is working though. So that's very very nice.
 
+3.55pm
 
+items_at_cardinal: {<ItemInstance padlock (13d4420a-7609-4b36-9192-e2bf56d26bd0)>, <ItemInstance padlock (3a3f69e0-495d-45da-b208-0cb67e749c68)>}, type: <class 'set'>
+self.by_name.get(definition_key): [<ItemInstance gate (f5d36449-aa7a-4b72-9a63-dfe7be1e3ae5)>]
+itemRegistry.registry.instances_by_name(item)[0] : <ItemInstance gate (f5d36449-aa7a-4b72-9a63-dfe7be1e3ae5)>
+self.by_name.get(definition_key): [<ItemInstance gate (f5d36449-aa7a-4b72-9a63-dfe7be1e3ae5)>]
+"[[]]" in long_dict[item] but not local: a heavy wrought-iron [[]] - imposing but run-down
+self.by_name.get(definition_key): [<ItemInstance gate (f5d36449-aa7a-4b72-9a63-dfe7be1e3ae5)>]
+NOT LOCAL TEST: a heavy wrought-iron gate - imposing but run-down
+self.by_name.get(definition_key): [<ItemInstance padlock (3a3f69e0-495d-45da-b208-0cb67e749c68)>]
+Item in item registry: padlock
+Loc name in place_by_name: graveyard
+items_at_cardinal: {<ItemInstance padlock (13d4420a-7609-4b36-9192-e2bf56d26bd0)>, <ItemInstance padlock (3a3f69e0-495d-45da-b208-0cb67e749c68)>}, type: <class 'set'>
+self.by_name.get(definition_key): [<ItemInstance padlock (3a3f69e0-495d-45da-b208-0cb67e749c68)>]
+itemRegistry.registry.instances_by_name(item)[0] : <ItemInstance padlock (3a3f69e0-495d-45da-b208-0cb67e749c68)>
+self.by_name.get(definition_key): [<ItemInstance padlock (3a3f69e0-495d-45da-b208-0cb67e749c68)>]
+self.by_name.get(definition_key): [<ItemInstance padlock (3a3f69e0-495d-45da-b208-0cb67e749c68)>]
+"[[]]" in long_dict[item] and local: an old dark-metal [[]] on a chain holding the gate closed
+LOCAL ITEMS TEST: an old dark-metal padlock on a chain holding the gate closed
+self.by_name.get(definition_key): [<ItemInstance moss (aefeb5d8-3d0d-4bb2-a916-7edcb7f1144a)>]
+Item in item registry: moss
+Loc name in place_by_name: graveyard
+items_at_cardinal: None, type: <class 'NoneType'>
+self.by_name.get(definition_key): [<ItemInstance moss (aefeb5d8-3d0d-4bb2-a916-7edcb7f1144a)>]
+itemRegistry.registry.instances_by_name(item)[0] : <ItemInstance moss (aefeb5d8-3d0d-4bb2-a916-7edcb7f1144a)>
+"[[]]" in long_dict[item] but not local: clumps of [[]]
+self.by_name.get(definition_key): [<ItemInstance moss (aefeb5d8-3d0d-4bb2-a916-7edcb7f1144a)>]
+NOT LOCAL TEST: clumps of moss
+self.by_name.get(definition_key): [<ItemInstance glass jar (ad4bb5a4-031e-4782-91bf-69ae48f7bb93)>]
+Item in item registry: glass jar
+
+So this is /messy/.
+
+Trying to move the testclass functions over to itemReg
+
+
+5:32pm
+Have got rid of some of those issues. Now just having to fix container parenting again.
+
+INVENTORY LIST IN RUN_CHECK: [<ItemInstance severed tentacle (31b3ea7f-930c-48f2-96ac-98c6b95d0c09)>, <ItemInstance paperclip (fdd1b6cf-b49e-4113-ab90-d80c7e955e03)>, <ItemInstance gardening mag (30306431-b476-437d-8c4c-ad68c84a1b18)>, <ItemInstance paperclip (564bf72c-41ab-4262-8e05-f199152ece89)>, <ItemInstance glass jar (d75e4652-4cc4-4d57-9b20-223d0e1517af)>]
+items_at_cardinal: {<ItemInstance moss (3c27dea9-f1af-46ef-9df3-892afc286c77)>, <ItemInstance dried flowers (c0414aef-7daa-4c7e-a3ac-19e6f73cefaf)>}, type: <class 'set'>
+Hasattr contained_in: <ItemInstance glass jar (d75e4652-4cc4-4d57-9b20-223d0e1517af)>
+You open the glass jar
+Cannot process {0: {'verb': {'instance': <verbInstance open (88b277b6-2530-4cf8-9423-c0249b46a1a4)>, 'str_name': 'open'}}, 1: {'noun': {'instance': <ItemInstance glass jar (d75e4652-4cc4-4d57-9b20-223d0e1517af)>, 'str_name': 'glass jar'}}} in def open_close() End of function, unresolved.
+
+[[  take dried flowers from glass jar  ]]
+
+items_at_cardinal: {<ItemInstance moss (3c27dea9-f1af-46ef-9df3-892afc286c77)>, <ItemInstance dried flowers (c0414aef-7daa-4c7e-a3ac-19e6f73cefaf)>}, type: <class 'set'>
+Hasattr contained_in: <ItemInstance dried flowers (c0414aef-7daa-4c7e-a3ac-19e6f73cefaf)>
+REASON: 0 / accessible
+The dried flowers doesn't seem to be in glass jar.
+
+
+5.55pm
+create_item_by_name: dried flowers
+Exception: 'itemRegistry' object has no attribute 'create_item_by_name'
+
+Ah, finally saw it. That's why it keeps failing.
+
+
+6.29 Fiiiiiinally. Got the flowers out of the jar. Added a straight 'children' set for containers to use, separate from starting_children.

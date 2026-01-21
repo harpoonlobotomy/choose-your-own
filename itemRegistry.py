@@ -5,6 +5,11 @@ import uuid
 from env_data import cardinalInstance, placeInstance
 from logger import logging_fn, traceback_fn
 from env_data import locRegistry as loc
+import testclass
+import printing
+
+
+CARDINALS = ["north", "east", "south", "west"]
 
 print("Item registry is being run right now.")
 #sleep(.5)
@@ -19,10 +24,11 @@ class ItemInstance:
         #print(f"definition_key: {definition_key}, attr: {attr}")
         #print(f"Init in item instance is running now. {definition_key}")
         self.id = str(uuid.uuid4())  # unique per instance
+        for attribute in attr:
+            setattr(self, attribute, attr[attribute])
         self.name:str = definition_key
         self.nicename:str = attr.get("name")
         #print(f"ATTR: {attr}")
-        print(f"THIS ITEM DOES NOT HAVE ITEM TYPE:??? {self.name}")
         self.item_type = attr["item_type"] ## have it here and/or in the registry. I guess both? covers the 'is_container' thing neatly enough.
         self.colour = None
         self.description:str = attr.get("description")
@@ -96,6 +102,16 @@ class itemRegistry:
 
         self.plural_words = {}
 
+        self.temp_items = set()
+        self.updated = set()
+
+        import json
+        json_primary = "dynamic_data/items_main.json" # may break things
+        with open(json_primary, 'r') as file:
+            item_defs = json.load(file)
+
+        self.item_defs = item_defs
+
     # -------------------------
     # Creation / deletion
     # -------------------------
@@ -108,7 +124,7 @@ class itemRegistry:
 
         if not self.by_name.get(inst.name):
             self.by_name[inst.name] = []
-            self.by_name[inst.name].append(inst)
+        self.by_name[inst.name].append(inst)
         #self.by_name[inst.name] = inst
         self.by_id[inst.id] = inst
 
@@ -121,48 +137,52 @@ class itemRegistry:
                     self.by_category.setdefault(option, set()).add(inst)
             else:
                 self.by_category.setdefault(loot_type, set()).add(inst)
+
         location = item_entry.get("starting_location")
 
         if location:
             if not hasattr(inst, "contained_in") or inst.contained_in == None:
-                #print(f"Item {inst.name} has a location.")
+                print(f"Item {inst.name} has a location.")
                 from env_data import locRegistry as loc
                 cardinal_inst = loc.by_cardinal_str(location)
-                #print(f"CARDINAL INST IF LOCATION: {cardinal_inst}, {cardinal_inst.name}")
+                print(f"CARDINAL INST IF LOCATION: {cardinal_inst}, {cardinal_inst.name}")
                 self.by_location.setdefault(cardinal_inst, set()).add(inst)
-                #print(f"SELF.BY_LOCATION: {self.by_location}")
+                print(f"SELF.BY_LOCATION: {self.by_location}")
                 inst.location = cardinal_inst
-
-        #self.by_name[item_name], {}).setdefault().append(inst)
 
         if item_entry.get("alt_names"):
             for altname in item_entry.get("alt_names"):
                 self.by_alt_names[altname] = item_name
+
         return inst
 
+    def get_item_from_defs(self, item_name):
 
-    def create_instance(self, definition_key, attr):
-        logging_fn()
+        if item_name in list(self.item_defs):
+            inst = self.init_single(item_name, self.item_defs[item_name])
+            return inst
 
-#        if "starting_location" in attr:
-#            primary_category="starting_location"
-#        else:
-#            primary_category="loot_type"
-
-        inst = ItemInstance(definition_key, attr)#nicename, primary_category, is_container, can_pick_up, description, location, contained_in, item_size, container_data)
-
-        self.instances.add(inst)
-        self.by_id[inst.id] = inst
-
-        loot_type = attr.get("loot_type")
-
-        if loot_type: # Works with multiple categories now. So, starting loot also has a value. Currently it's always added, it doesn't remove something from the pool just because it was in the starting loot. May need to reevaluate, but functions okay for now.
-
-            if isinstance(loot_type, list):
-                for option in loot_type:
-                    self.by_category.setdefault(option, set()).add(inst)
-            else:
-                self.by_category.setdefault(loot_type, set()).add(inst)
+    #def create_instance(self, definition_key, attr):
+    #    logging_fn()
+#
+#   #     if "starting_location" in attr:
+#   #         primary_category="starting_location"
+#   #     else:
+#   #         primary_category="loot_type"
+#
+    #    inst = ItemInstance(definition_key, attr)#nicename, primary_category, is_container, can_pick_up, description, location, contained_in, item_size, container_data)
+#
+    #    self.instances.add(inst)
+    #    self.by_id[inst.id] = inst
+#
+    #    loot_type = attr.get("loot_type")
+#
+    #    if loot_type: # Works with multiple categories now. So, starting loot also has a value. Currently it's always added, it doesn't remove something from the pool just because it was in the starting loot. May need to reevaluate, but functions okay for now.
+    #        if isinstance(loot_type, list):
+    #            for option in loot_type:
+    #                self.by_category.setdefault(option, set()).add(inst)
+    #        else:
+    #            self.by_category.setdefault(loot_type, set()).add(inst)
 
         #if attr.get("started_contained_in"):
 #
@@ -181,28 +201,28 @@ class itemRegistry:
 
 
         # Index by location ## Do this at the end, so can check container status - if in a container, don't add it to the location. Let it be in the container exclusively.
-        location = attr.get("starting_location")
-
-        if location:
-            if not hasattr(inst, "contained_in") or inst.contained_in == None:
-                #print(f"Item {inst.name} has a location.")
-                from env_data import locRegistry as loc
-                cardinal_inst = loc.by_cardinal_str(location)
-                #print(f"CARDINAL INST IF LOCATION: {cardinal_inst}, {cardinal_inst.name}")
-                self.by_location.setdefault(cardinal_inst, set()).add(inst)
-                #print(f"SELF.BY_LOCATION: {self.by_location}")
-                inst.location = cardinal_inst
-                #print(f"self.location: {inst.location}, self.location.place_name: {inst.location.place_name}")
-    ## above is wrong, need to rewrite. Too braindead today.
-
-        # Index by name
-        self.by_name.setdefault(definition_key, list()).append(inst)
-
-        if attr.get("alt_names"):
-            for altname in attr.get("alt_names"):
-                self.by_alt_names[altname] = definition_key
-
-        return inst
+  #      location = attr.get("starting_location")
+#
+  #      if location:
+  #          if not hasattr(inst, "contained_in") or inst.contained_in == None:
+  #              #print(f"Item {inst.name} has a location.")
+  #              from env_data import locRegistry as loc
+  #              cardinal_inst = loc.by_cardinal_str(location)
+  #              #print(f"CARDINAL INST IF LOCATION: {cardinal_inst}, {cardinal_inst.name}")
+  #              self.by_location.setdefault(cardinal_inst, set()).add(inst)
+  #              #print(f"SELF.BY_LOCATION: {self.by_location}")
+  #              inst.location = cardinal_inst
+  #              #print(f"self.location: {inst.location}, self.location.place_name: {inst.location.place_name}")
+  #  ## above is wrong, need to rewrite. Too braindead today.
+#
+  #      # Index by name
+  #      self.by_name.setdefault(definition_key, list()).append(inst)
+#
+  #      if attr.get("alt_names"):
+  #          for altname in attr.get("alt_names"):
+  #              self.by_alt_names[altname] = definition_key
+#
+  #      return inst
 
 
     def delete_instance(self, inst: ItemInstance):
@@ -219,6 +239,169 @@ class itemRegistry:
 
         # remove from name index
         self.by_name.get(inst.name, list()).remove(inst)
+
+    def item_def_by_attr(self, attr_str="", loot_type=None, open=None, locked=None):
+
+        if open or locked:
+            items = (i for i in self.item_defs if "container" in i.get("item_type"))
+#            if container is not None and item.container is not container:
+#                continue
+#            if open is not None and item.is_open != open:
+#                continue
+#            if locked is not None and item.is_locked != locked:
+#                continue
+        if attr_str:
+            items = (i for i in self.item_defs if hasattr(i, attr_str))
+
+        if loot_type:
+            items = list()
+            for item, vals in self.item_defs.items():
+                if "loot_type" in vals and loot_type in vals.get("loot_type"):
+                    items.append(item)
+             #yield items
+        return items
+
+    def items_by_attr(self, attr_str="", loot_type=None, open=None, locked=None, location=None):
+
+        if location:
+            items = self.by_location[location]
+
+        if open or locked:
+            items = (i for i in self.instances if "container" in i.item_type)
+#            if container is not None and item.container is not container:
+#                continue
+#            if open is not None and item.is_open != open:
+#                continue
+#            if locked is not None and item.is_locked != locked:
+#                continue
+        if attr_str:
+            items = (i for i in self.instances if hasattr(i, attr_str))
+
+        if loot_type:
+            print(f"Loot type: {loot_type}")
+            print(f"i for i in self.instances if hasattr(i, 'loot_type'): {(i for i in self.instances if hasattr(i, 'loot_type'))}")
+            items = (i for i in self.instances if hasattr(i, "loot_type") and loot_type in i.loot_type)
+
+        #yield items
+        return items
+
+        #for i in items_in(container=True, open=True):
+        #    ...
+
+    def clean_children(self, parent=None):
+
+        print(f":: Clean children:: parent: {parent}")
+        target_flags = ("contained_in", "requires_key", "event_key", "trigger_target")
+
+        def cleaning_loop(parent=None):
+
+            def get_children(child_parent, parent):
+                #print(f"parent: {parent}, item.starting_children: {parent.starting_children}")
+                instance_children = []
+                target_child = None
+                if isinstance(parent.starting_children, list|set|tuple):
+                    for child in parent.starting_children:
+                        if child_parent.get(child):
+                            if child_parent[child] == parent.name:
+                                #print("Child/parent pair already exists, skipping.")
+                                continue
+                        #print(f"create child by init_single: {child}")
+                        if child in self.item_defs:
+                            target_child = self.init_single(child, self.item_defs[child])
+                        #target_child = self.create_item_by_name(child)
+                        #print(f"target object after create_item_by_name from list: {target_child}")
+                        if target_child:
+                            instance_children.append(target_child)
+                            target_child.contained_in = parent
+                            if not hasattr(parent, "children"):
+                                parent.children = set()
+                            parent.children.add(target_child)
+                    if len(instance_children) == len(parent.starting_children):
+                        #print(f"All children found/created as instances: {instance_children}")
+                        parent.starting_children = instance_children
+                    else:
+                        if len(instance_children) + len(child_parent) == len(parent.starting_children):
+                            print("All children found or already parented to this parent.")
+                        else:
+                            print(f"Not all children found/made as instances. Str list:\n   {parent.starting_children}\nInstance list:\n    {instance_children}\nchild/parent dict: {child_parent}")
+                            exit() # again, right now hard exit if this ever fails. Need to see why if it does.
+        # Was going to do keys here too, but I don't think I will. Maybe do those at runtime, they're not as widely relevant as children so maybe just do that identification when looked for? Though having said that, that means I have to be aware of whenever they might be checked for... Yeah I should do it here actually.
+                elif isinstance(parent.starting_children, str):
+                    if parent.starting_children in self.item_defs:
+                        target_child = self.init_single(parent.starting_children, self.item_defs[parent.starting_children])
+                    #target_child = self.create_item_by_name(parent.starting_children)
+                    print(f"target object after create_item_by_name with str: {target_child}")
+                    if target_child:
+                        parent.starting_children.append(target_child)
+                        target_child.contained_in = parent
+                        if not hasattr(parent, "children"):
+                            parent.children = set()
+                            parent.children.add(target_child)
+                    else:
+                        print(f"Failed to find child for {parent}'s {parent.starting_children} (from str).")
+                        exit()
+                return child_parent
+
+            child_parent = {}
+            if parent:
+                if isinstance(parent, ItemInstance):
+                    print(f"Parent: {parent}")
+                    if hasattr(parent, "starting_children") and parent.starting_children != None:
+                        print(f"Parent {parent} has starting child/ren: {parent.starting_children}")
+                        get_children(child_parent, parent)
+                    print("vars:")
+                    print(f"{vars(parent)}")
+
+                else:
+                    print("Currently the parent of a child needs to be iteminstance.")
+                    exit()
+            # applies instances to children/keys/etc.
+            itemlist = frozenset(self.by_id)
+
+            for item_id in itemlist:
+                item = self.by_id.get(item_id)
+
+                if not item:
+                    print(f"Failed to get instance by id in cleaning_loop for instance ({item_id}).")
+                    exit() # for now just hard quit if this ever happens, it definitely shouldn't.
+                ## Use the item_indexed lookup for this instead. This is just temporary.
+                if hasattr(item, "contained_in") and getattr(item, "contained_in") not in (False, None):
+                    print(f"Create_item_by_name for contained_in: {item}")
+                    target_obj = self.init_single(getattr(item, "contained_in"), self.item_defs.get(getattr(item, "contained_in")))
+                    if target_obj:
+                        print(f"item, 'starting_children') `{item}`")
+                        if hasattr(item, "started_contained_in") and item.started_contained_in == item.contained_in:
+                            item.started_contained_in = target_obj
+                        item.contained_in = target_obj
+                        print(f"Item {item} contained in: {item.contained_in}")
+                        child_parent[item.name] = target_obj.name
+                    else:
+                        print(f"Missing an instance for `{item.name}`'s  `{"contained_in"}`: {getattr(item, "contained_in")}")
+                        exit()
+
+                if hasattr(item, "starting_children") and item.starting_children != None: # Could probably tie this up in the above loop, and viable child should have a viable parent. I guess this enables me to add the either as either parent or child and have it found, rather than always having to add it to one in particular. Esp with the item gen, that's nice.
+                    print(f"Create_item_by_name for starting_children: {item}")
+        # Except, if the child already exists as an itemdef/gen_item entry, then it gets created twice and alignment gets messy.
+
+                    child_parent = get_children(item, child_parent)
+
+                if hasattr(item, "requires_key") and not isinstance(getattr(item, "requires_key"), bool):
+                    target_obj = self.create_item_by_name(item.requires_key)
+                    if target_obj:
+                        item.requires_key = target_obj
+                    else:
+                        print(f"Failed to find key for {item}'s {item.requires_key}.")
+                        exit()
+
+        starting_count = len(self.instances)
+
+        try:
+            cleaning_loop(parent)
+        except Exception as E:
+            print(f"Exception: {E}")
+
+        if len(self.instances) == starting_count:
+            print("Huh, count is the same. This may or may not matter; only really matters if you were expecting a new item to be dynamically generated.")
 
 
     def check_item_is_accessible(self, inst:ItemInstance) -> tuple[ItemInstance|None, int]:
@@ -244,9 +427,11 @@ class itemRegistry:
             confirmed_inst = None
             confirmed_container = None
             reason = 7
+            meaning = "other error, investigate"
 
             from set_up_game import game
             inventory_list = game.inventory
+            print(f"INVENTORY LIST IN RUN_CHECK: {inventory_list}")
             local_items_list = self.get_item_by_location(loc.current)
             container, inst = is_item_in_container(inst, inventory_list)
 
@@ -361,7 +546,7 @@ class itemRegistry:
                 else:
                     parent = inst.contained_in
                 if parent:
-                    self.by_container[parent].remove(inst)
+                    parent.children.remove(inst)
                     inst.contained_in = None
                     return_text.append((f"Item `[child]` removed from old container `[parent]`", inst, parent))
 
@@ -388,6 +573,7 @@ class itemRegistry:
     # -------------------------
     def get_instance_from_id(self, inst_id:str)->ItemInstance:
         logging_fn()
+
         return self.instances.get(inst_id)
 
 
@@ -416,11 +602,11 @@ class itemRegistry:
         logging_fn()
 
         if self.by_name.get(definition_key):
-            print(f"self.by_name.get(definition_key): {self.by_name.get(definition_key)}")
+            #print(f"self.by_name.get(definition_key): {self.by_name.get(definition_key)}")
             return self.by_name.get(definition_key)
 
         elif self.by_alt_names.get(definition_key):
-            print(f"self.by_alt_names.get(definition_key): {self.by_alt_names.get(definition_key)}")
+            #print(f"self.by_alt_names.get(definition_key): {self.by_alt_names.get(definition_key)}")
             return self.by_name.get(self.by_alt_names.get(definition_key))
 
         #print(f"self.by_alt_names: {self.by_alt_names}")
@@ -463,7 +649,7 @@ class itemRegistry:
 
         description = inst.description
 
-        if "container" in inst.flags:
+        if "container" in inst.item_type:
             #print(f"Container in inst.flags: {inst}")
             children = self.instances_by_container(inst)
             #print(f"children: {children}")
@@ -550,14 +736,16 @@ class itemRegistry:
                     elif starting_objects:
                         inst = item
                         break
-            else:
+
+            elif item_list and item_list != None:
                 inst = item_list[0]
 
-            if not item_list:
-                inst=self.get_instance_from_id(self, inst)
+            inst = self.get_item_from_defs(inst)
 
         if not inst:
-            print("Failed to find inst in pick_up.")
+            loc_card = location.place_name
+            inst = new_item_from_str(item_name=item, loc_cardinal=(loc_card)) # TODO: replace these with place instances, this is just temp
+            print("Failed to find inst in pick_up, generating from str..")
 
         if not starting_objects and not hasattr(inst, "can_pick_up"):
             print(f"[[Cannot pick up {inst.name} (according to inst.flags)]]")
@@ -577,9 +765,8 @@ class itemRegistry:
 
         if inst in inventory_list: ## TODO: Add a check so this only applies to items that can be duplicated. Though really those that can't should not still remain in the world when picked up... so the problem lies in the original pick up in that case, not the dupe.
             #print("Item already in inventory. Creating new...") ## Not sure about this.
-            from item_definitions import get_item_defs
-            attr = get_item_defs(inst.name)
-            inst = self.create_instance(inst.name, attr)
+            attr = self.item_defs.get(inst.name)
+            inst = self.init_single(inst.name, attr)
 
         self.move_item(inst)
         inventory_list.append(inst)
@@ -625,50 +812,214 @@ class itemRegistry:
 # setup
 registry = itemRegistry()
 
-#if __name__ == "__main__":
+if __name__ == "__main__":
 
-    #inventory = []
+    from env_data import initialise_placeRegistry
 
-    #def get_all_flags():
-    #    all_attr_flags=set()
-    #    flag_items=set()
-    #    from item_definitions import get_item_defs
-    #    for item_name, attr in get_item_defs.items():
-    #        for item_name, data in attr.items():
-    #            all_attr_flags.add(item_name)
-    #            if item_name == "flags":
-    #                for item in data:
-    #                    flag_items.add(item)
-    #    print(f"all attr flags: {all_attr_flags}")
-    #    print(f"Flag items: {flag_items}")
-#
-    #get_flags=False
-    #if get_flags:
-    #    get_all_flags()
+    initialise_placeRegistry()
 
+def use_generated_items(input_=None):
+
+
+    import json
+
+    json_to_edit = "dynamic_data/generated_items.json"
+
+    with open(json_to_edit, 'r') as file:
+        gen_items = json.load(file)
+
+    if not gen_items or gen_items == {}:
+        return
+
+    altered = False
+
+    data_keys = list(gen_items)
+
+    if input_ == None:
+        keys = data_keys
+
+    elif isinstance(input_, str):
+        if gen_items.get(input_):
+            print(f"Item found in generated_items: {gen_items.get(input_)}")
+            entry = {}
+            entry[input_] = gen_items[input_]
+            return entry
+        else:
+            return None
+
+    elif isinstance(input_, set|list|tuple):
+        keys = set(i for i in input_)
+    elif isinstance(input_, dict):
+        keys = set(input_)
+
+        for key in keys:
+            if key in data_keys:
+                print(f"JSON entry: \n{gen_items[key]}")
+                print(f"Memory entry: \n{input_[key]}")
+                print("Type 'm' to update the JSON with the memory entry, otherwise the JSON will be kept as-is.")
+                test=input()
+                if test == "m":
+                    gen_items[key] = input_[key]
+                    altered = True
+
+    if altered:
+        printing.print_red(f"Data keys: {data_keys}")
+        printing.print_red(f"keys: {keys}")
+
+        with open(json_to_edit, 'w') as file:
+            json.dump(gen_items, file, indent=2)
+
+    return gen_items
+
+
+def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, partial_dict=None)->str|ItemInstance:
+
+    type_defaults = list(testclass.type_defaults)
+    if not input_str:
+        print("\n")
+        printing.print_green(f"Options: {type_defaults}", invert=True)
+        print(f"Please enter the default_types you want to assign to `{item_name}` (eg ' key, can_pick_up, fragile ' )")
+        input_str = input()
+
+    if not isinstance(input_str, str):
+        print(f"new_item_from_str requires a string input, not {type(input_str)}")
+        return
+
+
+    if " " in input_str.strip():
+        input_str = input_str.replace(",", "")
+        parts = input_str.strip().split(" ")
+        parts = set(i for i in parts if i != None and i in list(type_defaults))
+        if len(parts) > 1:
+            print(f"Parts len >1 : {parts}, type: {type(parts)}")
+            new_str = set(parts)
+        else:
+            new_str = set([parts])
+
+    elif input_str in list(type_defaults):
+        print(f"Input str in type_defaults: {input_str}, type: {type(input_str)}")
+        new_str = set([input_str])
+
+    else:
+        print(f"No valid input [`{input_str}`]. Defaulting to item_type = ['static']")
+        new_str = set(["static"])
+
+    if not loc_cardinal:
+        loc_cardinal = "graveyard north"
+
+    if partial_dict and isinstance(partial_dict, dict):
+        if partial_dict.get(item_name):
+            new_item_dict[item_name] = partial_dict[item_name]
+        elif partial_dict.get("name"):
+            new_item_dict[item_name] = partial_dict
+        else:
+            print(f"Partial dict: Not sure how to use this format: {partial_dict}")
+            exit()
+
+        new_item_dict[item_name].update({"item_type": new_str})
+
+    else:
+        new_item_dict = {}
+        new_item_dict[item_name] = ({"item_type": new_str})
+
+    new_item_dict[item_name]["exceptions"] = {"starting_location": loc_cardinal}
+
+    print(f"new_item_from_str: \n {new_item_dict}, {item_name}\n\n")
+    inst = registry.init_single(item_name, new_item_dict)
+    print(f"Inst after self.init_items(): {inst}, type: {type(inst)}")
+    registry.instances.add(inst)
+    registry.temp_items.add(inst)
+
+    printing.print_green(text=vars(inst), bg=False, invert=True)
+    return inst
+
+
+def get_loc_items_dict(loc=None, cardinal=None):
+
+    import json
+
+    loc_data_json = "loc_data.json"
+    with open(loc_data_json, 'r') as file:
+        loc_dict = json.load(file)
+
+    loc_items_dict = {}
+
+    def get_cardinal_items(loc, cardinal):
+
+        gen_items = use_generated_items()
+
+        def from_single_cardinal(loc, cardinal):
+
+            if not loc_dict.get(loc.lower()):
+                print(f"Location {loc} not in env_data.")
+                return
+
+            if loc_dict[loc.lower()].get(cardinal):
+
+                if loc_dict[loc.lower()][cardinal].get("item_desc"):
+                    for item in loc_dict[loc.lower()][cardinal]["item_desc"]:
+                        loc_item = {}
+                        skip_add = False
+                        if item != "generic":
+                            if registry.item_defs.get(item):
+                                print(f"`{item}` found in item_defs.")
+                                loc_item[item] = registry.item_defs.get(item)
+                                loc_item[item]["starting_location"] = loc + " " + cardinal
+                                inst = registry.init_single(item, loc_item[item])
+                                print(f"\nINST GENERATED (item_dict by_cardinal): {vars(inst)}\n")
+                                if hasattr(inst, "starting_children") and inst.starting_children != None:
+                                    registry.clean_children(parent = inst)
+                            else:
+                                if gen_items.get(item):
+                                    print(f"`{item}` found in generated_items.")
+                                    loc_item[item] = gen_items[item]
+                                    print(f"GEN ITEMS {item}: {gen_items[item]}")
+                                    skip_add = True
+                                else:
+                                    print(f"Item {item} not found in item_defs, generating from blank.")
+                                    loc_item[item] = ({"item_type": ['static']})
+                                    inst = new_item_from_str(item_name=item, loc_cardinal=(loc + " " + cardinal))
+                                    if not skip_add:
+                                        registry.temp_items.add(inst)
+                                    continue
+
+                                loc_item[item].update({"starting_location": loc + " " + cardinal})
+                                loc_items_dict[loc][cardinal][item] = loc_item[item]
+                                inst = registry.init_single(item, loc_item[item])
+                                if not skip_add:
+                                    registry.temp_items.add(inst)
+
+        if cardinal == None:
+            for cardinal in CARDINALS:
+                loc_items_dict[loc][cardinal] = {}
+                from_single_cardinal(loc, cardinal)
+        else:
+            loc_items_dict[loc][cardinal] = {}
+            from_single_cardinal(loc, cardinal)
+
+    if loc == None:
+        for loc in loc_dict:
+            loc_items_dict[loc] = {}
+            get_cardinal_items(loc, cardinal)
+    else:
+        loc_items_dict[loc] = {}
+        get_cardinal_items(loc, cardinal)
+
+    registry.clean_children()
 
 def initialise_itemRegistry():
 
-    from env_data import initialise_placeRegistry
-    initialise_placeRegistry()
-
-    import json
-    json_primary = "dynamic_data/items_main.json"
-    with open(json_primary, 'r') as file:
-        item_defs = json.load(file)
-
-    #from item_definitions import get_item_defs
     registry.complete_location_dict()
+
+    get_loc_items_dict(loc=None, cardinal=None)
+
+
     plural_word_dict = {}
-    #print("Running `initialise_itemRegistry`.")
-    for item_name, attr in item_defs.items():
-        registry.init_single(item_name, attr)
-        #registry.create_instance(item_name, attr)
+
+    for item_name in registry.item_defs.keys():
         if len(item_name.split()) > 1:
             plural_word_dict[item_name] = tuple(item_name.split())
 
     registry.add_plural_words(plural_word_dict)
 
-    #print(f"Plural words: {registry.plural_words}")
-
-initialise_itemRegistry()
+#initialise_itemRegistry()

@@ -14,7 +14,8 @@ meta_verbs = {
     "describe": {"alt_words": "d"},
     "godmode": {"alt_words": "god"}, # remove this if there's ever a god...?
     "quit": {"alt_words": "q"},
-    "show visted": {"alt_words": ""}
+    "show visted": {"alt_words": ""},
+    "update_json": {"alt_words": "update"}
 }
 
 
