@@ -37,7 +37,7 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
             new_descrip = first_part + assign_colour(locRegistry.place_by_name(placename)) + last_part
             if new_descrip[-1] != ".":
                 new_descrip = new_descrip + "."
-            print(f"new_descrip/area_descrip: {new_descrip}")
+            #print(f"new_descrip/area_descrip: {new_descrip}")
             return new_descrip
         else:
             return description
@@ -55,39 +55,39 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                 else:
                     if item:
                         if itemRegistry.registry.instances_by_name(item):
-                            print(f"Item in item registry: {item}")
+                            #print(f"Item in item registry: {item}")
                             local_items = itemRegistry.registry.get_item_by_location(f"{location} {cardinal}")
-                            print(f"itemRegistry.registry.instances_by_name(item)[0] : {itemRegistry.registry.instances_by_name(item)[0]}")
+                            #print(f"itemRegistry.registry.instances_by_name(item)[0] : {itemRegistry.registry.instances_by_name(item)[0]}")
                             if local_items and itemRegistry.registry.instances_by_name(item)[0] in local_items:
                                 item_inst = itemRegistry.registry.instances_by_name(item)[0]
                             #if itemRegistry.registry.instances_by_name(item)[0] in itemRegistry.registry.get_item_by_location(f"{location} {cardinal}"):
 
                                 if "[[]]" in long_dict[item]:
                                     test = long_dict[item].replace("[[]]", assign_colour(item_inst))
-                                    print(f'"[[]]" in long_dict[item] and local: {long_dict[item]}')
+                                    #print(f'"[[]]" in long_dict[item] and local: {long_dict[item]}')
                                 else:
                                     test = long_dict[item]
                                 long_desc.append(test)
-                                print(f"LOCAL ITEMS TEST: {test}")
+                                #print(f"LOCAL ITEMS TEST: {test}")
                             else:
                                 if "[[]]" in long_dict[item]:
-                                    print(f'"[[]]" in long_dict[item] but not local: {long_dict[item]}')
+                                    #print(f'"[[]]" in long_dict[item] but not local: {long_dict[item]}')
                                     test = long_dict[item].replace("[[]]", assign_colour(item))
                                     #long_desc.append(test)
                                 else:
                                     test = long_dict[item]
                                 long_desc.append(test)
-                                print(f"NOT LOCAL TEST: {test}")
+                                #print(f"NOT LOCAL TEST: {test}")
 
                         else:
                             if "[[]]" in long_dict[item]:
-                                print(f"item in long_dict[item]: {long_dict[item]}")
+                                #print(f"item in long_dict[item]: {long_dict[item]}")
                                 test = long_dict[item].replace("[[]]", item) ## for now just do the text, later get the colours back once instances are done.
                             else:
-                                print(f"[[]] not in long_dict[item]: {long_dict[item]}")
+                                #print(f"[[]] not in long_dict[item]: {long_dict[item]}")
                                 test = long_dict[item]
                             long_desc.append(test)
-                            print("NOT INSTANCE BY NAME TEST:")
+                            #print("NOT INSTANCE BY NAME TEST:")
                             #from testclass import testReg
                             #testReg.create_item_by_name(item)
 

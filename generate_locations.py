@@ -43,6 +43,93 @@ def edit_location_json():
         print(f"Written to {loc_items_json}")
 
 
+def edit_descriptions_in_cardinal(card, loc_dict_entry, name):
+    print()
+
+
+def edit_all_lines_in_cardinal(card, loc_dict_entry, name):
+    print()
+
+
+def edit_items_in_cardinal(cardinal, loc_dict_entry, name):
+
+    card = loc_dict_entry.get(cardinal)
+    if not card.get("items"):
+        card["items"] = {}
+    while True:
+        print(f"Enter item name to add to {name} {cardinal}")
+        print("Or add multiple names at once, with spaces between.")
+        test = input()
+        if " " in test:
+            test = test.replace(",", "")
+            parts = test.split(" ")
+            print("Do you want to add descriptions to any of these items?")
+            trial = input()
+            if trial in ("y", "yes"):
+                for part in parts:
+                    print(f"Enter a description for {part}")
+                    trial = input()
+                    print(f"Description stored for {part}")
+                    card["items"].update({part:{"description": trial, "is_hidden": False}})
+
+            else:
+                for part in parts:
+                    card["items"].update({part:{"description": "", "is_hidden": False}})
+        print(f"Enter to add without description, or 'desc'/'description' to add a description.")
+        trial = input()
+        if trial in ("desc", "description"):
+            print(f"Please enter the description you want to add for {test}:")
+            trial = input()
+            print(f"Description stored for {test}")
+            card["items"].update({test:{"description": trial, "is_hidden": False}})
+        else:
+            card["items"].update({test:{"": trial, "is_hidden": False}})
+
+        print(f"loc_dict_entry: {loc_dict_entry}")
+
+
+
+def change_loc_data(loc_dict_entry, name):
+    cardinal = None
+    #new_loc_dict[loc_name]
+    print("Do you want to add [items], edit cardinal [descriptions], or peruse [all] fields?")
+    test = input()
+    print("Do you want to edit one cardinal, or all?")
+    trial = input()
+
+
+    if trial in CARDINALS or trial == "all":
+        cardinal = trial
+    else:
+        print("I needed a cardinal direction or 'all'. Enter a cardinal or 'all', or enter to cancel editing.")
+        trial = input()
+        if trial in CARDINALS or trial == "all":
+            cardinal = trial
+
+    if cardinal:
+        if test == "items":
+            if cardinal == "all":
+                for card in CARDINALS:
+                    edit_items_in_cardinal(card, loc_dict_entry, name)
+            else:
+                edit_items_in_cardinal(cardinal, loc_dict_entry, name)
+
+        if test == "descriptions":
+            if cardinal == "all":
+                for card in CARDINALS:
+                    edit_descriptions_in_cardinal(card, loc_dict_entry, name)
+            else:
+                edit_descriptions_in_cardinal(cardinal, loc_dict_entry, name)
+
+        if test == "all":
+            if cardinal == "all":
+                for card in CARDINALS:
+                    edit_all_lines_in_cardinal(card, loc_dict_entry, name)
+            else:
+                edit_all_lines_in_cardinal(cardinal, loc_dict_entry, name)
+
+
+
 def generate_new_location(loc_name):
 
     format = {
@@ -99,6 +186,12 @@ def generate_new_location(loc_name):
     new_loc_dict = {}
     new_loc_dict[loc_name] = format["Test"]
     new_loc_dict[loc_name]["descrip"] = f"It's a PPP{loc_name}EEE."
+
+    print("do you want to add items/descriptions to the cardinals?")
+    test = input()
+    if test in ("y", "yes"):
+        change_loc_data(new_loc_dict[loc_name], loc_name)
+
     print(f"new_loc_dict: {new_loc_dict[loc_name]}")
     import json
     loc_data_json = "loc_data.json"

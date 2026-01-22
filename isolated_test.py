@@ -1,21 +1,13 @@
 ## I'm not really sure what the identify of this particular script is in the new version. It used to be the core of everything because it held the loops, but the loops aren't used anymore...
 
-from os import system
-import random
+from misc_utilities import assign_colour, col_list, get_inst_list_names, do_print, do_input
 
-from misc_utilities import assign_colour, col_list, generate_clean_inventory, get_inst_list_names, from_inventory_name, check_name, print_type, compare_input_to_options, smart_capitalise, do_print, do_input
+from set_up_game import set_up
+from choices import time_of_day
 
-from set_up_game import load_world, set_up, init_settings
-from choices import choose, time_of_day, night, trip_over, emphasis
-
-from item_definitions import container_limit_sizes, detail_data
-from itemRegistry import ItemInstance, registry
-
-from tui.tui_elements import add_infobox_data, print_commands
-from tui.tui_update import update_infobox
+from itemRegistry import registry
 
 from logger import logging_fn
-import config
 
 from verb_membrane import run_membrane
 
@@ -32,7 +24,8 @@ clear_screen = False
 
 def do_clearscreen():
     if clear_screen:
-        system("cls")
+        print("Should not print this, clear_screen == False.")#system("cls")
+        exit()
 
 def slowLines(txt, speed=0.1, end=None, edit=False):
     if isinstance(txt, str) and txt.strip=="":
@@ -166,8 +159,10 @@ def inner_loop(speed_mode=False):
         test=option()
 
 def run():
+    print("IMMEDIATELY INTO RUN: ")
     import config
     config.enable_tui = False
+    #sleep(5) ## just pauses at a black screen, previous text already removed.
     test = None
     global loc
     from env_data import locRegistry as loc
@@ -182,7 +177,6 @@ def run():
         print("What's your name?")
         while  playernm == "":
             playernm = do_input()
-
     global game
     game = set_up(weirdness=True, bad_language=True, player_name=playernm)
 

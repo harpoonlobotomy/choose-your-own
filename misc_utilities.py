@@ -224,9 +224,10 @@ def clean_separation_result(result:list, to_print=False):
 
 def look_around():
     from env_data import locRegistry as loc
-    from choose_a_path_tui_vers import get_items_at_here
+    #from choose_a_path_tui_vers import get_items_at_here
     from itemRegistry import registry
 
+    print("\033[37m \033[0m")
     print(loc.currentPlace.overview)
     print(f"You're facing {assign_colour(loc.current, card_type="name")}. {loc.current.long_desc}")
 

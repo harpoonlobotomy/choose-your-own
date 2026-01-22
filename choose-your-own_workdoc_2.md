@@ -1704,3 +1704,128 @@ Create_item_by_name for starting_children: <ItemInstance glass jar (41061f91-f98
 Exception: 'dict' object has no attribute 'starting_children'
 
 At some point it's sending a dict instead of an instance.
+
+
+5.14am
+Going to figure out the parenting I think.
+
+Currrently, it is called:
+
+If found from item_defs and parent inst created
+
+if found in gen_items or made from str and parent, but like this:
+        if registry.new_parents:
+            registry.clean_children(inst)
+
+and then again at the end of get_loc_items_dict.  So all three calls are there, one with the 'if registry.new_parents' limiter.
+
+
+registry.new_parents is added to:
+    after inst init, if container in item_types
+    if hasattr(inst, starting_children) inside the item generation
+
+registry.new_parents is removed from:
+    if all children are found as instances (in two different ways within get_children)
+    after initialising a new child instance
+
+
+So I /think/, keeping if hasattr starting_children is the best version.
+And we shouldn't be initialising a new child during the parenting check /unless/ it's in the preload local items stage.
+
+
+Also need to make sure  this is fine:
+
+# Create_item_by_name for starting_children: <ItemInstance glass jar (52e38d3a-bb85-4dee-91ed-6b53a6ff068f)>
+# All children found or already parented to this parent.
+# Exception: '52e38d3a-bb85-4dee-91ed-6b53a6ff068f'
+
+I'm guessing that's trying to remove the parent.id from new_parents
+registry.new_parents.remove(parent.id)
+
+
+5.28am
+Well just ran it again and so far that issue hasn't shown up.
+
+But, at the end of item defs, the glass jar doesn't have child instances, only the str name. Going to add some prints to see if it adds them in the child check.
+
+I don't mind if it adds them at the child check separately in this case because it's a location object, but really it should be internal; when you init an item, when it's done you check for children immediately. Not something located in the loc_items setup.
+
+
+... huh.
+                   print(f"\nINST GENERATED (item_dict by_cardinal): {vars(inst)}\n")
+                    if hasattr(inst, "starting_children"):# and inst.starting_children != None:
+                        print(f"Sending {item}/{inst} to clean_children from item_defs")
+That print still isn't printing. So inst just doesn't get starting_children for some reason??
+
+I mean, we do this:
+
+        for attribute in attr:
+            setattr(self, attribute, attr[attribute])
+
+inside instance init.
+And it has this:
+starting_children': ['dried flowers'] in the vars after init.
+
+###
+
+Oh /now/ it does it.
+Sending glass jar/<ItemInstance glass jar (e2a725c6-2160-4548-aabc-fd43810b0bc2)> to clean_children from item_defs
+
+I just have to /print all the attributes as they come/, and suddenly it sends the glass jar to clean_children
+
+I had issues with this earlier, where attr would sometimes fail to load defs but would work again if I printed it first.
+
+And if I add the exit here:
+        print(f"target child after create_item_by_name from list: {target_child}")
+        exit()
+suddenly it prints the child. Bleeeeeeh.
+
+And proof that it ends up in parent.children like it should.
+
+Okay so it's working both ways:
+
+#  target_child.contained_in = parent: <ItemInstance glass jar (3333739c-e98f-46ea-98aa-1ec214cbdcac)>
+#  parent.children: {<ItemInstance dried flowers (7609a4c7-8661-4eb1-8220-a2c14af212e1)>}
+
+
+###
+Wait, if a thing has a parent, we just make the parent automatically:
+
+    if hasattr(item, "contained_in") and getattr(item, "contained_in") not in (False, None):
+        print(f"Create_item_by_name for contained_in: {item}")
+        target_obj = self.init_single(getattr(item, "contained_in"), self.item_defs.get(getattr(item, "contained_in")))
+
+This is after loc_items is built.
+
+Ah, it's never come up because I've only stated containers with contents, never actually manually set the 'contained_in' field. That probably works best...
+
+So maybe the item_defs just always supplies parent>child, not the other way around.
+
+5.56am Yeah commented the whole 'contained_in' section and it still works as expected. So I'll just cut that entirely.
+
+I'm going to move child_parent to the registry, so I have a clean account of the relationships. It's another thing to update when something's removed/added to/from a container, but ... I thought of a benefit a second ago, now it's gone. Maybe I won't. hm.
+
+6.03am
+Okay so now I have this again:
+
+Create_item_by_name for starting_children: <ItemInstance glass jar (8074cba6-bfbf-4a58-8054-e0f874bf562e)>
+All children found or already parented to this parent.
+Exception: '8074cba6-bfbf-4a58-8054-e0f874bf562e'
+No settings in this version.
+
+To note: glass jar was added to new_parents in this run:
+# Added glass jar to new_parents: {'8074cba6-bfbf-4a58-8054-e0f874bf562e'}
+
+
+So here it's sending the glass jar to get made again?
+# Create_item_by_name for starting_children:
+
+"print(f"\nINST GENERATED (item_dict by_cardinal): {vars(inst)}\n")" happens after init_single has run.
+
+Ah, right - it's not using new_parent as a guide, it's checking all inst ids and seeing if they have starting_children.
+
+Okay so the error is here:
+        print("All children found or already parented to this parent.")
+        print(f"REGISTRY.new_parents before remove attempt: {registry.new_parents}")
+        registry.new_parents.remove(parent.id)
+At that point, new_parents is empty. Need to track when it was emptied.

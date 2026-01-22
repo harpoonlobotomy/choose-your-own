@@ -776,6 +776,7 @@ def get_loc_items_dict(loc=None, cardinal=None):
 
 
 def add_confirms():
+    print("ADD_CONFIRMS")
     from itemRegistry import registry
     confirmed_items = {}
     for item in registry.temp_items:

@@ -5,7 +5,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Optional
 
-import generate_locations
+#import generate_locations
 from verb_actions import get_current_loc
 
 print("Verb registry is being run right now.")

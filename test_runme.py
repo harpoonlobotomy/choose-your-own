@@ -1,6 +1,11 @@
-if __name__ == "__main__":
+def test_main():
 
-    ## initialise everything ##
+    print("Wipe previous?")
+    test = input()
+    if test in ("y", "yes"):
+        import os
+        os.system("cls")
+
 
     import initialise_all
 
@@ -17,9 +22,16 @@ if __name__ == "__main__":
             verb_membrane.run_membrane(input_str)
             print(f"(That was number {i})\n")
     else:
-        from isolated_test import run
-        #from verbRegistry import verbs
-        #print(f"VERBS: {verbs.verbs}")
-        run()
+        import isolated_test
+        #from isolated_test import run
+        while True:
+            test = isolated_test.run()
+            #test = run()
+            if test == "exit":
+                break
 
 
+if __name__ == "__main__":
+
+    ## initialise everything ##
+    test_main()
