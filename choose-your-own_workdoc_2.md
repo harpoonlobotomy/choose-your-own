@@ -1961,3 +1961,71 @@ fundamentally:
 Maybe the padlock should be the ownership_container. Then at least the padlock has the key, makes more sense. Currently the gate is locked, but doesn't have a key and doesn't need one...
 
 Kinda makes sense for the padlock to the be ownership_container and have the gate 'in' it.
+
+
+1.03pm
+Okay. so I've added event_item to loc_data, so that items can be event keys/event-relevant items from there too. (item defs already had event keys.)
+Adding padlock as 'event key' and gate as 'event item' - the padlock can affect the event, the gate is affected by it.
+
+Now itemReg will be init before event_reg. So what I want to do is have itemReg made a dict of items with trigger/event attr, that it can send to eventReg, so eventReg doesn't need to go through the dict. (Then, later items that aren't in the original init can send their data directly from itemReg to eventReg in the same way, so it should work out for both.)
+
+so currently,
+self.event_items = {}
+will just collect all the event items in item_reg. I don't really /need/ it maintained though, so I might x it out once it's been collected so it can just hold new items that are added without adding bulk. (That's just an easy way to collect the data without having to send it through each init func and send it back each time.)
+
+    "event": null,
+    "event_type": "item_triggered",
+    "event_key": null
+    "event_item": null
+^ default event-related keys in item defs (whether from items main or loc_data.)
+
+1.27pm
+# {'gate': {'event_name': 'graveyard_gate_opens', 'event_key': None, 'event_item': True}, 'padlock': {'event_name': 'graveyard_gate_opens', 'event_key': True, 'event_item': None}}
+
+# okay, working...
+
+
+6.18pm
+Note: This:
+attr.get('description'): None
+  Item `iron key` does not have a description, do you want to write one?. Enter it here, or hit enter to cancel.
+is not picking up descriptions given in
+    "south": {
+      "item_desc": {},
+      "short_desc": "stands a mausoleum",
+      "long_desc": "There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble.",
+      "items": {
+        "iron key": {
+          "description": "An iron key, handy for a quest or something, probably.",
+          "is_hidden": false
+        }
+      }
+loc_data, and it should be. that'll kinda be the primary place for them to be given descriptions for a lot of items now.
+
+NOTE: If I name a key as a key for an item in loc_data, and also name that key as existing somewhere else, it add two keys.  Need to check if named children are found as items in other locations or smth.
+
+For now, going to add "is_placed_elsewhere": true" flag, which will... hm.
+Not create the child instance, I suppose? But then how do I align....
+Okay. So, we check, if 'is_placed_elsewhere', if yes, then we find the location-specified other item_name, and set that location as this key-item with that as its starting location. And we add that key + loc/card to an exclusion dict, so when it's found, it doesn't make a second one (at least just one time, so it doesn't cancel all future items of that name). OR, if the key-item is already created, then we find the instance in that loc and assign it as key item to the lock.
+
+Either way it needs to work either way because key or lock may be first/second, and I'm not interested in having to organise my item ref file to make it work.
+Really I just need to make sure that the 'iron key' padlock is looking for is the same 'iron key' you can find in the mausoleum, so the interaction works. That's the goal here.
+
+
+8.43pm
+Oh, this is interesting -
+
+attr.get('description'): None
+  Item `iron key` does not have a description, do you want to write one?. Enter it here, or hit enter to cancel.
+its a key for a quest
+Is this correct? 'y' to accept this description, 'n' to try again or anything else to cancel.
+y
+Inst after self.init_items(): <TestInstances iron key (5ff33a32-15f7-49b1-b789-28abc44d7189)>, type: <class 'testclass.testInstances'>
+
+Added a print and apparently it's still trying to add items to testinstances. Everything was meant to be diverted to itemReg now... oops.
+
+
+10.40pm
+Flagging.
+
+Need to figure out why items from items aren't appearing in locations, but items from item_desc do. I don't /want/ all items to be in the description. I'd thought I corrected the omission but apparently not. Too tired now.

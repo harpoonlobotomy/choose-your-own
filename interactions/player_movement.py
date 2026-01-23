@@ -5,14 +5,17 @@
 from env_data import cardinalInstance, locRegistry as loc, placeInstance
 from misc_utilities import assign_colour
 from logger import logging_fn, traceback_fn
+from eventRegistry import events
 
 def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=None):
     logging_fn()
+
 
     old_card = loc.current
     if old_card == new_cardinal:
         print(f"You're already at {assign_colour(loc.current, card_type="place_name")}")
         return
+
 
     def update_loc_data(prev_loc, new_location):
         from set_up_game import game
@@ -50,7 +53,8 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
                 loc.currentPlace.visited = True # maybe a counter instead of a bool. Maybe returning x times means something. No idea what. Probably not.
                 loc.currentPlace.first_weather = current_weather
 
-    if new_location and not isinstance(new_location, placeInstance):
+    if new_location and not isinstance(new_location, placeInstance): ##TODO: chech if it's a viable placename str
+
         if isinstance(new_location, cardinalInstance):
             new_cardinal = new_location
         else:
@@ -58,6 +62,26 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
             print(f"It received: {new_location}, type: {type(new_location)}")#
             traceback_fn()
             exit()
+
+    #print(f"loc.current.place: {loc.current.place}")
+    #print(f"new location: {new_location}")
+    if events.travel_is_limited and not (new_location and new_location == loc.current.place):
+        cannot_leave_loc = events.held_at.get("held_at_loc")
+        holding_event = events.held_at.get("held_by")
+
+        if holding_event:
+            #print(f"Holding event: {holding_event}, type: {type(holding_event)}")
+            #print(f"Holding event.event_state: {holding_event.event_state}")
+            if holding_event.event_state == 1:
+                msg = events.play_event_msg("held", holding_event, print_txt=False)
+                print(f"You try to go to the {assign_colour(new_location)}, but... {assign_colour(msg, colour='description')}")
+                print(f"Holding event {holding_event.name} is preventing this movement.")
+                return
+
+    elif events.travel_is_limited and (new_location and new_location == loc.current.place):
+        print(f"You're already in the {assign_colour(loc.current.place)}")
+        print(loc.current.description)
+        return
 
     if new_location and isinstance(new_location, placeInstance) and not new_cardinal:
         new_card_inst = loc.by_cardinal_str(loc.current.name, new_location)

@@ -23,7 +23,6 @@ movable_objects = ["put", "take", "combine", "separate", "throw", "push", "drop"
 
 flag_actions = {
     "can_pick_up": movable_objects,
-    "is_container": movable_objects,
     "flammable": ["burn", "set"],
     "dirty": "clean",
     "locked": "unlock",
@@ -50,8 +49,8 @@ combine_parts = {("put", "into"), ("add", "to") # thinking about this for more s
 
 def check_noun_actions(noun_inst, verbname):
 
-    #print(f"Verb inst name: {verb_inst.name}")
-    #print(f"noun inst actions: {noun_inst.verb_actions}")
+    print(f"Verb inst name: {verbname}")
+    print(f"noun inst actions: {noun_inst.verb_actions}")
     if isinstance(verbname, VerbInstance):
         verbname = verbname.name
     if verbname == "look": # always pass 'look'
@@ -59,8 +58,10 @@ def check_noun_actions(noun_inst, verbname):
     for action in noun_inst.verb_actions:
         if flag_actions.get(action):
             if verbname in flag_actions[action]:
-                #print(f"{action}: Verb inst name in flag_actions for noun: ({noun_inst.name}): {verb_inst.name}")
+                print(f"{action}: Verb inst name in flag_actions for noun: ({noun_inst.name}): {verbname}")
                 return noun_inst.name
+            
+    print(f"Noun fails: {noun_inst}, verbname: {verbname}")
 
 def get_noun_instances(dict_from_parser, viable_formats):
 

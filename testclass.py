@@ -50,7 +50,7 @@ type_defaults = { # gently ordered - will overwrite earlier attrs with later one
     "container": {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False, 'starting_children': None, 'container_limits': 4, "name_no_children": None, "description_no_children": None},
     "key": {"is_key": True},
     "can_pick_up": {"can_pick_up": True, "item_size": 0, "started_contained_in": None, "contained_in": None},
-    "event": {"event": None, "event_type": "item_triggered", "event_key": None},
+    "event": {"event": None, "event_type": "item_triggered", "event_key": None, "event_item": None},
     "trigger": {"trigger_type": "plot_advance", "trigger_target": None, "is_exhausted": False},
     "flooring": {"is_horizontal_surface": True},
     "wall": {"is_vertical_surface": True},
@@ -482,6 +482,7 @@ class testRegistry:
         if not loc_cardinal:
             loc_cardinal = "graveyard north"
 
+        print(f"loc_cardinal: {loc_cardinal}")
 
         if partial_dict and isinstance(partial_dict, dict):
             if partial_dict.get(item_name):
@@ -498,6 +499,7 @@ class testRegistry:
             new_item_dict = {}
             new_item_dict[item_name] = ({"item_type": new_str})
 
+        print(f"new_item_dict[item_name]: {new_item_dict[item_name]}")
         if in_container: ## testing this out.
             loc_cardinal = None
             "started_contained_in"
@@ -505,7 +507,7 @@ class testRegistry:
 
 
 
-        new_item_dict[item_name]["exceptions"] = {"starting_location": loc_cardinal}
+        new_item_dict[item_name]["starting_location"] = loc_cardinal
 
         print(f"new_item_from_str: \n {new_item_dict}, {item_name}\n\n")
         inst = self.init_items(new_item_dict, item_name)
@@ -1268,7 +1270,7 @@ if __name__ == "__main__":
                                     #if field in ("short_desc", "long_desc"):
                                     loc_base[place][cardinal][field] = loc_dict[place][cardinal].get(field)
                                     # just add everything. Should include item_state by default.
-                                    
+
                                 if not loc_dict[place][cardinal].get("items"):
                                     loc_base[place][cardinal]["items"] = {"": {"description": None, "is_hidden": False}} # empty template. Adding is_hidden here so I have a straightforward location-specific hidden flag, makes sense. Everything else can be from item gen or item_defs.
                                 if not loc_dict[place][cardinal].get("alt_names"):

@@ -596,13 +596,24 @@
     "name": "gate",
     "nicename": "a gate",
     "description": "Heavy wrought iron bars with little decoration, held closed with a padlock on a heavy chain.",
-    "item_type": "{'static', 'all_items', 'event'}",
+    "item_type": "{'static', 'all_items', 'event', 'container'}",
     "can_examine": false,
     "breakable": false,
     "alt_names": {},
     "is_hidden": false,
     "name_no_children": null,
-    "description_no_children": "Heavy wrought iron bars with little decoration, now slightly ajar."
+    "description_no_children": "Heavy wrought iron bars with little decoration, now slightly ajar.",
+    "event": null,
+    "event_type": "item_triggered",
+    "event_key": null,
+    "is_open": false,
+    "can_be_opened": true,
+    "can_be_closed": true,
+    "can_be_locked": true,
+    "is_locked": true,
+    "requires_key": false,
+    "starting_children": null,
+    "container_limits": 4
   },
   "comb": {
     "name": "comb",
@@ -640,10 +651,21 @@
     "alt_names": {},
     "is_hidden": false,
     "trigger_type": "plot_advance",
-    "starting_children": ["gate"],
+    "starting_children": [
+      "gate"
+    ],
     "trigger_target": "graveyard_gate_opens",
     "ownership_container": true,
-    "is_exhausted": false
+    "is_exhausted": false,
+    "is_open": false,
+    "can_be_opened": true,
+    "can_be_closed": true,
+    "can_be_locked": true,
+    "is_locked": true,
+    "requires_key": false,
+    "container_limits": 4,
+    "name_no_children": null,
+    "description_no_children": null
   },
   "ornate silver key": {
     "name": "ornate silver key",

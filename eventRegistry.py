@@ -15,8 +15,28 @@ event_states = {
     "future": 2
 }
 
+def load_json():
+    import json
+    event_data = "event_defs.json"
+    with open(event_data, 'r') as loc_data_file:
+        event_dict = json.load(loc_data_file)
+    return event_dict
+
 
 class eventInstance:
+    """
+    {
+    "graveyard_gate_opens": {
+        "starts_current":true,
+        "end_trigger":
+        {"item_trigger": {
+            "trigger_name": "padlock", "trigger_location": "graveyard east", "trigger": ["item_broken", "item_unlocked"], "item_flags": {"can_pick_up": false, "requires_key": "iron_key", "flags_on_event_end": {"can_pick_up": true}}
+        }
+        },
+        "effects": {"limit_travel": {"cannot_leave": "graveyard"}},
+        "messages": {"start_msg": "", "end_msg": "", "held_msg": "Until the gate's unlocked, you don't see a way out of here."}
+    },
+    """
 
     def __init__(self, name, attr):
         self.name = name
@@ -24,9 +44,24 @@ class eventInstance:
         self.event_state:int
         self.start_trigger = None # just to make sure these are here so other things can be more solid.
         self.end_trigger = None
+        self.items = set() ## items affected by the event
+        self.keys = set() ## items that effect the event
+        self.msgs = attr.get("messages") # what prints when the event starts/ends/on certain cues
+        self.limits_travel = False
 
         for item in attr:
             setattr(self, item, attr[item])
+
+        #self.effects = {attr["effects"].get("limit_travel")}
+        if attr.get("effects"):
+            if attr["effects"].get("limit_travel"):
+                self.limits_travel = True
+                events.travel_is_limited = attr["effects"]["limit_travel"]
+                if attr["effects"]["limit_travel"].get("cannot_leave"):
+                    events.held_at = dict({"held_at_loc": attr["effects"]["limit_travel"]["cannot_leave"], "held_by": self})
+                    #events.held_at_loc = attr["effects"]["limit_travel"]["cannot_leave"]
+
+                #print(f"Initiated event limits travel: {attr["effects"].get("limit_travel")}")
 
         self.attr = attr
         """
@@ -34,7 +69,7 @@ class eventInstance:
         self.event_triggers
         """
     def __repr__(self):
-        return f"<cardinalInstance {self.name} ({self.id}, state: {self.event_state}, all attributes: {self.attr})>"
+        return f"<eventInstance {self.name} ({self.id}, event state: {self.event_state}>"#, all attributes: {self.attr})>"
 
 class eventRegistry:
 
@@ -43,38 +78,12 @@ class eventRegistry:
         self.events = set()
         self.by_id = {}
         self.by_name = {}
-        self.current_events = set()
-        self.past_events = set()
-        self.future_events = set()
         self.by_state = {}
+        self.trigger_items = {}
+        self.travel_is_limited = False
 
         for state in event_states.values():
             self.by_state[state] = set() ## really don't need these and the current/past/future. Will probably use this alone instead, it'll be easier to set up the direction.
-        print(f"Self by event state: {self.by_state}")
-        """
-        future events =
-        0 = current
-        1 = future
-        2 = past
-
-        or
-
-        past
-        current
-        future
-
-        or
-
-        future
-        current
-        past
-
-        I actually think
-        0 = past
-        1 = current
-        2 = future
-        because then if not-null it at least has a shot at being relevant, right? Either 1 or 2 /might/ be triggered, but 0 def won't.
-        """
 
     def add_event(self, event_name, event_attr):
         event = eventInstance(event_name, event_attr)
@@ -84,25 +93,20 @@ class eventRegistry:
 
 #'## Remove this bit with current_, future_, just use the dict.
         if hasattr(event, "starts_current"):
-            self.current_events.add(event)
+            self.by_state[1].add(event)
             event.event_state = 1 # (current event)
         else:
-            self.future_events.add(event)
+            self.by_state[2].add(event)
             event.event_state = 2 # (future event)
 
-        self.by_state[event.event_state].add(event)
-
     def event_by_state(self, state)-> set:
-        if isinstance(state, int) or (isinstance(state, str) and len(state)==1):
-            if str(state) == "1":
-                return self.current_events
-            elif str(state) == "2":
-                return self.future_events
-            else:
-                return self.past_events
-        elif state in event_states:
-            state_int = event_states[state]
+        if not isinstance(state, int):
+            if (isinstance(state, str) and len(state)==1):
+                state = int(state)
+            elif state in event_states:
+                state = event_states[state]
 
+        return self.by_state.get(state)
 
 
     def event_by_id(self, event_id)-> eventInstance:
@@ -117,35 +121,137 @@ class eventRegistry:
     def event_by_name(self, event_name:str)-> eventInstance:
 
         if isinstance(event_name, str):
-            instance = self.by_name(event_name)
+            instance = self.by_name.get(event_name)
             if instance:
                 return instance
+
+    def play_held_msg(self, event=None, print_txt=False):
+
+        if self.travel_is_limited:
+            if event == None:
+                holder = self.held_at.get("held_by") # currently only works if you can only be restricted by one event, will have to change this later.
+                if holder.msgs.get("held_msg"):
+                    if print_txt:
+                        print(holder.msgs["held_msg"])
+                    return holder.msgs["held_msg"]
+
+            else:
+                if event in self.by_state.get(1):
+                    if event.msgs.get("held_msg"):
+                        if print_txt:
+                            print(event.msgs["held_msg"])
+                        return event.msgs["held_msg"]
+
+    def play_event_msg(self, msg_type="held", event=None, print_txt=True): # later make this false so I can format the msg.
+        print("Start of play_event_msg in eventReg")
+
+        def print_current(event, state_type="held", print_text=False):
+
+            if event not in self.by_state.get(1):
+                msg = f"Event {event.name} is not currently happening: {event.event_state}"
+                return msg
+
+            if event.msgs.get(f"{state_type}_msg"):
+                msg = event.msgs[f"{state_type}_msg"]
+                if print_text:
+                    print(msg)
+                return msg
+
+            return f"Nothing to print print." # remove this later and replace with a type-defined default.
+
+
+        if "_msg" in msg_type:
+            msg_type = msg_type.replace("_msg", "")
+
+        if msg_type == "held":
+            #self.play_held_msg(event, print_txt) # right now this is pointless, but I'd like to be able to direct the print messages through this instead of importing a function for each msg type.
+
+            if self.travel_is_limited:
+                if event == None:
+                    event = self.held_at.get("held_by") # currently only works if you can only be restricted by one event, will have to change this later.
+
+                return print_current(event, state_type="held", print_text=print_txt)
+
+
+        elif msg_type == "start":
+            if not event:
+                print("Need to define event for start/end messages.")
+                return ""
+
+            return print_current(event, state_type="start", print_text=print_txt)
+
+            #if event not in self.by_state.get(1):
+            #    print("Cannot play start message as the event isn't running")
+            #    return ""
+#
+            #if event.msgs.get("start_msg"):
+            #    if print_txt:
+            #        print(event.msgs["start_msg"])
+            #    return event.msgs["start_msg"]
+
+
+
 
     def start_event(self, event_name:str):
 
         # Note that events can be concurrent, so setting a current event does not necessarily remove an existing event.
         to_be_current = self.event_by_name(event_name)
-        if to_be_current in self.future_events:
-            self.future_events.remove(to_be_current)
-            self.current_events.add(to_be_current)
-            if to_be_current in self.current_events: # redundant but just in case anything went super wrong:
-                to_be_current.event_state = 1
+
+        event_state = to_be_current.event_state
+
+        if event_state == 0:
+            print(f"Event {event_name} is already over.")
+            return
+        if event_state == 1:
+            print(f"Event {event_name} is already happening.")
+            return
+
+        self.by_state.get(2).remove(to_be_current)
+        self.by_state.get(1).add(to_be_current)
+        to_be_current.event_state = 1
+
+        if to_be_current in self.by_state.get(1): # redundant but just in case anything went super wrong:
+            to_be_current.event_state = 1
+            self.play_event_msg("start_msg", to_be_current)
+            #if hasattr(to_be_current, "start_msg") and getattr(to_be_current, "start_msg"): ## 'get' here excludes if null, which in this case is what I want.
+            #    print(to_be_current.start_msg)
+            #else:
 
         else:
             print(f"Cannot set event {event_name} as current event, because it is not present in future_events: {self.future_events}")
             exit()
 
+        if hasattr(to_be_current, "effects"):
+            if to_be_current.effects.get("limit_travel"):
+                print(f"Started event limits travel: {to_be_current.effects["limit_travel"]}")# {"cannot_leave": "graveyard"}}
+                if getattr(to_be_current, "msgs"):
+                    self.play_event_msg("start_msg", to_be_current)
+                    #if to_be_current.msgs.get("start_msg"):
+
+
     def end_event(self, event_name):
 
-        to_end_current = self.event_by_name(event_name)
-        if to_end_current in self.current_events:
-            self.current_events.remove(to_end_current)
-            self.past_events.add(to_end_current)
-            if to_end_current in self.past_events: # redundant but just in case anything went super wrong:
-                to_end_current.event_state = 2
+        event_to_end = self.event_by_name(event_name)
+        if event_to_end in self.current_events:
+            self.by_state[1].remove(event_to_end)
+            self.by_state[2].add(event_to_end)
+            if event_to_end in self.by_state[2]: # redundant but just in case anything went super wrong:
+                event_to_end.event_state = 2
+
+        if event_to_end.limits_travel:
+            self.travel_is_limited = False ## Maybe do it with ints instead of a bool, so if multiple events limit travel it doesn't remove it for all? Or really, I need staged limits (eg one event limits to only x places, while another limits to a specific room temporarily.) Or, maybe this is a bool, then it can specify elsewhere.
+            #if event_to_end.limits_travel == "cannot_leave":
+            #    print(f"Cannot leave {event_to_end.limits_travel["cannot_leave"]}") # did not mean to end this to end_events...
+
         else:
             print(f"Cannot set event {event_name} as ended event, because it is not present in current_events: {self.current_events}")
             exit()
+
+
+
+
+
+
     """
     What else do I need here.
     Check for starting triggers: check events in future_events, what their trigger types are.
@@ -160,23 +266,83 @@ class eventRegistry:
 
 events = eventRegistry()
 
-def initialise_eventRegistry():
 
-    import json
-    event_data = "event_defs.json"
-    with open(event_data, 'r') as loc_data_file:
-        event_dict = json.load(loc_data_file)
+
+def add_items_to_events(item_data):
+    event_dict = load_json()
+    """
+    {
+    "graveyard_gate_opens": {
+        "starts_current":true,
+        "end_trigger":
+        {"item_trigger": {
+            "trigger_name": "padlock", "trigger_location": "graveyard east", "trigger": ["item_broken", "item_unlocked"], "item_flags": {"can_pick_up": false, "requires_key": "iron_key", "flags_on_event_end": {"can_pick_up": true}}
+        }
+        },
+        "effects": {"limit_travel": {"cannot_leave": "graveyard"}},
+        "messages": {"start_msg": "", "end_msg": "", "held_msg": "Until the gate's unlocked, you don't see a way out of here."}
+    },
+    """
+    for item in item_data:
+        event_name = item_data[item].get("event_name")
+        if events.event_by_name(event_name):
+            event = events.event_by_name(event_name)
+            event.items.add(item_data[item].get("item")) ## by using the instance here (""item""") instead of the name, it means that only this specific instance is the trigger, not any random one. Should be a benefit, but need to keep in mind that if a thing has many possible triggers, all need the flags. Should be okay though, just be mindful.
+            if item_data[item].get("event_key"):
+               event.keys.add(item_data[item].get("item")) ## add by name or by id... or maybe just send the damn instance over. Only reason to send an ID is to make savestates easier, but I can get grab the ID when needed if that's the case...
+            if event_dict[event_name].get("item_trigger"):
+                if event_dict[event_name]["item_trigger"].get("item_flags"):
+                    for flag in event_dict[event_name]["item_trigger"]["item_flags"]:
+                        item_data[item].get("item").flag = event_dict[event_name]["item_trigger"]["item_flags"].get(flag)
+
+                if event_dict[event_name]["item_trigger"].get("flags_on_event_end"):
+                    if not hasattr(event, "flags_to_restore"):
+                        event.flags_to_restore = {}
+                    event.flags_to_restore[item] = event_dict[event_name]["item_trigger"]["flags_on_event_end"]
+
+               #events.trigger_items[item_data[item].get("item")] = {event} # for ready access for the main script to check against. But might remove this. Functionally, I just need a quick way for 'this item says its an event trigger, do I need to do anything rn?' to check things. But again, if it's an item trigger, the item itself should be managing its trigger, no? Just sending word to the event if trigger happens. events isn't checking each item for trigger-ness.
+
+
+
+            """
+    So to conceptuialise a bit:
+    padlock is a key item.
+    When it is unlocked, event ends.
+    so itemreg needs to be aware of the trigger.
+ **  Wherever the item goes from item.is_locked to item.is_unlocked needs to identify events.  **
+    Then events checks the event is still current and that that's the correct item for this event. Then the event action/s happen.
+
+    So the keeping of event items/keys here is for crosschecking, and so events knows which items to act on (instead of just sending "gate" and making itemreg figure out which gate it is.)
+
+    okay, I like that.
+            """
+
+            print(f"event: {event_name}, event.items: {event.items}")
+#       'padlock': {'event_name': 'graveyard_gate_opens', 'event_key': True, 'event_item': None, "item_id": 'id number here'}}
+
+def initialise_eventRegistry():
+    event_dict = load_json()
+
     for event_name in event_dict:
         events.add_event(event_name, event_dict[event_name])
+
+
 
 if __name__ == "__main__":
 
     initialise_eventRegistry()
+    if events.travel_is_limited:
+        print(f"Travel is limited: {(events.travel_is_limited)}")
+        print(f"{events.held_at}")
 
-    print("For event in events: vars.")
-    for event in events.by_name:
-        print(event)
+    #print("For event in events: vars.")
+    #for event in events.by_name:
+    #    print(event)
+#
+    #print(events.by_name)
 
-    print(events.by_name)
+    #events.start_event("mermaid_grotto_appears")
+
+
 #    graveyard_gate_open
 #    {'graveyard_gate_open': <cardinalInstance graveyard_gate_open (1835367c-bbc8-4558-b463-fa40464f6f0f, state: 1, all attributes: {'starts_current': True, 'end_trigger': {'item_trigger': {'trigger_name': 'padlock', 'trigger_location': 'graveyard east', 'trigger': 'child_removed'}}})>}

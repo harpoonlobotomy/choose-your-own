@@ -1,16 +1,18 @@
 {
-  "graveyard_gate_open": {
+  "graveyard_gate_opens": {
     "starts_current":true,
     "end_trigger":
       {"item_trigger": {
-          "trigger_name": "padlock", "trigger_location": "graveyard east", "trigger": "child_removed"
+          "trigger_name": "padlock", "trigger_location": "graveyard east", "trigger": ["item_broken", "item_unlocked"], "item_flags": {"can_pick_up": false, "requires_key": "iron_key", "flags_on_event_end": {"can_pick_up": true}}
       }
-    }
+    },
+    "effects": {"limit_travel": {"cannot_leave": "graveyard"}},
+    "messages": {"start_msg": "", "end_msg": "", "held_msg": "Until the gate's unlocked, you don't see a way out of here."}
   },
   "mermaid_grotto_appears": {
     "start_trigger": {
       "item_trigger":{
-          "trigger_name": "ocean crown", "trigger_location": null, "trigger": "item_found"
+          "trigger_name": "ocean crown", "trigger_location": null, "trigger": "item_collected"
       }
     }
   }

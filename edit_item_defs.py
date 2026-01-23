@@ -125,9 +125,9 @@ def check_all_flags_present():
                 if not tag in skip_tags and not item_defs_dict[item].get(tag):
                     missing_tags[item][tag]=type_defaults[def_type].get(tag)
 
-    #print("Missing tags per item: ")
-    #from pprint import pprint
-    #pprint(missing_tags)
+    print("Missing tags per item: ")
+    from pprint import pprint
+    pprint(missing_tags)
 
     for item, field in item_defs_dict.items():
         if missing_tags.get(item):
@@ -137,9 +137,9 @@ def check_all_flags_present():
         #    if missing_tags.get(item) and missing_tags[item].get(list(field)[0]):
         #        item_defs_dict[item].update(field = missing_tags[item][field])
 
-    print("Updated dict: ")
-    from pprint import pprint
-    pprint(item_defs_dict)
+    #print("Updated dict: ")
+    #from pprint import pprint
+    #pprint(item_defs_dict)
 
     test=input()
     if test in ("y", "yes"):

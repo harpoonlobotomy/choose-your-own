@@ -142,7 +142,7 @@ def check_lock_open_state(noun_inst, verb_inst):
             if noun_inst.is_open == False:
                 is_closed = True
         if hasattr(noun_inst, "is_locked"):
-            if noun_inst.is_locked == False:
+            if noun_inst.is_locked == True: # why the hell was this 'false'? Bah.
                 is_locked = True
     elif reason_val == 1:
         is_closed = True
@@ -709,52 +709,66 @@ def open_close(format_tuple, input_dict):
     logging_fn()
 
     verb_entry, noun_entry, _, _, _, _ = get_entries_from_dict(input_dict)
+
     noun_inst = noun_entry["instance"]
+    verb = verb_entry["instance"].name
+    print(f"open_close noun vars: {vars(noun_inst)}")
+    # the gate prints this :
+    #    'is_open': False, 'can_be_opened': True, 'can_be_closed': True, 'can_be_locked': True, 'is_locked': True
+# and yet:
+# is_closed, is_locked, locked_and_have_key :  True False False
+#  You open the gate
 
+## so this part is utterly broken.
+    if verb == "open":
+        if hasattr(noun_inst, "is_locked") and noun_inst.is_locked:
+            print(f"You cannot open a locked {assign_colour(noun_inst.name)}.")
+            return # not perfect because it returns even if you couldn't have accessed the door to check, but works for the moment while I'm testing the events. TODO Fix this later
+
+## I think part of the issue is that the check_lock_open_state tries to combine both 'is this a thinkg I could access to try to unlock' with 'is this is a thing I can unlock'. I need to separate them out. a) is this a thing I can access, return. b) if so, is this a thing I can unlock.
     is_closed, is_locked, locked_and_have_key = check_lock_open_state(noun_inst= noun_entry["instance"], verb_inst = verb_entry["instance"])
-    if verb_entry["instance"].name in ("close", "lock"):
-        if noun_inst.is_open:
-            print("simple is_open check")
-            print(f"is_open state now: {noun_inst.is_open}")
-            print(f"You closed the {assign_colour(noun_inst)}")
-            noun_inst.is_open = False
-            print(f"is_open state now: {noun_inst.is_open}")
 
-        if not is_closed and not is_locked and not locked_and_have_key:
-            if verb_entry["instance"].name == "close":
+    print("is_closed, is_locked, locked_and_have_key : ", is_closed, is_locked, locked_and_have_key)
+    if verb_entry["instance"].name in ("close", "lock"):
+
+        if verb_entry["instance"].name == "close":
+            if not is_closed:
                 print(f"You closed the {assign_colour(noun_inst)}")
                 noun_inst.is_open = False
 
-
-    elif verb_entry["instance"].name == "lock":
-        if not is_locked or not locked_and_have_key:
-            # need to check if it needs a key to lock (some may only need a key to unlock)
-            noun_inst.is_open = False
-            if hasattr(noun_inst, "needs_key_to_lock"):
-                key_inst = noun_inst.needs_key_to_lock
-                noun_count = format_tuple.count("noun")
-                if noun_count < 2:
-                    print(f"You need a key to lock the {assign_colour(noun_inst)}")
-                    return
-                else:
-                    a, sem_or_dir, b = three_parts_a_x_b(input_dict)
-                    if b == key_inst:
-                        print(f"You close and lock the {assign_colour(noun_inst)}")
-                        noun_inst.is_open = False
+        elif verb_entry["instance"].name == "lock":
+            if not is_closed:
+                print(f"You need to close the {noun_inst.name} first.")
+            else:
+                if not is_locked and not locked_and_have_key:
+    ### TODO fix this whole bit, it's a senseless mess for no reason. It's not this complicated...
+                    # need to check if it needs a key to lock (some may only need a key to unlock)
+                    #noun_inst.is_open = False
+                    if hasattr(noun_inst, "needs_key_to_lock"):
+                        key_inst = noun_inst.needs_key_to_lock
+                        noun_count = format_tuple.count("noun")
+                        if noun_count < 2:
+                            print(f"You need a key to lock the {assign_colour(noun_inst)}")
+                            return
+                        else:
+                            a, sem_or_dir, b = three_parts_a_x_b(input_dict)
+                            if b == key_inst:
+                                print(f"You close and lock the {assign_colour(noun_inst)}")
+                                #noun_inst.is_open = False
+                                noun_inst.is_locked = True
+                                return
+                        print(f"You need a key to lock the {assign_colour(noun_inst)}")
+                        return
+                    else:
+                        print(f"You closed and locked the {assign_colour(noun_inst)}")
                         noun_inst.is_locked = True
                         return
-                print(f"You need a key to lock the {assign_colour(noun_inst)}")
-                return
-            else:
-                print(f"You closed and locked the {assign_colour(noun_inst)}")
-                noun_inst.is_locked = True
-                return
 
     else:
         if is_closed:
-            if verb_entry["instance"].name in ("close", "lock"):
-                print(f"The {noun_inst["instance"].name} is already closed.")
-                return
+#            if verb_entry["instance"].name in ("close", "lock"):
+#                print(f"The {noun_inst["instance"].name} is already closed.")
+#                return
             print(f"You open the {assign_colour(noun_inst)}")
             noun_inst.is_open = True
             noun_inst.is_locked = False
@@ -791,11 +805,13 @@ def open_close(format_tuple, input_dict):
                 print(assign_colour("You need to find something to unlock it with first.", "description"))
                 return
 
+    print(f"is_closed, is_locked, locked_and_have_key: {is_closed, is_locked, locked_and_have_key}")
     print(f"Cannot process {input_dict} in def open_close() End of function, unresolved.")
 
 
 def simple_open_close(format_tuple, input_dict):
     logging_fn()
+
     if len(format_tuple) > 2:
         open_close(format_tuple, input_dict)
         return
@@ -914,7 +930,7 @@ def take(format_tuple, input_dict):
 
         inst, container, reason_val, meaning = registry.check_item_is_accessible(noun_inst)
         print(f"TAKE: {reason_val} Meaning: {meaning}")
-        if reason_val not in (0, 3, 4, 5):
+        if reason_val not in (0, 3, 4, 5, 8):
             print(f"Sorry, you can't take the {assign_colour(noun_inst)} right now.")
             return 1, added_to_inv
             #print(f"Reason code: {reason_val}")
@@ -922,6 +938,9 @@ def take(format_tuple, input_dict):
             print(f"{assign_colour(noun_inst)} is already in your inventory.")
             return 1, added_to_inv
         else:
+            if reason_val == 8:
+                print("cannot pick up because it's secretly inside a container.")
+                return 8, added_to_inv
             import verb_membrane
             can_pickup = verb_membrane.check_noun_actions(noun_inst, "take")
             if can_pickup:
@@ -956,6 +975,7 @@ def take(format_tuple, input_dict):
 
         noun_idx = format_tuple.index("noun")
         noun_inst = inst_from_idx(input_dict[noun_idx], "noun")
+        print(f"IS NOUN: {noun_inst}")
         cannot_take, added_to_inv = can_take(noun_inst)
 
         if cannot_take and hasattr(noun_inst, "can_consume"):

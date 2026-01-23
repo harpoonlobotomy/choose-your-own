@@ -105,15 +105,9 @@
         "gate": "a heavy wrought-iron [[]] - imposing but run-down",
         "padlock": "an old dark-metal [[]] on a chain holding the gate closed"
       },
-      "item_state": {"padlock": {"contained_in": "gate"}, "gate": {"ownership_container": true}},
+      "items": {"padlock": {"event_key": true, "event": "graveyard_gate_opens", "is_locked": true, "requires_key": "iron key", "key_is_placed_elsewhere": true}, "gate": {"event_item": true, "event": "graveyard_gate_opens"}},
       "short_desc": "The entrance gates are",
-      "long_desc": "You think you could leave through the large wrought-iron gates to the north. They're imposing but run-down; this graveyard doesn't get as much love as it could.",
-      "items": {
-        "": {
-          "description": null,
-          "is_hidden": false
-        }
-      }
+      "long_desc": "You think you could leave through the large wrought-iron gates to the north. They're imposing but run-down; this graveyard doesn't get as much love as it could."
     },
     "east": {
       "item_desc": {
@@ -128,7 +122,7 @@
           "description": null,
           "is_hidden": false
         },
-        "dessicated skeleton": {
+        "desiccated skeleton": {
           "description": null,
           "is_hidden": true
         }
@@ -139,8 +133,9 @@
       "short_desc": "stands a mausoleum",
       "long_desc": "There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble.",
       "items": {
-        "": {
-          "description": null,
+        "iron key": {
+          "description": "An iron key, handy for a quest or something, probably.",
+          "is_key_to": "padlock",
           "is_hidden": false
         }
       }

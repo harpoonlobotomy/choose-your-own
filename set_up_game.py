@@ -88,21 +88,38 @@ def load_world(relocate=False, rigged=False, new_loc=None):
     logging_fn()
     print("Starting load_world in set_up_game.py\n\n")
     from env_data import locRegistry as loc, weatherdict
-    rigged = True
+    from eventRegistry import events
+
     rig_place = "shrine"#"a city hotel room"#
+    placerig = False
+
+    if events.travel_is_limited:
+        if events.held_at.get("held_at_loc"):
+            rig_place = events.held_at.get("held_at_loc")
+            events.play_event_msg(msg_type="held", print_txt=True)
+            placerig = True
+
+    rigged = False#True
     rig_weather = "perfect"
     rig_time = "midnight"
 
     if loc.currentPlace != None:
         loc.last_loc = loc.currentPlace # changed from game.last_loc
 
-    if rigged:
-        game.time=rig_time
-        game.weather=rig_weather
+    if rigged or placerig:
         if new_loc and relocate:
-            loc.set_current(new_loc)
+            if placerig:
+                events.play_event_msg()
+            else:
+                loc.set_current(new_loc)
         else:
             loc.set_current(rig_place)
+        if rigged:
+            game.time=rig_time
+            game.weather=rig_weather
+
+
+
     elif not relocate:
             game.time = random.choice(choices.time_of_day)
             weatherlist = list(weatherdict.keys())
