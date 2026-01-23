@@ -1829,3 +1829,135 @@ Okay so the error is here:
         print(f"REGISTRY.new_parents before remove attempt: {registry.new_parents}")
         registry.new_parents.remove(parent.id)
 At that point, new_parents is empty. Need to track when it was emptied.
+
+
+8.25am
+Okay parenting is much, much neater now.
+
+Next:
+        "gate": "a heavy wrought-iron [[]] - imposing but run-down",
+        "padlock": "an old dark-metal [[]] on a chain holding the gate closed"
+
+I needa way to have these both exposed for descriptions, but to still have padlock be inside gate and now shown in location. It'll just be a flag, I just need to think more about it and how is best to do it. Not the generic 'hidden' flag, tht's a more specific thing. 'exposed_container', maybe? see_in_container? That might work. Allow descriptions and interactions but still maintain ownership. ownership_container, maybe, to differentiate from typical containers.
+
+Current idea:
+
+    "item_state": {"padlock": {"contained_in": "gate"}, "gate": "ownership_container"},
+
+""can_remove_from": "glass jar"" is just silly. Need to remove that entirely.  If anything that should be 'contained_in', but it's easier just to list them in only one part. (this is from item_defs)
+
+(Most of the container relationships will be defined in loc_datam not item_defs, so item_state above will be primary in most cases.)
+
+((Great to realise that just now after I finally fixed parenting via item_defs))
+
+
+11.10am
+
+CHILD PARENT DICT: {<ItemInstance padlock (b005fbb2-24fc-4fb0-b0b2-2fcecd81b41d)>: <ItemInstance padlock (b005fbb2-24fc-4fb0-b0b2-2fcecd81b41d)>}
+
+Hm. Not exactly right....
+It's close though.
+
+
+11.58 okay properly fixed now.
+
+Now, I need to fix:
+
+Look at item MEANING: accessible
+You look at the gate.
+Heavy wrought iron bars with little decoration, held closed with a padlock on a heavy chain.
+
+
+I need it to show the padlock as an accessible item, but currently 'inside a closed container' is a hard no.
+
+I added the 'ownership_container' flag for this; with this, it is a child for all internal things, but is displayed + interacted with mostly as a unique thing. So it should be
+
+
+
+Hm.
+
+# look around (east)
+#
+# You see a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+# The entrance gates are to the north. To the east sit a variety of headstones, to the south stands a mausoleum, and to the west is what looks like a work shed of some kind.
+# You're facing east. You see a variety of headstones, most quite worn and decorated by clumps of moss. There's a glass jar being used as a vase in front of one of the headstones, with dried flowers left long ago.
+
+# look around (north)
+#
+# You see a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+# The entrance gates are to the north. To the east sit a variety of headstones, to the south stands a mausoleum, and to the west is what looks like a work shed of some kind.
+# You're facing north. You think you could leave through the large wrought-iron gates to the north. They're imposing but run-down; this graveyard doesn't get as much love as it could.
+
+
+East gives the overview, but north just gives long_desc.
+
+Oh, no. East just has a virtually identical east-overview to long_desc so it wasn't apparent it was the same. They're both long_desc.
+
+How did I get it to print the overview again...? Maybe I didn't set that up and jsut saw it during test prints. That feels likely.
+
+
+12.40pm
+Having a weird issue where the long_desc with [[]] prints the colour correctly in test, but not in real.
+
+"[[]]" in long_dict[item] and local: clumps of [[]]
+---------- assign_colour(item_inst): moss
+Loc name in place_by_name: graveyard
+long_parts[0] + assign_colour(item_inst) + long_parts[1]:
+
+a glass jar being used as a vase in front of one of the headstones, with some dried flowers left long ago
+Here, 'glass jar' is cyan.
+
+
+5.32pm needs resolution:
+open gate
+gate cannot be opened; this is odd. Potentially. Or maybe a totally normal thing.
+Cannot process {0: {'verb': {'instance': <verbInstance open (43d759a0-fc05-45c9-b275-3c1ba0a7fa95)>, 'str_name': 'open'}}, 1: {'noun': {'instance': <ItemInstance gate (622fbf84-474e-433a-abe0-82a019bd53a6)>, 'str_name': 'gate'}}} in def simple_open_close() End of function, unresolved.
+
+I was meant to be fixing things.
+
+Also I need to implement "items" so I can start set designing.
+
+also look at gate
+You look at the gate.
+Heavy wrought iron bars with little decoration, held closed with a padlock on a heavy chain.
+
+
+open gate
+gate cannot be opened; this is odd. Potentially. Or maybe a totally normal thing.
+Cannot process {0: {'verb': {'instance': <verbInstance open (43d759a0-fc05-45c9-b275-3c1ba0a7fa95)>, 'str_name': 'open'}}, 1: {'noun': {'instance': <ItemInstance gate (622fbf84-474e-433a-abe0-82a019bd53a6)>, 'str_name': 'gate'}}} in def simple_open_close() End of function, unresolved.
+
+
+look at padlock
+Cannot look at padlock.
+
+Also: TODO: "ownership_container": true
+Need to set that up and fix the padlock + gate.
+
+12.46pm 23/1/26
+
+## The above issue with gate not opening:
+     if hasattr(noun_inst, "is_open"): <- is not triggering
+
+When what was written, is_open was true/false for any container.
+Issue:
+When items are generated, all the type_default tags are not added to the main dict, so is_open was not applied.
+
+
+check_all_flags_present() in edit_items_defs is a workaround, those tags should be added when they're added to generated so will need to check why that's not happening but for now, all the items have all the tags they should.
+
+look at gate
+You look at the gate.
+Child padlock is present in parent gate.
+Heavy wrought iron bars with little decoration, held closed with a padlock on a heavy chain.
+
+
+Hm. How to remove the padlock...
+
+if the padlock is unlocked, it can be picked up or dropped, at which point the gate is unlocked? Kinda feels like the padlock shouldn't be its own item and should just be part of the description of the gate, but I like the idea of the padlock being its own thing. Maybe you can lock something else with it later if you didn't break it.
+
+fundamentally:
+    gate is locked. If padlock is removed, gate is unlocked.
+
+Maybe the padlock should be the ownership_container. Then at least the padlock has the key, makes more sense. Currently the gate is locked, but doesn't have a key and doesn't need one...
+
+Kinda makes sense for the padlock to the be ownership_container and have the gate 'in' it.

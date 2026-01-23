@@ -18,9 +18,9 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
 
     import json
 
-    item_dict_json = "dynamic_data/items_main.json"
-    with open(item_dict_json, 'r') as items_main:
-        items_dict = json.load(items_main)
+    #item_dict_json = "dynamic_data/items_main.json"
+    #with open(item_dict_json, 'r') as items_main:
+    #    items_dict = json.load(items_main)
 
     loc_items_json = "loc_data.json"
     with open(loc_items_json, 'r') as loc_items_file:
@@ -28,10 +28,14 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
 
     if d_type == "area_descrip":
         #print(f"AREA DESCRIPTION:\n{description}")
+        if location == "hotel room":
+            location = "city hotel room" ## just for the moment, working on other things.
         description = loc_dict[location]["descrip"]
         if "PPP" in description:
             first_part, second_part = description.split("PPP")
             placename, last_part = second_part.split("EEE")
+            if placename == "hotel room":
+                placename = "city hotel room"
             #print(f"placename: {placename}, type: {type(placename)}")
             from env_data import locRegistry
             new_descrip = first_part + assign_colour(locRegistry.place_by_name(placename)) + last_part
@@ -43,6 +47,8 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
             return description
 
     elif d_type == "item_desc":
+        if location == "hotel room":
+            location = "city hotel room"
         #print(f" loc_dict[location]: {loc_dict[location]}")
         if loc_dict[location].get(cardinal) and loc_dict[location][cardinal].get("item_desc"):
             long_dict = loc_dict[location][cardinal]["item_desc"]
@@ -63,16 +69,23 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                             #if itemRegistry.registry.instances_by_name(item)[0] in itemRegistry.registry.get_item_by_location(f"{location} {cardinal}"):
 
                                 if "[[]]" in long_dict[item]:
-                                    test = long_dict[item].replace("[[]]", assign_colour(item_inst))
+                                    long_parts = long_dict[item].split("[[]]")
+                                    #print(f"long_parts[0] + assign_colour(item_inst) + long_parts[1]:\n\n{long_parts[0] + assign_colour(item_inst) + long_parts[1]}\n\n")
+                                    test = long_parts[0] + assign_colour(item_inst) + long_parts[1]
+                                    #test = long_dict[item].replace("[[]]", assign_colour(item_inst))
                                     #print(f'"[[]]" in long_dict[item] and local: {long_dict[item]}')
+                                    #print(f"---------- assign_colour(item_inst): {assign_colour(item_inst)}")
+                                    #print(f"test: {test}")
                                 else:
                                     test = long_dict[item]
                                 long_desc.append(test)
+                                #print(f"long_desc: {long_desc}")
                                 #print(f"LOCAL ITEMS TEST: {test}")
                             else:
                                 if "[[]]" in long_dict[item]:
                                     #print(f'"[[]]" in long_dict[item] but not local: {long_dict[item]}')
                                     test = long_dict[item].replace("[[]]", assign_colour(item))
+                                    long_dict[item]
                                     #long_desc.append(test)
                                 else:
                                     test = long_dict[item]
@@ -189,11 +202,15 @@ def init_loc_descriptions():
                         #print(f"LONG DESC len 3: {long_desc}")
                         item_description = (f"{long_desc[0]}{', '.join(long_desc[1:-1])}, and {long_desc[-1]}")
                         #print(f"Parts: long_desc[0]: {long_desc[0]} // long_desc[1:-1]: {long_desc[1:-1]} // long_desc[-1]: {long_desc[-1]}")
+
+                        #print(f"item_description: {item_description}")
                     new_desc = f"You're facing {assign_colour(cardinal)}. " + item_description
+                    #print(f"new_desc: {new_desc}")
                     if not new_desc.endswith("."):
                         new_desc = new_desc + "."
+                    #print(f"new_desc: {new_desc}")
                     compiled_cardinals[location][cardinal] = new_desc
-
+                    #print(f":compiled_cardinals[location][cardinal]: {compiled_cardinals[location][cardinal]}")
                 else:
                     compiled_cardinals[location][cardinal] = f"You're facing {assign_colour(cardinal)}. " + loc_dict[location][cardinal].get("long_desc")
 

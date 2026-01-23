@@ -105,6 +105,7 @@
         "gate": "a heavy wrought-iron [[]] - imposing but run-down",
         "padlock": "an old dark-metal [[]] on a chain holding the gate closed"
       },
+      "item_state": {"padlock": {"contained_in": "gate"}, "gate": {"ownership_container": true}},
       "short_desc": "The entrance gates are",
       "long_desc": "You think you could leave through the large wrought-iron gates to the north. They're imposing but run-down; this graveyard doesn't get as much love as it could.",
       "items": {

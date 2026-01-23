@@ -1,0 +1,17 @@
+{
+  "graveyard_gate_open": {
+    "starts_current":true,
+    "end_trigger":
+      {"item_trigger": {
+          "trigger_name": "padlock", "trigger_location": "graveyard east", "trigger": "child_removed"
+      }
+    }
+  },
+  "mermaid_grotto_appears": {
+    "start_trigger": {
+      "item_trigger":{
+          "trigger_name": "ocean crown", "trigger_location": null, "trigger": "item_found"
+      }
+    }
+  }
+}

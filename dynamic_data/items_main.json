@@ -5,7 +5,9 @@
     "is_key": true,
     "can_pick_up": true,
     "item_size": "small_flat_things",
-    "description": "a bright gold key, quite new-looking"
+    "description": "a bright gold key, quite new-looking",
+    "alt_names": {},
+    "is_hidden": false
   },
   "stone ground": {
     "name": "stone ground",
@@ -13,14 +15,18 @@
     "can_examine": false,
     "breakable": false,
     "is_horizontal_surface": true,
-    "description": "stony ground, a mixture of small pebbles and rough broken rubble"
+    "description": "stony ground, a mixture of small pebbles and rough broken rubble",
+    "alt_names": {},
+    "is_hidden": false
   },
   "earring": {
     "name": "earring",
     "item_type": "{'all_items', 'can_pick_up'}",
     "can_pick_up": true,
     "item_size": 0,
-    "description": "a single silver earring with a small blue stone dangling from a short chain"
+    "description": "a single silver earring with a small blue stone dangling from a short chain",
+    "alt_names": {},
+    "is_hidden": false
   },
   "scroll": {
     "name": "an old scroll",
@@ -52,7 +58,7 @@
     "item_type": "{'can_pick_up', 'container', 'all_items'}",
     "alt_names": {},
     "is_hidden": false,
-    "is_open": null,
+    "is_open": false,
     "can_be_opened": true,
     "can_be_closed": true,
     "can_be_locked": true,
@@ -72,12 +78,12 @@
     "item_type": "{'can_pick_up', 'container', 'all_items'}",
     "alt_names": {},
     "is_hidden": false,
-    "is_open": null,
-    "can_be_opened": null,
+    "is_open": false,
+    "can_be_opened": true,
     "can_be_closed": true,
-    "can_be_locked": null,
+    "can_be_locked": true,
     "is_locked": true,
-    "requires_key": null,
+    "requires_key": false,
     "starting_children": [
       "wire cutters"
     ],
@@ -93,7 +99,7 @@
     "description": "A slightly rusted pair of wire cutters. They look like they'll still work, though.",
     "item_type": "{'can_pick_up', 'key', 'all_items'}",
     "alt_names": {},
-    "is_hidden": null,
+    "is_hidden": false,
     "is_key": true,
     "can_pick_up": true,
     "item_size": "palm_sized"
@@ -113,7 +119,7 @@
     "item_type": "{'can_pick_up', 'container', 'all_items'}",
     "alt_names": {},
     "is_hidden": false,
-    "is_open": false,
+    "is_open": true,
     "can_be_opened": true,
     "can_be_closed": true,
     "can_be_locked": true,
@@ -123,7 +129,7 @@
       "dried flowers"
     ],
     "container_limits": "smaller_than_apple",
-    "name_no_children": null,
+    "name_no_children": "an empty glass jar",
     "description_no_children": "a glass jar, now empty aside from some bits of debris.",
     "can_pick_up": true,
     "item_size": "smaller_than_basketball"
@@ -181,7 +187,7 @@
     "alt_names": {},
     "is_hidden": false,
     "is_open": false,
-    "can_be_opened": null,
+    "can_be_opened": true,
     "can_be_closed": true,
     "can_be_locked": true,
     "is_locked": true,
@@ -272,7 +278,7 @@
     "item_size": "a_few_marbles",
     "can_be_charged": true,
     "is_charged": false,
-    "takes_batteries": null,
+    "takes_batteries": false,
     "has_batteries": false,
     "can_combine": null,
     "combine_with": [
@@ -441,7 +447,7 @@
     "is_open": false,
     "can_be_opened": true,
     "can_be_closed": true,
-    "can_be_locked": null,
+    "can_be_locked": true,
     "is_locked": true,
     "requires_key": false,
     "starting_children": null,
@@ -464,7 +470,7 @@
     "alt_names": {},
     "is_hidden": false,
     "is_open": false,
-    "can_be_opened": null,
+    "can_be_opened": true,
     "can_be_closed": true,
     "can_be_locked": true,
     "is_locked": true,
@@ -508,7 +514,8 @@
     "alt_names": {},
     "is_hidden": false,
     "event": null,
-    "event_type": "item_triggered"
+    "event_type": "item_triggered",
+    "event_key": null
   },
   "locked box": {
     "name": "locked box",
@@ -538,8 +545,8 @@
     "is_hidden": false,
     "can_examine": false,
     "breakable": false
-},
-"raven": {
+  },
+  "raven": {
     "name": "raven",
     "nicename": "a raven",
     "description": "A raven, sleek and black. You're pretty sure it knows your secrets.",
@@ -547,7 +554,13 @@
     "alt_names": {},
     "is_hidden": false,
     "can_examine": false,
-    "breakable": false
+    "breakable": false,
+    "can_pick_up": true,
+    "item_size": 0,
+    "can_consume": true,
+    "can_spoil": true,
+    "is_safe": true,
+    "effect": null
   },
   "rocking chair": {
     "name": "a wooden rocking chair",
@@ -583,11 +596,13 @@
     "name": "gate",
     "nicename": "a gate",
     "description": "Heavy wrought iron bars with little decoration, held closed with a padlock on a heavy chain.",
-    "item_type": "{'static', 'all_items', 'container'}",
+    "item_type": "{'static', 'all_items', 'event'}",
     "can_examine": false,
     "breakable": false,
     "alt_names": {},
-    "is_hidden": false
+    "is_hidden": false,
+    "name_no_children": null,
+    "description_no_children": "Heavy wrought iron bars with little decoration, now slightly ajar."
   },
   "comb": {
     "name": "comb",
@@ -597,7 +612,10 @@
     "can_examine": false,
     "breakable": false,
     "alt_names": {},
-    "is_hidden": false
+    "is_hidden": false,
+    "broken_name": null,
+    "flammable": false,
+    "can_break": true
   },
   "trident": {
     "name": "trident",
@@ -613,7 +631,7 @@
     "name": "padlock",
     "nicename": "a padlock",
     "description": "An old dark-metal padlock.",
-    "item_type": "{'can_pick_up', 'fragile', 'all_items', 'trigger'}",
+    "item_type": "{'can_pick_up', 'fragile', 'all_items', 'trigger', 'container'}",
     "can_pick_up": true,
     "item_size": 0,
     "broken_name": null,
@@ -622,7 +640,9 @@
     "alt_names": {},
     "is_hidden": false,
     "trigger_type": "plot_advance",
-    "trigger_target": null,
+    "starting_children": ["gate"],
+    "trigger_target": "graveyard_gate_opens",
+    "ownership_container": true,
     "is_exhausted": false
   },
   "ornate silver key": {

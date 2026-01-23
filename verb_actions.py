@@ -7,7 +7,7 @@ from env_data import cardinalInstance, locRegistry as loc, placeInstance
 from interactions import item_interactions
 from interactions.player_movement import new_relocate, turn_around
 from itemRegistry import ItemInstance, registry
-from misc_utilities import assign_colour, col_list, generate_clean_inventory
+from misc_utilities import assign_colour, col_list, generate_clean_inventory, is_plural_noun
 from set_up_game import game
 from verb_definitions import directions, semantics, formats
 
@@ -400,7 +400,7 @@ def turn_cardinal(prospective_cardinal, turning = True):
         #print(f"Prospective cardinal.name: {prospective_cardinal.name}")
         if turning:
             print(f"You're already already facing the {assign_colour(prospective_cardinal, card_type="ern_name")}.")
-        print(prospective_cardinal.long_desc)
+        print(prospective_cardinal.description)
         return "no_change", None
 
 
@@ -673,7 +673,7 @@ def open_item(format_tuple, input_dict):
     noun_inst = noun_entry["instance"]
 
     inst, container, reason_val, meaning = registry.check_item_is_accessible(noun_inst)
-    if reason_val in (0, 3, 4, 5):
+    if reason_val in (0, 3, 4, 5, 8):
         is_closed, is_locked, locked_and_have_key = check_lock_open_state(noun_inst=noun_inst, verb_inst = verb_entry["instance"])
 
         if is_locked or locked_and_have_key:
@@ -925,23 +925,23 @@ def take(format_tuple, input_dict):
             import verb_membrane
             can_pickup = verb_membrane.check_noun_actions(noun_inst, "take")
             if can_pickup:
-                print(f"CAN PICK UP {noun_inst}")
-                print("VARS noun_inst")
-                print(vars(noun_inst))
+                #print(f"CAN PICK UP {noun_inst}")
+                #print("VARS noun_inst")
+               # print(vars(noun_inst))
                 if hasattr(noun_inst, "can_pick_up"):
-                    print("hasattr(noun_inst, 'can_pick_up'):")
-                    print(f"{hasattr(noun_inst, 'can_pick_up')}:")
+                    #print("hasattr(noun_inst, 'can_pick_up'):")
+                    #print(f"{hasattr(noun_inst, 'can_pick_up')}:")
                     if noun_inst.can_pick_up:
-                        print("noun_inst.can_pick_up")
+                        #print("noun_inst.can_pick_up")
                         if reason_val in (3, 4):
                             registry.move_from_container_to_inv(noun_inst, inventory=game.inventory, parent=container)
                             if noun_inst in game.inventory:
                                 added_to_inv = True
                                 return 0, added_to_inv
                         elif reason_val == 0:
-                            print("About to try to pick up")
+                            #print("About to try to pick up")
                             registry.pick_up(noun_inst, inventory_list=game.inventory) ## the can_take function shouldn't be doing this part.
-                            print("Did pick_up")
+                            #print("Did pick_up")
                             if noun_inst in game.inventory:
                                 added_to_inv = True
                                 return 0, added_to_inv
@@ -999,7 +999,9 @@ def take(format_tuple, input_dict):
         return
 
     if added_to_inv:
-        print(f"{assign_colour(noun_inst)} is now in your inventory.")
+        #print(f"{assign_colour(noun_inst)} is now in your inventory.") # original
+
+        print(f"The {assign_colour(noun_inst)} {is_plural_noun(noun_inst)} now in your inventory.")
         return
 
 def put(format_tuple, input_dict, location=None):

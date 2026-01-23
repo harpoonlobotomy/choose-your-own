@@ -41,7 +41,7 @@ class ItemInstance:
     """
 
     def __init__(self, definition_key:str, attr:dict):
-        print(f"\n\n@@@@@@@@@@@@@@@@@ITEM {definition_key} in INIT ITEMINSTANCE@@@@@@@@@@@@@@@\n\n")
+        #print(f"\n\n@@@@@@@@@@@@@@@@@ITEM {definition_key} in INIT ITEMINSTANCE@@@@@@@@@@@@@@@\n\n")
         #print(f"definition_key: {definition_key}, attr: {attr}")
         #print(f"Init in item instance is running now. {definition_key}")
         self.id = str(uuid.uuid4())  # unique per instance
@@ -129,6 +129,9 @@ class itemRegistry:
         self.updated = set()
 
         self.new_parents = set() ## new_parents, ID is added to all containers. Then after initial generation, force a parent/child check.
+        self.child_parent = {} # just for storing the parings, for comparing child/parents directly when midway through the generation to keep things straight.
+
+        self.contained_in_temp = set() # not sure what this one was even for...
 
         import json
         json_primary = "dynamic_data/items_main.json" # may break things
@@ -167,12 +170,12 @@ class itemRegistry:
 
         if location:
             if not hasattr(inst, "contained_in") or inst.contained_in == None:
-                print(f"Item {inst.name} has a location.")
+                #print(f"Item {inst.name} has a location.")
                 from env_data import locRegistry as loc
                 cardinal_inst = loc.by_cardinal_str(location)
-                print(f"CARDINAL INST IF LOCATION: {cardinal_inst}, {cardinal_inst.name}")
+                #print(f"CARDINAL INST IF LOCATION: {cardinal_inst}, {cardinal_inst.name}")
                 self.by_location.setdefault(cardinal_inst, set()).add(inst)
-                print(f"SELF.BY_LOCATION: {self.by_location}")
+                #print(f"SELF.BY_LOCATION: {self.by_location}")
                 inst.location = cardinal_inst
 
         if item_entry.get("alt_names"):
@@ -180,10 +183,16 @@ class itemRegistry:
                 self.by_alt_names[altname] = item_name
 
         if hasattr(inst, "starting_children") and inst.starting_children != None:
-            print("HAS ATTR STARTING_CHILDREN")
+            #print("HAS ATTR STARTING_CHILDREN")
             self.new_parents.add(inst.id)
-            print("ADDED TO NEW_PARENTS")
-            print(f"Added {inst.name} to new_parents: {self.new_parents}")
+            #print("ADDED TO NEW_PARENTS")
+            #print(f"Added {inst.name} to new_parents: {self.new_parents}")
+            registry.generate_children_for_parent(parent=inst) ## moved this to within init_single
+            #print(f"Generated children for {item_name}")
+
+        if hasattr(inst, "contained_in") and inst.contained_in != None:
+            #print(f"{inst.name}:: inst.contained_in: {inst.contained_in}")
+            self.contained_in_temp.add(inst)
 
         return inst
 
@@ -319,166 +328,121 @@ class itemRegistry:
         #for i in items_in(container=True, open=True):
         #    ...
 
-#    def generate_children_for_parent(self, parent):
-#
-#        def get_children(parent:ItemInstance):
-#            #print(f"parent: {parent}, item.starting_children: {parent.starting_children}")
-#            instance_children = []
-#            instance_count = 0
-#            target_child = None
-#            if isinstance(parent.starting_children, list|set|tuple):
-#                for child in parent.starting_children:
-#                    if isinstance(child, ItemInstance):
-#                        instance_count += 1
-#                        continue
-#                    if registry.child_parent.get(child):
-#                        if registry.child_parent[child] == parent.name:
-#                            #print("Child/parent pair already exists, skipping.")
-#                            continue
-#                    #print(f"create child by init_single: {child}")
-#                    if child in self.item_defs:
-#                        target_child = self.init_single(child, self.item_defs[child])
-#                    #target_child = self.create_item_by_name(child)
-#                    print(f"target child after create_item_by_name from list: {target_child}")
-#                    if target_child:
-#                        instance_children.append(target_child)
-#                        target_child.contained_in = parent
-#                        print(f"target_child.contained_in = parent: {target_child.contained_in}")
-#                        if not hasattr(parent, "children"):
-#                            parent.children = set()
-#                        parent.children.add(target_child)
-#                        print(f"parent.children: {parent.children}")
-#                        #exit()
-#                if len(instance_children) == len(parent.starting_children):
-#                    #print(f"All children found/created as instances: {instance_children}")
-#                    parent.starting_children = instance_children
-#                    print(f"Removing {parent.name} from new_parents because instance children == len starting children.")
-#                    print(f"REGISTRY.new_parents before remove attempt: {registry.new_parents}")
-#                    registry.new_parents.remove(parent.id)
-#                    print(f"REGISTRY.new_parents after remove attempt: {registry.new_parents}\n")
-#        ## NOTE: new_parents  WORKS HERE. Wss present, now removed.
-#                else:
-#                    if (len(instance_children) + len(registry.child_parent) == len(parent.starting_children)) or (len(parent.starting_children) == instance_count):
-#                        print("All children found or already parented to this parent.")
-#                        print(f"REGISTRY.new_parents before remove attempt: {registry.new_parents}")
-#                        registry.new_parents.remove(parent.id)
-#                    else:
-#                        print(f"Not all children found/made as instances. Str list:\n   {parent.starting_children}\nInstance list:\n    {instance_children}\nchild/parent dict: {registry.child_parent}")
-#                        exit() # again, right now hard exit if this ever fails. Need to see why if it does.
-#        # Was going to do keys here too, but I don't think I will. Maybe do those at runtime, they're not as widely relevant as children so maybe just do that identification when looked for? Though having said that, that means I have to be aware of whenever they might be checked for... Yeah I should do it here actually.
-#            elif isinstance(parent.starting_children, str):
-#                if parent.starting_children in self.item_defs:
-#                    target_child = self.init_single(parent.starting_children, self.item_defs[parent.starting_children])
-#                #target_child = self.create_item_by_name(parent.starting_children)
-#                print(f"target object after create_item_by_name with str: {target_child}")
-#                if target_child:
-#                    parent.starting_children.append(target_child)
-#                    target_child.contained_in = parent
-#                    if not hasattr(parent, "children"):
-#                        parent.children = set()
-#                    parent.children.add(target_child)
-#                    print(f"Removing parent {parent.name} from new_parents because starting children was string and was inited.")
-#                    print(f"REGISTRY.new_parents before remove attempt: {registry.new_parents}")
-#                    registry.new_parents.remove(parent.id)
-#
-#                else:
-#                    print(f"Failed to find child for {parent}'s {parent.starting_children} (from str).")
-#                    exit()
-#
-#            return registry.child_parent
-#
-#        if parent:
-#            get_children(parent)
-#        else:
-#            if registry.new_parents and registry.new_parents != None:
-#                for parent in registry.new_parents:
-#                    get_children(parent)
-#
+    #def get_parents(eslf):
 
-    def clean_relationships(self, parent=None): # not children anymore,  that's elsewhere.
 
-        print(f":: Clean children:: parent: {parent}")
-        target_flags = ("contained_in", "requires_key", "event_key", "trigger_target")
+        #if hasattr(child, "contained_in"): ## determined before it's sent here, don't check again
+        """
+        get parent name from contained_in
+    ## this is likely coming from loc_data ##
+    # As such, do we get the loc_data entry?
+    No, bring it into the function directly, we'll have attr. Just need to make sure item_state is included in attr at init. should be already.
+        Oh but attr only has this item's data. I need all of it. Shite...
 
-        def cleaning_loop(parent=None):
+        Maybe we only run this after get_children is done, so then if there' no parentage established we can add it. Based on location; if  {"padlock": {"contained_in": "gate"} and there's only one gate and it's a container, that inst is the parent inst. But still, need the location.
 
-            def get_children(child_parent, parent):
-                #print(f"parent: {parent}, item.starting_children: {parent.starting_children}")
-                instance_children = []
-                instance_count = 0
-                target_child = None
-                if isinstance(parent.starting_children, list|set|tuple):
-                    for child in parent.starting_children:
-                        if isinstance(child, ItemInstance):
-                            instance_count += 1
+        I could attached 'item_state' whole to the cardinal? Eh doesn't solve it. I'm just thinking ahead if we have multiple of the same item/container but maybe I just need to avoid that and rejig later if I need to.
+        """
+
+    def generate_children_for_parent(self, parent=None):
+            #
+
+
+        def get_children(parent:ItemInstance):
+            #print(f"parent: {parent}, item.starting_children: {parent.starting_children}")
+            instance_children = []
+            instance_count = 0
+            target_child = None
+            if isinstance(parent.starting_children, list|set|tuple):
+                for child in parent.starting_children:
+                    if isinstance(child, ItemInstance):
+                        instance_count += 1
+                        continue
+                    if registry.child_parent.get(child):
+                        if registry.child_parent[child] == parent.name:
+                            #print("Child/parent pair already exists, skipping.")
                             continue
-                        if child_parent.get(child):
-                            if child_parent[child] == parent.name:
-                                #print("Child/parent pair already exists, skipping.")
-                                continue
-                        #print(f"create child by init_single: {child}")
-                        if child in self.item_defs:
-                            target_child = self.init_single(child, self.item_defs[child])
-                        #target_child = self.create_item_by_name(child)
-                        print(f"target child after create_item_by_name from list: {target_child}")
-                        if target_child:
-                            instance_children.append(target_child)
-                            target_child.contained_in = parent
-                            print(f"target_child.contained_in = parent: {target_child.contained_in}")
-                            if not hasattr(parent, "children"):
-                                parent.children = set()
-                            parent.children.add(target_child)
-                            print(f"parent.children: {parent.children}")
-                            #exit()
-                    if len(instance_children) == len(parent.starting_children):
-                        #print(f"All children found/created as instances: {instance_children}")
-                        parent.starting_children = instance_children
-                        print(f"Removing {parent.name} from new_parents because instance children == len starting children.")
-                        print(f"REGISTRY.new_parents before remove attempt: {registry.new_parents}")
-                        registry.new_parents.remove(parent.id)
-                        print(f"REGISTRY.new_parents after remove attempt: {registry.new_parents}\n")
-    ## NOTE: new_parents  WORKS HERE. Wss present, now removed.
+                    #print(f"create child by init_single: {child}")
+                    if child in self.item_defs:
+                        target_child = self.init_single(child, self.item_defs[child])
                     else:
-                        if (len(instance_children) + len(child_parent) == len(parent.starting_children)) or (len(parent.starting_children) == instance_count):
-                            print("All children found or already parented to this parent.")
-                            print(f"REGISTRY.new_parents before remove attempt: {registry.new_parents}")
-                            registry.new_parents.remove(parent.id)
-                        else:
-                            print(f"Not all children found/made as instances. Str list:\n   {parent.starting_children}\nInstance list:\n    {instance_children}\nchild/parent dict: {child_parent}")
-                            exit() # again, right now hard exit if this ever fails. Need to see why if it does.
-        # Was going to do keys here too, but I don't think I will. Maybe do those at runtime, they're not as widely relevant as children so maybe just do that identification when looked for? Though having said that, that means I have to be aware of whenever they might be checked for... Yeah I should do it here actually.
-                elif isinstance(parent.starting_children, str):
-                    if parent.starting_children in self.item_defs:
-                        target_child = self.init_single(parent.starting_children, self.item_defs[parent.starting_children])
-                    #target_child = self.create_item_by_name(parent.starting_children)
-                    print(f"target object after create_item_by_name with str: {target_child}")
+                        target_child = use_generated_items(child)
+                        if not target_child:
+                            from testclass import testReg
+                            target_child = testReg.new_item_from_str(item_name=child, in_container=parent)
+                            # untested. Previously it just failed if not in item_defs.
+
+                    #target_child = self.create_item_by_name(child)
+                    #print(f"target child after create_item_by_name from list: {target_child}")
                     if target_child:
-                        parent.starting_children.append(target_child)
+                        instance_children.append(target_child)
                         target_child.contained_in = parent
+                        #print(f"target_child.contained_in = parent: {target_child.contained_in}")
                         if not hasattr(parent, "children"):
                             parent.children = set()
                         parent.children.add(target_child)
-                        print(f"Removing parent {parent.name} from new_parents because starting children was string and was inited.")
-                        print(f"REGISTRY.new_parents before remove attempt: {registry.new_parents}")
+                        #print(f"parent.children: {parent.children}")
+                        #exit()
+                if len(instance_children) == len(parent.starting_children):
+                    #print(f"All children found/created as instances: {instance_children}")
+                    parent.starting_children = instance_children
+                    #print(f"Removing {parent.name} from new_parents because instance children == len starting children.")
+                    #print(f"REGISTRY.new_parents before remove attempt: {registry.new_parents}")
+                    registry.new_parents.remove(parent.id)
+                    #print(f"REGISTRY.new_parents after remove attempt: {registry.new_parents}\n")
+        ## NOTE: new_parents  WORKS HERE. Wss present, now removed.
+                else:
+                    if (len(instance_children) + len(registry.child_parent) == len(parent.starting_children)) or (len(parent.starting_children) == instance_count):
+                        #print("All children found or already parented to this parent.")
+                        #print(f"REGISTRY.new_parents before remove attempt: {registry.new_parents}")
                         registry.new_parents.remove(parent.id)
-
                     else:
-                        print(f"Failed to find child for {parent}'s {parent.starting_children} (from str).")
-                        exit()
-                return child_parent
-
-            child_parent = {}
-            if parent:
-                if isinstance(parent, ItemInstance):
-                    print(f"Parent: {parent}")
-                    if hasattr(parent, "starting_children") and parent.starting_children != None:
-                        print(f"Parent {parent} has starting child/ren: {parent.starting_children}")
-                        get_children(child_parent, parent)
-
+                        print(f"Not all children found/made as instances. Str list:\n   {parent.starting_children}\nInstance list:\n    {instance_children}\nchild/parent dict: {registry.child_parent}")
+                        exit() # again, right now hard exit if this ever fails. Need to see why if it does.
+        # Was going to do keys here too, but I don't think I will. Maybe do those at runtime, they're not as widely relevant as children so maybe just do that identification when looked for? Though having said that, that means I have to be aware of whenever they might be checked for... Yeah I should do it here actually.
+            elif isinstance(parent.starting_children, str):
+                if parent.starting_children in self.item_defs:
+                    target_child = self.init_single(parent.starting_children, self.item_defs[parent.starting_children])
+                else:
+                    target_child = use_generated_items(parent.starting_children)
+                    if not target_child:
+                        from testclass import testReg
+                        target_child = testReg.new_item_from_str(item_name=parent.starting_children, in_container=parent)
+                #target_child = self.create_item_by_name(parent.starting_children)
+                #print(f"target object after create_item_by_name with str: {target_child}")
+                if target_child:
+                    parent.starting_children.append(target_child)
+                    target_child.contained_in = parent
+                    if not hasattr(parent, "children"):
+                        parent.children = set()
+                    parent.children.add(target_child)
+                    #print(f"Removing parent {parent.name} from new_parents because starting children was string and was inited.")
+                    #print(f"REGISTRY.new_parents before remove attempt: {registry.new_parents}")
+                    registry.new_parents.remove(parent.id)
 
                 else:
-                    print("Currently the parent of a child needs to be iteminstance.")
+                    print(f"Failed to find child for {parent}'s {parent.starting_children} (from str).")
                     exit()
+            return registry.child_parent
+
+        if parent:
+            get_children(parent)
+
+        else:
+            if registry.new_parents and registry.new_parents != None:
+                for parent in registry.new_parents:
+                    if isinstance(parent, str):
+                        parent = registry.by_id.get(parent)
+                    get_children(parent)
+
+
+    def clean_relationships(self): # not children anymore,  that's elsewhere. Right now just keys, will expand to events once there are events to clean.
+
+        #print(f":: Clean children:: ")
+        target_flags = ("contained_in", "requires_key", "event_key", "trigger_target")
+
+        def cleaning_loop():
+
             # applies instances to children/keys/etc.
             itemlist = frozenset(self.by_id)
 
@@ -506,14 +470,19 @@ class itemRegistry:
                 #        print(f"Missing an instance for `{item.name}`'s  `{"contained_in"}`: {getattr(item, "contained_in")}")
                 #        exit()
 #
-                if hasattr(item, "starting_children") and item.starting_children != None: # Could probably tie this up in the above loop, and viable child should have a viable parent. I guess this enables me to add the either as either parent or child and have it found, rather than always having to add it to one in particular. Esp with the item gen, that's nice.
-                    print(f"Create_item_by_name for starting_children: {item}")
-        # Except, if the child already exists as an itemdef/gen_item entry, then it gets created twice and alignment gets messy.
-
-                    child_parent = get_children(child_parent, item)
+                #if hasattr(item, "starting_children") and item.starting_children != None:
+                #    print(f"Create_item_by_name for starting_children: {item}")
+                #    get_children(item)
 
                 if hasattr(item, "requires_key") and not isinstance(getattr(item, "requires_key"), bool):
-                    target_obj = self.create_item_by_name(item.requires_key)
+                    if self.item_defs.get(getattr(item, "requires_key")):
+                        target_obj = self.init_single(getattr(item, "requires_key"), self.item_defs.get(getattr(item, "requires_key")))
+                    else:
+                        target_obj = use_generated_items(getattr(item, "requires_key"))
+                        if not target_obj:
+                            from testclass import testReg
+                            target_obj = testReg.new_item_from_str(item_name=getattr(item, "requires_key"))
+
                     if target_obj:
                         item.requires_key = target_obj
                     else:
@@ -523,12 +492,12 @@ class itemRegistry:
         starting_count = len(self.instances)
 
         try:
-            cleaning_loop(parent)
+            cleaning_loop()
         except Exception as E:
             print(f"Exception: {E}")
 
         if len(self.instances) == starting_count:
-            print("Huh, count is the same. This may or may not matter; only really matters if you were expecting a new item to be dynamically generated.")
+            print()#"Huh, count is the same. This may or may not matter; only really matters if you were expecting a new item to be dynamically generated.")
 
 
     def check_item_is_accessible(self, inst:ItemInstance) -> tuple[ItemInstance|None, int]:
@@ -544,6 +513,7 @@ class itemRegistry:
         #    5: "in inventory",
         #    6: "not at current location",
         #    7: "other error, investigate",
+        #    8: "in container but only technically (eg padlock in door)" (can look/interact with, but not move/pick/up/drop)
         #}
 
         confirmed_inst = None
@@ -558,7 +528,7 @@ class itemRegistry:
 
             from set_up_game import game
             inventory_list = game.inventory
-            print(f"INVENTORY LIST IN RUN_CHECK: {inventory_list}")
+            #print(f"INVENTORY LIST IN RUN_CHECK: {inventory_list}")
             local_items_list = self.get_item_by_location(loc.current)
             container, inst = is_item_in_container(inst, inventory_list)
 
@@ -586,6 +556,8 @@ class itemRegistry:
                 if container in inventory_list:
                     confirmed_container = container
                     if confirmed_container:
+                        if (hasattr(confirmed_container, "ownership_container")):
+                            reason = 8
                         if (hasattr(confirmed_container, "is_closed") and getattr(confirmed_container, "is_closed")):
                             reason = 1
                         elif (hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked")):
@@ -595,10 +567,11 @@ class itemRegistry:
                 else:
                     confirmed_container = in_local_items_list(container, local_items_list)
                     if confirmed_container:
-                        if hasattr(confirmed_container, "is_open") and confirmed_container.is_open == False: # only is_open exists, I think.
+                        if (hasattr(confirmed_container, "ownership_container")):
+                            reason = 8
+                        if hasattr(confirmed_container, "is_open") and confirmed_container.is_open == False:
                             print(f"Container {confirmed_container.name} is closed by is_open flag.")
                             reason = 1
-
                         elif hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked"):
                             print(f"Container {confirmed_container} is locked.")
                             reason = 2
@@ -779,7 +752,7 @@ class itemRegistry:
         if "container" in inst.item_type:
             #print(f"Container in inst.flags: {inst}")
             all_children = True
-            if hasattr(inst, "children") and hasattr(inst, "starting_children"):
+            if hasattr(inst, "children") and getattr(inst, "starting_children"):
                 for child in inst.starting_children:
                     if child in inst.children:
                         print(f"Child {child.name} is present in parent {inst.name}.")
@@ -787,7 +760,6 @@ class itemRegistry:
                         all_children = False
             #children = self.instances_by_container(inst)
             if not all_children:
-            #print(f"children: {children}")
             #if not children:
                 if hasattr(inst, "description_no_children") and inst.description_no_children != None:
                     description = inst.description_no_children # works now. If it's a container with no children, it prints this instead.
@@ -1059,9 +1031,9 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, part
 
     new_item_dict[item_name]["exceptions"] = {"starting_location": loc_cardinal}
 
-    print(f"new_item_from_str: \n {new_item_dict}, {item_name}\n\n")
+    #print(f"new_item_from_str: \n {new_item_dict}, {item_name}\n\n")
     inst = registry.init_single(item_name, new_item_dict)
-    print(f"Inst after self.init_items(): {inst}, type: {type(inst)}")
+    #print(f"Inst after self.init_items(): {inst}, type: {type(inst)}")
     registry.instances.add(inst)
     registry.temp_items.add(inst)
 
@@ -1080,8 +1052,9 @@ def get_loc_items_dict(loc=None, cardinal=None):
     loc_items_dict = {}
 
     def get_cardinal_items(loc, cardinal):
-
         gen_items = use_generated_items()
+
+        name_to_inst_tmp = {}
 
         def from_single_cardinal(loc, cardinal):
 
@@ -1090,42 +1063,137 @@ def get_loc_items_dict(loc=None, cardinal=None):
                 return
 
             if loc_dict[loc.lower()].get(cardinal):
-
                 if loc_dict[loc.lower()][cardinal].get("item_desc"):
+
+                    registry.child_parent = dict() ## Reset it every loc_card, so it doesn't add items from one location to containers in another just because the name matches.
+                    item_state_dict = loc_dict[loc.lower()][cardinal].get("item_state")
+                    from env_data import locRegistry
+                    card_inst = locRegistry.by_cardinal_str(cardinal_str=cardinal, loc=loc.lower())
+                    setattr(card_inst, "item_state", item_state_dict)
+                    # ugh this is tricky. Because once they're instances the connection is less clear. I guess it's not really, but for some reason my brain thinks it is.
+                    #I think it's because once it's active, maybe some other object gets brought to the scene before you evaluate. There's not really any other way to do it though, right?
+                    #Or I guess I could mark it to a dict, then add the instance once it's generated. (So like, 'this is the padlock inst that goes to a gate in graveyard north'. idk)
+
+        # unrelated, did just think of a way to mix up location descriptions. For each place, have some words/phrases etc that can be intermittedly (but once used, consistently) for items for particular locations. So inside a crypt might be 'dusty, dry, etc etc (but better than that, few-word phrases etc) that are randomly sprinkled into item descriptions. So 'an ivory jar' can become 'a dusty ivory jar' because it's in the crypt, but it's still generated from the same base item. Just mark where these flavour words will be (like [[]] and PPP/EEE in scene descrips), Not sure but could be good.
+                    containers = set()
+                    if item_state_dict and item_state_dict != None:# #### NO, because this will run every fucking item.
+                        for stateitem in item_state_dict.keys(): # for loop separately so it's not limited by which one happens to be processed first (only getting names here for containers, inst only matters for child_parent.)
+                        #if item_state_dict.get(item):
+                            if item_state_dict[stateitem].get("contained_in"):
+                                #print(f"stateitem: {stateitem} // item_state_dict[stateitem].get('contained_in'): {item_state_dict[stateitem].get("contained_in")}")
+                                containers.add(item_state_dict[stateitem]["contained_in"])
+
+
                     for item in loc_dict[loc.lower()][cardinal]["item_desc"]:
                         loc_item = {}
                         skip_add = False
                         if item != "generic":
+
                             if registry.item_defs.get(item):
-                                print(f"`{item}` found in item_defs.")
+                                #print(f"`{item}` found in item_defs.")
                                 loc_item[item] = registry.item_defs.get(item)
                                 loc_item[item]["starting_location"] = loc + " " + cardinal
+                                if item_state_dict and item_state_dict.get(item):
+                                    for k, v in item_state_dict[item].items():
+                                        loc_item[item][k] = v
+
                                 inst = registry.init_single(item, loc_item[item])
-                                print(f"\nINST GENERATED (item_dict by_cardinal): {vars(inst)}\n")
-                                if hasattr(inst, "starting_children"):# and inst.starting_children != None:
-                                    print(f"Sending {item}/{inst} to clean_children from item_defs")
-                                    registry.clean_relationships(parent = inst)
+                                #print(f"\nINST GENERATED (item_dict by_cardinal): {vars(inst)}\n")
+                                name_to_inst_tmp[item] = inst
+                                #if containers and item in containers:
+
+                                if item_state_dict and item_state_dict != None:# #### NO, because this will run every fucking item.
+                                    if item_state_dict.get(item) and item_state_dict[item].get("contained_in"):
+                                        if not registry.child_parent.get(inst):
+                                            registry.child_parent[inst] = item_state_dict[item]["contained_in"]
+                                            #print(f"registry.child_parent[inst]: {registry.child_parent[inst]}")
+                                            #print(f"item_state_dict[item]['contained_in']: {item_state_dict[item]["contained_in"]}") ## This correctly returns 'gate'
+                                    #for stateitem in item_state_dict.keys(): # for loop separately so it's not limited by which one happens to be processed first (only getting names here for containers, inst only matters for child_parent.)
+                                    #if item_state_dict.get(item):
+                                        #if item_state_dict[stateitem].get("contained_in"):
+                                        #    containers.add(item_state_dict[stateitem]["contained_in"])
+                                        #    if stateitem == item:
+                                        #        registry.child_parent[inst] = item_state_dict[item]["contained_in"]
+
+                                #if item in containers:
+                                #    for child_inst in registry.child_parent.keys():
+                                #        if isinstance(registry.child_parent[child_inst], str):
+                                #            if registry.child_parent[child_inst] == item:
+                                #                registry.child_parent[child_inst] = inst
+
+
+
+                                        #if "contained_in" in attr: # probably won't work because it's a dict. Too tired to know if that's true.
+                                    #for state_item, attr in item_state_dict.items():
+                                            ## not how it was originally used, but looking through it, I can't see anywhere I actually used it in the end.
+
+                                    #if item_state_dict and item_state_dict.get(item):
+
+                                #if hasattr(inst, "starting_children"):# and inst.starting_children != None:
+                                #    print(f"Sending {item}/{inst} to clean_children from item_defs")
+
+                                    #registry.clean_relationships(parent = inst)
                             else:
                                 if gen_items.get(item):
-                                    print(f"`{item}` found in generated_items.")
+                                    #print(f"`{item}` found in generated_items.")
                                     loc_item[item] = gen_items[item]
-                                    print(f"GEN ITEMS {item}: {gen_items[item]}")
+                                    #print(f"GEN ITEMS {item}: {gen_items[item]}")
                                     skip_add = True
                                 else:
-                                    print(f"Item {item} not found in item_defs, generating from blank.")
+                                    #print(f"Item {item} not found in item_defs, generating from blank.")
                                     loc_item[item] = ({"item_type": ['static']})
-                                    inst = new_item_from_str(item_name=item, loc_cardinal=(loc + " " + cardinal))
+                                    if item_state_dict and item_state_dict.get(item):
+                                        for k, v in item_state_dict[item].items():
+                                            loc_item[item][k] = v
+                                    inst = new_item_from_str(item_name=item, loc_cardinal=(loc + " " + cardinal),
+
+                                    partial_dict=loc_item[item]) # added partial_dict, it should have been here before.
+
                                     if not skip_add:
                                         registry.temp_items.add(inst)
                                     continue
 
                                 loc_item[item].update({"starting_location": loc + " " + cardinal})
                                 loc_items_dict[loc][cardinal][item] = loc_item[item]
+                                if item_state_dict and item_state_dict.get(item):
+                                    for k, v in item_state_dict[item].items():
+                                        loc_item[item][k] = v
                                 inst = registry.init_single(item, loc_item[item])
+                                name_to_inst_tmp[item] = inst
                                 if not skip_add:
                                     registry.temp_items.add(inst)
-                                if registry.new_parents:
-                                    registry.clean_relationships(inst)
+
+                                    #registry.clean_relationships(inst)
+                    #print(f"CONTAINERS: {containers}")
+                    ## second for loop here so the child instances can process first.
+                    #these need specific care because they're not intrisic to the item like the parentages in item_defs.
+                    for item in loc_dict[loc.lower()][cardinal]["item_desc"]: # at least the loop here means it doesn't loop over everything entirely twice, it only checks for potential relevancy once so places with no item_desc are omitted from that point on.
+                        if item != "generic":
+                            if item in containers:
+                                #print(f"Item in containers: `{item}`")
+                                for child_inst in registry.child_parent:
+                                    if isinstance(registry.child_parent[child_inst], str):
+                                        if registry.child_parent[child_inst] == item:
+                                            #print("registry.child_parent[child_inst] == item:")
+                                            #print(f"registry.child_parent[child_inst] = {registry.child_parent[child_inst]}\n Item: {item}")
+                                            #print(f"name_to_inst_tmp: {name_to_inst_tmp}")
+                                            if name_to_inst_tmp.get(item):
+                                            #if loc_item.get(item):
+                                                inst = name_to_inst_tmp[item]#loc_item.get(item).get("instance")
+                                            #print(f"Inst(should be container): {inst}")
+                                                if inst:
+                                                    registry.child_parent[child_inst] = inst # At this point, don't actually need the registry dict anymore.
+                                                    child_inst.contained_in = inst
+                                                    #print(f"CHILD INST VARS: {vars(child_inst)}")
+                                                    if not hasattr(inst, "children"):
+                                                        inst.children = set()
+                                                    inst.children.add(child_inst)
+                                                    #print(f"PARENT INST VARS: {vars(inst)}")
+                                                else:
+                                                    print(f"Failed to get inst from  loc_item.get(item): {loc_item.get(item)}")
+
+                    #print(f"CHILD PARENT DICT: {registry.child_parent}")
+
 
         if cardinal == None:
             for cardinal in CARDINALS:
@@ -1145,12 +1213,14 @@ def get_loc_items_dict(loc=None, cardinal=None):
 
     registry.clean_relationships()
 
+    if registry.new_parents and registry.new_parents != None: # in case something slipped by, this should never be needed though.
+        registry.generate_children_for_parent()
+
 def initialise_itemRegistry():
 
     registry.complete_location_dict()
 
     get_loc_items_dict(loc=None, cardinal=None)
-
 
     plural_word_dict = {}
 

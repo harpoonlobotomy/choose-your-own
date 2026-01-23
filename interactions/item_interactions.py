@@ -28,8 +28,8 @@ def look_at_item(item_inst): ## this is just using everything from registry. Sho
     if isinstance(item_inst, ItemInstance):
         #print(f"item_inst.location: {item_inst.location}")
         confirmed, container, reason_val, meaning = registry.check_item_is_accessible(item_inst)
-        print(f"Look at item MEANING: {meaning}")
-        if reason_val not in (0, 5):
+        #print(f"Look at item MEANING: {meaning}")
+        if reason_val not in (0, 5, 8):
             print(f"Cannot look at {item_inst.name}.")
         else:
             if reason_val == 2:

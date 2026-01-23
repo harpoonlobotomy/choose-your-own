@@ -70,7 +70,7 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
             new_cardinal = loc.by_cardinal_str(new_cardinal)
             loc.set_current(cardinal=new_cardinal)
 
-    print(f"You're now facing {assign_colour(loc.current, card_type="place_name")}")
+    print(f"You're now facing {assign_colour(loc.current, card_type="place_name")}\n")
     if new_location:
         print(loc.current.place.overview)
     else:
@@ -89,5 +89,5 @@ def turn_around(new_cardinal):
     loc.set_current(loc=None, cardinal=new_cardinal)
     #print(f"loc.current_cardinal after turn_around: {loc.current}, type: {type(loc.current)}")
     print(f"You turn to face the {assign_colour(item=loc.current, card_type = "ern_name")}")
-    print(f"{loc.current.long_desc}")
+    print(f"{loc.current.description}")
 

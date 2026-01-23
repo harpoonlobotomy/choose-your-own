@@ -170,7 +170,7 @@ class Membrane: ## it really holds so much duplicate data, it needs to be trimme
 
     def __init__(self):
 
-        from item_definitions import item_defs_dict#, item_actions
+        #from item_definitions import item_defs_dict#, item_actions
         from verb_definitions import get_verb_defs, directions, formats, combined_wordphrases, cardinals
 
         verb_defs_dict, verbs_set = get_verb_defs()
@@ -179,12 +179,13 @@ class Membrane: ## it really holds so much duplicate data, it needs to be trimme
         self.all_verb_names = verbs_set
         self.combined_wordphrases = combined_wordphrases
 
-        self.nouns_list = list(item_defs_dict.keys()) ## prev. 'nouns_list'
+        from itemRegistry import registry
+        self.nouns_list = list(registry.item_defs.keys())
+        #self.nouns_list = list(item_defs_dict.keys()) ## prev. 'nouns_list'
         #self.item_action_options = item_actions ### Is this ever used? I think only for get_item_actions in itemregistry, not here. Use the instance flags instead, that's what they're for.
 
         from env_data import loc_dict
         self.locations = list(loc_dict.keys())
-        from itemRegistry import registry
 
         self.plural_words_dict = registry.plural_words
         compound_locs = {}

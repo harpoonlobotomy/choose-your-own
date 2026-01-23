@@ -159,11 +159,9 @@ def inner_loop(speed_mode=False):
         test=option()
 
 def run():
-    print("IMMEDIATELY INTO RUN: ")
     import config
     config.enable_tui = False
     #sleep(5) ## just pauses at a black screen, previous text already removed.
-    test = None
     global loc
     from env_data import locRegistry as loc
     #do_clearscreen()

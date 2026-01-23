@@ -69,6 +69,85 @@ def check_flag(item_types:set=set(), flag:str="", get_single=True):
             return item_types, 1
     return None, 0
 
+def check_all_flags_present():
+
+    import json
+    json_primary = "dynamic_data/items_main.json" # may break things
+    with open(json_primary, 'r') as file:
+        item_defs_dict = json.load(file)
+    missing_tags = {}
+
+    for item in item_defs_dict:
+        missing_tags[item]={}
+
+        item_types = item_defs_dict[item].get("item_type")
+
+        if not item_types:
+            print(f"{item} does not have item_type field.")
+            continue
+
+        item_types = item_types.replace(",", "")
+        item_types = item_types.replace("'", "")
+        item_types = item_types.replace("{", "")
+        item_types = item_types.replace("}", "")
+
+        if " " in item_types.strip():
+                parts = item_types.strip().split(" ")
+                print(f"PARTS: {parts}")
+                parts = list(i for i in parts if i != None and i in list(type_defaults))
+
+                if len(parts) > 1:
+                    print(f"Parts len >1 : {parts}, type: {type(parts)}")
+                    new_str = set(parts)
+                else:
+                    new_str = set()
+                    new_str.add(parts[0])
+                    print(f"NEW_STR: {new_str}")
+                    #new_str = set([parts])
+                #new_str = set(parts)
+                print(f"NEW_STR: {new_str}, len: {len(new_str)}")
+
+        elif item_types in list(type_defaults):
+            print(f"Input str in type_defaults: {item_types}, type: {type(item_types)}")
+            new_str = set([item_types])
+
+        else:
+            print(f"No item types for {item} after string processing.")
+            continue
+
+        item_types = new_str
+
+        for def_type in item_types:
+            print(f"DEF TYPE: {def_type}")
+            type_tags = type_defaults.get(def_type)
+            skip_tags = ("contained_in", "current_loc", "started_contained_in", "starting_location")
+            for tag in type_tags:
+                if not tag in skip_tags and not item_defs_dict[item].get(tag):
+                    missing_tags[item][tag]=type_defaults[def_type].get(tag)
+
+    #print("Missing tags per item: ")
+    #from pprint import pprint
+    #pprint(missing_tags)
+
+    for item, field in item_defs_dict.items():
+        if missing_tags.get(item):
+            for attr in missing_tags[item]:
+                item_defs_dict[item][attr] = missing_tags[item][attr]
+        #for attr in item_defs_dict[item].get(field):
+        #    if missing_tags.get(item) and missing_tags[item].get(list(field)[0]):
+        #        item_defs_dict[item].update(field = missing_tags[item][field])
+
+    print("Updated dict: ")
+    from pprint import pprint
+    pprint(item_defs_dict)
+
+    test=input()
+    if test in ("y", "yes"):
+        with open(gen_items_file, 'w') as file: ##NOTE: Currently puts it in generated instead so I can check, later just do it directly back to items_main.
+            json.dump(item_defs_dict, file, indent=2)
+
+check_all_flags_present()
+
 def testing_t_defaults_against_item_defs(per_item=True, item_name=""):
 
 
@@ -77,7 +156,13 @@ def testing_t_defaults_against_item_defs(per_item=True, item_name=""):
     def_flags_in_t_def = set()
     all_def_flags = set()
     collected_per_item = {}
-    from item_definitions import item_defs_dict
+
+    import json
+    json_primary = "dynamic_data/items_main.json" # may break things
+    with open(json_primary, 'r') as file:
+        item_defs_dict = json.load(file)
+
+    #from item_definitions import item_defs_dict
     for item, val in item_defs_dict.items():
         if item_name:
             if item != item_name:
@@ -509,7 +594,7 @@ if __name__ == "__main__":
                     elif isinstance(item, ItemInstance):
                         pop_me.add(header)
 
-                    if header in ("is_key", "can_pick_up", 'is_charged', "fragile", "can_be_locked", 'is_locked') and entry[header] == None:
+                    if header in ("is_key", "can_pick_up", 'is_charged', "can_be_locked", 'is_locked') and entry[header] == None:
                         entry[header] = True
                     elif header == "description" and entry[header] == "none yet":
                         if "mag" in key:
@@ -556,6 +641,7 @@ if __name__ == "__main__":
         if test == "y":
             add_all_new = True
 
+        #for loc in data:
         for item in data:
             if main_data.get(item):
                 if main_data[item] == data[item]:
@@ -609,7 +695,7 @@ if __name__ == "__main__":
         else:
             print("Nothing to add, all entries in main dict and/or no changes made.")
 
-    add_gen_to_main()
+    #add_gen_to_main()
 """
 #def items_in(container=None, *, open=None, locked=None):
 #    for item in self.by_location[graveyard_east]:

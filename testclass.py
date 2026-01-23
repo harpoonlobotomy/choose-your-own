@@ -449,7 +449,7 @@ class testRegistry:
         return inst
 
 
-    def new_item_from_str(self, item_name:str, input_str:str=None, loc_cardinal=None, partial_dict=None)->str|testInstances:
+    def new_item_from_str(self, item_name:str, input_str:str=None, loc_cardinal=None, partial_dict=None, in_container = False)->str|testInstances:
         if not input_str:
             print("\n")
             printing.print_green(f"Options: {list(type_defaults)}", invert=True)
@@ -482,6 +482,7 @@ class testRegistry:
         if not loc_cardinal:
             loc_cardinal = "graveyard north"
 
+
         if partial_dict and isinstance(partial_dict, dict):
             if partial_dict.get(item_name):
                 new_item_dict[item_name] = partial_dict[item_name]
@@ -496,6 +497,13 @@ class testRegistry:
         else:
             new_item_dict = {}
             new_item_dict[item_name] = ({"item_type": new_str})
+
+        if in_container: ## testing this out.
+            loc_cardinal = None
+            "started_contained_in"
+            new_item_dict[item_name].update({"started_contained_in": in_container}) # might have to be id/name? Not sure if instance will work here.
+
+
 
         new_item_dict[item_name]["exceptions"] = {"starting_location": loc_cardinal}
 
@@ -650,7 +658,7 @@ class testRegistry:
                             item.started_contained_in = target_obj
                         item.contained_in = target_obj
                     else:
-                        print(f"Missing an instance for `{item.name}`'s  `{"contained_in"}`: {getattr(item, "contained_in")}")
+                        print(f"Missing an instance for `{item.name}`'s  `contained_in`: {getattr(item, 'contained_in')}")
                         exit()
 
                 if hasattr(item, "starting_children") and item.starting_children != None: # Could probably tie this up in the above loop, and viable child should have a viable parent. I guess this enables me to add the either as either parent or child and have it found, rather than always having to add it to one in particular. Esp with the item gen, that's nice.
@@ -1251,14 +1259,16 @@ if __name__ == "__main__":
                             loc_base[place][cardinal] = {}
                             if loc_dict[place].get(cardinal):
                                 for field in loc_dict[place].get(cardinal):
-                                    if "actions" in field:
-                                        continue
-                                    if "item_desc" in field: # for now, until it's changed in env_data or that dict is removed entirely.
-                                        loc_base[place][cardinal]["item_desc"] = loc_dict[place][cardinal].get(field)
-                                        continue
+                                    #if "actions" in field:
+                                    #    continue
+                                    #if "item_desc" in field: # for now, until it's changed in env_data or that dict is removed entirely.
+                                    #    loc_base[place][cardinal]["item_desc"] = loc_dict[place][cardinal].get(field)
+                                    #    continue
 
                                     #if field in ("short_desc", "long_desc"):
                                     loc_base[place][cardinal][field] = loc_dict[place][cardinal].get(field)
+                                    # just add everything. Should include item_state by default.
+                                    
                                 if not loc_dict[place][cardinal].get("items"):
                                     loc_base[place][cardinal]["items"] = {"": {"description": None, "is_hidden": False}} # empty template. Adding is_hidden here so I have a straightforward location-specific hidden flag, makes sense. Everything else can be from item gen or item_defs.
                                 if not loc_dict[place][cardinal].get("alt_names"):

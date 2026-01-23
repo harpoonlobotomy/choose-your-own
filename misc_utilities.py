@@ -30,6 +30,14 @@ cardinals=list(cardinal_cols.keys())
 def smart_capitalise(s: str) -> str:
     return s[0].upper() + s[1:] if s else s
 
+def is_plural_noun(noun_inst):
+    #from itemRegistry import registry
+    #registry.item_defs
+    plural_nouns = set(("dried flowers", "bedsheets",))
+    if noun_inst.name in plural_nouns:
+        return "are"
+    return "is"
+
 def check_name(item_name):
     logging_fn()
     special_type = {
@@ -228,10 +236,12 @@ def look_around():
     from itemRegistry import registry
 
     print("\033[37m \033[0m")
-    print(loc.currentPlace.overview)
-    print(f"You're facing {assign_colour(loc.current, card_type="name")}. {loc.current.long_desc}")
+    print(loc.currentPlace.overview, "\n")
+    print(f"{loc.current.description}")
+    #print(f"You're facing {assign_colour(loc.current, card_type="name")}. {loc.current.description}")
 
-    is_items = registry.get_item_by_location()
+    is_items = registry.get_item_by_location() ## Need to merge this with the dict writing to account for missing items.
+
     #is_items = get_items_at_here(print_list=False, place=loc.current)
 
     applicable_items = []
@@ -292,13 +302,13 @@ def is_item_in_container(item, inventory_list=None):
         print(f"Failed to get instance for {item}, type: {type(item)}")
         exit()
     if hasattr(inst, "contained_in"):
-        print(f"Hasattr contained_in: {inst}:inst.contained_in {inst.contained_in}")
+        #print(f"Hasattr contained_in: {inst}:inst.contained_in {inst.contained_in}")
         if inst.contained_in != None:
-            print("Not necessary but I want to see:")
-            print("inst.contained_in's vars:")
-            print(f"{vars(inst.contained_in)}")
-        container = inst.contained_in
-        return container, inst
+            #print("Not necessary but I want to see:")
+            #print("inst.contained_in's vars:")
+            #print(f"{vars(inst.contained_in)}")
+            container = inst.contained_in
+            return container, inst
     return None, inst
 
 def generate_clean_inventory(inventory_inst_list=None, will_print = False, coloured = False):
