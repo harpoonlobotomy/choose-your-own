@@ -8,6 +8,8 @@ from env_data import locRegistry as loc
 import testclass
 import printing
 
+global all_item_names_generated
+all_item_names_generated = list()
 
 CARDINALS = ["north", "east", "south", "west"]
 
@@ -21,7 +23,7 @@ type_defaults = { # gently ordered - will overwrite earlier attrs with later one
     "container": {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False, 'starting_children': None, 'container_limits': 4, "name_no_children": None, "description_no_children": None},
     "key": {"is_key": True},
     "can_pick_up": {"can_pick_up": True, "item_size": 0, "started_contained_in": None, "contained_in": None},
-    "event": {"event": None, "event_type": "item_triggered", "event_key": None},
+    "event": {"event": None, "event_type": "item_triggered", "event_key": None, "event_item": None},
     "trigger": {"trigger_type": "plot_advance", "trigger_target": None, "is_exhausted": False},
     "flooring": {"is_horizontal_surface": True},
     "wall": {"is_vertical_surface": True},
@@ -29,7 +31,8 @@ type_defaults = { # gently ordered - will overwrite earlier attrs with later one
     "fragile": {"broken_name": None, "flammable": False, "can_break": True},
     "electronics": {"can_be_charged": True, "is_charged": False, "takes_batteries": False, "has_batteries": False},
     "books_paper": {'print_on_investigate': True, 'flammable': True, 'can_read': True},
-    "can_speak" : {'can_speak': True, 'speaks_common': True}
+    "can_speak" : {'can_speak': True, 'speaks_common': True},
+    "can_open": {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False}
 
     #{"special_traits: set("dirty", "wet", "panacea", "dupe", "weird", "can_combine")}, # aka random attr storage I'm not using yet
     #"exterior": {"is_interior": False} ## Can be set scene-wide, so 'all parts of 'graveyard east' are exterior unless otherwise mentioned'. (I say 'can', I mean 'will be when I set it up')
@@ -53,7 +56,7 @@ class ItemInstance:
                 self.item_type = set()
 
         if isinstance(attr, str):
-            print(f"cleaning itemtypes: `{attr}` (type: {type(attr)}), existing: {self.item_type} type: {type(self.item_type)}")
+            #print(f"cleaning itemtypes: `{attr}` (type: {type(attr)}), existing: {self.item_type} type: {type(self.item_type)}")
             if "{" in attr:
                 _, type_item = attr.split("{")
                 type_item, _ = type_item.split("}")
@@ -63,15 +66,21 @@ class ItemInstance:
                 for part in parts:
                     if part != None and part not in self.item_type:
                         self.item_type.add(part)
-                        print(f"self.item_types: {self.item_type}")
+                        #print(f"self.item_types: {self.item_type}")
             else:
                 self.item_type.add(attr)
 
         elif isinstance(attr, set|list|tuple):
-            print(f"ITEM set/list/tuple: {attr}")
+            #print(f"ITEM set/list/tuple: {attr}")
             #self.item_type = self.item_type | set(attr)
             for item_type in attr:
                 self.item_type.add(item_type)
+
+        #for item_type in self.item_type:
+        #    print(f"{self}  ITEM TYPE: {item_type}")
+        #    for flag in type_defaults.get(item_type):
+        #        if not hasattr(self, flag):
+        #            setattr(self, flag, type_defaults[item_type][flag])
 
         return self.item_type
 
@@ -89,6 +98,7 @@ class ItemInstance:
         #print(f"ATTR: {attr}")
         self.item_type = self.clean_item_types(attr["item_type"])#attr["item_type"] ## have it here and/or in the registry. I guess both? covers the 'is_container' thing neatly enough.
         print(f"after setting: self.item_type: {self.item_type}")
+
         self.colour = None
         self.description:str = attr.get("description")
         self.starting_location:dict = attr.get("starting_location") # currently is styr
@@ -105,10 +115,11 @@ class ItemInstance:
             self.alt_names = None
 
  #     INITIAL FLAG MANAGEMENT
-
+        print(f"VARS before attributes are assigned: {vars(self)}")
         for attribute in ("can_pick_up", "can_be_opened", "print_on_investigate", "can_be_locked"):
             if hasattr(self, attribute):
                     self.verb_actions.add(attribute)
+        print(f"self.verb_actions: {self.verb_actions}")
         #    self.started_contained_in = attr.get("contained_in")  # parent instance id if inside a container
         #    if self.started_contained_in:
         #        self.contained_in = self.started_contained_in ## do this later like testclass does
@@ -196,6 +207,8 @@ class itemRegistry:
         inst = ItemInstance(item_name, item_entry)
         self.instances.add(inst)
 
+        self.item_defs[item_name] = item_entry
+
         if not self.by_name.get(inst.name):
             self.by_name[inst.name] = []
         self.by_name[inst.name].append(inst)
@@ -213,21 +226,24 @@ class itemRegistry:
                 self.by_category.setdefault(loot_type, set()).add(inst)
 
         location = item_entry.get("starting_location")
+        if not location and not hasattr(inst, "contained_in") and item_entry.get("exceptions"):
+            location = item_entry.get("exceptions").get("starting_location")
 
         if location:
-            print(f"Location for instance {self}, {item_name}, {location}")
+            #print(f"Location for instance {self}, {item_name}, {location}")
             if isinstance(location, cardinalInstance):
                 inst.location = location
                 self.by_location.setdefault(location, set()).add(inst)
 
             elif not hasattr(inst, "contained_in") or inst.contained_in == None:
-                print(f"Item {inst.name} has a location: {location}.")
+                #print(f"Item {inst.name} has a location: {location}.")
                 from env_data import locRegistry as loc
                 cardinal_inst = loc.by_cardinal_str(location)
-                print(f"CARDINAL INST IF LOCATION: {cardinal_inst}, {cardinal_inst.name}")
+                #print(f"CARDINAL INST IF LOCATION: {cardinal_inst}, {cardinal_inst.name}")
                 self.by_location.setdefault(cardinal_inst, set()).add(inst)
-                print(f"SELF.BY_LOCATION: {self.by_location}")
+                #print(f"SELF.BY_LOCATION: {self.by_location}")
                 inst.location = cardinal_inst
+
 
         if item_entry.get("alt_names"):
             for altname in item_entry.get("alt_names"):
@@ -249,11 +265,11 @@ class itemRegistry:
                     setattr(inst, key, None)
             self.event_items[inst.name] = {"event_name": inst.event, "event_key": inst.event_key, "event_item": inst.event_item, "item": inst}
 
-        for item_type in inst.item_type:
-            print(f"{inst}  ITEM TYPE: {item_type}")
-            for flag in type_defaults.get(item_type):
-                if not hasattr(inst, flag):
-                    setattr(inst, flag, type_defaults[item_type][flag])
+        #for item_type in inst.item_type:
+        #    #print(f"{inst}  ITEM TYPE: {item_type}")
+        #    for flag in type_defaults.get(item_type):
+        #        if not hasattr(inst, flag):
+        #            setattr(inst, flag, type_defaults[item_type][flag])
 
         if "key" in inst.item_type:
             setattr(inst, "key", True)
@@ -368,10 +384,12 @@ class itemRegistry:
                     #print(f"create child by init_single: {child}")
                     if child in self.item_defs:
                         target_child = self.init_single(child, self.item_defs[child])
+                        all_item_names_generated.append((child, "generate_child from item_defs"))
                     else:
                         target_child = use_generated_items(child)
                         if not target_child:
                             target_child = new_item_from_str(item_name=child, in_container=parent)
+                            all_item_names_generated.append((child, "generate_child item_from_str"))
                             # untested. Previously it just failed if not in item_defs.
 
                     #target_child = self.create_item_by_name(child)
@@ -405,10 +423,14 @@ class itemRegistry:
             elif isinstance(parent.starting_children, str):
                 if parent.starting_children in self.item_defs:
                     target_child = self.init_single(parent.starting_children, self.item_defs[parent.starting_children])
+                    all_item_names_generated.append((parent.starting_children, "generate_child from item_defs"))
                 else:
                     target_child = use_generated_items(parent.starting_children)
                     if not target_child:
                         target_child = new_item_from_str(item_name=parent.starting_children, in_container=parent)
+                        all_item_names_generated.append((parent.starting_children, "generate_child from str"))
+                    else:
+                        print(f"Generated target child from generated_items but didn't actually make an instance, I think: {target_child}")
                 #target_child = self.create_item_by_name(parent.starting_children)
                 #print(f"target object after create_item_by_name with str: {target_child}")
                 if target_child:
@@ -461,37 +483,41 @@ class itemRegistry:
                     for maybe_key in registry.keys:
                         if hasattr(maybe_key, "unlocks") and getattr(maybe_key, "unlocks"):
                             continue # so a key will only be assigned to one lock, which I want for now. maybe change this later.
-                        print(f"MAYBE KEY: {maybe_key}")
+                        #print(f"MAYBE KEY: {maybe_key}")
                         if maybe_key.name == getattr(item, "requires_key"):
-                            print(f"Maybe {maybe_key} is the key to {item}")
-                            print(f"\n\nkey vars: {vars(maybe_key)}\n lock vars: {vars(item)}\n\n")
+                            #print(f"Maybe {maybe_key} is the key to {item}")
+                            #print(f"\n\nkey vars: {vars(maybe_key)}\n lock vars: {vars(item)}\n\n")
                             if hasattr(maybe_key, "is_key_to") and maybe_key.is_key_to == item.name:
-                                print(f"maybe_key.is_key_to: {maybe_key.is_key_to}, item.name: {item.name}")
+                                #print(f"maybe_key.is_key_to: {maybe_key.is_key_to}, item.name: {item.name}")
                                 #
                                 print(f"Assigning {maybe_key} to {item}.")
                                 self.locks_keys[item] = maybe_key
                                 self.locks_keys[maybe_key] = item
                                 item.requires_key = maybe_key
                                 setattr(maybe_key, "unlocks", item) ## NOTE: This isn't implemented anywhere, try to remember. inst.unlocks == inst of the lock it opens.
-                                print(f"Lock: {maybe_key.unlocks}")
-                                print(f"Key: {item.requires_key}")
+                                #print(f"Lock: {maybe_key.unlocks}")
+                                #print(f"Key: {item.requires_key}")
                                 key_found = True
 
                     if not key_found:
                         if self.item_defs.get(getattr(item, "requires_key")):
                             target_obj = self.init_single(getattr(item, "requires_key"), self.item_defs.get(getattr(item, "requires_key")))
+                            all_item_names_generated.append((item, "generate key from item_defs"))
                             print(f"No target_obj from item defs for {item}, looking for {getattr(item, "requires_key")}")
                         else:
                             target_obj = use_generated_items(getattr(item, "requires_key"))
                             if not target_obj:
                                 print(f"No target_obj from item defs or generated, for {item}, looking for {getattr(item, "requires_key")}")
                                 target_obj = new_item_from_str(item_name=getattr(item, "requires_key"))
+                                all_item_names_generated.append(({getattr(item, "requires_key")}, "generate key from str"))
+                            else:
+                                print(f"generated key from generated items but no actual instance I think: {target_obj}")
 
-                    if target_obj:
-                        item.requires_key = target_obj
-                    else:
-                        print(f"Failed to find key for {item}'s {item.requires_key}.")
-                        exit()
+                        if target_obj:
+                            item.requires_key = target_obj
+                        else:
+                            print(f"Failed to find key for {item}'s {item.requires_key}.")
+                            exit()
 
         starting_count = len(self.instances)
 
@@ -705,6 +731,9 @@ class itemRegistry:
     def instances_by_name(self, definition_key:str)->list:
         logging_fn()
 
+        if not isinstance(definition_key, str):
+            if isinstance(definition_key, list):
+                definition_key = definition_key[0]
         if self.by_name.get(definition_key):
             #print(f"self.by_name.get(definition_key): {self.by_name.get(definition_key)}")
             return self.by_name.get(definition_key)
@@ -986,10 +1015,10 @@ def use_generated_items(input_=None):
 def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, partial_dict=None)->str|ItemInstance:
 
     if partial_dict:
-        print(f"partial_dict before: {partial_dict}")
+        #print(f"partial_dict before: {partial_dict}")
         if partial_dict.get(item_name):
             partial_dict = partial_dict[item_name]
-        print(f"partial_dict after: {partial_dict}")
+        #print(f"partial_dict after: {partial_dict}")
 
     new_item_dict = {}
 
@@ -1012,11 +1041,15 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, part
         input_str = input_str.replace(",", "")
         parts = input_str.strip().split(" ")
         parts = set(i for i in parts if i != None and i in list(type_defaults))
+        print(f"PARTS: {parts}, type: {type(parts)}")
         if len(parts) > 1:
             print(f"Parts len >1 : {parts}, type: {type(parts)}")
             new_str = set(parts)
         else:
-            new_str = set([parts])
+            if isinstance(parts, set):
+                new_str = parts
+            else:
+                new_str = set([parts])
 
     elif input_str in list(type_defaults):
         print(f"Input str in type_defaults: {input_str}, type: {type(input_str)}")
@@ -1039,7 +1072,7 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, part
                 new_item_dict = {}
         else:
             new_item_dict = partial_dict
-            print(f"Partial dict: Not sure how to use this format: {partial_dict}")
+            #print(f"Partial dict: Not sure how to use this format: {partial_dict}")
                 #exit()
 
         new_item_dict["item_type"] = new_str
@@ -1076,7 +1109,7 @@ def get_loc_items_dict(loc=None, cardinal=None):
         name_to_inst_tmp = {}
 
         def from_single_cardinal(loc, cardinal, name_to_inst_tmp, loc_items_dict):
-            print(f"name_to_inst_tmp: {name_to_inst_tmp}")
+            #print(f"name_to_inst_tmp: {name_to_inst_tmp}")
 
             def get_item_data(item, item_state_dict, name_to_inst_tmp, gen_items, loc_items_dict, loc, cardinal):
                 loc_item = {}
@@ -1099,6 +1132,11 @@ def get_loc_items_dict(loc=None, cardinal=None):
                                 loc_item[item][k] = v
 
                         inst = registry.init_single(item, loc_item[item])
+                        all_item_names_generated.append((item, "item_defs"))
+                        print("\n\n")
+                        printing.print_red(inst)
+                        printing.print_red(inst.location)
+                        print("\n\n")
                         #print(f"\nINST GENERATED (item_dict by_cardinal): {vars(inst)}\n")
                         name_to_inst_tmp[item] = inst
                         #if containers and item in containers:
@@ -1121,7 +1159,14 @@ def get_loc_items_dict(loc=None, cardinal=None):
                                 for k, v in item_state_dict[item].items():
                                     loc_item[item][k] = v
                             inst = new_item_from_str(item_name=item, loc_cardinal=card_inst,partial_dict=loc_item[item]) # added partial_dict, it should have been here before.
+                            all_item_names_generated.append((item, "item_from_str"))
+                            print("\n\n")
+                            printing.print_red(inst)
+                            printing.print_red(inst.location)
+                            print("\n\n")
                             name_to_inst_tmp[item] = inst
+                            if loc_item.get("item"):
+                                registry.item_defs[item] = loc_item[item]
 
                             if not skip_add:
                                 registry.temp_items.add(inst)
@@ -1133,6 +1178,14 @@ def get_loc_items_dict(loc=None, cardinal=None):
                             for k, v in item_state_dict[item].items():
                                 loc_item[item][k] = v
                         inst = registry.init_single(item, loc_item[item])
+                        all_item_names_generated.append((item, "from_gen"))
+
+                        if loc_item.get("item"):
+                            registry.item_defs[item] = loc_item[item]
+                        print("\n\n")
+                        printing.print_red(inst)
+                        printing.print_red(inst.location)
+                        print("\n\n")
                         name_to_inst_tmp[item] = inst
                         if not skip_add:
                             registry.temp_items.add(inst)
@@ -1249,10 +1302,13 @@ def initialise_itemRegistry():
 
     for item_name in registry.item_defs.keys():
         if len(item_name.split()) > 1:
+            #printing.print_red(f"This is a plural word: {item_name}")
             plural_word_dict[item_name] = tuple(item_name.split())
-
+            #printing.print_yellow(f"This is the word in plural word dict: {plural_word_dict[item_name]}")
     registry.add_plural_words(plural_word_dict)
 
+    #printing.print_yellow(all_item_names_generated)
+    #exit()
     return registry.event_items
 
 #initialise_itemRegistry()

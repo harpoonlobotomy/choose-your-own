@@ -60,7 +60,7 @@ def check_noun_actions(noun_inst, verbname):
             if verbname in flag_actions[action]:
                 print(f"{action}: Verb inst name in flag_actions for noun: ({noun_inst.name}): {verbname}")
                 return noun_inst.name
-            
+
     print(f"Noun fails: {noun_inst}, verbname: {verbname}")
 
 def get_noun_instances(dict_from_parser, viable_formats):
@@ -119,6 +119,7 @@ def get_noun_instances(dict_from_parser, viable_formats):
                     noun_inst = registry.instances_by_name(name) ## NOTE: This won't hold for long. Different instances may have different attr.
                     if not noun_inst:
                         suitable_nouns -= 10
+                        ### wait wtf it MAKES a new instance to check noun attr???
                         if name in registry.item_defs:
                             noun_inst = registry.init_single(name, registry.item_defs[name])
                     if not noun_inst:
@@ -182,6 +183,9 @@ class Membrane: ## it really holds so much duplicate data, it needs to be trimme
 
         from itemRegistry import registry
         self.nouns_list = list(registry.item_defs.keys())
+
+        # Note: nouns_list does not add instances, it has to find them later. I wonder if I could give it the instances directly and have it use those in the parser. Might make it more complicated through. Not sure. Just an idea.
+
         #self.nouns_list = list(item_defs_dict.keys()) ## prev. 'nouns_list'
         #self.item_action_options = item_actions ### Is this ever used? I think only for get_item_actions in itemregistry, not here. Use the instance flags instead, that's what they're for.
 

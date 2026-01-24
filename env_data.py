@@ -180,8 +180,8 @@ class cardinalInstance:
         self.ern_name = cardinal + "ern " + loc.name # eg "eastern graveyard"
         self.place = loc
         self.alt_names = (loc_dict[loc.name].get("alt_names") if loc_dict[loc.name].get("alt_names") else None)
-        self.short_desc = (loc_dict[loc.name][cardinal].get("short_desc") if loc_dict[loc.name].get(cardinal) else None)
-        self.long_desc = (loc_dict[loc.name][cardinal].get("long_desc") if loc_dict[loc.name].get(cardinal) else None)
+        #self.short_desc = (loc_dict[loc.name][cardinal].get("short_desc") if loc_dict[loc.name].get(cardinal) else None)
+        self.description = None#(loc_dict[loc.name][cardinal].get("long_desc") if loc_dict[loc.name].get(cardinal) else None)
         self.colour = None
 
         self.cardinal_data = loc_dict[self.place.name].get(cardinal)
@@ -206,7 +206,8 @@ class placeInstance:
         self.alt_names = {}
         self.visited = False
         self.first_weather = None
-        self.description = loc_dict.get(name, {}).get("descrip")
+        self.description = None#loc_dict.get(name, {}).get("descrip")
+        #print(f"self.description: {self.description}\n")
         self.current_loc = None
         self.colour = None ## assign like items on first
         self.cardinals = {}
@@ -287,8 +288,8 @@ class placeRegistry:
             if isinstance(loc, placeInstance) and not cardinal:
                 self.currentPlace = loc
                 if not self.current:
-                    print("No current_cardinal, defaulting to 'north'.")
-                    current_card = "north"
+                    print("No current_cardinal, defaulting to 'south'.")
+                    current_card = "south"
                 else:
                     current_card = self.current.name
                 new_card = self.cardinals[self.currentPlace][current_card]
@@ -316,7 +317,7 @@ class placeRegistry:
 
     def place_by_name(self, loc_name):
 
-        print(f"Loc name in place_by_name: {loc_name}")
+        #print(f"Loc name in place_by_name: {loc_name}")
         loc_inst = self.by_name.get(loc_name.lower())
         if not loc_inst:
             loc_inst = self.by_alt_name.get(loc_name)
@@ -326,6 +327,8 @@ class placeRegistry:
             #print(f"loc_inst.name in place_by_name: {loc_inst.name}")
             return loc_inst
 
+        print(f"self.by_name: {self.by_name}")
+        print(f"by_alt_name: {self.by_alt_name}")
         print(f"LOC INST: {loc_inst}, type: {type(loc_inst)}")
         print(f"Failed to get placeInstance for {loc_name}. Please investigate. Exiting from env_data.")
         exit()
@@ -376,14 +379,16 @@ class placeRegistry:
 locRegistry = placeRegistry()
 
 def add_new_loc(name, reset_current=True):
+
     place = placeInstance(name)
-    locRegistry.places.add(place)
-    locRegistry.by_name[name] = place
-    #print(f"loc_dict[name]::::: {loc_dict[name]}")
+
     if loc_dict[name].get("alt_names"):
         #print(f"loc_dict[name] for {name} has alt names: {loc_dict[name].get("alt_names")}")
         for altname in loc_dict[name]["alt_names"]:
             locRegistry.by_alt_name[altname]=place
+    locRegistry.places.add(place)
+    locRegistry.by_name[name] = place
+    #print(f"loc_dict[name]::::: {loc_dict[name]}")
 
     locRegistry.cardinals[place] = locRegistry.add_cardinals(place)
     ## add cardinals to place instance so it's directly referable.
@@ -416,7 +421,13 @@ def get_descriptions(place):
     #else:
         print("Failed to get self.overview.")
         print(f"Did this part work at least? ``{description_dict.get(place.name)}``")
-
+    #print(f"place.overview::::: {place.overview}")
+    CARDINALS = ["north", "east", "south", "west"]
+    for card in CARDINALS:
+        if locRegistry.cardinals[place].get(card) and isinstance(locRegistry.cardinals[place].get(card), cardinalInstance):
+            card_inst = locRegistry.cardinals[place].get(card)
+            card_inst.description = description_dict[place.name].get(card)
+            #print(f"Card inst description: {card_inst.description}")
 
 def get_loc_descriptions():
     for place in locRegistry.places:
@@ -426,14 +437,14 @@ def get_loc_descriptions():
 if "__main__" == __name__:
 
     initialise_placeRegistry()
-
+    get_loc_descriptions()
     locRegistry.set_current("graveyard")
-    place = locRegistry.place_by_name("graveyard")
+    #place = locRegistry.place_by_name("graveyard")
 
-    place_cardinals = locRegistry.cardinals[place]
+    #place_cardinals = locRegistry.cardinals[place]
 
     #print(place_cardinals["east"].place_name)
-    place = place_cardinals["east"].place
+    #place = place_cardinals["east"].place
     #print(place.name)
     #print("place.cardinals['north'].long_desc: ", place.cardinals["north"].long_desc)
     #print(place.overview)

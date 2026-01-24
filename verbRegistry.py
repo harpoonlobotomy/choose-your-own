@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 #import generate_locations
+from printing import print_green, print_red
 from verb_actions import get_current_loc
 
 print("Verb registry is being run right now.")
@@ -135,10 +136,53 @@ class Parser:
             omit_next = matches_count ## Skip however many successful matches there were, so we don't re-test words confirmed to be part of a compound word.
             #print("omit_next: ", omit_next)
 
-        #else:
-            #print(f"Compound matches: {compound_match}")
-            #print(f"Content: {compound_matches}")
-            #test_print("More than one potential compound match, the system can't cope with that yet.", print_true=False)
+        elif compound_match > 1: ## TODO make this better.
+            from itemRegistry import registry
+            from env_data import locRegistry
+            from set_up_game import game
+            inventory = game.inventory
+            current_loc = locRegistry.current
+            current_loc_items = registry.get_item_by_location(current_loc)
+            local_named = set()
+            matches = set()
+            match = None
+            if inventory:
+                for item in inventory:
+                    local_named.add(item.name)
+            if current_loc_items:
+                for item in current_loc_items:
+                    local_named.add(item.name)
+
+            for item_name in compound_matches: # this just takes the first match, so if 'gold key' and 'iron key' are both there, it will take gold key regardless.
+                print(f"item name in compound matches: {item_name}")
+                print(f"local named (all): {local_named}")
+                if item_name in local_named:
+                    print(f"Item name in local_named: {item_name}")
+                    matches.add(item_name)
+                    match = item_name
+
+            if not match and len(matches) > 1:
+                print("There are multiple items here you could be talking about. Please enter which one you mean:")
+                items = ', '.join(matches)
+                print_green(items)
+                test = input()
+                if test in matches:
+                    match = test
+            else:
+                for i, item in enumerate(compound_matches): # this just takes the first match, so if 'gold key' and 'iron key' are both there, it will take gold key regardless.
+                    if item in local_named:
+                        match = item
+                        break
+            if match:
+                canonical = match
+                kinds.add(word_type)
+                potential_match=True
+                omit_next = matches_count
+
+            else:
+                print(f"Compound matches: {compound_match}")
+                print(f"Content: {compound_matches}")
+                print_red("More than one potential compound match, the system can't cope with that yet.")
 
         return idx, word, kinds, canonical, potential_match, omit_next
 

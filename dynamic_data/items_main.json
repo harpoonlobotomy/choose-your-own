@@ -596,7 +596,7 @@
     "name": "gate",
     "nicename": "a gate",
     "description": "Heavy wrought iron bars with little decoration, held closed with a padlock on a heavy chain.",
-    "item_type": "{'static', 'all_items', 'event', 'container'}",
+    "item_type": "{'static', 'all_items', 'event', 'can_open'}",
     "can_examine": false,
     "breakable": false,
     "alt_names": {},
@@ -642,7 +642,7 @@
     "name": "padlock",
     "nicename": "a padlock",
     "description": "An old dark-metal padlock.",
-    "item_type": "{'can_pick_up', 'fragile', 'all_items', 'trigger', 'container'}",
+    "item_type": "{'can_pick_up', 'fragile', 'all_items', 'trigger', 'can_open'}",
     "can_pick_up": true,
     "item_size": 0,
     "broken_name": null,
@@ -651,9 +651,7 @@
     "alt_names": {},
     "is_hidden": false,
     "trigger_type": "plot_advance",
-    "starting_children": [
-      "gate"
-    ],
+    "starting_children": null,
     "trigger_target": "graveyard_gate_opens",
     "ownership_container": true,
     "is_exhausted": false,

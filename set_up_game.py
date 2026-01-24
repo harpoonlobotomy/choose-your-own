@@ -202,7 +202,7 @@ class game:
 
     has_fire = False
 
-    facing_direction = "north"
+    facing_direction = "south"
 
     currency = choices.currency
     carrier = choices.carrier

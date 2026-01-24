@@ -1,6 +1,6 @@
 #script to initialise the verb/item/etc classes just the once, so they can't fuck with each other out of order.
 
-import time
+#import time
 
 
 def initialise_all():
@@ -11,7 +11,7 @@ def initialise_all():
     print("initialised placeregistry")
 
     import itemRegistry
-    itemRegistry.initialise_itemRegistry()
+    event_data = itemRegistry.initialise_itemRegistry()
     print("initialised itemregistry")
 
     env_data.get_loc_descriptions()
@@ -20,4 +20,7 @@ def initialise_all():
     verbRegistry.initialise_verbRegistry()
     print("initialised verbregistry")
 
-    time.sleep(.5)
+    import eventRegistry
+    eventRegistry.initialise_eventRegistry()
+    eventRegistry.add_items_to_events(event_data)
+    #time.sleep(.5)

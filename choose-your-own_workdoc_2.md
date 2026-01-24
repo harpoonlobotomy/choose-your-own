@@ -2029,3 +2029,165 @@ Added a print and apparently it's still trying to add items to testinstances. Ev
 Flagging.
 
 Need to figure out why items from items aren't appearing in locations, but items from item_desc do. I don't /want/ all items to be in the description. I'd thought I corrected the omission but apparently not. Too tired now.
+
+11.10am 24/1/26
+finally got the items from items to be added to the locations, not just item_desc.
+
+Next step: making them interactable. Currently they aren't, because they aren't in the nouns_list used by membrane and the verb registry. so I need to update the nouns list.
+
+Nouns_list comes from
+
+self.nouns_list = list(registry.item_defs.keys())
+
+So I guess when I make an item I just have to make sure it's added to item_defs in itemReg. At least if it's in one of the categories that doesn't draw from that already.
+
+Okay. So that's done now. Iron key now gets added to both item defs and plural words. But, 'pick up key' fails. I assume because there are multiple nouns in plural word dict with 'key', so it fails to pick one.
+
+Okay, that's done. Now it gets local items, asks you to specify if there are multiple possible matches, or chooses the only local one if not. Need to add inventory items to this list, though. That depends on the verb tbh.
+
+well have added the inventory. Still works the same way. It doesn't take the verb into account. Will adapt it later so it does, but for now it still only checks noun viability later.
+
+
+12.21pm
+wait what?
+
+take key
+There are multiple items here you could be talking about. Please enter which one you mean:
+paperclip, gardening mag, severed tentacle, iron key
+
+
+how are paperclip, gardening mag and tentacle == key???
+
+12.25
+Okay fixed it again.
+
+Now I need to look into this mess and see why it fails:
+#   take key
+#   Verb inst name: <verbInstance take (30f6f874-4189-4eb7-a951-07de203ad839)>
+#   noun inst actions: set()
+#   Noun fails: <ItemInstance iron key (1fcb6740-f13c-4d61-9450-33830ef1f023)>, verbname: take
+#   IS NOUN: <ItemInstance iron key (1fcb6740-f13c-4d61-9450-33830ef1f023)>
+#   TAKE: 0 Meaning: accessible
+#   Verb inst name: take
+#   noun inst actions: set()
+#   Noun fails: <ItemInstance iron key (1fcb6740-f13c-4d61-9450-33830ef1f023)>, verbname: take
+#   You can't pick up the iron key.
+
+I did make some changes to the take thing the other day so probably broke something there. Though tbh I did realise it was an absolute disaster at that point.
+
+Hm. Okay so it's an attribute issue. Key isn't having the type keys assigned.
+
+12.33pm
+Ah, it was assigning the flags much later, outside of init. Trying again.
+
+12.37pm
+oh goddamn. Now it's not in local items anymore. wtf......
+
+12.42pm
+Okay so now it's there twice.
+
+It's generating the key twice, immediately once after the other.
+
+
+Item iron key not found in item_defs, generating from blank.
+
+
+Options: ['standard', 'static', 'all_items', 'container', 'key', 'can_pick_up', 'event', 'trigger', 'flooring', 'wall', 'food_drink', 'fragile', 'electronics', 'books_paper', 'can_speak']
+Please enter the default_types you want to assign to `iron key` (eg ' key, can_pick_up, fragile ' )
+key can_pick_up
+PARTS: {'key', 'can_pick_up'}, type: <class 'set'>
+Parts len >1 : {'key', 'can_pick_up'}, type: <class 'set'>
+[init_single] ITEM NAME: iron key
+[init_single] ITEM ENTRY: {'description': 'An iron key, handy for a quest or something, probably.', 'is_key_to': 'padlock', 'is_hidden': False, 'item_type': {'key', 'can_pick_up'}, 'exceptions': {'starting_location': <cardinalInstance south graveyard (17fb3d61-144a-4065-bd47-cb06aa2cc14e)>}}
+
+
+@@@@@@@@@@@@@@@@@ITEM iron key in INIT ITEMINSTANCE@@@@@@@@@@@@@@@
+
+
+definition_key: iron key, attr: {'description': 'An iron key, handy for a quest or something, probably.', 'is_key_to': 'padlock', 'is_hidden': False, 'item_type': {'key', 'can_pick_up'}, 'exceptions': {'starting_location': <cardinalInstance south graveyard (17fb3d61-144a-4065-bd47-cb06aa2cc14e)>}}
+after setting: self.item_type: {'key', 'can_pick_up'}
+VARS before attributes are assigned: {'id': 'dafe8c35-1c64-4303-91fc-b67d6dabb9ff', 'description': 'An iron key, handy for a quest or something, probably.', 'is_key_to': 'padlock', 'is_hidden': False, 'item_type': {'key', 'can_pick_up'}, 'exceptions': {'starting_location': <cardinalInstance south graveyard (17fb3d61-144a-4065-bd47-cb06aa2cc14e)>}, 'name': 'iron key', 'nicename': None, 'colour': None, 'starting_location': <cardinalInstance south graveyard (17fb3d61-144a-4065-bd47-cb06aa2cc14e)>, 'verb_actions': set(), 'location': <cardinalInstance south graveyard (17fb3d61-144a-4065-bd47-cb06aa2cc14e)>, 'alt_names': None}
+self.verb_actions: set()
+
+end of new_item_from_str for <ItemInstance iron key (dafe8c35-1c64-4303-91fc-b67d6dabb9ff)>
+{'id': 'dafe8c35-1c64-4303-91fc-b67d6dabb9ff', 'description': 'An iron key, handy for a quest or something, probably.', 'is_key_to': 'padlock', 'is_hidden': False, 'item_type': {'key', 'can_pick_up'}, 'exceptions': {'starting_location': <cardinalInstance south graveyard (17fb3d61-144a-4065-bd47-cb06aa2cc14e)>}, 'name': 'iron key', 'nicename': None, 'colour': None, 'starting_location': <cardinalInstance south graveyard (17fb3d61-144a-4065-bd47-cb06aa2cc14e)>, 'verb_actions': set(), 'location': <cardinalInstance south graveyard (17fb3d61-144a-4065-bd47-cb06aa2cc14e)>, 'alt_names': None, 'key': True}
+
+
+
+<ItemInstance iron key (dafe8c35-1c64-4303-91fc-b67d6dabb9ff)>
+<cardinalInstance south graveyard (17fb3d61-144a-4065-bd47-cb06aa2cc14e)>
+
+
+
+[init_single] ITEM NAME: iron key
+[init_single] ITEM ENTRY: {'description': 'An iron key, handy for a quest or something, probably.', 'is_key_to': 'padlock', 'is_hidden': False, 'item_type': {'key', 'can_pick_up'}, 'exceptions': {'starting_location': <cardinalInstance south graveyard (17fb3d61-144a-4065-bd47-cb06aa2cc14e)>}}
+
+
+@@@@@@@@@@@@@@@@@ITEM iron key in INIT ITEMINSTANCE@@@@@@@@@@@@@@@
+
+
+definition_key: iron key, attr: {'description': 'An iron key, handy for a quest or something, probably.', 'is_key_to': 'padlock', 'is_hidden': False, 'item_type': {'key', 'can_pick_up'}, 'exceptions': {'starting_location': <cardinalInstance south graveyard (17fb3d61-144a-4065-bd47-cb06aa2cc14e)>}}
+after setting: self.item_type: {'key', 'can_pick_up'}
+VARS before attributes are assigned: {'id': 'f5b51530-6e6e-43cc-a6af-f1dd4e983327', 'description': 'An iron key, handy for a quest or something, probably.', 'is_key_to': 'padlock', 'is_hidden': False, 'item_type': {'key', 'can_pick_up'}, 'exceptions': {'starting_location': <cardinalInstance south graveyard (17fb3d61-144a-4065-bd47-cb06aa2cc14e)>}, 'name': 'iron key', 'nicename': None, 'colour': None, 'starting_location': <cardinalInstance south graveyard (17fb3d61-144a-4065-bd47-cb06aa2cc14e)>, 'verb_actions': set(), 'location': <cardinalInstance south graveyard (17fb3d61-144a-4065-bd47-cb06aa2cc14e)>, 'alt_names': None}
+self.verb_actions: set()
+No target_obj from item defs for <ItemInstance padlock (68781a21-87d8-495b-93a1-34b7e18b8bab)>, looking for iron key
+
+
+Okay, so - in the first round of initial generations:
+
+[('gate', 'item_defs'),
+('gate', 'generate_child from item_defs'),
+('padlock', 'item_defs'),
+('moss', 'item_defs'),
+('dried flowers', 'generate_child from item_defs'),
+('glass jar', 'item_defs'),
+('desiccated skeleton', 'item_defs'),
+('iron key', 'item_from_str'),
+(<ItemInstance padlock (12b6a0fd-56fb-4b84-95ff-0d593ccddefe)>, 'generate key from item_defs')]
+
+
+So I need to formalise the parentage. Unsurprisingly.
+
+How to determine if an item is a child or not.
+
+If we have
+location:
+    north:
+        item_desc:
+            iron key
+        items:
+            irom key
+
+surely, we assume they're the same thing. If there are 2x iron keys in items, then only the first. But if there's one match, we assume they're a match.
+
+Now, if we have
+
+location:
+    north:
+        item_desc:
+            iron key
+        items:
+            irom key (is_key_to: padlock)
+
+    south:
+        items:
+            padlock (requires key: iron_key)
+
+
+Surely we match them by type.
+
+I already make all top-level items first before looking for children. I think I just need to really clean up the child searching. There are far, far too many places I add new items from tbh.
+
+8 different places I call init_single from.
+5 places I call new_item_from_str.
+
+Also that second key doesn't have the attributes properly added. It doesn't get its verb_actions set. No idea why not, that's meant to happen in init now.
+
+Okay. So.
+instead of making them immediately.
+
+We go to each loc/cardinal. Make a dict of the items (top level only). We merge i for i in items_desc and items.
+
+Make all those, with a dict of which ones note being keys_to and keys in general.
+
+Then, children. Now the issue in at least one case is the gate. I think the whole parenting with the gate is broken, I'm going to use the event to maintain its relationship to the padlock, using adjusted parenting is just going to break more things. The event is a fine way of doing it. 

@@ -58,7 +58,8 @@ type_defaults = { # gently ordered - will overwrite earlier attrs with later one
     "fragile": {"broken_name": None, "flammable": False, "can_break": True},
     "electronics": {"can_be_charged": True, "is_charged": False, "takes_batteries": False, "has_batteries": False},
     "books_paper": {'print_on_investigate': True, 'flammable': True, 'can_read': True},
-    "can_speak" : {'can_speak': True, 'speaks_common': True}
+    "can_speak" : {'can_speak': True, 'speaks_common': True},
+    "door_window": {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False}
 
     #{"special_traits: set("dirty", "wet", "panacea", "dupe", "weird", "can_combine")}, # aka random attr storage I'm not using yet
     #"exterior": {"is_interior": False} ## Can be set scene-wide, so 'all parts of 'graveyard east' are exterior unless otherwise mentioned'. (I say 'can', I mean 'will be when I set it up')
