@@ -1178,10 +1178,29 @@ def use_item_w_item(format_tuple, input_dict):
     print(f"Format list: {format_tuple}")
     print(f"Length format list: {len(format_tuple)}")
     ## use x on y
-    verb_entry, noun_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict()
+    verb_entry, noun_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
     if format_tuple == (('verb', 'noun', 'direction', 'noun')):
         if verb_entry["str_name"] == "use" and ((direction_entry and direction_entry["str_name"] == "on") or (semantic_entry and semantic_entry["str_name"] == "with")):
-            closed, locked, locked_have_key = check_lock_open_state(noun_entry["instance"], verb_entry["instance"])
+            actor_noun = get_noun(input_dict)
+            target_noun = get_noun(input_dict, 2)
+            if hasattr(target_noun, "requires_key"):
+                key_is_accessible=False
+                if actor_noun == target_noun.requires_key:
+                    _, container, reason_val, meaning = registry.check_item_is_accessible(actor_noun)
+                    print(f"meaning: {meaning}")
+                    if reason_val in (0, 3, 4, 5, 8):
+                        key_is_accessible=True
+                    _, container, reason_val, meaning = registry.check_item_is_accessible(target_noun)
+                    print(f"meaning: {meaning}")
+                    if reason_val in (0, 3, 4, 5, 8):
+                        if key_is_accessible:
+                            print("You use the key to open the lock.")
+                            print("Though it does't actually do it yet, I'm just testing. This whole thing needs rewriting.")
+                            target_noun.is_locked=False
+                            return
+
+            closed, locked, locked_have_key = check_lock_open_state(actor_noun, verb_entry["instance"])
+            print(f"Actor-noun: {actor_noun}, target-noun: {target_noun}. Closed: {closed}, locked: {locked}, locked and have key: {locked_have_key}")
             if locked_have_key:
                 if noun_entry["instance"].name == input_dict[3]["verb"]["instance"].children:
                     print(f"input_dict[3]['verb']['instance']: {input_dict[3]['verb']['instance']} == child")

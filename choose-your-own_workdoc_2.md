@@ -2207,3 +2207,39 @@ Sounds so simple....
 Am working on item_dict_gen, a separate script to get the data from items_main, generated + input_str type_defaults, and outputs a dict per item-name. then, itemreg can use this, just having a basic draw of all available information, and it can then apply that to whatever instances it needs to.
 
 Also, need to be able to set keys to work for certain types of lock. So 'small gold key' can work for any lock in category x. would be useful going forward. Really need to refine the key/lock setup tbh.
+
+
+5.29
+Not sure where
+#   Applying loc data to item: iron key, item data: ``{'name': 'iron key', 'item_type': "{'can_pick_up', 'key'}", 'can_pick_up': True, 'item_size': 0, 'is_key': True, 'description': 'An iron key, handy for a quest or something, probably.', 'is_key_to': 'padlock', 'is_hidden': False}``, loc data: ``{'iron key': {'description': 'An iron key, handy for a quest or something, probably.', 'is_key_to': 'padlock', 'is_hidden': False}}``
+#   FIELD: iron key
+#   [init_single] ITEM NAME: iron key
+#   [init_single] ITEM ENTRY: {'name': 'iron key', 'item_type': "{'can_pick_up', 'key'}", 'can_pick_up': True, 'item_size': 0, 'is_key': True, 'description': 'An iron key, handy for a quest or something, probably.', 'is_key_to': 'padlock', 'is_hidden': False, 'iron key': False}
+
+"iron key": False is coming from.
+
+5.48pm
+Okay, think I've fixed it, at least that part. Now, can look at and even pick up the iron key correctly.
+
+Now:
+Noun fails: <ItemInstance padlock (02745d80-2d52-4183-a28e-3e075fb70a75)>, verbname: use
+Cannot 'use' the key on the padlock, because both key and padlock fail with verbname 'use'. Need to add the verbaction. Once I can remember how.
+
+Though technically it failed this time because:
+  File "d:\Git_Repos\choose-your-own\verb_actions.py", line 1181, in use_item_w_item
+    verb_entry, noun_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict()
+                                                                                              ~~~~~~~~~~~~~~~~~~~~~^^
+TypeError: get_entries_from_dict() missing 1 required positional argument: 'input_dict'
+
+
+Okay fixed a little bit more so I can have a more useful print:
+
+Length format list: 4
+More than one `noun`: {'instance': <ItemInstance iron key (f3d454c6-09ee-4c35-9661-1ca2ad2ceefb)>, 'str_name': 'iron key'} already exists, {'instance': <ItemInstance padlock (24de1864-7868-43cb-9f46-c1b397739184)>, 'str_name': 'padlock'} will be ignored.
+MEANING for <ItemInstance iron key (f3d454c6-09ee-4c35-9661-1ca2ad2ceefb)> (5): in inventory
+Cannot process {0: {'verb': {'instance': <verbInstance use (7be1ace6-6b4f-470b-aa9e-6ebeacdc93af)>, 'str_name': 'use'}}, 1: {'noun': {'instance': <ItemInstance iron key (f3d454c6-09ee-4c35-9661-1ca2ad2ceefb)>, 'str_name': 'iron
+key'}}, 2: {'direction': {'instance': None, 'str_name': 'on'}}, 3: {'noun': {'instance': <ItemInstance padlock (24de1864-7868-43cb-9f46-c1b397739184)>, 'str_name': 'padlock'}}} in def use_item_w_item() End of function, unresolved. (Function partially written but doesn't do anything.)
+
+6.04pm
+
+Okay -- so it's been a straight 7 hrs, but - you can now pick up a key, go to a padlock, and use the key to open the padlock. Still needs help but, it's something.

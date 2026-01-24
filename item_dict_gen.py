@@ -54,11 +54,6 @@ class itemGenerator:
         self.by_location[card].append(item)
 
 generator = itemGenerator()
-#NOTE: REMOVE THIS LATER.
-#     ***************************************
-from env_data import initialise_placeRegistry
-initialise_placeRegistry()
-#     ***************************************
 
 generator.complete_location_dict()
 
@@ -86,7 +81,7 @@ def get_type_tags(new_str, item_dict):
 
     if not isinstance(new_str, set):
         new_str = clean_item_types(new_str)
-        #print(f"get_type_tags requires a set. This: {new_str} is type {type(new_str)}")
+
     for category in new_str:
         if category not in type_defaults:
             print(f"Category `{category}` not in type_defaults.")
@@ -96,7 +91,6 @@ def get_type_tags(new_str, item_dict):
                 item_dict[flag] = type_defaults[category][flag]
 
     return item_dict
-
 
 
 def item_def_from_str(item_name:str, item_dict=None):
@@ -138,7 +132,7 @@ def item_def_from_str(item_name:str, item_dict=None):
 
     if not new_item_dict.get("name"):
         new_item_dict["name"] = item_name
-    new_item_dict["item_type"] = new_str # wouldn't be here if it had item types already.
+    new_item_dict["item_type"] = new_str
 
     new_item_dict = get_type_tags(new_str, new_item_dict)
 
@@ -155,7 +149,7 @@ json_to_edit = "dynamic_data/generated_items.json"
 #    gen_items = json.load(file)
 gen_items = {} # not currently using the actual file, just for temp storage.
 
-def get_item_data(item_name, incoming_data=None): # note: no locations here for the minute. This is pure item-def building using available item details from loc_data + item+gen_defs. Use these as bases for instancing the items in itemReg.
+def get_item_data(item_name, incoming_data=None): # note: no locations here. This is pure item-def building using available item details from loc_data + item+gen_defs. Use these as bases for instancing the items in itemReg.
 
     if not incoming_data:
         incoming_data = {}
@@ -178,14 +172,7 @@ def get_item_data(item_name, incoming_data=None): # note: no locations here for 
         item_data = item_def_from_str(item_name)
 
     for field in item_data:
-        if incoming_data.get(field):
-            print(f"Incoming data for {field}: {incoming_data[field]}, item_data for {field}: {item_data[field]}")
-            if field == "description" and item_data[field] != None:
-                cleaned_dict[field] = item_data[field] # use generic descriptions where possible. Maybe change this later, idk.
-            else:
-                cleaned_dict[field] = incoming_data[field]
-        else:
-            cleaned_dict[field] = item_data[field]
+        cleaned_dict[field] = item_data[field]
 
     for field in incoming_data:
         if not cleaned_dict.get(field):
@@ -214,10 +201,7 @@ def find_children(item, item_dict):
 
         for child in item_dict["starting_children"]:
             if not child in generator.item_defs:
-                #print("Child does not exist in item_defs.")
                 get_item_data(child)
-            #else:
-                #print(f"Child exists. {generator.item_defs[child]}")
 
     if item_dict.get("requires_key") and item_dict["requires_key"] != None:
         generator.requires_key[item] = item_dict
@@ -226,86 +210,12 @@ def find_children(item, item_dict):
             print(f"Required key name is not a string: {required_keyname}. Hard exit.")
             exit()
         else:
-            #print(f"{item} requires the key: {required_keyname}")
             if not generator.item_defs.get(required_keyname):
-                #print(f"Key {required_keyname} doesn't exist in itemdefs yet. Creating the def.")
                 get_item_data(required_keyname)
-            #else:
-                #print(f"{required_keyname} already exists in the item_defs.")
 
     ## I think that's fine. I'm very unlikely to ever say 'this is a child of x' without putting it in x, or say 'this is the key to 'y' without saying 'y needs this key'. This is better for now I think.
     # Either way, the itemReg is the one that figures out if an /instance/ is correctly matched. This is just making sure the data is available, separately.
-"""
-def clean_relationships(self): # not children anymore,  that's elsewhere. Right now just keys, will expand to events once there are events to clean.
 
-    #print(f":: Clean children:: ")
-    target_flags = ("contained_in", "requires_key", "event_key", "trigger_target")
-
-    def cleaning_loop():
-
-        # applies instances to children/keys/etc.
-        itemlist = frozenset(self.by_id)
-
-        for item_id in itemlist:
-            item = self.by_id.get(item_id)
-
-            if not item:
-                print(f"Failed to get instance by id in cleaning_loop for instance ({item_id}).")
-                exit() # for now just hard quit if this ever happens, it definitely shouldn't.
-
-            if hasattr(item, "requires_key") and not isinstance(getattr(item, "requires_key"), bool):
-                if isinstance(item.requires_key, ItemInstance):
-                    continue
-                key_found = False
-                for maybe_key in registry.keys:
-                    if hasattr(maybe_key, "unlocks") and getattr(maybe_key, "unlocks"):
-                        continue # so a key will only be assigned to one lock, which I want for now. maybe change this later.
-                    #print(f"MAYBE KEY: {maybe_key}")
-                    if maybe_key.name == getattr(item, "requires_key"):
-                        #print(f"Maybe {maybe_key} is the key to {item}")
-                        #print(f"\n\nkey vars: {vars(maybe_key)}\n lock vars: {vars(item)}\n\n")
-                        if hasattr(maybe_key, "is_key_to") and maybe_key.is_key_to == item.name:
-                            #print(f"maybe_key.is_key_to: {maybe_key.is_key_to}, item.name: {item.name}")
-                            #
-                            print(f"Assigning {maybe_key} to {item}.")
-                            self.locks_keys[item] = maybe_key
-                            self.locks_keys[maybe_key] = item
-                            item.requires_key = maybe_key
-                            setattr(maybe_key, "unlocks", item) ## NOTE: This isn't implemented anywhere, try to remember. inst.unlocks == inst of the lock it opens.
-                            #print(f"Lock: {maybe_key.unlocks}")
-                            #print(f"Key: {item.requires_key}")
-                            key_found = True
-
-                if not key_found:
-                    if generator.item_defs.get(getattr(item, "requires_key")):
-                        target_obj = self.init_single(getattr(item, "requires_key"), generator.item_defs.get(getattr(item, "requires_key")))
-                        all_item_names_generated.append((item, "generate key from item_defs"))
-                        print(f"No target_obj from item defs for {item}, looking for {getattr(item, "requires_key")}")
-                    else:
-                        target_obj = use_generated_items(getattr(item, "requires_key"))
-                        if not target_obj:
-                            print(f"No target_obj from item defs or generated, for {item}, looking for {getattr(item, "requires_key")}")
-                            target_obj = new_item_from_str(item_name=getattr(item, "requires_key"))
-                            all_item_names_generated.append(({getattr(item, "requires_key")}, "generate key from str"))
-                        else:
-                            print(f"generated key from generated items but no actual instance I think: {target_obj}")
-
-                    if target_obj:
-                        item.requires_key = target_obj
-                    else:
-                        print(f"Failed to find key for {item}'s {item.requires_key}.")
-                        exit()
-
-    starting_count = len(self.instances)
-
-    try:
-        cleaning_loop()
-    except Exception as E:
-        print(f"Exception: {E}")
-
-    if len(self.instances) == starting_count:
-        print()#"Huh, count is the same. This may or may not matter; only really matters if you were expecting a new item to be dynamically generated.")
-"""
 def get_items_from_card(loc, cardinal, loc_data):
 
     desc_items = {}
@@ -328,33 +238,25 @@ def get_items_from_card(loc, cardinal, loc_data):
             continue
         if item in desc_items:
             if item in added:
-                # treat as non-match
                 print("This item was already added, but there's another one. I can't deal with this.")
             else:
                 added.add(item)
             print(f"Item in both lists: {item}")
             item_desc = desc_items[item].get(item)
             item_attr = other_items[item].get(item)
-#            if "[[]]" in item_desc:
+
             if item_desc:
                 item_attr["description"] = item_desc
             loc_items_dict[loc][cardinal][item] = item_attr
         else:
             loc_items_dict[loc][cardinal][item] = other_items[item].get(item)
         get_item_data(item, loc_items_dict[loc][cardinal][item])
-        #loc_items_dict[loc][cardinal][item]
-        #generator.assign_item_to_loc(loc, cardinal, item)
 
     for item in desc_items:
         if not item in other_items and item != "" and item != "generic":
             loc_items_dict[loc][cardinal][item] = desc_items[item].get(item)
             # Should get item data here, maybe. We're just adding what's in generated/item_defs. Only downside is it won't update if an item is made but not added to generated right away. But we're not generating anything here, so that's alright actually.
             get_item_data(item, loc_items_dict[loc][cardinal][item])
-            #generator.item_defs[item] = item_data#loc_items_dict[loc][cardinal][item]
-            #generator.assign_item_to_loc(loc, cardinal, item)
-
-
-
 
 def get_loc_items_dict(loc=None, cardinal=None):
 
@@ -554,38 +456,51 @@ def get_loc_items_dict(loc=None, cardinal=None):
         loc_items_dict[loc] = {}
         get_cardinal_items(loc, cardinal)
 
-    #registry.clean_relationships()
-#
-    #if registry.new_parents and registry.new_parents != None: # in case something slipped by, this should never be needed though.
-    #    registry.generate_children_for_parent()
+def get_all_other_items():
 
+    for item in item_defs:
+        if item in generator.item_defs:
+            continue
+        get_item_data(item, item_defs[item])
 
-get_loc_items_dict(loc=None, cardinal=None)
-counter = 0
-while True and counter < 10:
-    print("Checking for children: ")
-    keys = list(generator.item_defs)
-    key_len = len(keys)
-    for item in keys:
-        find_children(item, generator.item_defs[item])
-    new_key_len = len(list(generator.item_defs))
-    counter += 1
-    if key_len == new_key_len:
-        break
+def init_item_dict():
+    get_loc_items_dict(loc=None, cardinal=None)
+    get_all_other_items() # just ensures that every item in item_defs is covered.
 
-#print(generator.item_defs)
-def serialise_item_defs():
-    for item, field in generator.item_defs.items():
-        for k, v in field.items():
-            if isinstance(v, set):
-                generator.item_defs[item][k] = str(v) # hate that I'm making this a string but the sets aren't serialisable for json apparently.
-                #print(f"k: {k}, type: {type(k)}")
-                #print(f"v: {generator.item_defs[item][k]}, type: {type(generator.item_defs[item][k])}")
-        #print(f"item {item}, field: {field}, type: {type(field)}")
-        #print(f"item {item}, field: {field}, type: {type(item[field])}")
+    counter = 0
+    while True and counter < 10:
+        print(f"Checking for children: round {counter}")
+        keys = list(generator.item_defs)
+        key_len = len(keys)
+        for item in keys:
+            find_children(item, generator.item_defs[item])
+        new_key_len = len(list(generator.item_defs))
+        counter += 1
+        if key_len == new_key_len:
+            print("All children found.")
+            break
 
-update_gen_items = True
-if update_gen_items:
-    serialise_item_defs()
-    with open(json_to_edit, 'w') as file:
-        json.dump(generator.item_defs, file, indent=2)
+    def serialise_item_defs():
+        for item, field in generator.item_defs.items():
+            for k, v in field.items():
+                if isinstance(v, set):
+                    generator.item_defs[item][k] = str(v) # hate that I'm making this a string but the sets aren't serialisable for json apparently.
+                    #print(f"k: {k}, type: {type(k)}")
+                    #print(f"v: {generator.item_defs[item][k]}, type: {type(generator.item_defs[item][k])}")
+            #print(f"item {item}, field: {field}, type: {type(field)}")
+            #print(f"item {item}, field: {field}, type: {type(item[field])}")
+
+    update_gen_items = True
+    if update_gen_items:
+        serialise_item_defs()
+        with open(json_to_edit, 'w') as file:
+            json.dump(generator.item_defs, file, indent=2)
+
+if __name__ == "__main__":
+    #NOTE: REMOVE THIS LATER. Once it's instated within the initialisation process.
+    #     ***************************************
+    from env_data import initialise_placeRegistry
+    initialise_placeRegistry()
+    #     ***************************************
+
+    init_item_dict()
