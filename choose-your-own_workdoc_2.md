@@ -2190,4 +2190,20 @@ We go to each loc/cardinal. Make a dict of the items (top level only). We merge 
 
 Make all those, with a dict of which ones note being keys_to and keys in general.
 
-Then, children. Now the issue in at least one case is the gate. I think the whole parenting with the gate is broken, I'm going to use the event to maintain its relationship to the padlock, using adjusted parenting is just going to break more things. The event is a fine way of doing it. 
+Then, children. Now the issue in at least one case is the gate. I think the whole parenting with the gate is broken, I'm going to use the event to maintain its relationship to the padlock, using adjusted parenting is just going to break more things. The event is a fine way of doing it.
+
+1.09pm
+Going to redo how parenting is done, and clean up item generation. Make dicts first, collect everything, then process top level. Then collect children, allocate parentage, create children when necessary.
+
+Sounds so simple....
+
+
+
+3.38 remember to do something with this later.
+"event_ended_desc":
+
+(items_main.json, now that gate isn't a container it can't have a no-children message so it needs to be here instead. When the event ends, change the item's description accordingly in itemReg.)
+
+Am working on item_dict_gen, a separate script to get the data from items_main, generated + input_str type_defaults, and outputs a dict per item-name. then, itemreg can use this, just having a basic draw of all available information, and it can then apply that to whatever instances it needs to.
+
+Also, need to be able to set keys to work for certain types of lock. So 'small gold key' can work for any lock in category x. would be useful going forward. Really need to refine the key/lock setup tbh.

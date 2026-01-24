@@ -1296,7 +1296,9 @@ def initialise_itemRegistry():
 
     registry.complete_location_dict()
 
-    get_loc_items_dict(loc=None, cardinal=None)
+### NOTE: Need to cull a heap from itemReg, because it no longer needs to access the item def JSONs and build the item defs itself. What it does need to do is go through loc_data and create the required instances, using the item defs built by item_dict_gen. That's all it needs to focus on. Getting those relationships right and /only generating the instances it needs to/.
+
+    #get_loc_items_dict()
 
     plural_word_dict = {}
 
