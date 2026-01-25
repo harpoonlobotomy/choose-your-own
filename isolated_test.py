@@ -33,7 +33,7 @@ def slowLines(txt, speed=0.1, end=None, edit=False):
     do_print(text=txt, end=end, do_edit_list=edit)
 
 def do_print(txt, speed=0.001, end=None, edit=False): # Just keeping this here for now as a way to maintain that once, these calls were different from the line prints.
-    do_print(text=txt, do_edit_list=edit)
+    print(text=txt, do_edit_list=edit)
 
 def get_visited_map():
 

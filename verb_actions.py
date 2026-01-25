@@ -8,6 +8,7 @@ from interactions import item_interactions
 from interactions.player_movement import new_relocate, turn_around
 from itemRegistry import ItemInstance, registry
 from misc_utilities import assign_colour, col_list, generate_clean_inventory, is_plural_noun
+from printing import print_yellow
 from set_up_game import game
 from verb_definitions import directions, semantics, formats
 
@@ -261,13 +262,25 @@ def get_entries_from_dict(input_dict):
      #################################
 ## Simple 'get this element' functions. ##
 
+def get_cardinal(input_dict:dict) -> ItemInstance:
+    logging_fn()
+    for i, _ in enumerate(input_dict):
+        if input_dict[i].get("cardinal"):
+            return list(input_dict[i].values())[0]["instance"]
+
+def get_location(input_dict:dict) -> ItemInstance:
+    logging_fn()
+    for i, _ in enumerate(input_dict):
+        if input_dict[i].get("location"):
+            return list(input_dict[i].values())[0]["instance"]
+
 def get_verb(input_dict:dict) -> ItemInstance:
     logging_fn()
     if input_dict[0].get("verb"):
         #print(f"{input_dict[0]} is a verb, confirmed in get_verb")
         return list(input_dict[0].values())[0]["instance"] # works as long as verb is always first
 
-    print(f"get_verb failed to find the verb instance: {input_dict}")
+    #print(f"get_verb failed to find the verb instance: {input_dict}")
 
 def get_noun(input_dict:dict, x_noun:int=None) -> ItemInstance:
     logging_fn()
@@ -284,7 +297,7 @@ def get_noun(input_dict:dict, x_noun:int=None) -> ItemInstance:
                 else:
                     return entry["instance"]
 
-    print(f"get_noun failed to find the noun instance: {input_dict}")
+    #print(f"get_noun failed to find the noun instance: {input_dict}")
 
 def get_location(input_dict:dict) -> cardinalInstance|placeInstance:
     logging_fn()
@@ -295,7 +308,7 @@ def get_location(input_dict:dict) -> cardinalInstance|placeInstance:
             if "location" in kind:
                     return entry["instance"]
 
-    print(f"get_location failed to find the location instance: {input_dict}")
+    #print(f"get_location failed to find the location instance: {input_dict}")
 
 
 def get_dir_or_sem_if_singular(input_dict:dict) -> str:
@@ -461,7 +474,7 @@ def meta(format_tuple, input_dict):
                 meta_verb = entry["str_name"]
 
     if meta_verb == "help":
-        print("Type words to progress, 'i' for 'inventory', 'd' to describe the environment, 'settings' for settings, 'show visited' to see where you've been this run: - that's about it.")
+        print_yellow("Type words to progress, 'i' for 'inventory', 'd' to describe the environment, 'settings' for settings, 'show visited' to see where you've been this run: - that's about it.")
         return
     elif meta_verb == "settings":
         from choose_a_path_tui_vers import init_settings
@@ -484,6 +497,15 @@ def meta(format_tuple, input_dict):
     elif meta_verb == "update_json":
         from testclass import add_confirms
         add_confirms()
+        return
+    else:
+        from interactions.meta_commands import meta_control
+
+        noun = get_noun(input_dict)
+        location = get_location(input_dict)
+        cardinal = get_cardinal(input_dict)
+
+        meta_control(format_tuple, noun, location, cardinal)
         return
     print(f"Cannot process {input_dict} in def meta() End of function, unresolved. (Function not yet written)")
 
@@ -1353,7 +1375,7 @@ def router(viable_format, inst_dict):
 
     function_dict = {
         "meta": meta,
-        "attributes": item_attributes,
+        "attributes": item_attributes, # delete this later.
         "go": go,
         "leave": go,
 

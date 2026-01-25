@@ -2322,3 +2322,21 @@ Really should just replace the print(loc.current.long_desc) calls with a functio
 #        get_loc_descriptions(place=loc.currentPlace)
 #        print(loc.current.long_desc)
 each time, but it works.
+
+4.54 setting up the item attr editing more formally. meta_commands is going to be useful. Currently it only edits the live data but will give it the option to add the edits to generated or proper dict.
+
+NOTE: I need to find where it's adding 'key' as an attr. I already have 'is_key', I don't need 'key' too. Also the annoying thing where it adds the item's name as a field, so iron key has 'iron key': True. So silly and serves no purpose, need to figure out where that's coming from.
+
+6.22pm
+ 'name': 'gate',
+ 'nicename': 'gate',
+ 'padlock': {'event': 'graveyard_gate_opens',
+             'event_key': True,
+             'is_locked': True,
+             'key_is_placed_elsewhere': True,
+             'requires_key': 'iron key'},
+ 'requires_key': False,
+ 'starting_location': <cardinalInstance north graveyard (d9b99560-f884-4d7f-ab1e-29bcc63edd34)>,
+ 'verb_actions': {'can_be_opened', 'can_be_locked'}}
+
+ Huh. Somewhere (assumedly the parenting), it's adding the parent data to the key? Maybe what's happening with the iron key, too. Weeeierd. Need to look into this tomorrow.

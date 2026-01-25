@@ -15,7 +15,8 @@ meta_verbs = {
     "godmode": {"alt_words": "god"}, # remove this if there's ever a god...?
     "quit": {"alt_words": "q"},
     "show visted": {"alt_words": ""},
-    "update_json": {"alt_words": "update"}
+    "update_json": {"alt_words": "update"},
+    "meta": {"alt_words": ""}
 }
 
 
@@ -54,6 +55,9 @@ formats = {
     ### META ###
     "meta": (meta), #inventory
     "verb_meta": (verb, meta), #open inventory
+    "meta_noun": (meta, noun), #for literally like 'meta key', which I can then use to edit key entry etc. Just a signpost
+    "meta_loc": (meta, location),
+    "meta_car": (meta, car),
     "verb_dir_meta": (verb, direction, meta), #open up inventory
     "verb_noun_dir_meta": (verb, noun, direction, meta), # remove item from inventory == drop item
 
@@ -118,6 +122,9 @@ dir_only = formats["dir"]
 car_only = formats["car"]
 ### 'sem' == semantic operators, eg 'with' in 'combine x with y'.
 meta = formats["meta"]
+meta_noun = formats["meta_noun"]
+meta_loc = formats["meta_loc"]
+meta_car = formats["meta_car"]
 verb_meta = formats["verb_meta"]
 verb_dir_meta = formats["verb_dir_meta"]
 verb_noun_dir_meta = formats["verb_noun_dir_meta"]
@@ -175,6 +182,7 @@ combined_wordphrases = { # maybe something like this, instead of the hardcoded e
 verb_defs_dict = {
     f"attributes": {"alt_words": ["att"], "allowed_null": None, "formats": [verb_noun]},
     ## NOTE: Allowed_null is not used at present. All nulls are treated as equal, and all sem/loc/dirs are treated as viable in all cases. Will need to change this later but for now it works alright.
+    "meta": {"alt_words": [], "allowed_null": None, "formats": [meta_noun, meta_loc, meta_car]},
     "go": {"alt_words":["go to", "approach", "head", "travel"], "allowed_null": None, "formats": [loc_only, loc_car, car_loc, verb_car_loc, verb_loc_car, dir_only, car_only, verb_only, verb_loc, verb_dir, verb_dir_loc, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car]},
 #   ,making 'move' its own verb because it needs to route to both 'push' and 'go'. # Turns out I already had one but used it terribly and still had alt_words directing actions away. So now it's here.
     "move": {"alt_words": ["shift"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun, loc_only, loc_car, car_loc, verb_car_loc, verb_loc_car, dir_only, car_only, verb_only, verb_loc, verb_dir, verb_dir_loc, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car]},

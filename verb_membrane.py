@@ -119,9 +119,10 @@ def get_noun_instances(dict_from_parser, viable_formats):
                     if not noun_inst:
                         suitable_nouns -= 10
                         ### wait wtf it MAKES a new instance to check noun attr???
-                        if name in registry.item_defs:
-                            noun_inst = registry.init_single(name, registry.item_defs[name])
-                    if not noun_inst:
+                        #NOTE cancelled this new item generation for now, I can't imagine why that was here tbh...
+                        #if name in registry.item_defs:
+                        #    noun_inst = registry.init_single(name, registry.item_defs[name])
+                    #if not noun_inst:
                         print(f"No found ItemInstance for {entry}")
                     else:
                         #print(f"Noun inst: {noun_inst}")

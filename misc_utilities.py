@@ -188,8 +188,9 @@ def from_inventory_name(test:str, inst_inventory:list=None) -> ItemInstance:
     cleaned_name,_ = check_name(test)
     #print(f"Test: {test}, cleaned_name: {cleaned_name}")
     for inst in inst_inventory:
-        if inst.name == cleaned_name:
+        if inst.name == cleaned_name: # always returns the first, even if there are multiples. This is fine though I think.
             return inst
+
     #print(f"Inst inventory: {inst_inventory}")
     logging_fn()
     print(f"Could not find inst `{test}` in inst_inventory.")

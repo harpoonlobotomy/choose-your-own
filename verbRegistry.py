@@ -1,5 +1,7 @@
 ## Going to rename this one to make it 'string_parser' or similar. The verbs don't live here, the string is just tokenised and formalised using the wordlists.
 
+#Note for future me: 'meta_commands' is where all meta actions are directed to. 'meta' + <noun/loc/card>' or just <meta> will trigger meta_commands.
+
 import uuid
 
 from dataclasses import dataclass
@@ -173,7 +175,7 @@ class Parser:
                     if item in local_named:
                         match = item
                         break
-                    
+
             if match:
                 canonical = match
                 kinds.add(word_type)
@@ -506,7 +508,7 @@ class Parser:
                                 #print(f"This non-tuple sequence is compatible with verb_instance {verb.name}: {seq}")
                                 viable_sequences.append(seq)
 
-                elif meta_instances:
+                if meta_instances:
                     for entry in meta_instances:
                         #print(f"ENTRY: {entry}")
                         for verb in entry.values():
@@ -523,6 +525,19 @@ class Parser:
                                 #print(f"SEQ: {seq}, type: {type(seq)}")
                                 #print(f"verb.kind: {verb.kind}, type: {type(verb.kind)}") ## so metas options come out as sets, not tuples. Need to look into why. Certainly something I did. #TODO
                                 #print(f"This sequence is compatible with verb_instance {verb.name}: {seq}")
+                                viable_sequences.append(seq)
+                    if not viable_sequences:
+                        meta = meta_instances[0]
+                        #print(f"META: {meta}")
+                        token = meta[0]
+                        #print(f"TOKEN: {token}")
+                        instance = Parser.get_viable_verb(token)
+                        #print(f"INSTANCE: {instance}")
+                        #print(f"instance vars: {vars(instance)}")
+                        if hasattr(instance, "formats"):
+                            #print(f"SEQ: {seq}")
+                            #print(f"INSTANCE FORMATS: {instance.formats}")
+                            if tuple(seq) in instance.formats:
                                 viable_sequences.append(seq)
 
 

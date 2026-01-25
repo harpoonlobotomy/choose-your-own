@@ -75,7 +75,7 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
             if holding_event.event_state == 1:
                 msg = events.play_event_msg("held", holding_event, print_txt=False)
                 print(f"You try to go to the {assign_colour(new_location)}, but... {assign_colour(msg, colour='description')}")
-                print(f"Holding event {holding_event.name} is preventing this movement.")
+                #print(f"Holding event {holding_event.name} is preventing this movement.")
                 return
 
     elif events.travel_is_limited and (new_location and new_location == loc.current.place):
