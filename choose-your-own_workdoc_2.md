@@ -2340,3 +2340,6 @@ NOTE: I need to find where it's adding 'key' as an attr. I already have 'is_key'
  'verb_actions': {'can_be_opened', 'can_be_locked'}}
 
  Huh. Somewhere (assumedly the parenting), it's adding the parent data to the key? Maybe what's happening with the iron key, too. Weeeierd. Need to look into this tomorrow.
+
+7.34pm
+Okay, got rid of item-name and 'key'. The issue was it was adding the entire 'items' dict to any items in 'items', not just the portion for that item itself. The 'key' part, for some reason I was manually adding it in init. Both done now.

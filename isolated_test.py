@@ -167,7 +167,8 @@ def run():
     #do_clearscreen()
     playernm = ""
 
-    test_mode=True
+    test_mode=False
+
     if test_mode:
         playernm = "Testbot"
     else:

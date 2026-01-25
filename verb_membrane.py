@@ -159,21 +159,11 @@ def get_noun_instances(dict_from_parser, viable_formats):
         return dict_from_parser
     return None
 
-class Membrane: ## it really holds so much duplicate data, it needs to be trimmed down. I'm not using it like I thought/as was intended.
-    ## To hold the general dicts/lists etc as a central point, so verbRegistry and itemRegistry can get data from item_definitions/verb_definitions from here instead of directly. Also other custom data, like the formats-by-type dict etc.
-    # So to clarify: itemRegistry is all item objects, and currently has item actions but those will be moved out.
-    # verbRegistry is really just for parsing, but the parsing is format + verb based so the name can stay I guess.
-    # membrane will hold the disparate dicts from item defs and verb defs that are required for the later stage of parsing, and to distribute from the main scripts to the parser + side scripts.
-
-
-    ## So - maybe I run Membrane first, use that to init verbR and itemR. Do all that separate to any parsing, just set it all up. /Then/ after that, membrane is the interface between input and all the background processes.
-
+class Membrane:
 
     def __init__(self):
 
-        #from item_definitions import item_defs_dict#, item_actions
         from verb_definitions import get_verb_defs, directions, formats, combined_wordphrases, cardinals
-
         verb_defs_dict, verbs_set = get_verb_defs()
 
         self.key_verb_names = set(verb_defs_dict.keys())
@@ -182,11 +172,6 @@ class Membrane: ## it really holds so much duplicate data, it needs to be trimme
 
         from itemRegistry import registry
         self.nouns_list = list(registry.item_defs.keys())
-
-        # Note: nouns_list does not add instances, it has to find them later. I wonder if I could give it the instances directly and have it use those in the parser. Might make it more complicated through. Not sure. Just an idea.
-
-        #self.nouns_list = list(item_defs_dict.keys()) ## prev. 'nouns_list'
-        #self.item_action_options = item_actions ### Is this ever used? I think only for get_item_actions in itemregistry, not here. Use the instance flags instead, that's what they're for.
 
         from env_data import loc_dict
         self.locations = list(loc_dict.keys())
@@ -219,9 +204,6 @@ class Membrane: ## it really holds so much duplicate data, it needs to be trimme
             return new_format_dict
 
         self.formats = formats
-        #self.format_sublists = get_format_sublists(formats) ## these aren't used /at all/
-
-
 
 membrane = Membrane()
 
@@ -263,11 +245,9 @@ def run_membrane(input_str=None):
         if inst_dict:
             from verb_actions import router
             response = router(viable_format, inst_dict)
-
         return response
 
     from config import run_tests
-
 
     if run_tests:
         from time import sleep

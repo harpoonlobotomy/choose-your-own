@@ -242,7 +242,7 @@ def get_items_from_card(loc, cardinal, loc_data):
                 print("This item was already added, but there's another one. I can't deal with this.")
             else:
                 added.add(item)
-            print(f"Item in both lists: {item}")
+            #print(f"Item in both lists: {item}")
             item_desc = desc_items[item].get(item)
             item_attr = other_items[item].get(item)
 
@@ -332,7 +332,7 @@ def init_item_dict():
                     #print(f"v: {generator.item_defs[item][k]}, type: {type(generator.item_defs[item][k])}")
             #print(f"item {item}, field: {field}, type: {type(field)}")
             #print(f"item {item}, field: {field}, type: {type(item[field])}")
-                
+
 
     update_gen_items = True
     if update_gen_items:

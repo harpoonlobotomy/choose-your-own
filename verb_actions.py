@@ -507,7 +507,6 @@ def meta(format_tuple, input_dict):
 
         meta_control(format_tuple, noun, location, cardinal)
         return
-    print(f"Cannot process {input_dict} in def meta() End of function, unresolved. (Function not yet written)")
 
 def go(format_tuple, input_dict): ## move to a location/cardinal/inside
     logging_fn()
@@ -564,10 +563,10 @@ def leave(format_tuple, input_dict):
     print(f"Cannot process {input_dict} in def leave() End of function, unresolved. (Function not yet written)")
 
 
-def look(format_tuple, input_dict):
+def look(format_tuple=None, input_dict=None):
     logging_fn()
 
-    if format_tuple == tuple(("verb", "sem")) and not input_dict:
+    if not format_tuple or (format_tuple == tuple(("verb", "sem")) and not input_dict):
         from misc_utilities import look_around
         look_around()
         return

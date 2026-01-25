@@ -1,4 +1,118 @@
 {
+  "padlock": {
+    "name": "padlock",
+    "nicename": "a padlock",
+    "description": "An old dark-metal padlock.",
+    "item_type": "{'can_pick_up', 'fragile', 'all_items', 'trigger', 'can_open'}",
+    "can_pick_up": true,
+    "item_size": 0,
+    "broken_name": "broken padlock",
+    "flammable": false,
+    "can_break": true,
+    "alt_names": {},
+    "is_hidden": false,
+    "trigger_type": "plot_advance",
+    "trigger_target": "graveyard_gate_opens",
+    "is_exhausted": false,
+    "is_open": false,
+    "can_be_opened": true,
+    "can_be_closed": true,
+    "can_be_locked": true,
+    "is_locked": true,
+    "requires_key": "iron key",
+    "event_key": true,
+    "event": "graveyard_gate_opens",
+    "key_is_placed_elsewhere": true
+  },
+  "gate": {
+    "name": "gate",
+    "nicename": "a gate",
+    "description": "Heavy wrought iron bars with little decoration, held closed with a padlock on a heavy chain.",
+    "item_type": "{'static', 'all_items', 'event', 'can_open'}",
+    "can_examine": false,
+    "breakable": false,
+    "alt_names": {},
+    "is_hidden": false,
+    "event_ended_desc": "Heavy wrought iron bars with little decoration, now slightly ajar.",
+    "event": "graveyard_gate_opens",
+    "event_type": "item_triggered",
+    "event_key": null,
+    "is_open": false,
+    "can_be_opened": true,
+    "can_be_closed": true,
+    "can_be_locked": true,
+    "is_locked": true,
+    "requires_key": false,
+    "event_item": true
+  },
+  "desiccated skeleton": {
+    "name": "desiccated skeleton",
+    "nicename": "a desiccated skeleton",
+    "description": "A sunbleached skeleton, with most of its bones present.",
+    "item_type": "{'container', 'all_items', 'static', 'event', 'fragile'}",
+    "is_open": false,
+    "can_be_opened": true,
+    "can_be_closed": true,
+    "can_be_locked": true,
+    "is_locked": true,
+    "requires_key": false,
+    "starting_children": null,
+    "container_limits": 4,
+    "name_no_children": null,
+    "description_no_children": null,
+    "alt_names": {},
+    "is_hidden": true,
+    "can_examine": false,
+    "breakable": false,
+    "event": null,
+    "event_type": "item_triggered",
+    "event_key": null,
+    "broken_name": null,
+    "flammable": false,
+    "can_break": true,
+    "event_item": null
+  },
+  "moss": {
+    "name": "a few moss clumps",
+    "description": "a few clumps of mostly green moss.",
+    "item_type": "{'can_pick_up', 'all_items'}",
+    "alt_names": {},
+    "is_hidden": false,
+    "can_pick_up": true,
+    "item_size": "a_few_marbles",
+    "special_traits": "After 3 ingame days, after being picked up and kept in inventory, will dry. If dry, no longer suitable for commerce with bridge goblin."
+  },
+  "glass jar": {
+    "name": "a glass jar with flowers",
+    "description": "a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.",
+    "item_type": "{'can_pick_up', 'container', 'all_items'}",
+    "alt_names": {},
+    "is_hidden": false,
+    "is_open": true,
+    "can_be_opened": false,
+    "can_be_closed": false,
+    "can_be_locked": false,
+    "is_locked": false,
+    "requires_key": false,
+    "starting_children": [
+      "dried flowers"
+    ],
+    "container_limits": "smaller_than_apple",
+    "name_no_children": "an empty glass jar",
+    "description_no_children": "a glass jar, now empty aside from some bits of debris.",
+    "can_pick_up": true,
+    "item_size": "smaller_than_basketball"
+  },
+  "iron key": {
+    "name": "iron key",
+    "item_type": "{'key', 'can_pick_up'}",
+    "is_key": true,
+    "can_pick_up": true,
+    "item_size": 0,
+    "description": "An iron key, handy for a quest or something, probably.",
+    "is_key_to": "padlock",
+    "is_hidden": false
+  },
   "gold key": {
     "name": "a gold key",
     "item_type": "{'key', 'can_pick_up', 'all_items'}",
@@ -113,27 +227,6 @@
     "can_pick_up": true,
     "item_size": "smaller_than_apple"
   },
-  "glass jar": {
-    "name": "a glass jar with flowers",
-    "description": "a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.",
-    "item_type": "{'can_pick_up', 'container', 'all_items'}",
-    "alt_names": {},
-    "is_hidden": false,
-    "is_open": true,
-    "can_be_opened": true,
-    "can_be_closed": true,
-    "can_be_locked": true,
-    "is_locked": true,
-    "requires_key": false,
-    "starting_children": [
-      "dried flowers"
-    ],
-    "container_limits": "smaller_than_apple",
-    "name_no_children": "an empty glass jar",
-    "description_no_children": "a glass jar, now empty aside from some bits of debris.",
-    "can_pick_up": true,
-    "item_size": "smaller_than_basketball"
-  },
   "dried flowers": {
     "name": "some dried flowers",
     "description": "a bunch of old flowers, brittle and pale; certainly not as vibrant as you imagine they once were.",
@@ -144,18 +237,7 @@
     "item_size": "smaller_than_apple",
     "broken_name": null,
     "flammable": true,
-    "can_break": true,
-    "can_remove_from": "glass jar"
-  },
-  "moss": {
-    "name": "a few moss clumps",
-    "description": "a few clumps of mostly green moss.",
-    "item_type": "{'can_pick_up', 'all_items'}",
-    "alt_names": {},
-    "is_hidden": false,
-    "can_pick_up": true,
-    "item_size": "a_few_marbles",
-    "special_traits": "After 3 ingame days, after being picked up and kept in inventory, will dry. If dry, no longer suitable for commerce with bridge goblin."
+    "can_break": true
   },
   "headstone": {
     "name": "a carved headstone",
@@ -183,7 +265,7 @@
   "window": {
     "name": "a window",
     "description": "a window, facing out of the hotel room and down over the street below. Currently closed.",
-    "item_type": "{'container', 'all_items'}",
+    "item_type": "{'can_open', 'all_items'}",
     "alt_names": {},
     "is_hidden": false,
     "is_open": false,
@@ -191,11 +273,7 @@
     "can_be_closed": true,
     "can_be_locked": true,
     "is_locked": true,
-    "requires_key": false,
-    "starting_children": null,
-    "container_limits": 4,
-    "name_no_children": null,
-    "description_no_children": null
+    "requires_key": false
   },
   "carved stick": {
     "name": "a spiral-carved stick",
@@ -278,7 +356,7 @@
     "item_size": "a_few_marbles",
     "can_be_charged": true,
     "is_charged": false,
-    "takes_batteries": false,
+    "takes_batteries": true,
     "has_batteries": false,
     "can_combine": null,
     "combine_with": [
@@ -290,7 +368,7 @@
   "fish food": {
     "name": "a jar of fish food",
     "description": "It's a fish food",
-    "item_type": "{'can_pick_up', 'all_items'}",
+    "item_type": "{'can_pick_up', 'all_items', 'food_drink}",
     "alt_names": {},
     "is_hidden": false,
     "can_pick_up": true,
@@ -299,7 +377,11 @@
     "combine_with": [
       "fish_tank, river"
     ],
-    "loot_type": "starting"
+    "loot_type": "starting",
+    "can_consume": true,
+    "can_spoil": true,
+    "is_safe": true,
+    "effect": null
   },
   "anxiety meds": {
     "name": "a bottle of anxiety meds",
@@ -508,14 +590,21 @@
   "cabinet": {
     "name": "cabinet",
     "description": "A cabinet with something weird about it.",
-    "item_type": "{'event', 'static', 'all_items'}",
+    "item_type": "{'event', 'static', 'all_items', 'can_open'}",
     "can_examine": true,
     "breakable": true,
     "alt_names": {},
     "is_hidden": false,
     "event": null,
     "event_type": "item_triggered",
-    "event_key": null
+    "event_key": null,
+    "is_open": false,
+    "can_be_opened": true,
+    "can_be_closed": true,
+    "can_be_locked": true,
+    "is_locked": true,
+    "requires_key": false,
+    "event_item": null
   },
   "locked box": {
     "name": "locked box",
@@ -540,17 +629,27 @@
     "name": "a fresh grave",
     "description": "a recently filled grave.",
     "nicename": "a grave",
-    "item_type": "{'static', 'all_items'}",
+    "item_type": "{'static', 'all_items', 'container'}",
     "alt_names": {},
     "is_hidden": false,
     "can_examine": false,
-    "breakable": false
+    "breakable": false,
+    "is_open": false,
+    "can_be_opened": true,
+    "can_be_closed": true,
+    "can_be_locked": true,
+    "is_locked": true,
+    "requires_key": false,
+    "starting_children": null,
+    "container_limits": 4,
+    "name_no_children": null,
+    "description_no_children": null
   },
   "raven": {
     "name": "raven",
     "nicename": "a raven",
     "description": "A raven, sleek and black. You're pretty sure it knows your secrets.",
-    "item_type": "{'can_pick_up', 'food_drink' 'all_items', 'can_speak'}",
+    "item_type": "{'can_pick_up', 'food_drink', 'all_items', 'can_speak'}",
     "alt_names": {},
     "is_hidden": false,
     "can_examine": false,
@@ -560,7 +659,9 @@
     "can_consume": true,
     "can_spoil": true,
     "is_safe": true,
-    "effect": null
+    "effect": null,
+    "can_speak": true,
+    "speaks_common": true
   },
   "rocking chair": {
     "name": "a wooden rocking chair",
@@ -592,29 +693,6 @@
     "can_examine": false,
     "breakable": false
   },
-  "gate": {
-    "name": "gate",
-    "nicename": "a gate",
-    "description": "Heavy wrought iron bars with little decoration, held closed with a padlock on a heavy chain.",
-    "item_type": "{'static', 'all_items', 'event', 'can_open'}",
-    "can_examine": false,
-    "breakable": false,
-    "alt_names": {},
-    "is_hidden": false,
-    "name_no_children": null,
-    "description_no_children": "Heavy wrought iron bars with little decoration, now slightly ajar.",
-    "event": null,
-    "event_type": "item_triggered",
-    "event_key": null,
-    "is_open": false,
-    "can_be_opened": true,
-    "can_be_closed": true,
-    "can_be_locked": true,
-    "is_locked": true,
-    "requires_key": false,
-    "starting_children": null,
-    "container_limits": 4
-  },
   "comb": {
     "name": "comb",
     "nicename": "a comb",
@@ -637,33 +715,6 @@
     "breakable": false,
     "alt_names": {},
     "is_hidden": false
-  },
-  "padlock": {
-    "name": "padlock",
-    "nicename": "a padlock",
-    "description": "An old dark-metal padlock.",
-    "item_type": "{'can_pick_up', 'fragile', 'all_items', 'trigger', 'can_open'}",
-    "can_pick_up": true,
-    "item_size": 0,
-    "broken_name": null,
-    "flammable": false,
-    "can_break": true,
-    "alt_names": {},
-    "is_hidden": false,
-    "trigger_type": "plot_advance",
-    "starting_children": null,
-    "trigger_target": "graveyard_gate_opens",
-    "ownership_container": true,
-    "is_exhausted": false,
-    "is_open": false,
-    "can_be_opened": true,
-    "can_be_closed": true,
-    "can_be_locked": true,
-    "is_locked": true,
-    "requires_key": false,
-    "container_limits": 4,
-    "name_no_children": null,
-    "description_no_children": null
   },
   "ornate silver key": {
     "name": "ornate silver key",
@@ -693,32 +744,6 @@
     "is_safe": true,
     "effect": null
   },
-  "desiccated skeleton": {
-    "name": "desiccated skeleton",
-    "nicename": "a desiccated skeleton",
-    "description": "A sunbleached skeleton, with most of its bones present.",
-    "item_type": "{'container', 'all_items', 'static', 'event', 'fragile'}",
-    "is_open": false,
-    "can_be_opened": true,
-    "can_be_closed": true,
-    "can_be_locked": true,
-    "is_locked": true,
-    "requires_key": false,
-    "starting_children": null,
-    "container_limits": 4,
-    "name_no_children": null,
-    "description_no_children": null,
-    "alt_names": {},
-    "is_hidden": false,
-    "can_examine": false,
-    "breakable": false,
-    "event": null,
-    "event_type": "item_triggered",
-    "event_key": null,
-    "broken_name": null,
-    "flammable": false,
-    "can_break": true
-  },
   "grandfather clock": {
     "name": "grandfather clock",
     "nicename": "a grandfather clock",
@@ -740,5 +765,12 @@
     "container_limits": 4,
     "name_no_children": null,
     "description_no_children": null
+  },
+  "old gold key": {
+    "name": "old gold key",
+    "item_type": "{'key', 'can_pick_up'}",
+    "is_key": true,
+    "can_pick_up": true,
+    "item_size": 0
   }
 }

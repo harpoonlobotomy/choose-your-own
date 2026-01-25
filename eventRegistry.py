@@ -332,7 +332,7 @@ def add_items_to_events(item_data):
     okay, I like that.
             """
 
-            print(f"event: {event_name}, event.items: {event.items}")
+            #print(f"event: {event_name}, event.items: {event.items}")
 #       'padlock': {'event_name': 'graveyard_gate_opens', 'event_key': True, 'event_item': None, "item_id": 'id number here'}}
 
 def initialise_eventRegistry():

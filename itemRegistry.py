@@ -129,7 +129,7 @@ class ItemInstance:
         for attribute in ("can_pick_up", "can_be_opened", "print_on_investigate", "can_be_locked"):
             if hasattr(self, attribute):
                     self.verb_actions.add(attribute)
-        print(f"self.verb_actions: {self.verb_actions}")
+        #print(f"self.verb_actions: {self.verb_actions}")
         #    self.started_contained_in = attr.get("contained_in")  # parent instance id if inside a container
         #    if self.started_contained_in:
         #        self.contained_in = self.started_contained_in ## do this later like testclass does
@@ -214,8 +214,8 @@ class itemRegistry:
     # -------------------------
 
     def init_single(self, item_name, item_entry): ## Will replace create_instance directly.
-        print(f"[init_single] ITEM NAME: {item_name}")
-        print(f"[init_single] ITEM ENTRY: {item_entry}")
+        #print(f"[init_single] ITEM NAME: {item_name}")
+        #print(f"[init_single] ITEM ENTRY: {item_entry}")
         inst = ItemInstance(item_name, item_entry)
         self.instances.add(inst)
 
@@ -283,8 +283,8 @@ class itemRegistry:
         #        if not hasattr(inst, flag):
         #            setattr(inst, flag, type_defaults[item_type][flag])
 
-        if "key" in inst.item_type:
-            setattr(inst, "key", True)
+        #if "key" in inst.item_type:
+        #    setattr(inst, "key", True)
 
         if hasattr(inst, "is_key"):
             self.keys.add(inst)
@@ -504,7 +504,7 @@ class itemRegistry:
                             if hasattr(maybe_key, "is_key_to") and maybe_key.is_key_to == item.name:
                                 #print(f"maybe_key.is_key_to: {maybe_key.is_key_to}, item.name: {item.name}")
                                 #
-                                print(f"Assigning {maybe_key} to {item}.")
+                                #print(f"Assigning {maybe_key} to {item}.")
                                 self.locks_keys[item] = maybe_key
                                 self.locks_keys[maybe_key] = item
                                 item.requires_key = maybe_key
@@ -1113,23 +1113,24 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, part
 
 def apply_loc_data_to_item(item, item_data, loc_data):
 
-    print(f"Applying loc data to item: {item}, item data: ``{item_data}``, loc data: ``{loc_data}``")
-    for field in loc_data:
-        if field == item:
-            print(f"FIELD: {field}")
-            for attr in loc_data[field]:
-                if attr == item:
-                    continue
-                else:
-                    item_data[field] = loc_data[field][attr]
-        else:
-            item_data[field] = loc_data[field] # just always apply loc_data, right? It should overrule always. I think. Shit.
+    #print(f"\n\nApplying loc data to item: {item}, item data: ``{item_data}``, loc data: ``{loc_data}``")
+    if loc_data:
+        for field in loc_data:
+            if field == item:
+                #print(f"FIELD: {field}")
+                for attr in loc_data[field]:
+                    if attr == item:
+                        continue
+                    else:
+                        item_data[field] = loc_data[field][attr]
+            else:
+                item_data[field] = loc_data[field] # just always apply loc_data, right? It should overrule always. I think. Shit.
     if item_data.get("description"):
         if "[[]]" in item_data["description"]:
             item_data["description"] = item_data["description"].replace("[[]]", item)
 
-    if loc_data.get("starting_location"):
-        print(f"STarting location for {item}: {loc_data["starting_location"]}, ty[e: {type(loc_data["starting_location"])}]")
+    if loc_data and loc_data.get("starting_location"):
+        #print(f"STarting location for {item}: {loc_data["starting_location"]}, ty[e: {type(loc_data["starting_location"])}]")
         item_data["starting_location"] = loc_data["starting_location"]
 
     inst = registry.init_single(item, item_data)
@@ -1191,8 +1192,8 @@ def get_loc_items(loc=None, cardinal=None):
                             print("generator.item_defs: ", generator.item_defs, "\n\n")
                         item_data["description"] = loc_data["item_desc"].get(item)
                         item_data["starting_location"] = card_inst
-                        inst = apply_loc_data_to_item(item, item_data, loc_data["items"]) # maybe this should be inside an init func. Or maybe not.
-                        print(f"GENERATED INST: {inst}")
+                        inst = apply_loc_data_to_item(item, item_data, loc_data["items"].get(item)) # maybe this should be inside an init func. Or maybe not.
+                        #print(f"GENERATED INST: {inst}")
 
 
 
@@ -1211,7 +1212,7 @@ def get_loc_items(loc=None, cardinal=None):
                         item_data["starting_location"] = card_inst
                         inst = apply_loc_data_to_item(item, item_data, loc_data["items"])
                         ### NOTE: Above inits the instance.
-                        print(f"GENERATED INST: {inst}")
+                        #print(f"GENERATED INST: {inst}")
 
 
             if loc_dict[loc.lower()].get(cardinal):
@@ -1267,8 +1268,8 @@ def initialise_itemRegistry():
     #exit()
 
    # initialise_itemRegistry()
-    for item in registry.item_defs:
-        printing.print_yellow(item)
+    #for item in registry.item_defs:
+    #    printing.print_yellow(item)
 
     return registry.event_items
 

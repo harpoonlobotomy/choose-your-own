@@ -7,6 +7,7 @@ def test_main():
         import os
         os.system("cls")
 
+    print("\n\nStarting Run.\n\n")
 
     import initialise_all
 

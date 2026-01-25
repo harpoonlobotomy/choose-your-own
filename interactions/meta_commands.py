@@ -83,19 +83,16 @@ def edit_noun(noun):
 
     fields_to_pop = set()
     new_vars = {}
-    print_blue(":: noun attributes: ")
+    print_blue(" :: noun attributes :: ")
     from pprint import pprint
     pprint(vars(noun))
-    #print("\n Do you want to edit these attributes?")
     if yes_test("\n Do you want to edit these attributes?\n"):
-        #print()
-        test = input("Type an attribute name here, or nothing to edit one by one.\n")
+        test = input("\nType an attribute name here, or 'cancel' to cancel, or nothing to edit one by one.\n")
         if test in vars(noun):
 
             def edit_single_field(noun, field, new_vars, fields_to_pop):
                 if hasattr(noun, field):
                     print(f"Editing `{field}`:")
-                    #print()
                     test = input(f"Please enter the new value for {noun.name}//{field}, type 'delete' to remove this field, or nothing to cancel.\n")
                     if test in ("del", "delete"):
                         fields_to_pop.add(field)
@@ -108,12 +105,14 @@ def edit_noun(noun):
 
             while True:
                 new_vars, fields_to_pop = edit_single_field(noun, test, new_vars, fields_to_pop)
-                #print()
                 test = input("Do you want to edit another field? If yes, enter it here.\n")
                 if test in ("", None, "no", "n"):
                     print("Editing complete.")
                     print(f"New vars: {new_vars}, fields_to_pop: {fields_to_pop}")
                     break
+
+        elif test == "cancel":
+            return
 
         else:
             for item in vars(noun):
@@ -147,6 +146,8 @@ def edit_noun(noun):
             elif "gen" in test:
                 print(f"Updating {noun}'s attributes in {generated_json}")
                 json_file = generated_json
+            else:
+                return
 
             if json_file:
                 import json
@@ -166,16 +167,15 @@ def edit_noun(noun):
                         delattr(noun, item)
                     else:
                         if not isinstance(vars(noun).get(item), str|list|dict|bool):
-                            setattr(noun, item, str(vars(noun).get(item)))# = str(vars(noun).get(item))
+                            setattr(noun, item, str(vars(noun).get(item)))
                         if isinstance(vars(noun).get(item), dict):
                             for val, child in vars(noun).get(item).items():
                                 if not isinstance(child, str|list|dict|bool):
                                     setattr(noun, val, str(child))
-                                    #noun.item[val] = str(child)
 
-                print(f"Final check before writing to {json_file}:")
+                print(f"Final check before writing to {json_file}:\n")
                 pprint(vars(noun))
-                if yes_test(f"Type 'yes' to update {json_file}\n"):
+                if yes_test(f"\nType 'yes' to update {json_file}\n"):
                     existing_data[noun.name] = vars(noun)
                     with open(json_file, 'w') as file:
                         json.dump(existing_data, file, indent=2)
@@ -184,20 +184,25 @@ def edit_noun(noun):
 def meta_control(input_format, noun=None, location=None, cardinal=None):
     print_green(" :::META CONTROL::: ", invert=True)
 
-    json_file = None
     if noun:
         edit_noun(noun)
 
     while True:
         print("\nWhat do you want to do?\n")
-        test = input("\n1: See/edit an item\n2: See/edit a location\n3: See/edit an event\n4: Leave meta control\n")
+        test = input("\n1: See/edit an item\n2: See/edit a location\n3: See/edit an event\n4: Leave meta control\n\n")
         if test in ("1", "2", "3"):
             if test == "1":
                 edit_noun(select_noun())
             else:
+                print("I haven't added anything here yet.")
                 break
+        else:
+            break
 
     print_green("\n :: END META CONTROL :: \n")
+    print()
+    from misc_utilities import look_around
+    look_around()
 
 
 ## "attributes noun" is something I was looking for previously. That's basically something I want for meta command. Instead of 'attributes noun', do 'meta noun', then 'attributes', or 'edit attr', or whatever.
