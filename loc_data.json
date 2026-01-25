@@ -111,9 +111,10 @@
     },
     "east": {
       "item_desc": {
-        "generic": "You see a variety of headstones, most quite worn and decorated by ",
-        "moss": "clumps of [[]]",
-        "glass jar": "a [[]] being used as a vase in front of one of the headstones, with some dried flowers left long ago"
+        "generic": "You see a variety of headstones, most quite worn, and ",
+        "moss": "decorated by clumps of [[]]",
+        "glass jar": "a [[]] being used as a vase in front of one of the headstones, with some dried flowers left long ago",
+        "no_items": "not much else. It's quite empty here..."
       },
       "short_desc": "sit a variety of headstones",
       "long_desc": "You see a variety of headstones, most quite worn and decorated by clumps of moss. There's a glass jar being used as a vase in front of one of the headstones, with dried flowers left long ago.",
@@ -126,7 +127,7 @@
           "description": null,
           "is_hidden": true
         }
-      } 
+      }
     },
     "south": {
       "item_desc": {},

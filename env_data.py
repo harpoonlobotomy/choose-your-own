@@ -412,7 +412,7 @@ def initialise_placeRegistry():
 def get_descriptions(place):
 
     from testing_coloured_descriptions import loc_descriptions
-    description_dict = loc_descriptions() ## now for now I might do this once and reuse it, but practically, we want to regenerate it at each call in case something's changed. For now just implementation is a fine goal.
+    description_dict = loc_descriptions(place) ## now for now I might do this once and reuse it, but practically, we want to regenerate it at each call in case something's changed. For now just implementation is a fine goal.
     place.overview = description_dict.get(place.name).get("overview")
     if not isinstance(place.overview, str):
         place.overview = list(place.overview)[0]
@@ -429,9 +429,16 @@ def get_descriptions(place):
             card_inst.description = description_dict[place.name].get(card)
             #print(f"Card inst description: {card_inst.description}")
 
-def get_loc_descriptions():
-    for place in locRegistry.places:
+def get_loc_descriptions(place=None):
+    if place == None:
+        for place in locRegistry.places:
+            get_descriptions(place)
+    elif place and isinstance(place, placeInstance):
         get_descriptions(place)
+    elif place and isinstance(place, str):
+        place - locRegistry.place_by_name(place)
+        get_descriptions(place)
+
 
 
 if "__main__" == __name__:

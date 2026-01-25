@@ -1,6 +1,7 @@
 #from itemRegistry import registry
 
 #from initialise_all import initialise_all
+from env_data import placeInstance
 import itemRegistry
 from misc_utilities import assign_colour
 from printing import print_green, print_red, print_yellow
@@ -47,6 +48,7 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
             return description
 
     elif d_type == "item_desc":
+        no_items_text = None
         if location == "hotel room":
             location = "city hotel room"
         #print(f" loc_dict[location]: {loc_dict[location]}")
@@ -57,12 +59,14 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                     start = long_dict[item]
                     long_desc.append(start)
                     #print(f"LONG  DESC GENERIC : {long_desc}")
-
+                elif item == "no_items":
+                    no_items_text = long_dict[item]
                 else:
                     if item:
                         if itemRegistry.registry.instances_by_name(item):
                             #print(f"Item in item registry: {item}")
                             local_items = itemRegistry.registry.get_item_by_location(f"{location} {cardinal}")
+                            #print(f"local_items: {local_items}")
                             #print(f"itemRegistry.registry.instances_by_name(item)[0] : {itemRegistry.registry.instances_by_name(item)[0]}")
                             if local_items and itemRegistry.registry.instances_by_name(item)[0] in local_items:
                                 item_inst = itemRegistry.registry.instances_by_name(item)[0]
@@ -81,32 +85,34 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                                 long_desc.append(test)
                                 #print(f"long_desc: {long_desc}")
                                 #print(f"LOCAL ITEMS TEST: {test}")
-                            else:
-                                if "[[]]" in long_dict[item]:
-                                    #print(f'"[[]]" in long_dict[item] but not local: {long_dict[item]}')
-                                    test = long_dict[item].replace("[[]]", assign_colour(item))
-                                    long_dict[item]
-                                    #long_desc.append(test)
-                                else:
-                                    test = long_dict[item]
-                                long_desc.append(test)
+                           # else:
+                            #    if "[[]]" in long_dict[item]:
+                                #print(f'"[[]]" in long_dict[item] but not local: {long_dict[item]}')
+                            #        test = long_dict[item].replace("[[]]", assign_colour(item))
+                            #        long_dict[item]
+                            #        #long_desc.append(test)
+                            #    else:
+                            #        test = long_dict[item]
+                            #    long_desc.append(test)
                                 #print(f"NOT LOCAL TEST: {test}")
 
-                        else:
-                            if "[[]]" in long_dict[item]:
-                                #print(f"item in long_dict[item]: {long_dict[item]}")
-                                test = long_dict[item].replace("[[]]", item) ## for now just do the text, later get the colours back once instances are done.
-                            else:
-                                #print(f"[[]] not in long_dict[item]: {long_dict[item]}")
-                                test = long_dict[item]
-                            long_desc.append(test)
+                        #else:
+                        #    if "[[]]" in long_dict[item]:
+                        #        #print(f"item in long_dict[item]: {long_dict[item]}")
+                        #        test = long_dict[item].replace("[[]]", item) ## for now just do the text, later get the colours back once instances are done.
+                        #    else:
+                        #        #print(f"[[]] not in long_dict[item]: {long_dict[item]}")
+                        #        test = long_dict[item]
+                        #    long_desc.append(test)
                             #print("NOT INSTANCE BY NAME TEST:")
                             #from testclass import testReg
                             #testReg.create_item_by_name(item)
 
-                    else:
-                        print("No entries other than 'generic'.")
+                    #else:
+                    #    print("No entries other than 'generic'.")
                     #print(f"APPENDING TEST: {long_desc}")
+            if len(long_desc) == 1 and no_items_text:
+                long_desc.append(no_items_text)
         else:
             if loc_dict[location].get(cardinal) and loc_dict[location][cardinal].get("long_desc"):
                 long_desc.append(loc_dict[location][cardinal].get("long_desc"))
@@ -114,17 +120,8 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
     return long_desc
 
 def generate_overview(location):
-    format_descrip(d_type="area_descrip", description="", location = None, cardinal = None)
 
-##area_descrip = format_descrip(d_type="area_descrip", description=loc_dict[location]["descrip"])
-#long_desc = format_descrip(d_type="cardinal_descrip")
-#formatted = long_desc
-#
-#if formatted:
-#    items_descrip = (f"{formatted[0]}{', '.join(formatted[1:-1])} and {formatted[-1]}")
-#    new_desc = area_descrip + ".\n" + f"You're facing {assign_colour(cardinal)}. " + items_descrip + "."
-#    print(f"new_desc: \n\n{new_desc}")
-
+    format_descrip(d_type="area_descrip", description="", location = location, cardinal = None)
 
 
 """
@@ -134,11 +131,9 @@ def generate_overview(location):
     self.overview = f"{loc_dict[name]["descrip"]}.{"\033[0m"} \n{self.cardinals["north"].short_desc} to the {assign_colour("north")}. To the {assign_colour("east")} is {self.cardinals["east"].short_desc}, and to the {assign_colour("south")} is {self.cardinals["south"].short_desc}."
 """
 
-def init_loc_descriptions():
+def init_loc_descriptions(place=None):
 
-    ## Will amend this in a bit to allow for single loc/card selection. But good to have it all made initially I think.
-
-    desc_dict = {} # if 4, use all of them. if len(3), skip #3. if len(2, skip #2 + #3)
+    desc_dict = {}
     location_description = {}
     compiled_cardinals = {}
 
@@ -149,6 +144,12 @@ def init_loc_descriptions():
 
 
     for location in loc_dict:
+        if place != None:
+            if isinstance(place, placeInstance):
+                place = place.name
+            if location != place:
+                continue
+
         #print(f"LOCATION IN LOC_DICT: {location}")
         area_descrip = (format_descrip(d_type="area_descrip", description=loc_dict[location]["descrip"], location=location))
         output = []
@@ -195,9 +196,10 @@ def init_loc_descriptions():
                 if long_desc:
                     #print(f"LONG_DESC: {long_desc}, len: {len(long_desc)}")
                     if len(long_desc) == 1:
-                        item_description = long_desc[0]
+                        item_description = long_desc[0]# testing out for when there are no items, need to finish the sentence somehow. Do this better. TODO: Alternate long_desc for 'all items are gone'. This does work for now, though.
                     elif len(long_desc) == 2:
-                        item_description = (f"{long_desc[0]}, and {long_desc[1]}")
+                        #item_description = (f"{long_desc[0]}, and {long_desc[1]}")
+                        item_description = (f"{long_desc[0]}{long_desc[1]}")
                     else:
                         #print(f"LONG DESC len 3: {long_desc}")
                         item_description = (f"{long_desc[0]}{', '.join(long_desc[1:-1])}, and {long_desc[-1]}")
@@ -225,9 +227,9 @@ def init_loc_descriptions():
 
     return location_description, compiled_cardinals
 
-def loc_descriptions():
+def loc_descriptions(place=None):
 
-    location_description, cardinal_descriptions = init_loc_descriptions()
+    location_description, cardinal_descriptions = init_loc_descriptions(place)
     #print(f"LOCATION DESCRIPTION: {location_description}")
     #print(f"CARDINAL DESCRIPTIONS: {cardinal_descriptions}")
 

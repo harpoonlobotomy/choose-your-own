@@ -2243,3 +2243,82 @@ key'}}, 2: {'direction': {'instance': None, 'str_name': 'on'}}, 3: {'noun': {'in
 6.04pm
 
 Okay -- so it's been a straight 7 hrs, but - you can now pick up a key, go to a padlock, and use the key to open the padlock. Still needs help but, it's something.
+
+Now currently, you can just... take the padlock, because it's not parented to anything, and parenting is the only thing that restricts access. Need to actually implement the events. Events hold data re: intances now, but the verb_actions don't do anything about it or feed data back. So will do that next. Need to add a check, in router(), that checks if an affected item is in events.
+That feels wasteful though, each function already checks the noun etc. idk, will think about that. But either way, a check early on. Oh, maybe I can put the noun-is-event-relevant check in the /noun instance getter/. Might be good? Or would repeat too many times. Though that's my problem regardless just because it's so poorly laid out. Anyway. Will think on it.
+
+7.53pm
+Got the event working, ish.
+There's nothing actually testing the padlock/key outside of this final check yet though. I've got a fn to set noun attr through which will check if it's event-relevant, but I need to employ that far more broadly (ie virtually all verbs...? )
+
+
+10.14am 25/1/26
+Events are minimally implemented; unlocking the padlock now enables travel outside the graveyard.
+
+
+11.56am
+NOTE: local descriptions do not update with item removal like they should. I imagine it's because they're only generated once, not repeatedly.
+
+When should they regenerate? Each time they're called? Probably I guess.
+
+also need to exclude hidden items from "You see a few scattered objects in this area:", otherwise they show up when they shouldn't.
+
+Also if there's item_desc, 'long_desc' should never be used. Eventually I should just replace long_desc entirely and use item_desc exclusively, even if there are no items, and just have 'generic' hold the long_desc text. Might do that this afternoon.
+
+
+
+2.25pm
+Working on the location descriptions updating.
+
+Currently:
+
+[[  look east  ]]
+
+You turn to face the eastern graveyard
+local_items: {<ItemInstance gate (db301f06-fe0e-4040-a22f-febe95bcd38f)>, <ItemInstance padlock (0569b409-d1c1-4363-8636-f4cfceb930e0)>}
+itemRegistry.registry.instances_by_name(item)[0] : <ItemInstance gate (db301f06-fe0e-4040-a22f-febe95bcd38f)>
+local_items: {<ItemInstance gate (db301f06-fe0e-4040-a22f-febe95bcd38f)>, <ItemInstance padlock (0569b409-d1c1-4363-8636-f4cfceb930e0)>}
+itemRegistry.registry.instances_by_name(item)[0] : <ItemInstance padlock (0569b409-d1c1-4363-8636-f4cfceb930e0)>
+local_items: {<ItemInstance moss (f8c859ab-95a7-4c22-b6c8-7d0a3210624b)>, <ItemInstance desiccated skeleton (4015fb32-fb2f-4847-ac80-3b7b5617c5ce)>}
+itemRegistry.registry.instances_by_name(item)[0] : <ItemInstance moss (f8c859ab-95a7-4c22-b6c8-7d0a3210624b)>
+local_items: {<ItemInstance moss (f8c859ab-95a7-4c22-b6c8-7d0a3210624b)>, <ItemInstance desiccated skeleton (4015fb32-fb2f-4847-ac80-3b7b5617c5ce)>}
+itemRegistry.registry.instances_by_name(item)[0] : <ItemInstance glass jar (88a3ab4a-07d2-4d67-b265-9a67b7b1c8f1)>
+You're facing east. You see a variety of headstones, most quite worn and decorated by , and clumps of moss.
+
+vs
+
+[[  look around  ]]
+
+
+You see a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+The entrance gates are to the north. To the east sit a variety of headstones, to the south stands a mausoleum, and to the west is what looks like a work shed of some kind.
+
+You're facing east. You see a variety of headstones, most quite worn and decorated by clumps of moss, and a glass jar being used as a vase in front of one of the headstones, with some dried flowers left long ago.
+
+You see a few scattered objects in this area:
+   moss
+
+So, two issues:
+
+1: in 'look around', the glass jar is still present.
+2: in 'look east', the glass jar is removed, but the output formatting is acting as if the glass jar was still present.
+
+
+Issue 1:
+    'look_around' == misc_utilities > def look_around.
+    look_around doesn't call get_loc_descriptions, so no update happens.
+    Fixed now, but it still prints "You see a few scattered objects in this area:" even if there are no items to print, it's checking the wrong thing. Or not checking anything, I don't remember.
+
+
+Issue 2:
+    Formatting should be set by the length of items in long_desc. But long_desc counts the generic description statement as 1, so it's always accounting for one more.
+    Fixed now. It wasn't a counting issue, I just had a mistake in how it formatted base+1.
+
+Issue 3:
+    If facing east and take item, then 'look east', does not update.
+
+2.48pm All issues seem to be fixed. Hopefully have set the descriptions to update everywhere.
+Really should just replace the print(loc.current.long_desc) calls with a function rather than having to repeat
+#        get_loc_descriptions(place=loc.currentPlace)
+#        print(loc.current.long_desc)
+each time, but it works.

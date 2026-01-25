@@ -4,33 +4,34 @@ import printing
 from env_data import locRegistry as loc
 
 CARDINALS = ["north", "east", "south", "west"]
+excluded_itemnames = ["generic", "no_items"]
 
 global loc_items_dict
 loc_items_dict = {}
 
-
-type_defaults = { # gently ordered - will overwrite earlier attrs with later ones (eg 'is horizontal surface' for flooring with overwrite 'static''s.)
-    "standard": {},
-    "static": {"can_examine": False, "breakable": False},
-    "all_items": {"starting_location": None, "current_loc": None, "alt_names": {}, "is_hidden": False},
-    "container": {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False, 'starting_children': None, 'container_limits': 4, "name_no_children": None, "description_no_children": None},
-    "key": {"is_key": True},
-    "can_pick_up": {"can_pick_up": True, "item_size": 0, "started_contained_in": None, "contained_in": None},
-    "event": {"event": None, "event_type": "item_triggered", "event_key": None, "event_item": None},
-    "trigger": {"trigger_type": "plot_advance", "trigger_target": None, "is_exhausted": False},
-    "flooring": {"is_horizontal_surface": True},
-    "wall": {"is_vertical_surface": True},
-    "food_drink": {"can_consume": True, "can_spoil": True, "is_safe": True, "effect": None},
-    "fragile": {"broken_name": None, "flammable": False, "can_break": True},
-    "electronics": {"can_be_charged": True, "is_charged": False, "takes_batteries": False, "has_batteries": False},
-    "books_paper": {'print_on_investigate': True, 'flammable': True, 'can_read': True},
-    "can_speak" : {'can_speak': True, 'speaks_common': True},
-    "can_open": {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False}
-
-    #{"special_traits: set("dirty", "wet", "panacea", "dupe", "weird", "can_combine")}, # aka random attr storage I'm not using yet
-    #"exterior": {"is_interior": False} ## Can be set scene-wide, so 'all parts of 'graveyard east' are exterior unless otherwise mentioned'. (I say 'can', I mean 'will be when I set it up')
-}
-
+from itemRegistry import type_defaults
+#type_defaults = { # gently ordered - will overwrite earlier attrs with later ones (eg 'is horizontal surface' for flooring with overwrite 'static''s.)
+#    "standard": {},
+#    "static": {"can_examine": False, "breakable": False},
+#    "all_items": {"starting_location": None, "current_loc": None, "alt_names": {}, "is_hidden": False},
+#    "container": {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False, 'starting_children': None, 'container_limits': 4, "name_no_children": None, "description_no_children": None},
+#    "key": {"is_key": True},
+#    "can_pick_up": {"can_pick_up": True, "item_size": 0, "started_contained_in": None, "contained_in": None},
+#    "event": {"event": None, "event_type": "item_triggered", "event_key": None, "event_item": None},
+#    "trigger": {"trigger_type": "plot_advance", "trigger_target": None, "is_exhausted": False},
+#    "flooring": {"is_horizontal_surface": True},
+#    "wall": {"is_vertical_surface": True},
+#    "food_drink": {"can_consume": True, "can_spoil": True, "is_safe": True, "effect": None},
+#    "fragile": {"broken_name": None, "flammable": False, "can_break": True},
+#    "electronics": {"can_be_charged": True, "is_charged": False, "takes_batteries": False, "has_batteries": False},
+#    "books_paper": {'print_on_investigate': True, 'flammable': True, 'can_read': True},
+#    "can_speak" : {'can_speak': True, 'speaks_common': True},
+#    "can_open": {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False}
+#
+#    #{"special_traits: set("dirty", "wet", "panacea", "dupe", "weird", "can_combine")}, # aka random attr storage I'm not using yet
+#    #"exterior": {"is_interior": False} ## Can be set scene-wide, so 'all parts of 'graveyard east' are exterior unless otherwise mentioned'. (I say 'can', I mean 'will be when I set it up')
+#}
+#
 class itemGenerator:
     def __init__(self):
         self.item_defs = {}
@@ -234,7 +235,7 @@ def get_items_from_card(loc, cardinal, loc_data):
             other_items[item] = loc_data["items"]
 
     for item in other_items:
-        if item == "" or item == "generic":
+        if item == "" or item in excluded_itemnames:
             continue
         if item in desc_items:
             if item in added:
@@ -253,7 +254,7 @@ def get_items_from_card(loc, cardinal, loc_data):
         get_item_data(item, loc_items_dict[loc][cardinal][item])
 
     for item in desc_items:
-        if not item in other_items and item != "" and item != "generic":
+        if not item in other_items and item != "" and item not in excluded_itemnames:
             loc_items_dict[loc][cardinal][item] = desc_items[item].get(item)
             # Should get item data here, maybe. We're just adding what's in generated/item_defs. Only downside is it won't update if an item is made but not added to generated right away. But we're not generating anything here, so that's alright actually.
             get_item_data(item, loc_items_dict[loc][cardinal][item])
@@ -279,167 +280,9 @@ def get_loc_items_dict(loc=None, cardinal=None):
 
                     get_items_from_card(loc, cardinal, loc_dict[loc.lower()][cardinal])
 
-            """
-            def get_item_data(item, item_state_dict, gen_items, loc_items_dict, loc, cardinal):
-                loc_item = {}
-                skip_add = False
-
-                if item in name_to_inst_tmp:
-                    return loc_items_dict
-
-                if item != "generic":
-
-                    card_inst = locRegistry.by_cardinal_str(cardinal_str=cardinal, loc=loc.lower())
-                    setattr(card_inst, "item_state", item_state_dict)
-
-                    if registry.item_defs.get(item):
-                        print(f"`{item}` found in item_defs.")
-                        loc_item[item] = registry.item_defs.get(item)
-                        loc_item[item]["starting_location"] = card_inst
-                        if item_state_dict and item_state_dict.get(item):
-                            for k, v in item_state_dict[item].items():
-                                loc_item[item][k] = v
-
-                        inst = registry.init_single(item, loc_item[item])
-                        all_item_names_generated.append((item, "item_defs"))
-                        print("\n\n")
-                        printing.print_red(inst)
-                        printing.print_red(inst.location)
-                        print("\n\n")
-                        #print(f"\nINST GENERATED (item_dict by_cardinal): {vars(inst)}\n")
-                        name_to_inst_tmp[item] = inst
-                        #if containers and item in containers:
-
-                        if item_state_dict and item_state_dict != None:# #### NO, because this will run every fucking item.
-                            if item_state_dict.get(item) and item_state_dict[item].get("contained_in"):
-                                if not registry.child_parent.get(inst):
-                                    registry.child_parent[inst] = item_state_dict[item]["contained_in"]
-
-                    else:
-                        if gen_items and gen_items.get(item):
-                            #print(f"`{item}` found in generated_items.")
-                            loc_item[item] = gen_items[item]
-                            #print(f"GEN ITEMS {item}: {gen_items[item]}")
-                            skip_add = True
-                        else:
-                            print(f"Item {item} not found in item_defs, generating from blank.")
-                            loc_item[item] = {}
-                            if item_state_dict and item_state_dict.get(item):
-                                for k, v in item_state_dict[item].items():
-                                    loc_item[item][k] = v
-                            inst = item_def_from_str(item_name=item, loc_cardinal=card_inst,partial_dict=loc_item[item]) # added partial_dict, it should have been here before.
-                            all_item_names_generated.append((item, "item_from_str"))
-                            print("\n\n")
-                            printing.print_red(inst)
-                            printing.print_red(inst.location)
-                            print("\n\n")
-                            name_to_inst_tmp[item] = inst
-                            if loc_item.get("item"):
-                                registry.item_defs[item] = loc_item[item]
-
-                            if not skip_add:
-                                registry.temp_items.add(inst)
-                            return loc_items_dict
-
-                        loc_item[item].update({"starting_location": card_inst})
-                        loc_items_dict[loc][cardinal][item] = loc_item[item]
-                        if item_state_dict and item_state_dict.get(item):
-                            for k, v in item_state_dict[item].items():
-                                loc_item[item][k] = v
-                        inst = registry.init_single(item, loc_item[item])
-                        all_item_names_generated.append((item, "from_gen"))
-
-                        if loc_item.get("item"):
-                            registry.item_defs[item] = loc_item[item]
-                        print("\n\n")
-                        printing.print_red(inst)
-                        printing.print_red(inst.location)
-                        print("\n\n")
-                        name_to_inst_tmp[item] = inst
-                        if not skip_add:
-                            registry.temp_items.add(inst)
-
-                return loc_items_dict
-
-            def get_children_data(item, containers, loc, cardinal):
-                if item in containers:
-                    #print(f"Item in containers: `{item}`")
-                    for child_inst in registry.child_parent:
-                        if isinstance(registry.child_parent[child_inst], str):
-                            if registry.child_parent[child_inst] == item:
-                                #print("registry.child_parent[child_inst] == item:")
-                                #print(f"registry.child_parent[child_inst] = {registry.child_parent[child_inst]}\n Item: {item}")
-                                #print(f"name_to_inst_tmp: {name_to_inst_tmp}")
-                                if name_to_inst_tmp.get(item):
-                                #if loc_item.get(item):
-                                    inst = name_to_inst_tmp[item]#loc_item.get(item).get("instance")
-                                #print(f"Inst(should be container): {inst}")
-                                    if inst:
-                                        registry.child_parent[child_inst] = inst # At this point, don't actually need the registry dict anymore.
-                                        child_inst.contained_in = inst
-                                        #print(f"CHILD INST VARS: {vars(child_inst)}")
-                                        if not hasattr(inst, "children"):
-                                            inst.children = set()
-                                        inst.children.add(child_inst)
-                                        #print(f"PARENT INST VARS: {vars(inst)}")
-                                    else:
-                                        print(f"Failed to get inst from  loc_item.get(item): {item}")
-                                        print(f"Failed to get inst from  loc_item.get(item): {loc_items_dict[loc.lower()][cardinal].get(item)}") ## Probably failed because loc_item doesn't exist here; it only appeared to if the previous if/else succeeded.
-
-            if not loc_dict.get(loc.lower()):
-                print(f"Location {loc} not in env_data.")
-                return name_to_inst_tmp
-
-            if loc_dict[loc.lower()].get(cardinal):
-                if loc_dict[loc.lower()][cardinal].get("item_desc") or loc_dict[loc.lower()][cardinal].get("items"): ## need to generalise this a bit so I can reuse most of the following for .("items") as well, not just item_desc entries. (item desc are included in scene descriptions if relevant, items are just there.)
-
-                    registry.child_parent = dict() ## Reset it every loc_card, so it doesn't add items from one location to containers in another just because the name matches.
-                    item_state_dict = loc_dict[loc.lower()][cardinal].get("items")
-                    from env_data import locRegistry
-                    card_inst = locRegistry.by_cardinal_str(cardinal_str=cardinal, loc=loc.lower())
-                    setattr(card_inst, "item_state", item_state_dict)
-                    # ugh this is tricky. Because once they're instances the connection is less clear. I guess it's not really, but for some reason my brain thinks it is.
-                    #I think it's because once it's active, maybe some other object gets brought to the scene before you evaluate. There's not really any other way to do it though, right?
-                    #Or I guess I could mark it to a dict, then add the instance once it's generated. (So like, 'this is the padlock inst that goes to a gate in graveyard north'. idk)
-
+        """
         # unrelated, did just think of a way to mix up location descriptions. For each place, have some words/phrases etc that can be intermittedly (but once used, consistently) for items for particular locations. So inside a crypt might be 'dusty, dry, etc etc (but better than that, few-word phrases etc) that are randomly sprinkled into item descriptions. So 'an ivory jar' can become 'a dusty ivory jar' because it's in the crypt, but it's still generated from the same base item. Just mark where these flavour words will be (like [[]] and PPP/EEE in scene descrips), Not sure but could be good.
-                    containers = set()
-                    if item_state_dict and item_state_dict != None:# #### NO, because this will run every fucking item.
-                        for stateitem in item_state_dict.keys(): # for loop separately so it's not limited by which one happens to be processed first (only getting names here for containers, inst only matters for child_parent.)
-                        #if item_state_dict.get(item):
-                            if item_state_dict[stateitem].get("contained_in"):
-                                #print(f"stateitem: {stateitem} // item_state_dict[stateitem].get('contained_in'): {item_state_dict[stateitem].get("contained_in")}")
-                                containers.add(item_state_dict[stateitem]["contained_in"])
-
-                    if loc_dict[loc.lower()][cardinal].get("item_desc"):
-                        for item in loc_dict[loc.lower()][cardinal]["item_desc"]:
-                            if item == "":
-                                continue
-
-                            loc_items_dict = get_item_data(item, item_state_dict, gen_items, loc_items_dict, loc, cardinal)
-
-                    if loc_dict[loc.lower()][cardinal].get("items"):
-                        for item in loc_dict[loc.lower()][cardinal]["items"]:
-                            if item == "":
-                                continue
-
-                            loc_items_dict = get_item_data(item, item_state_dict, gen_items, loc_items_dict, loc, cardinal)
-
-
-                    if loc_dict[loc.lower()][cardinal].get("item_desc"):
-                        for item in loc_dict[loc.lower()][cardinal]["item_desc"]: # at least the loop here means it doesn't loop over everything entirely twice, it only checks for potential relevancy once so places with no item_desc are omitted from that point on.
-                            if item != "generic" and item != "":
-                                get_children_data(item, containers, loc.lower(), cardinal)
-
-                    if loc_dict[loc.lower()][cardinal].get("items"):
-                        for item in loc_dict[loc.lower()][cardinal]["items"]:
-                            if item != "generic" and item != "":
-                                get_children_data(item, containers, loc.lower(), cardinal)
-
-                    #print(f"CHILD PARENT DICT: {registry.child_parent}")
-
-            return name_to_inst_tmp
-            """
+        """
         if cardinal == None:
             for cardinal in CARDINALS:
                 loc_items_dict[loc][cardinal] = {}
@@ -489,6 +332,7 @@ def init_item_dict():
                     #print(f"v: {generator.item_defs[item][k]}, type: {type(generator.item_defs[item][k])}")
             #print(f"item {item}, field: {field}, type: {type(field)}")
             #print(f"item {item}, field: {field}, type: {type(item[field])}")
+                
 
     update_gen_items = True
     if update_gen_items:

@@ -154,10 +154,10 @@ class Parser:
                     local_named.add(item.name)
 
             for item_name in compound_matches: # this just takes the first match, so if 'gold key' and 'iron key' are both there, it will take gold key regardless.
-                print(f"item name in compound matches: {item_name}")
-                print(f"local named (all): {local_named}")
+                #print(f"item name in compound matches: {item_name}")
+                #print(f"local named (all): {local_named}")
                 if item_name in local_named:
-                    print(f"Item name in local_named: {item_name}")
+                    #print(f"Item name in local_named: {item_name}")
                     matches.add(item_name)
                     match = item_name
 
@@ -169,10 +169,11 @@ class Parser:
                 if test in matches:
                     match = test
             else:
-                for i, item in enumerate(compound_matches): # this just takes the first match, so if 'gold key' and 'iron key' are both there, it will take gold key regardless.
+                for item in compound_matches: # this just takes the first match, so if 'gold key' and 'iron key' are both there, it will take gold key regardless.
                     if item in local_named:
                         match = item
                         break
+                    
             if match:
                 canonical = match
                 kinds.add(word_type)

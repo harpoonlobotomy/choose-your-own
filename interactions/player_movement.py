@@ -2,7 +2,7 @@
 
 """Right now, player movement is very very simple. But I want a way to track it in slightly more detail. So, this is that. Not so much the immediate tracking, as that's taken care of, but going places"""
 
-from env_data import cardinalInstance, locRegistry as loc, placeInstance
+from env_data import cardinalInstance, locRegistry as loc, placeInstance, get_loc_descriptions
 from misc_utilities import assign_colour
 from logger import logging_fn, traceback_fn
 from eventRegistry import events
@@ -80,6 +80,7 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
 
     elif events.travel_is_limited and (new_location and new_location == loc.current.place):
         print(f"You're already in the {assign_colour(loc.current.place)}")
+        get_loc_descriptions(place=loc.currentPlace)
         print(loc.current.description)
         return
 
@@ -95,6 +96,7 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
             loc.set_current(cardinal=new_cardinal)
 
     print(f"You're now facing {assign_colour(loc.current, card_type="place_name")}\n")
+    get_loc_descriptions(loc.currentPlace)
     if new_location:
         print(loc.current.place.overview)
     else:
@@ -113,5 +115,6 @@ def turn_around(new_cardinal):
     loc.set_current(loc=None, cardinal=new_cardinal)
     #print(f"loc.current_cardinal after turn_around: {loc.current}, type: {type(loc.current)}")
     print(f"You turn to face the {assign_colour(item=loc.current, card_type = "ern_name")}")
+    get_loc_descriptions(place=loc.currentPlace)
     print(f"{loc.current.description}")
 

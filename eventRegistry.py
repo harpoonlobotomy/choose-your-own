@@ -9,6 +9,8 @@ if the padlock is unlocked or broken, it falls to the ground and the gate creaks
 
 import uuid
 
+from misc_utilities import assign_colour
+
 event_states = {
     "past": 0,
     "current": 1,
@@ -143,21 +145,25 @@ class eventRegistry:
                         return event.msgs["held_msg"]
 
     def play_event_msg(self, msg_type="held", event=None, print_txt=True): # later make this false so I can format the msg.
-        print("Start of play_event_msg in eventReg")
+
+        #print("Start of play_event_msg in eventReg")
+        #print(f"msg_type: {msg_type}, event: {event}")
 
         def print_current(event, state_type="held", print_text=False):
 
-            if event not in self.by_state.get(1):
-                msg = f"Event {event.name} is not currently happening: {event.event_state}"
-                return msg
+            #if event not in self.by_state.get(1): ## wait this shouldn't be checking validity here, right? It should just print what it's given.
+            #    msg = f"Event {event.name} is not currently happening: {event.event_state}"
+            #    print(msg)
+            #    return msg
 
             if event.msgs.get(f"{state_type}_msg"):
                 msg = event.msgs[f"{state_type}_msg"]
                 if print_text:
-                    print(msg)
+                    print(assign_colour(msg, colour="description"))
                 return msg
 
-            return f"Nothing to print print." # remove this later and replace with a type-defined default.
+
+            return f"Nothing to print print for event `{event}`, msg_type `{msg_type}`." # remove this later and replace with a type-defined default.
 
 
         if "_msg" in msg_type:
@@ -173,13 +179,20 @@ class eventRegistry:
                 return print_current(event, state_type="held", print_text=print_txt)
 
 
-        elif msg_type == "start":
-            if not event:
-                print("Need to define event for start/end messages.")
-                return ""
+        if not event:
+            print("Need to define event for start/end messages.")
+            return ""
+
+        if msg_type == "start":
 
             return print_current(event, state_type="start", print_text=print_txt)
 
+        if msg_type == "end":
+            if not event:
+                print("Need to define event for start/end messages.")
+                return ""
+            #print("print_current msg_type 'end'")
+            return print_current(event, state_type="end", print_text=print_txt)
             #if event not in self.by_state.get(1):
             #    print("Cannot play start message as the event isn't running")
             #    return ""
@@ -231,24 +244,26 @@ class eventRegistry:
 
     def end_event(self, event_name):
 
-        event_to_end = self.event_by_name(event_name)
-        if event_to_end in self.current_events:
+        if isinstance(event_name, str):
+            event_to_end = self.event_by_name(event_name)
+        else:
+            event_to_end = event_name
+        if event_to_end in self.event_by_state(1):
             self.by_state[1].remove(event_to_end)
             self.by_state[2].add(event_to_end)
             if event_to_end in self.by_state[2]: # redundant but just in case anything went super wrong:
                 event_to_end.event_state = 2
 
-        if event_to_end.limits_travel:
-            self.travel_is_limited = False ## Maybe do it with ints instead of a bool, so if multiple events limit travel it doesn't remove it for all? Or really, I need staged limits (eg one event limits to only x places, while another limits to a specific room temporarily.) Or, maybe this is a bool, then it can specify elsewhere.
+            if event_to_end.limits_travel:
+                self.travel_is_limited = False ## Maybe do it with ints instead of a bool, so if multiple events limit travel it doesn't remove it for all? Or really, I need staged limits (eg one event limits to only x places, while another limits to a specific room temporarily.) Or, maybe this is a bool, then it can specify elsewhere.
             #if event_to_end.limits_travel == "cannot_leave":
             #    print(f"Cannot leave {event_to_end.limits_travel["cannot_leave"]}") # did not mean to end this to end_events...
 
+            self.play_event_msg(msg_type="end", event=event_to_end)
+
         else:
-            print(f"Cannot set event {event_name} as ended event, because it is not present in current_events: {self.current_events}")
+            print(f"Cannot set event {event_name} as ended event, because it is not present in current_events: {self.event_by_state(1)} (type: { type(self.event_by_state(1))})")
             exit()
-
-
-
 
 
 

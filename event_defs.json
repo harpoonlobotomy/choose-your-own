@@ -7,7 +7,7 @@
       }
     },
     "effects": {"limit_travel": {"cannot_leave": "graveyard"}},
-    "messages": {"start_msg": "", "end_msg": "", "held_msg": "Until the gate's unlocked, you don't see a way out of here."}
+    "messages": {"start_msg": "", "end_msg": "As the padlock falls to the ground and the chain unravells, the graveyard gate creaks open.", "held_msg": "Until the gate's unlocked, you don't see a way out of here."}
   },
   "mermaid_grotto_appears": {
     "start_trigger": {

@@ -13,6 +13,8 @@ accessible_dict = {
     5: "in inventory",
     6: "not at current location",
     7: "other error, investigate",
+    8: "in container but only technically (eg padlock in door)",# (can look/interact with, but not move/pick/up/drop)
+    9: "item is hidden"# (must be discovered somehow, not shown in general 'look around' views.)
 }
 
 
@@ -89,104 +91,7 @@ def switch_the(text:str|ItemInstance|list, replace_with:str="the")->str:
 
     return text
 
-def compare_input_to_options(*options, input:str, inventory:list=None, use_last=False)->tuple[(str|None)|dict]:
-    logging_fn()
-    ### Need to add the option for 'if the cardinals are an option, is the input the first letter of one of the cardinals'.
-    cleaned_options = []
-    if isinstance(options, (list|set|tuple)):
-        for item in options:
-            if isinstance(item, (set|list|dict)):
-                if isinstance(item, set|list):
-                    for subitem in item:
-                        if isinstance(subitem, (list|set)):
-                            for subsubitem in subitem:
-                                cleaned_options.append(subsubitem)
-                        else:
-                            cleaned_options.append(subitem)
-                elif isinstance(item, dict):
-                    for subitem in list(item.keys()):
-                        cleaned_options.append(subitem)
-            else:
-                cleaned_options.append(item)
 
-    if inventory != None:
-        for item in inventory:
-            if item not in cleaned_options:
-                cleaned_options.append(item)
-
-    str_only_options = []
-    alignment = {}
-
-    for item in cleaned_options:
-        if isinstance(item, ItemInstance):
-            str_only_options.append(str(item.name))
-            if alignment.get(item.name) and not use_last: ## only add an alignment for the first one unless drop (or some other case where we want to use the last instance found instead of the first)
-                continue
-            else:
-                alignment.setdefault(item.name, {}).update({"instance":item})
-                #alignment[item.name].setdefault({"instance":item})
-        elif isinstance(item, (str|float|int)):
-            if isinstance(item, str):
-                cleaned_name, name_type = check_name(item) ## do this here instead of when checking in main script, maybe. Would make sense if I can make it work.
-                if not cleaned_name:
-                    cleaned_name = item
-# self.by_location.setdefault(location, {}).setdefault(cardinal, set()).add(inst)
-                if alignment.get(item) and not use_last:
-                        continue
-                else:
-                    alignment.setdefault(cleaned_name, {}).update({"name_type":name_type})
-                str_only_options.append(str(cleaned_name))
-            else:
-                str_only_options.append(str(item))
-        else:
-            print("Item in compare_input_to_options is not an accepted type:")
-            print(f"Item: {item}, type: {type(item)}")
-
-    lower_cleaned = [i.lower() for i in str_only_options]#  if isinstance(i, str)]
-
-    if isinstance(input, (list|set)):
-        input = input[0]
-
-    if input == None:
-        return None, alignment
-
-    elif input.lower() in lower_cleaned:
-        idx = lower_cleaned.index(input.lower())
-        found_selection = str_only_options[idx]
-        return found_selection, alignment
-
-    else:
-        for item in lower_cleaned:
-            if item.lower()[1:] == input.lower():
-                return item, alignment
-
-    print(f"No match found for {input} in options {options}.")
-
-    return None, alignment
-
-    """
-        So to use 'alignment':
-        if an instance was an option, we have the entry
-        "8: {"anxiety meds": iteminstance .....}
-
-        The number is only there to allow for multiple entries (eg 'paperclip'. though I guess aside from dropping we always want the first one. Would be better without the enumerator... Hm.)
-
-        Okay so now:
-
-        "anxiety meds": <iteminstance etc>
-
-        alignment.get(found_selection)
-        returns
-        for instance:
-            the instance object
-
-        for fancy string:
-            if container, "int(1)" (maybe it's a float, but it's 1 either way)
-            if plural, "int(val)" where val is the plural value.
-
-        if alignment.get(found_selection) returns nothing, then it was a straight match with only potentially capitalisation differences.
-
-        """
 
 def clean_separation_result(result:list, to_print=False):
     logging_fn()
@@ -231,11 +136,12 @@ def clean_separation_result(result:list, to_print=False):
 ### END STRING MANIPULATION
 
 def look_around():
-    from env_data import locRegistry as loc
+    from env_data import locRegistry as loc, get_loc_descriptions
     #from choose_a_path_tui_vers import get_items_at_here
     from itemRegistry import registry
-
+    get_loc_descriptions(place=loc.currentPlace)
     print("\033[37m \033[0m")
+
     print(loc.currentPlace.overview, "\n")
     print(f"{loc.current.description}")
     #print(f"You're facing {assign_colour(loc.current, card_type="name")}. {loc.current.description}")
@@ -245,18 +151,18 @@ def look_around():
     #is_items = get_items_at_here(print_list=False, place=loc.current)
 
     applicable_items = []
-    confirmed_items = []
 
     if is_items:
         for item in is_items:
             #print(f"ITEM: {item}, type: {type(item)}")
-            _, _, reason_val, meaning = registry.check_item_is_accessible(item)
+            _, _, reason_val, _ = registry.check_item_is_accessible(item)
             #print(f"REASON VAL FOR `{item}`: {reason_val}")
             if reason_val == 0:
                 applicable_items.append(item)
-        print(assign_colour("\nYou see a few scattered objects in this area:", "b_white"))
-        is_items = ", ".join(col_list(applicable_items))
-        print(f"   {is_items}")
+        if applicable_items:
+            print(assign_colour("\nYou see a few scattered objects in this area:", "b_white"))
+            is_items = ", ".join(col_list(applicable_items))
+            print(f"   {is_items}")
 
 
 

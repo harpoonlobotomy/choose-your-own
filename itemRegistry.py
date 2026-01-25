@@ -42,6 +42,17 @@ class ItemInstance:
     """
     Represents a single item in the game world or player inventory.
     """
+    def set_hidden(self): # so the noun won't be considered for picking up etc outside of whatever un-hiddening act I come up with.
+
+        self.held_verb_actions = self.verb_actions
+        self.verb_actions = set()
+
+    def end_hidden(self):
+
+        self.verb_actions = self.held_verb_actions
+        self.held_verb_actions = set()
+
+
     def clean_item_types(self, attr):
 
         if isinstance(self.item_type, str):
@@ -87,7 +98,7 @@ class ItemInstance:
 
     def __init__(self, definition_key:str, attr:dict):
         print(f"\n\n@@@@@@@@@@@@@@@@@ITEM {definition_key} in INIT ITEMINSTANCE@@@@@@@@@@@@@@@\n\n")
-        print(f"definition_key: {definition_key}, attr: {attr}")
+        #print(f"definition_key: {definition_key}, attr: {attr}")
         #print(f"Init in item instance is running now. {definition_key}")
         self.id = str(uuid.uuid4())  # unique per instance
         for attribute in attr:
@@ -97,7 +108,6 @@ class ItemInstance:
         self.nicename:str = attr.get("name")
         #print(f"ATTR: {attr}")
         self.item_type = self.clean_item_types(attr["item_type"])#attr["item_type"] ## have it here and/or in the registry. I guess both? covers the 'is_container' thing neatly enough.
-        print(f"after setting: self.item_type: {self.item_type}")
 
         self.colour = None
         self.description:str = attr.get("description")
@@ -115,7 +125,7 @@ class ItemInstance:
             self.alt_names = None
 
  #     INITIAL FLAG MANAGEMENT
-        print(f"VARS before attributes are assigned: {vars(self)}")
+        #print(f"VARS before attributes are assigned: {vars(self)}")
         for attribute in ("can_pick_up", "can_be_opened", "print_on_investigate", "can_be_locked"):
             if hasattr(self, attribute):
                     self.verb_actions.add(attribute)
@@ -150,6 +160,8 @@ class ItemInstance:
             if hasattr(self, "starting_children"):
                 registry.new_parents.add(self.id)
 
+        if hasattr(self, "is_hidden") and self.is_hidden:
+            self.set_hidden()
             #self.children = list() ## Maybe we create all instances first, then add 'children' afterwards, otherwise they won't be initialised yet. Currently this works because I've listed the parents first in the item defs.
 
     def __repr__(self):
@@ -388,6 +400,7 @@ class itemRegistry:
                     else:
                         target_child = use_generated_items(child)
                         if not target_child:
+                            print(f"No target child, calling new_item_from_str for child {child} and parent {parent}")
                             target_child = new_item_from_str(item_name=child, in_container=parent)
                             all_item_names_generated.append((child, "generate_child item_from_str"))
                             # untested. Previously it just failed if not in item_defs.
@@ -427,6 +440,7 @@ class itemRegistry:
                 else:
                     target_child = use_generated_items(parent.starting_children)
                     if not target_child:
+                        print(f"No target child, calling new_item_from_str for child {child.starting_children} and parent {parent}")
                         target_child = new_item_from_str(item_name=parent.starting_children, in_container=parent)
                         all_item_names_generated.append((parent.starting_children, "generate_child from str"))
                     else:
@@ -544,6 +558,7 @@ class itemRegistry:
         #    6: "not at current location",
         #    7: "other error, investigate",
         #    8: "in container but only technically (eg padlock in door)" (can look/interact with, but not move/pick/up/drop)
+        #    9: "item is hidden" (must be discovered somehow, not shown in general 'look around' views.)
         #}
 
         confirmed_inst = None
@@ -556,13 +571,16 @@ class itemRegistry:
             reason = 7
             meaning = "other error, investigate"
 
+            if hasattr(inst, "is_hidden") and inst.is_hidden == True:
+                return inst, None, 9, accessible_dict[9]
+
             from set_up_game import game
             inventory_list = game.inventory
-            #print(f"INVENTORY LIST IN RUN_CHECK: {inventory_list}")
+
             local_items_list = self.get_item_by_location(loc.current)
             container, inst = is_item_in_container(inst, inventory_list)
 
-            if inst in inventory_list and not container:
+            if inst in inventory_list and not container: # if in inv, can't be hidden. # Though that doesn't matter, if discovered it should lose the is_hidden:True anyway. so check that first.
                 confirmed_inst = inst
                 reason = 5
                 meaning = accessible_dict[reason]
@@ -638,7 +656,7 @@ class itemRegistry:
             confirmed_inst, confirmed_container, reason_val, meaning = run_check(inst)
 
         if confirmed_inst != None:
-            return inst, confirmed_container, reason_val, meaning
+            return confirmed_inst, confirmed_container, reason_val, meaning
 
         return inst, confirmed_container, reason_val, meaning
 
@@ -884,6 +902,7 @@ class itemRegistry:
 
         if not inst:
             loc_card = location.place_name
+            print(f"No inst, so calling new_item_from_str for item {item}")
             inst = new_item_from_str(item_name=item, loc_cardinal=(loc_card)) # TODO: replace these with place instances, this is just temp
             print("Failed to find inst in pick_up, generating from str..")
 
@@ -1129,7 +1148,7 @@ def apply_loc_data_to_item(item, item_data, loc_data):
 
 def get_loc_items(loc=None, cardinal=None):
 
-    from item_dict_gen import generator
+    from item_dict_gen import generator, excluded_itemnames
     import json
 
     loc_data_json = "loc_data.json"
@@ -1164,7 +1183,7 @@ def get_loc_items(loc=None, cardinal=None):
 
                 if loc_data.get("item_desc"):
                     for item in loc_data["item_desc"]:
-                        if item == None or item == "" or item == "generic":
+                        if item == None or item == "" or item in excluded_itemnames:
                             continue
                         item_data = generator.item_defs.get(item)
                         if not item_data:
@@ -1179,7 +1198,7 @@ def get_loc_items(loc=None, cardinal=None):
 
                 if loc_data.get("items"):
                     for item in loc_data["items"]:
-                        if item == None or item == "" or item == "generic":
+                        if item == None or item == "" or item in excluded_itemnames:
                             continue
                         if loc_data.get("item_desc") and item in loc_data["item_desc"]:
                             if matched.get(item):
@@ -1248,8 +1267,8 @@ def initialise_itemRegistry():
     #exit()
 
    # initialise_itemRegistry()
-   # for item in registry.item_defs:
-   #     printing.print_yellow(item)
+    for item in registry.item_defs:
+        printing.print_yellow(item)
 
     return registry.event_items
 

@@ -26,7 +26,7 @@ flag_actions = {
     "flammable": ["burn", "set"],
     "dirty": "clean",
     "locked": "unlock",
-    "can_lock": "lock",
+    "can_be_locked": ["lock", "unlock"],
     "fragile": "break",
     "can_open": "open",
     "can_read": "read",
@@ -49,22 +49,21 @@ combine_parts = {("put", "into"), ("add", "to") # thinking about this for more s
 
 def check_noun_actions(noun_inst, verbname):
 
-    print(f"Verb inst name: {verbname}")
-    print(f"noun inst actions: {noun_inst.verb_actions}")
+    #print(f"Verb inst name: {verbname}")
+    #print(f"noun inst actions: {noun_inst.verb_actions}")
     if isinstance(verbname, VerbInstance):
         verbname = verbname.name
-    if verbname == "look": # always pass 'look'
+    if verbname in ("look", "use"): # always pass 'look'
         return noun_inst.name
     for action in noun_inst.verb_actions:
         if flag_actions.get(action):
             if verbname in flag_actions[action]:
-                print(f"{action}: Verb inst name in flag_actions for noun: ({noun_inst.name}): {verbname}")
+                #print(f"{action}: Verb inst name in flag_actions for noun: ({noun_inst.name}): {verbname}")
                 return noun_inst.name
 
-    print(f"Noun fails: {noun_inst}, verbname: {verbname}")
+    #print(f"Noun fails: {noun_inst}, verbname: {verbname}")
 
 def get_noun_instances(dict_from_parser, viable_formats):
-
 
     def check_cardinals(entry, dict, format):
 
@@ -128,9 +127,8 @@ def get_noun_instances(dict_from_parser, viable_formats):
                         #print(f"Noun inst: {noun_inst}")
                         if not isinstance(noun_inst, ItemInstance):
                             noun_inst = noun_inst[0]
-                            #noun_name = check_noun_actions(noun_inst, verb)
-                        # Wait, no. I need to do it here so the parser actually works. Right.
-                        noun_name = check_noun_actions(noun_inst, verb) ## I feel like this should be left for later. If I can't take the headstone, let that be something for 'take' to do, no?
+
+                        noun_name = check_noun_actions(noun_inst, verb)
                         if noun_name:
                             dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": name})
                             suitable_nouns += 1

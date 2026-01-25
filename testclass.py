@@ -314,8 +314,8 @@ class testInstances:
                 else:
                     break
 
-        self.starting_location = None ## TODO change to current_loc once integrated to main script.
-        self.current_loc = None # TODO maybe change to just 'self.loc' and assume 'current'?
+        #self.starting_location = None ## TODO change to current_loc once integrated to main script.
+        #self.current_loc = None # TODO maybe change to just 'self.loc' and assume 'current'?
 
         self.item_type = set()
         self.get_item_types(attr)
@@ -349,15 +349,16 @@ class testInstances:
                     setattr(self, flag, attr["exceptions"][flag])
 
         for item_type in self.item_type:
+            print(f"item type: {item_type}")
             for flag in type_defaults.get(item_type):
                 if not hasattr(self, flag):
                     setattr(self, flag, type_defaults[item_type][flag])
 
-        if self.starting_location:
-            self.current_loc = self.starting_location
+        #if self.starting_location:
+        #    self.current_loc = self.starting_location
 
-        if hasattr(self, "started_contained_in"):
-            self.contained_in = self.started_contained_in
+        #if hasattr(self, "started_contained_in"):
+        #    self.contained_in = self.started_contained_in
 
         if hasattr(self, "starting_children"):
             self.children = self.starting_children
@@ -876,7 +877,7 @@ if __name__ == "__main__":
                         for item in loc_dict[loc.lower()][cardinal]["item_desc"]:
                             loc_item = {}
                             skip_add = False
-                            if item != "generic":
+                            if item != "generic" and item != "no_items":
                                 if item_defs.get(item):
                                     gen_print(f"`{item}` found in item_defs.")
                                     loc_item[item] = item_defs.get(item)
@@ -946,7 +947,7 @@ if __name__ == "__main__":
         else:
             get_cardinal_items(loc, cardinal)
 
-    #get_loc_items()
+    get_loc_items()
 
     def main_test():
 
@@ -1140,7 +1141,7 @@ if __name__ == "__main__":
         else:
             print("No changes to JSON file.")
 
-    #clean_dict(named_item=pick_item)
+    clean_dict(named_item=pick_item)
 
     def edit_dict(named_item=pick_item):
         with open(json_to_edit, 'r') as file:
