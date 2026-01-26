@@ -58,9 +58,12 @@ class eventInstance:
         if attr.get("effects"):
             if attr["effects"].get("limit_travel"):
                 self.limits_travel = True
+                self.travel_limited_to = set()
                 events.travel_is_limited = attr["effects"]["limit_travel"]
                 if attr["effects"]["limit_travel"].get("cannot_leave"):
-                    events.held_at = dict({"held_at_loc": attr["effects"]["limit_travel"]["cannot_leave"], "held_by": self})
+                    for location in attr["effects"]["limit_travel"].get("cannot_leave"):
+                        self.travel_limited_to.add(location)
+                        events.held_at = dict({"held_at_loc": location, "held_by": self})
                     #events.held_at_loc = attr["effects"]["limit_travel"]["cannot_leave"]
 
                 #print(f"Initiated event limits travel: {attr["effects"].get("limit_travel")}")
@@ -138,7 +141,7 @@ class eventRegistry:
                     return holder.msgs["held_msg"]
 
             else:
-                if event in self.by_state.get(1):
+                if event.event_state == 1:# in self.by_state.get(1):
                     if event.msgs.get("held_msg"):
                         if print_txt:
                             print(event.msgs["held_msg"])
@@ -256,6 +259,7 @@ class eventRegistry:
 
             if event_to_end.limits_travel:
                 self.travel_is_limited = False ## Maybe do it with ints instead of a bool, so if multiple events limit travel it doesn't remove it for all? Or really, I need staged limits (eg one event limits to only x places, while another limits to a specific room temporarily.) Or, maybe this is a bool, then it can specify elsewhere.
+
             #if event_to_end.limits_travel == "cannot_leave":
             #    print(f"Cannot leave {event_to_end.limits_travel["cannot_leave"]}") # did not mean to end this to end_events...
 

@@ -105,16 +105,27 @@
         "gate": "a heavy wrought-iron [[]] - imposing but run-down",
         "padlock": "an old dark-metal [[]] on a chain holding the gate closed"
       },
-      "items": {"padlock": {"event_key": true, "event": "graveyard_gate_opens", "is_locked": true, "requires_key": "iron key", "key_is_placed_elsewhere": true}, "gate": {"event_item": true, "event": "graveyard_gate_opens"}},
+      "items": {
+        "padlock": {
+          "event_key": true,
+          "event": "graveyard_gate_opens",
+          "is_locked": true,
+          "requires_key": "iron key",
+          "key_is_placed_elsewhere": true
+        },
+        "gate": {
+          "event_item": true,
+          "event": "graveyard_gate_opens"
+        }
+      },
       "short_desc": "The entrance gates are",
       "long_desc": "You think you could leave through the large wrought-iron gates to the north. They're imposing but run-down; this graveyard doesn't get as much love as it could."
     },
     "east": {
       "item_desc": {
-        "generic": "You see a variety of headstones, most quite worn, and ",
-        "moss": "decorated by clumps of [[]]",
-        "glass jar": "a [[]] being used as a vase in front of one of the headstones, with some dried flowers left long ago",
-        "no_items": "not much else. It's quite empty here..."
+        "generic": "You see a variety of headstones, most quite worn and decorated by ",
+        "moss": "clumps of [[]]",
+        "glass jar": "a [[]] being used as a vase in front of one of the headstones, with some dried flowers left long ago"
       },
       "short_desc": "sit a variety of headstones",
       "long_desc": "You see a variety of headstones, most quite worn and decorated by clumps of moss. There's a glass jar being used as a vase in front of one of the headstones, with dried flowers left long ago.",
@@ -142,15 +153,13 @@
       }
     },
     "west": {
-      "item_desc": {},
+      "item_desc": {
+        "generic": "Standing in unkempt long grass, you see what looks like"},
+        "work shed": "a [[]] of some kind, with",
+        "shed door": "a wooden [[]] that looks like it was barricaded until recently",
       "short_desc": "is what looks like a work shed of some kind",
       "long_desc": "There's a work shed, with a wheelbarrow outside and a large padlock on the door.",
-      "items": {
-        "": {
-          "description": null,
-          "is_hidden": false
-        }
-      }
+      "items": {}
     },
     "descrip": "You see a rather poorly kept PPPgraveyardEEE - smaller than you might have expected given the scale of the gate and fences"
   },
@@ -286,5 +295,26 @@
       }
     },
     "descrip": "It's a PPPchurchEEE."
-  }
+  },
+  "work shed": {
+    "alt_names": [],
+    "missing_cardinal": "There's not much else to see around here. Dusty and largely disused, nothing really catches your eye.",
+    "north": {
+      "item_desc": {
+        "generic": "A simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's ",
+        "local map": "a yellowed [[]], showing the region surrounding the graveyard",
+        "iron key": "an old [[]], mottled with age",
+        "no_items": "not much of any real interest."
+      },
+      "short_desc": "There's a simple desk, hazily lit by the window over it",
+      "items": {
+        "secateurs": {"description": "Slightly rusted secateurs, still likely sharp enough to do their job.", "is_hidden": false},
+        "iron key": {
+          "description": "An old iron key, pitted on the surface but still appears functional.",
+          "is_key_to": "padlock",
+          "is_hidden": true}
+        }
+      },
+    "descrip": "Around you, you see the interior of a rather run-down looking PPPwork shedEEE, previously boarded up but seemingly, not anymore."
+    }
 }

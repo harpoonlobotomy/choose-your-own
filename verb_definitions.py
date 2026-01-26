@@ -16,7 +16,7 @@ meta_verbs = {
     "quit": {"alt_words": "q"},
     "show visted": {"alt_words": ""},
     "update_json": {"alt_words": "update"},
-    "meta": {"alt_words": ""}
+    "meta": {"alt_words": "edit"}
 }
 
 

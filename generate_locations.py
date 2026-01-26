@@ -44,7 +44,27 @@ def edit_location_json():
 
 
 def edit_descriptions_in_cardinal(card, loc_dict_entry, name):
-    print()
+    print(f"The format for cardinal descriptions is : ['generic'] + [item(s)], or ['generic'] + ['no_items']")
+
+    items = {}
+
+    generic = input("Enter 'generic: \n")
+    if generic:
+        items["generic"] = generic
+    while True:
+        item_name = input("Enter 'item name', or nothing to continue: \n")
+        if item_name:
+            item_desc = input(f"Enter the scene descriptor for {item_name}.\n")
+            items[item_name] = item_desc
+        else:
+            break
+    no_items = input("Enter the text for no_items: \n")
+    items["no_items"] = no_items
+
+    from pprint import pprint
+    pprint(f"New cardinal entry for {name}: {items}")
+    loc_dict_entry[card]["item_desc"] = items
+    return loc_dict_entry
 
 
 def edit_all_lines_in_cardinal(card, loc_dict_entry, name):
@@ -75,6 +95,8 @@ def edit_items_in_cardinal(cardinal, loc_dict_entry, name):
             else:
                 for part in parts:
                     card["items"].update({part:{"description": "", "is_hidden": False}})
+        if test in ("", None):
+            break
         print(f"Enter to add without description, or 'desc'/'description' to add a description.")
         trial = input()
         if trial in ("desc", "description"):
@@ -89,14 +111,18 @@ def edit_items_in_cardinal(cardinal, loc_dict_entry, name):
 
 
 
-def change_loc_data(loc_dict_entry, name):
+def change_loc_data(loc_dict_entry, name, cardinal_no):
     cardinal = None
     #new_loc_dict[loc_name]
     print("Do you want to add [items], edit cardinal [descriptions], or peruse [all] fields?")
     test = input()
-    print("Do you want to edit one cardinal, or all?")
-    trial = input()
 
+    if cardinal_no != 1:
+        print("Do you want to edit one cardinal, or all? If one, enter that cardinal.")
+        trial = input()
+
+    else:
+        trial = "north"
 
     if trial in CARDINALS or trial == "all":
         cardinal = trial
@@ -110,95 +136,121 @@ def change_loc_data(loc_dict_entry, name):
         if test == "items":
             if cardinal == "all":
                 for card in CARDINALS:
-                    edit_items_in_cardinal(card, loc_dict_entry, name)
+                    loc_dict_entry = edit_items_in_cardinal(card, loc_dict_entry, name)
             else:
-                edit_items_in_cardinal(cardinal, loc_dict_entry, name)
+                loc_dict_entry = edit_items_in_cardinal(cardinal, loc_dict_entry, name)
 
         if test == "descriptions":
             if cardinal == "all":
                 for card in CARDINALS:
-                    edit_descriptions_in_cardinal(card, loc_dict_entry, name)
+                    loc_dict_entry = edit_descriptions_in_cardinal(card, loc_dict_entry, name)
             else:
-                edit_descriptions_in_cardinal(cardinal, loc_dict_entry, name)
+                loc_dict_entry = edit_descriptions_in_cardinal(cardinal, loc_dict_entry, name)
 
         if test == "all":
             if cardinal == "all":
                 for card in CARDINALS:
-                    edit_all_lines_in_cardinal(card, loc_dict_entry, name)
+                    loc_dict_entry = edit_all_lines_in_cardinal(card, loc_dict_entry, name)
             else:
-                edit_all_lines_in_cardinal(cardinal, loc_dict_entry, name)
+                loc_dict_entry = edit_all_lines_in_cardinal(cardinal, loc_dict_entry, name)
 
 
 
 def generate_new_location(loc_name):
 
+    cardinal_format = {
+            "item_desc": {},
+            "short_desc": "",
+            "long_desc": "",
+            "items": {
+                "": {
+                "description": "",
+                "is_hidden": False
+                }
+            }
+        }
+
     format = {
       "Test": {
         "alt_names": [],
         "north": {
-        "item_desc": {},
-        "short_desc": "",
-        "long_desc": "",
-        "items": {
-            "": {
-            "description": "",
-            "is_hidden": False
+            "item_desc": {},
+            "short_desc": "",
+            "long_desc": "",
+            "items": {
+                "": {
+                "description": "",
+                "is_hidden": False
+                }
             }
-        }
         },
         "east": {
-        "item_desc": {},
-        "short_desc": "",
-        "long_desc": "",
-        "items": {
-            "": {
-            "description": "",
-            "is_hidden": False
+            "item_desc": {},
+            "short_desc": "",
+            "long_desc": "",
+            "items": {
+                "": {
+                "description": "",
+                "is_hidden": False
+                }
             }
-        }
         },
         "south": {
-        "item_desc": {},
-        "short_desc": "",
-        "long_desc": "",
-        "items": {
-            "": {
-            "description": "",
-            "is_hidden": False
+            "item_desc": {},
+            "short_desc": "",
+            "long_desc": "",
+            "items": {
+                "": {
+                "description": "",
+                "is_hidden": False
+                }
             }
-        }
         },
         "west": {
-        "item_desc": {},
-        "short_desc": "",
-        "long_desc": "",
-        "items": {
-            "": {
-            "description": "",
-            "is_hidden": False
+            "item_desc": {},
+            "short_desc": "",
+            "long_desc": "",
+            "items": {
+                "": {
+                "description": "",
+                "is_hidden": False
+                }
             }
-        }
         },
         "descrip": ""
         }
     }
 
     new_loc_dict = {}
-    new_loc_dict[loc_name] = format["Test"]
-    new_loc_dict[loc_name]["descrip"] = f"It's a PPP{loc_name}EEE."
+    new_loc_dict.setdefault(loc_name, {})
+    cardinal_no = input(f"How many cardinals should {loc_name} have?  >>  ")
+    if int(cardinal_no) < 4:
+        cardinal_number = int(cardinal_no)
+        for card in CARDINALS:
+            if cardinal_number == 0:
+                break
+            new_loc_dict[loc_name][card] = cardinal_format
+            cardinal_number -= 1
+    else:
+        new_loc_dict = {}
+        new_loc_dict[loc_name] = format["Test"]
 
-    print("do you want to add items/descriptions to the cardinals?")
-    test = input()
-    if test in ("y", "yes"):
-        change_loc_data(new_loc_dict[loc_name], loc_name)
+    descr = input(f"Enter a description for {loc_name}. If nothing is entered, will default to `f'It's a PPP{loc_name}EEE.`")
+    if descr:
+        new_loc_dict[loc_name]["descrip"] = descr
+    else:
+        new_loc_dict[loc_name]["descrip"] = f"It's a PPP{loc_name}EEE."
+
+    change_loc_data(new_loc_dict[loc_name], loc_name, int(cardinal_no))
 
     print(f"new_loc_dict: {new_loc_dict[loc_name]}")
     import json
     loc_data_json = "loc_data.json"
     with open(loc_data_json, 'r') as loc_data_file:
         loc_dict = json.load(loc_data_file)
+
     if loc_dict.get(loc_name):
-        print("Location already exists. Press y to replace, otherwise skip and leave JSON unchanged.")
+        print(f"Location {loc_name} already exists. Press y to replace, otherwise skip and leave JSON unchanged.")
         test = input()
         if test in ("y", "yes"):
             loc_dict[loc_name] = new_loc_dict[loc_name]
@@ -216,4 +268,5 @@ def generate_new_location(loc_name):
 if __name__ == "__main__":
 
     #edit_location_json()
-    generate_new_location("church")
+    new_loc = input(f"Please enter desired location name: ")
+    generate_new_location(new_loc)

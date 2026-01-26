@@ -1,12 +1,10 @@
 #meta_commands.py Place to centralise all meta commands except the baseline logger/args. Item data visibility, editing item/env data, etc, all comes through here.
 
-main_json = r"dynamic_data\items_main.json"
-generated_json = r"dynamic_data\generated_items.json"
-
-from itemRegistry import ItemInstance
+from itemRegistry import ItemInstance, cardinalInstance
 from item_dict_gen import CARDINALS
 from printing import print_green, print_blue, print_yellow, print_col
 
+nulls = ("", None)
 def yes_test(string=""):
     test = input(string)
     if test in ("y", "yes"):
@@ -139,6 +137,9 @@ def edit_noun(noun):
                 print(f"The updated attributes for {noun.name}: ")
                 pprint(vars(noun))
 
+            main_json = r"dynamic_data\items_main.json"
+            generated_json = r"dynamic_data\generated_items.json"
+
             test=input("Do you want update this item in generated_items or items_main?\n")
             if "main" in test:
                 print(f"Updating {noun}'s attributes in {main_json}")
@@ -181,18 +182,309 @@ def edit_noun(noun):
                         json.dump(existing_data, file, indent=2)
                     print(f"{json_file} has been updated.")
 
+def select_location():
+
+    from env_data import locRegistry
+
+    location = input("Enter the name of the location you wish to edit:  ")
+    place = None
+
+    while not place:
+
+        if location == "":
+            location = input(f"Please enter a location name. Options: {locRegistry.by_name}. Enter nothing again to exit location editing.")
+            if location == "":
+                return
+
+        place = locRegistry.place_by_name(location)
+        if place:
+            #print(f"\n{place} found.")
+            return place
+        print(f"Could not find location entry for {location}.")
+        location = ""
+
+def dump_data(new_data, json_file):
+    import json
+    with open(json_file, 'w') as file:
+        json.dump(new_data, file, indent=2)
+    print(f"{json_file} has been updated.")
+
+def update_json(loc_dict):
+
+    print("Changes made to loc_data")
+    if yes_test("Do you want to show the loc_data now?\n"):
+        from pprint import pprint
+        pprint(loc_dict)
+    test = input("Do you want to save these changes to loc_data, a temp file or none?\n")
+    if test in nulls:
+        print("Ending without editing JSON file(s).")
+        return
+
+    loc_data = "loc_data.json"
+    temp_loc = r"dynamic_data\temp_loc.json"
+    if test in ("loc", "main", loc_data):
+        print(f"Applying these changes to {loc_data}")
+        dump_data(loc_dict, loc_data)
+    elif test in ("temp", "gen"):
+        print(f"Applying these changes to {temp_loc}")
+        dump_data(loc_dict, temp_loc)
+
+
+
+def loc_dict_edits(loc_dict, edit_dict):
+
+    if not edit_dict or edit_dict == {}:
+        print("No edits to make to loc_data.json.")
+        #update_json(loc_dict)
+        return
+
+    for place in edit_dict:
+        for cardinal in edit_dict[place]:
+            if cardinal not in CARDINALS:
+                print("Will be a location description, process separately.")
+
+            if "item_desc" in edit_dict[place][cardinal]:
+                for item in edit_dict[place][cardinal]["item_desc"]:
+                    if item == "delete":
+                        loc_dict[place][cardinal]["item_desc"].pop(item)
+
+                    elif item == "add":
+                        for entry in edit_dict[place][cardinal]["item_desc"]["add"]:
+                            loc_dict[place][cardinal]["item_desc"][entry] = edit_dict[place][cardinal]["item_desc"]["add"][entry]
+                    else:
+                        if loc_dict[place][cardinal]["item_desc"].get(item):
+                            loc_dict[place][cardinal]["item_desc"][item] = edit_dict[place][cardinal]["item_desc"][item]
+
+            if "items" in edit_dict[place][cardinal]:
+                for item in edit_dict[place][cardinal]["items"]:
+                    print(f"item: {item}")
+                    if item == "delete":
+                        for itemname in edit_dict[place][cardinal]["items"][item]:
+                            if loc_dict[place][cardinal]["items"].get(itemname):
+                                loc_dict[place][cardinal]["items"].pop(itemname)
+                    else:
+                        for section in edit_dict[place][cardinal]["items"][item]:
+                            print(f"section: {section}")
+                            if section == "delete_field":
+                                for element in edit_dict[place][cardinal]["items"][item]["delete_field"]:
+                                    if loc_dict[place][cardinal]["items"].get(item) and loc_dict[place][cardinal]["items"][item].get(element):
+                                        loc_dict[place][cardinal]["items"][item].pop(element)
+                                        print(f"`{element}` removed from items>{item}")
+
+                            else:
+                                if loc_dict[place][cardinal]["items"][item].get(section):
+                                    loc_dict[place][cardinal]["items"][item][section] = edit_dict[place][cardinal]["items"][item]
+
+
+    update_json(loc_dict)
+
+def edit_item_text(item, local_edits, long_dict, category):
+
+    edit = 0
+
+    print(f"`{item}`: `{long_dict[item]}`")
+    if category == "item_desc":
+        new_desc = input("If you want to edit this item description, enter it here. If you want to edit the item name, enter the item name. Otherwise, enter nothing.")
+    else:
+        new_desc = input("If you want to edit this item, enter it here. If you want to edit the item name, enter the item name. Type 'delete' to remove it. Otherwise, enter nothing.\n")
+
+    if new_desc in nulls:
+        return
+    if new_desc == "delete":
+        local_edits.setdefault(category, {}).setdefault("delete", list()).append(item)
+        edit += 1
+    elif new_desc == item:
+        new_name = input(f"Editing item name `{item}`. Please enter new item name:")
+        if new_name in nulls:
+            print("No new name entered, continuing with no change.")
+            return
+        if yes_test(f"New name for {item} will be {new_name}. Enter 'yes' to confirm"):
+            #edit_dict.setdefault(cardinal.place, {}).setdefault(cardinal, {}).setdefault("item_desc", {}).setdefault("delete", list())
+            #edit_dict[cardinal.place][cardinal]["item_desc"]["delete"].append(item)
+            #edit_dict[cardinal.place][cardinal]["item_desc"].setdefault("add", {}).update({new_name: long_dict[item]})
+            #print("Item name edited.")
+            local_edits.setdefault(category, {}).setdefault("delete", list())
+            local_edits[category]["delete"].append(item)
+            local_edits[category].setdefault("add", {}).update({new_name: long_dict[item]})
+            print("Item name edited.")
+            return 1
+
+    else:
+        if category == "item_desc":
+            new_desc = input(f"Editing item description for `{item}`. Please enter new description:")
+            if new_desc in nulls:
+                print("No new description entered, continuing with no change.")
+                return
+            if yes_test(f"New description for {item} will be {new_desc}. Enter 'yes' to confirm"):
+                local_edits.setdefault("item_desc", {})[item] = new_desc
+                print("Item description edited.")
+                return 1
+        else:
+            edit = 0
+            for field in long_dict:
+                if yes_test(f"{item} field: `{field}`. Edit this field?"):
+                    new_input = input("Enter 'delete' to remove the field, a new value to replace the value, or nothing to continue without changes.")
+                    if new_input in nulls:
+                        continue
+                    if new_input == "delete":
+                        local_edits[category].setdefault(item, {}).setdefault("delete_field", list).append(item)
+                        edit += 1
+                    else:
+                        local_edits[category].setdefault(item, {})[field] = new_input
+                        edit += 1
+
+    if edit:
+        return edit
+
+
+def edit_description_text(existing_text):
+
+    print(f"Existing text: {existing_text}")
+    new_text = input("Please enter the new description.\n\n")
+    if new_text in nulls:
+        print("No description entered, returning.")
+        return
+    if yes_test("Is this correct? \n\n"):
+        return new_text
+
+
+def edit_card_desc(cardinal:cardinalInstance):
+
+    place = cardinal.place.name
+    cardinal = cardinal.name
+    edit_dict = {}
+    edits = 0
+    import json
+    loc_items_json = "loc_data.json"
+    with open(loc_items_json, 'r') as loc_items_file:
+        loc_dict = json.load(loc_items_file)
+
+    print(f"\n Editing descriptions for {cardinal} {place} ::\n")
+
+    if loc_dict.get(place):
+        #print(loc_dict.get(place))
+        if loc_dict[place].get("descrip"):
+            print(f"General area description:\n")
+            print(f"'{loc_dict[place].get('descrip')}`")
+            test = yes_test("Do you want to edit this description?\n")
+            if test:
+                new_text = edit_description_text(loc_dict[place].get("descrip"))
+                if new_text:
+                    edits += 1
+                    edit_dict.setdefault(place, {})["descrip"] = new_text
+
+            if loc_dict[place].get(cardinal):
+                local_edits = edit_dict.setdefault(place, {}).setdefault(cardinal, {})
+
+                if loc_dict[place][cardinal].get("item_desc"):
+                    print(f"Item descriptions:\n")
+                    long_dict = loc_dict[place][cardinal]["item_desc"]
+
+                    if long_dict:
+                        for item in long_dict:
+                            edited = edit_item_text(item, local_edits, long_dict, category="item_desc")
+                            if edited:
+                                edits += 1
+                        print("\nFinished location-description items.\n")
+
+                if loc_dict[place][cardinal].get("items"):
+                    print(f"Location item data:\n")
+                    simple_items = loc_dict[place][cardinal]["items"]
+                    if simple_items:
+                        for item in simple_items:
+                            print(f"Editing {item}")
+                            edited = edit_item_text(item, local_edits, simple_items, category="items")
+                            if edited:
+                                edits += 1
+                        print("\nFinished item-data location items.\n")
+    else:
+        print(f"No location data for {cardinal.place}")
+
+    #if edit_dict:
+    if edits:
+        loc_dict_edits(loc_dict, edit_dict)
+    else:
+        print("\nNo edits made.\n")
+
+def edit_card_items(cardinal:cardinalInstance):
+
+    import json
+    loc_items_json = "loc_data.json"
+    with open(loc_items_json, 'r') as loc_items_file:
+        loc_dict = json.load(loc_items_file)
+
+    print(f"\n Editing items in {cardinal.place_name}")
+
+
+def edit_cardinal(cardinal:cardinalInstance):
+
+    print(f"\nEditing {cardinal.place_name}.\n")
+    edit_card_desc(cardinal)
+
+    #task = input("Do you want to: \n1: Edit cardinal descriptions/items\n2: Cancel\n")
+    #if task in ("1", "2"):
+    #    if task == "1":
+    #        print(f"\nEditing descriptions for {cardinal.place_name}.")
+    #        return 1
+#
+    #    else:
+    #        print("\nReturning to previous menu.")
+    #        return 0
+
+
+def edit_location(location):
+    if location == "":
+        return
+
+    print(f"Editing location {location.name} / {location}\n")
+    cardinals = location.cardinals
+    card = None
+
+    while not card:
+
+        card = input(f"Enter the cardinal direction you want to edit. Cardinals for {location.name}:\n{list(cardinals)}\n")
+        if card == "":
+            card = input(f"Enter nothing again to exit editing. Otherwise, please enter a cardinal name.\n")
+            if card == "":
+                print(f"Ending editing of {location.name}.")
+                return
+        if card in list(cardinals):
+            cardinal:cardinalInstance = cardinals.get(card)
+            card = edit_cardinal(cardinal) # card == 0 if failed/return to choose cardinal again.
+            if card:
+                return
+
+def add_temp_to_loc_data():
+
+    temp_file = r"dynamic_data\temp_loc.json"
+    import json
+    with open(temp_file, 'r') as file:
+        temp_file_data = json.load(file)
+    loc_data = "loc_data.json"
+    dump_data(temp_file_data, loc_data)
+
 def meta_control(input_format, noun=None, location=None, cardinal=None):
+    print()
     print_green(" :::META CONTROL::: ", invert=True)
 
     if noun:
         edit_noun(noun)
+    if location:
+        edit_location(location)
+    if cardinal:
+        edit_cardinal(cardinal)
 
+    print("\n")
     while True:
         print("\nWhat do you want to do?\n")
-        test = input("\n1: See/edit an item\n2: See/edit a location\n3: See/edit an event\n4: Leave meta control\n\n")
+        test = input("\n1: See/edit an item\n2: See/edit a location\n3: See/edit an event\n3: Add temp location data to main loc_data file\n4: Leave meta control\n\n")
         if test in ("1", "2", "3"):
             if test == "1":
                 edit_noun(select_noun())
+            elif test == "2":
+                edit_location(select_location())
+            elif test == "3":
+                add_temp_to_loc_data()
             else:
                 print("I haven't added anything here yet.")
                 break

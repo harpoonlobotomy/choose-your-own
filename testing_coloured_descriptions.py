@@ -193,8 +193,8 @@ def init_loc_descriptions(place=None):
 
                 long_desc = format_descrip(d_type="item_desc", location=location, cardinal=cardinal)
 
+                print(f"for {cardinal}, {location}: LONG_DESC: {long_desc}, len: {len(long_desc)}")
                 if long_desc:
-                    #print(f"LONG_DESC: {long_desc}, len: {len(long_desc)}")
                     if len(long_desc) == 1:
                         item_description = long_desc[0]# testing out for when there are no items, need to finish the sentence somehow. Do this better. TODO: Alternate long_desc for 'all items are gone'. This does work for now, though.
                     elif len(long_desc) == 2:
@@ -214,6 +214,7 @@ def init_loc_descriptions(place=None):
                     compiled_cardinals[location][cardinal] = new_desc
                     #print(f":compiled_cardinals[location][cardinal]: {compiled_cardinals[location][cardinal]}")
                 else:
+                    print(f"ACTUALLY USING LONG_DESC FROM LOC_DICT for {location} / {cardinal}")
                     compiled_cardinals[location][cardinal] = f"You're facing {assign_colour(cardinal)}. " + loc_dict[location][cardinal].get("long_desc")
 
 
@@ -230,22 +231,22 @@ def init_loc_descriptions(place=None):
 def loc_descriptions(place=None):
 
     location_description, cardinal_descriptions = init_loc_descriptions(place)
-    #print(f"LOCATION DESCRIPTION: {location_description}")
-    #print(f"CARDINAL DESCRIPTIONS: {cardinal_descriptions}")
+    print(f"LOCATION DESCRIPTION: {location_description}")
+    print(f"CARDINAL DESCRIPTIONS: {cardinal_descriptions}")
 
     combined_dict = {}
 
     for location, overview in location_description.items():
         combined_dict[location] = ({"overview": {overview}})
         #print(f"\n")
-        #print_green(f"Location: {location}", invert=True)
-        #print(f"{overview}")
+        print_green(f"Location: {location}", invert=True)
+        print(f"{overview}")
         if cardinal_descriptions.get(location):
             for cardinal, card_description in cardinal_descriptions[location].items():
                 combined_dict[location][cardinal] = card_description
                 #print()
-                #print_red(f"Cardinal: {cardinal}")
-                #print(card_description)
+                print_red(f"Cardinal: {cardinal}")
+                print(card_description)
 
     #print("\n\n\n")
     #for entry in combined_dict:

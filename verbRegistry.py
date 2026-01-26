@@ -311,6 +311,12 @@ class Parser:
                     if word in verbs.meta_verbs:
                         kinds.add("meta")
                         canonical = word
+                    else:
+                        for verb in verbs.meta_verbs:
+                            if verbs.meta_verbs[verb].get("alt_words"):
+                                if word == verbs.meta_verbs[verb]["alt_words"]:
+                                    kinds.add("meta")
+                                    canonical = word
 
 
                 if canonical != None:
@@ -394,6 +400,8 @@ class Parser:
         word = token.text
         if force_location:
             word="go"
+        if word == "edit":
+            word = "meta" # a nasty little shortcut here. Not ideal but it'll work for the moment.
         viable_instance = None
         #print(f"Word: {word}")
         if verbs.verbs.get(word):

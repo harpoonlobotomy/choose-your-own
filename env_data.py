@@ -174,6 +174,7 @@ import uuid
 
 class cardinalInstance:
     def __init__(self, cardinal, loc):
+        from testing_coloured_descriptions import format_descrip
         self.id = str(uuid.uuid4())
         self.name = cardinal # "east"
         self.place_name = cardinal + " " + loc.name # eg "east graveyard"        },
@@ -181,10 +182,11 @@ class cardinalInstance:
         self.place = loc
         self.alt_names = (loc_dict[loc.name].get("alt_names") if loc_dict[loc.name].get("alt_names") else None)
         #self.short_desc = (loc_dict[loc.name][cardinal].get("short_desc") if loc_dict[loc.name].get(cardinal) else None)
-        self.description = None#(loc_dict[loc.name][cardinal].get("long_desc") if loc_dict[loc.name].get(cardinal) else None)
+        #self.description = format_descrip(d_type="item_desc", location=loc, cardinal=cardinal)#None#(loc_dict[loc.name][cardinal].get("long_desc") if loc_dict[loc.name].get(cardinal) else None)
         self.colour = None
 
         self.cardinal_data = loc_dict[self.place.name].get(cardinal)
+        self.missing_cardinal = loc_dict[self.place.name].get("missing_cardinal")
         setattr(self, cardinal, self.cardinal_data)
 
         self.cardinal_actions = (loc_dict[self.place.name][cardinal].get("actions") if loc_dict[self.place.name].get(cardinal) else None)
@@ -354,7 +356,7 @@ class placeRegistry:
             loc, cardinal_str = next(iter(cardinal_str.items()))
         elif isinstance(cardinal_str, str):
             if " " in cardinal_str:
-                [loc, cardinal_str] = cardinal_str.split(" ")
+                [loc, cardinal_str] = cardinal_str.rsplit(" ", 1)
 
         if loc == None:
             loc = self.currentPlace
@@ -427,11 +429,14 @@ def get_descriptions(place):
         if locRegistry.cardinals[place].get(card) and isinstance(locRegistry.cardinals[place].get(card), cardinalInstance):
             card_inst = locRegistry.cardinals[place].get(card)
             card_inst.description = description_dict[place.name].get(card)
-            #print(f"Card inst description: {card_inst.description}")
+            #print(f"Card inst description {place.name}, {card}: {card_inst.description}")
+            #print(f"VARS: \n{vars(card_inst)}\n\n")
+            #print(f"PLACE VARS: {vars(place)}")
 
 def get_loc_descriptions(place=None):
     if place == None:
         for place in locRegistry.places:
+            #print(f"PLACE IN PLACES : {place}")
             get_descriptions(place)
     elif place and isinstance(place, placeInstance):
         get_descriptions(place)

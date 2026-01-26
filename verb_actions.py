@@ -437,17 +437,40 @@ def turn_cardinal(prospective_cardinal, turning = True):
     bool_test, _, _ = is_loc_current_loc(None, prospective_cardinal)
     from env_data import loc_dict, get_loc_descriptions
     if not bool_test:
+        if not prospective_cardinal.cardinal_data:
+            print(prospective_cardinal.place.missing_cardinal)
+            print(f"[[Can't turn that way. Not allowed. ({prospective_cardinal} doesn't have cardinal data.)]]")
+            print("You decide to turn back.")
+            get_loc_descriptions(place=loc.currentPlace)
+            print(loc.current)
+            print(loc.current.description)
+            return
         cardinal_str = prospective_cardinal.name
         intended_cardinal = (loc_dict[loc.currentPlace.name][cardinal_str] if loc_dict[loc.currentPlace.name].get(cardinal_str) else None)
-        #print(f"Intended_cardinal: {intended_cardinal}")
-        if intended_cardinal:
-            turning_to = prospective_cardinal
-            turn_around(turning_to)
+        print(f"Intended_cardinal: {intended_cardinal}")
+        if intended_cardinal:# and intended_cardinal.cardinal_data:
+            turn_around(prospective_cardinal)
         else:
-            print("There's nothing over that way.\n")
-            print(f"You're facing {loc.current.place_name}")
-            get_loc_descriptions(place=loc.currentPlace)
-            print(loc.current.long_desc)
+            if loc.current.missing_cardinal:
+                print(loc.current.missing_cardinal)
+                print("You decide to turn back.")
+                get_loc_descriptions(place=loc.currentPlace)
+                print(loc.current)
+                print(loc.current.description)
+
+            else:
+                print("There's nothing over that way.\n")
+            print(f"You're facing {assign_colour(loc.current.place_name)}.")
+            if loc.current.cardinal_data:
+                get_loc_descriptions(place=loc.currentPlace)
+                print(loc.current)
+                #print(f"loc current: {loc.current}")
+                #print(f"vars loc.current: \n{vars(loc.current)}")
+                print(loc.current.description)
+                #print("loc.current.description ^ ")
+            #get_loc_descriptions(place=loc.currentPlace)
+            #print(loc.current.description)
+            #print("loc.current.description ^ ")
 
         return
         #print(f"turning_to: {turning_to}, type: {type(turning_to)}") ## Shouldn't have this, should be able to use this function for just turning.
@@ -458,8 +481,10 @@ def turn_cardinal(prospective_cardinal, turning = True):
         #print(f"Prospective cardinal.name: {prospective_cardinal.name}")
         if turning:
             print(f"You're already already facing the {assign_colour(prospective_cardinal, card_type="ern_name")}.")
-        get_loc_descriptions(place=loc.currentPlace)
-        print(prospective_cardinal.description)
+        if prospective_cardinal.cardinal_data:
+            get_loc_descriptions(place=loc.currentPlace)
+            print(prospective_cardinal.description)
+
         return "no_change", None
 
 

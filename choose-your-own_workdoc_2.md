@@ -2343,3 +2343,138 @@ NOTE: I need to find where it's adding 'key' as an attr. I already have 'is_key'
 
 7.34pm
 Okay, got rid of item-name and 'key'. The issue was it was adding the entire 'items' dict to any items in 'items', not just the portion for that item itself. The 'key' part, for some reason I was manually adding it in init. Both done now.
+
+12:57pm 26/1/26
+Did some more work on the meta control. It's quite nice now tbh.
+Now working on the location generator. Really should combine the two, they do a lot of the same work. But they're both good as they are for now, combining them is for later.
+
+Currently the loc gen assumed all cardinals exist, need to add a section for 'how many cardinals does this place have'. Also, a custom str for 'you tried to go east but this place doesn't have an east'. Like for the work shed, 'This place is pretty small, there's not really anywhere else to go'.
+
+
+look at work shed
+No viable sequences found for look at work shed.
+verb direction location
+
+So maybe I... need a description for locations if they're visible like this? Because 'outside of work shed' needs to be described from the west graveyard. Or I guess, just specify a location type that can be seen?
+
+So add verb_dir_loc, and if hasattr(location, "visible_from") and location.visible_from = loc.current, print location.ext_description.
+Yeah I like that. Rarely needed but straightforward when it is.
+
+3.41pm
+Hm. Well i need to adjust the travel limit, because if the work shed is another location, currently you can't 'go' there because it means 'leaving' the graveyard. I knew I needed to be more specific.
+
+
+3.59pm
+
+Not sure why it's defaulting to work shed now, instead of graveyard.
+Also, not sure what that 'None' is.
+
+# You wake up in a work shed, right around morning. You find have a bizarrely good sense of cardinal directions; how odd.
+# `Testbot`, you think to yourself, `is it weird to be in the work shed at morning, while it's fine?`
+#
+#
+# The interior rather run-down looking work shed, previously boarded up but seemingly, not anymore.
+#
+#
+# None
+
+Oh it's probably the event msg? Not sure.
+
+Okay yes-
+"cannot_leave": ["work shed", "graveyard"]
+If graveyard is last, that's where the game starts.
+
+
+You wake up in a graveyard, right around morning. You find have a bizarrely good sense of cardinal directions; how odd.
+`Testbot`, you think to yourself, `is it weird to be in the graveyard at morning, while it's fine?`
+
+
+You see a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+The entrance gates are to the north. To the east sit a variety of headstones, to the south stands a mausoleum, and to the west is what looks like a work shed of some kind.
+
+You're facing south. There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble.
+
+
+4.03pm
+Ah, the 'none' is because there's no cardinal. Prev, I had east: None, this time I tried just omitting it entirely. Need to edit how the 'arrive at card loc' works, because it still lets you arrive at work shed south, even though there isn't one. That's why the 'None'.
+
+(This is where I need to add the default 'cardinal does not exist' text mentioned above.)
+
+        intended_cardinal = (loc_dict[loc.currentPlace.name][cardinal_str] if loc_dict[loc.currentPlace.name].get(cardinal_str) else None)
+
+
+4.35pm
+Oh.. If I don't have the instance created, then the parser can't recognise the cardinal and it gets real messy. Okay.
+
+
+You're facing north. A simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's a yellowed local map, showing the region surrounding the graveyard.
+Card inst description work shed, north: You're facing north. A simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's a yellowed local map, showing the region surrounding the graveyard.
+VARS:
+{'id': 'ef3cd105-332d-4a99-83fb-29d0690103c4', '
+
+loc.current: <cardinalInstance north work shed (f36b7b51-c7c7-4f7c-8511-11d84dfbcde4)>
+
+
+---------
+Another run to test:
+
+Cardinal: north
+You're facing north. A simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's a yellowed local map, showing the region surrounding the graveyard.
+Card inst description work shed, north: You're facing north. A simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's a yellowed local map, showing the region surrounding the graveyard.
+VARS:
+{'id': '720e71af-15b6-40d1-866a-6563ee53a46b', 'name': 'north', 'place_name': 'north work shed', 'ern_name': 'northern work shed', 'place': <placeInstance work shed (11ed865e-4086-4611-8733-4a6a22d1acd4)>, 'alt_names': None, 'colour': None, 'cardinal_data': {'item_desc': {'generic': "A simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's ", 'local map': 'a yellowed [[]], showing the region surrounding the graveyard', 'iron
+key': 'an old [[]], mottled with age', 'no_items': 'not much of any real interest.'}, 'short_desc': "There's a simple desk, hazily lit by the window over it", 'items': {'secateurs': {'description': 'Slightly rusted secateurs, still likely sharp enough to do their job.', 'is_hidden': False}, 'iron key': {'description': 'An old iron key, pitted on the surface but still appears functional.', 'is_key_to': 'padlock', 'is_hidden': True}}}, 'missing_cardinal': "There's not much else to see around here. Dusty and largely disused, nothing really catches your eye.", 'north': {'item_desc': {'generic': "A simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's ", 'local map': 'a yellowed [[]], showing the region surrounding the graveyard', 'iron key': 'an old [[]], mottled with age', 'no_items': 'not much of any real interest.'}, 'short_desc': "There's a simple desk, hazily lit by the window over
+it", 'items': {'secateurs': {'description': 'Slightly rusted secateurs, still likely sharp enough to do their job.', 'is_hidden': False}, 'iron key': {'description': 'An old iron key, pitted on the surface but still appears functional.', 'is_key_to': 'padlock', 'is_hidden': True}}}, 'cardinal_actions': "'leave', 'stay', preamble='Do you want to leave, or stay?'", 'by_placename': {}, 'description': "You're facing \x1b[1;31mnorth\x1b[0m. A simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's a yellowed \x1b[1;31mlocal map\x1b[0m, showing the region surrounding the graveyard."}
+
+
+{'north': <cardinalInstance north work shed (e0236530-74f8-4225-98d8-fda431ae0747)
+
+
+
+-----------
+from cardinal's vars:
+#   {'id': '3056f2ed-0243-4c08-849b-bea14ea24401', 'name': 'north', 'place_name': 'north work shed', 'ern_name': 'northern work shed', 'place': <placeInstance work shed (cffaab9f-3645-45c2-9fb9-b4f6805c503f)>,
+
+from graveyard place's vars:
+#   {'id': 'cffaab9f-3645-45c2-9fb9-b4f6805c503f', 'name': 'work shed', 'a_name': 'a work shed', 'the_name': 'the work shed', 'alt_names': {}, 'visited': False, 'first_weather': None, 'description': None, 'current_loc': None, 'colour': 'red', 'cardinals': {'north': <cardinalInstance north work shed (3831c925-2462-478c-a64e-a3bf75022707)>,
+
+This is card_inst = locRegistry.cardinals[place].get(card):
+#   Cardinal: north
+#   You're facing north. A simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's a yellowed local map, showing the region surrounding the graveyard.
+#   Card inst description work shed, north: You're facing north. A simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's a yellowed local map, showing the region surrounding the graveyard.
+#   VARS:
+#   {'id': '3056f2ed-0243-4c08-849b-bea14ea24401',
+
+{'id': '72acc9c3-8b90-4ce0-b0ea-907ecec6e809',
+And then this:
+
+
+            card_inst = locRegistry.cardinals[place].get(card)
+            card_inst.description = description_dict[place.name].get(card)
+            print(f"Card inst description {place.name}, {card}: {card_inst.description}")
+
+So... north work shed is two different instances. I've no idea how/why that's happened, what the hell?
+
+
+Oh this is maddening.
+
+for north, work shed: LONG_DESC: ["A simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's ", 'a yellowed \x1b[1;36mlocal map\x1b[0m, showing the region surrounding the graveyard'], len: 2
+LOCATION DESCRIPTION: {'work shed': "Around you, you see the interior of a rather run-down looking \x1b[1;34mwork shed\x1b[0m, previously boarded up but seemingly, not anymore.\nThere's a simple desk, hazily lit by the window over it
+to the \x1b[1;31mnorth\x1b[0m."}
+CARDINAL DESCRIPTIONS: {'work shed': {'north': "You're facing \x1b[1;31mnorth\x1b[0m. A simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's a yellowed \x1b[1;36mlocal map\x1b[0m, showing the region surrounding the graveyard."}}
+Location: work shed
+Around you, you see the interior of a rather run-down looking work shed, previously boarded up but seemingly, not anymore.
+There's a simple desk, hazily lit by the window over it to the north.
+Cardinal: north
+You're facing north. A simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's a yellowed local map, showing the region surrounding the graveyard.
+<cardinalInstance north work shed (ad04d680-79b8-4804-8d9b-93ee3dd38c21)>
+Traceback (most recent call last):
+
+How does it give me all that, then:
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "d:\Git_Repos\choose-your-own\verb_actions.py", line 446, in turn_cardinal
+    print(loc.current.description)
+          ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'cardinalInstance' object has no attribute 'description'
+
+And yeah I know, iut's because apparently there are two different norths. I'll try again tomorrow, today's been too hard and I need to stop.

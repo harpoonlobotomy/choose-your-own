@@ -772,5 +772,29 @@
     "is_key": true,
     "can_pick_up": true,
     "item_size": 0
+  },
+  "secateurs": {
+    "name": "secateurs",
+    "item_type": "{'can_pick_up'}",
+    "can_pick_up": true,
+    "item_size": 0,
+    "description": "Slightly rusted secateurs, still likely sharp enough to do their job.",
+    "is_hidden": false
+  },
+  "local map": {
+    "name": "local map",
+    "item_type": "{'can_pick_up', 'fragile', 'event', 'books_paper'}",
+    "can_pick_up": true,
+    "item_size": 0,
+    "broken_name": null,
+    "flammable": false,
+    "can_break": true,
+    "event": null,
+    "event_type": "item_triggered",
+    "event_key": null,
+    "event_item": null,
+    "print_on_investigate": true,
+    "can_read": true,
+    "description": "a yellowed [[]], showing the region surrounding the graveyard"
   }
 }
