@@ -45,6 +45,36 @@ def look_at_item(item_inst): ## this is just using everything from registry. Sho
                 children = ", ".join(col_list(children))
                 print(f"  {children}")
 
+def set_attr_by_loc(attr = "is_hidden", val = "False", location=None, items=None):
+
+    from itemRegistry import registry
+    instances = set()
+
+    if location:
+        named_local = {}
+        local_items = registry.get_item_by_location(location)
+        for item in local_items:
+            named_local[item.name] = item
+
+        if items:
+            if isinstance(items, str):
+                if items in named_local:
+                    print(f"Found local item: {items}")
+                    instances.add(named_local[items])
+
+
+            elif isinstance(items, set):
+                for item in items:
+                    if isinstance(item, str):
+                        if item in named_local:
+                            print(f"Found local item: {item}")
+                            instances.add(named_local[item])
+
+    for item in instances:
+        print(f"Instances: {item}")
+        if hasattr(item, attr) and getattr(item, attr):
+            setattr(item, attr, val)
+            print(f"SET ATTRIBUTE: {item}, {attr}, {val}")
 
 def add_item_to_loc(item_instance, location=None):
 

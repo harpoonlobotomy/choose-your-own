@@ -101,9 +101,9 @@
     "alt_names": [],
     "north": {
       "item_desc": {
-        "generic": "There's a dark fence blocking the view beyond, ",
-        "gate": "a heavy wrought-iron [[]] - imposing but run-down",
-        "padlock": "an old dark-metal [[]] on a chain holding the gate closed"
+        "generic": "There's a dark fence blocking the horizon, prominently featuring ",
+        "gate": "a heavy wrought-iron [[]] - standing strong but run-down",
+        "padlock": "an old dark-metal [[]] on a chain, holding the gate closed"
       },
       "items": {
         "padlock": {
@@ -123,9 +123,10 @@
     },
     "east": {
       "item_desc": {
-        "generic": "You see a variety of headstones, most quite worn and decorated by ",
-        "moss": "clumps of [[]]",
-        "glass jar": "a [[]] being used as a vase in front of one of the headstones, with some dried flowers left long ago"
+        "generic": "You see a variety of headstones, most quite worn, and ",
+        "moss": "decorated by clumps of [[]]",
+        "glass jar": "a [[]] being used as a vase in front of one of the headstones, with some dried flowers left long ago",
+        "no_items": "not much else. It's quite empty here..."
       },
       "short_desc": "sit a variety of headstones",
       "long_desc": "You see a variety of headstones, most quite worn and decorated by clumps of moss. There's a glass jar being used as a vase in front of one of the headstones, with dried flowers left long ago.",
@@ -144,13 +145,7 @@
       "item_desc": {},
       "short_desc": "stands a mausoleum",
       "long_desc": "There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble.",
-      "items": {
-        "iron key": {
-          "description": "An iron key, handy for a quest or something, probably.",
-          "is_key_to": "padlock",
-          "is_hidden": false
-        }
-      }
+      "items": {}
     },
     "west": {
       "item_desc": {

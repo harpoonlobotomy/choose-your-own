@@ -471,6 +471,32 @@ def do_other():
             for card in card_dict[place]:
                 print(f"{card.id}, {card.name}")
 
+    print("Do you want to print all items?")
+    if yes_test():
+
+        item_dict = {}
+        from itemRegistry import all_items_generated, all_item_names_generated
+        #print(f"All items: {all_items_generated}")
+        for item in all_items_generated:
+            item_dict.setdefault(item.name, set()).add(item)
+
+        for item in item_dict:
+            print(f"ITEM NAME: {item}")
+            for inst in item_dict[item]:
+                print(f"INSTANCE: {inst}")
+
+        for item in all_item_names_generated:
+            print(f"ITEM: {item}")
+
+    print("Do you want to print all events?")
+    if yes_test():
+        from eventRegistry import events
+        for state in events.by_state:
+            print(f"State: {state}")
+            for event in events.by_state[state]:
+                print(f"EVENT: {event}")
+
+
 def add_temp_to_loc_data():
 
     temp_file = r"dynamic_data\temp_loc.json"
@@ -494,13 +520,14 @@ def meta_control(input_format, noun=None, location=None, cardinal=None):
     print("\n")
     while True:
         print("\nWhat do you want to do?\n")
-        test = input("\n1: See/edit an item\n2: See/edit a location\n3: See/edit an event\n3: Add temp location data to main loc_data file\n4: Leave meta control\n5: Other\n\n")
+        test = input("\n1: See/edit an item\n2: See/edit a location\n3: See/edit an event\n4: Add temp location data to main loc_data file\n5: Other\nAnything else: Leave meta control\n\n")
         if test in ("1", "2", "3", "5"):
             if test == "1":
                 edit_noun(select_noun())
             elif test == "2":
                 edit_location(select_location())
             elif test == "3":
+                print("Not implemented yet.")
                 add_temp_to_loc_data()
             elif test == "5":
                 print("Going to do_other")

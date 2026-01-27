@@ -8,8 +8,9 @@ from env_data import locRegistry as loc
 import testclass
 import printing
 
-global all_item_names_generated
+global all_item_names_generated, all_items_generated
 all_item_names_generated = list()
+all_items_generated = set()
 
 CARDINALS = ["north", "east", "south", "west"]
 
@@ -97,7 +98,7 @@ class ItemInstance:
 
 
     def __init__(self, definition_key:str, attr:dict):
-        print(f"\n\n@@@@@@@@@@@@@@@@@ITEM {definition_key} in INIT ITEMINSTANCE@@@@@@@@@@@@@@@\n\n")
+        #print(f"\n\n@@@@@@@@@@@@@@@@@ITEM {definition_key} in INIT ITEMINSTANCE@@@@@@@@@@@@@@@\n\n")
         #print(f"definition_key: {definition_key}, attr: {attr}")
         #print(f"Init in item instance is running now. {definition_key}")
         self.id = str(uuid.uuid4())  # unique per instance
@@ -217,6 +218,7 @@ class itemRegistry:
         #print(f"[init_single] ITEM NAME: {item_name}")
         #print(f"[init_single] ITEM ENTRY: {item_entry}")
         inst = ItemInstance(item_name, item_entry)
+        all_items_generated.add(inst)
         self.instances.add(inst)
 
         self.item_defs[item_name] = item_entry
@@ -295,6 +297,7 @@ class itemRegistry:
 
         if item_name in list(self.item_defs):
             inst = self.init_single(item_name, self.item_defs[item_name])
+            all_item_names_generated.append((inst, "get_item_from_defs"))
             return inst
 
 
@@ -396,7 +399,7 @@ class itemRegistry:
                     #print(f"create child by init_single: {child}")
                     if child in self.item_defs:
                         target_child = self.init_single(child, self.item_defs[child])
-                        all_item_names_generated.append((child, "generate_child from item_defs"))
+                        all_item_names_generated.append((target_child, "generate_child from item_defs"))
                     else:
                         target_child = use_generated_items(child)
                         if not target_child:
@@ -1103,6 +1106,7 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, part
 
     #print(f"new_item_from_str: \n {new_item_dict}, {item_name}\n\n")
     inst = registry.init_single(item_name, new_item_dict)
+    all_item_names_generated.append((inst, "new_item_from_str"))
     #print(f"Inst after self.init_items(): {inst}, type: {type(inst)}")
     registry.instances.add(inst)
     registry.temp_items.add(inst)
@@ -1134,6 +1138,7 @@ def apply_loc_data_to_item(item, item_data, loc_data):
         item_data["starting_location"] = loc_data["starting_location"]
 
     inst = registry.init_single(item, item_data)
+    all_item_names_generated.append((inst, "apply_loc_data_to_item"))
     if hasattr(inst, "starting_children") and getattr(inst, "starting_children"):
         if not hasattr(registry, "check_for_children"):
             registry.check_for_children = []

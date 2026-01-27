@@ -2,6 +2,7 @@
 ### Interface between item_actions and the verbs.
 
 #import time
+from asyncio import events
 from logger import logging_fn, traceback_fn
 from env_data import cardinalInstance, locRegistry as loc, placeInstance
 from interactions import item_interactions
@@ -52,7 +53,7 @@ def set_noun_attr(*values, noun):
     trigger_done=False
     ##check noun for event ties before applying attr changes.
     if hasattr(noun, "event"):
-        print(f"Noun {noun} has event ties. Do things here.")
+        #print(f"Noun {noun} has event ties. Do things here.")
         from eventRegistry import events
 
         event = events.event_by_name(noun.event)
@@ -74,6 +75,12 @@ def set_noun_attr(*values, noun):
                 print(f"[Event trigger: lock unlocked: {noun}, {event}, {end_trigger}:{item}/{val}]")
                 events.end_event(event)
                 trigger_done=True
+        elif end_trigger and "item_in_inv" in end_trigger:
+            from set_up_game import game
+            if noun in game.inventory:
+                events.end_event(event)
+                trigger_done=True
+
 
         if trigger_done:
             if event.end_trigger["item_trigger"].get("item_flags"):
@@ -226,7 +233,7 @@ def get_entries_from_dict(input_dict):
         for kind, entry in idx.items():
             if kind == "noun":
                 if noun_entry != None:
-                    print(f"More than one `noun`: {noun_entry} already exists, {entry} will be ignored.")
+                    #print(f"More than one `noun`: {noun_entry} already exists, {entry} will be ignored.")
                     continue
                 noun_entry = entry
             if kind == "verb":
@@ -388,14 +395,8 @@ def inst_from_idx(dict_entry:dict, kind_str:str, return_str=False) -> ItemInstan
 
     return dict_entry[kind_str]["instance"]
 
-##############################
-#from interactions.player_movement import new_relocate
-            #new_relocate(details)
-# little bits, the finer end points that things resolve to.
-
 def turn_cardinal(prospective_cardinal, turning = True):
     logging_fn()
-
 
     if prospective_cardinal in ("left", "right"):
         print("prospective cardinal in left/right")
@@ -406,18 +407,14 @@ def turn_cardinal(prospective_cardinal, turning = True):
             "south":2,
             "west":3
         }
-        #left = 1
-        #right = -1
         if prospective_cardinal == "left":
             new_int = int((turning_dict[current_facing] + 1)%4)
         else:
-            new_int = int((turning_dict[current_facing] - 1)%4) ## will this wrap around to go from 0 to 3?
-        #print(f"NEW INT: {new_int}")
+            new_int = int((turning_dict[current_facing] - 1)%4)
+
         for k, v in turning_dict.items():
             if v == new_int:
-                #print(f"V == new_int: {v}")
                 prospective_cardinal = loc.by_cardinal_str(k)
-                #print(f"Prospective cardinal is now: {prospective_cardinal.name}")
 
 
     if isinstance(prospective_cardinal, dict):
@@ -432,53 +429,36 @@ def turn_cardinal(prospective_cardinal, turning = True):
     if isinstance(prospective_cardinal, str):
         prospective_cardinal = loc.by_cardinal_str(prospective_cardinal)
 
-
-    #print(f"prospective cardinal going to loc test: {prospective_cardinal}")
     bool_test, _, _ = is_loc_current_loc(None, prospective_cardinal)
     from env_data import loc_dict, get_loc_descriptions
     if not bool_test:
         if not prospective_cardinal.cardinal_data:
-            print(prospective_cardinal.place.missing_cardinal)
-            #print(f"[[Can't turn that way. Not allowed. ({prospective_cardinal} doesn't have cardinal data.)]]")
-            print(assign_colour("You decide to turn back.", colour="description"))
+            if hasattr(prospective_cardinal.place, "missing_cardinal"):
+                print(prospective_cardinal.place.missing_cardinal)
+            else:
+                print("There's nothing over that way.")
+
+            print(assign_colour("\n    You decide to turn back.\n", colour="event_msg"))
             get_loc_descriptions(place=loc.currentPlace)
-            #print(loc.current)
+
             print(loc.current.description)
             return
+
         cardinal_str = prospective_cardinal.name
         intended_cardinal = (loc_dict[loc.currentPlace.name][cardinal_str] if loc_dict[loc.currentPlace.name].get(cardinal_str) else None)
-        #print(f"Intended_cardinal: {intended_cardinal}")
-        if intended_cardinal:# and intended_cardinal.cardinal_data:
+
+        if intended_cardinal:
             turn_around(prospective_cardinal)
         else:
-            if loc.current.missing_cardinal:
-                print(loc.current.missing_cardinal)
-                print("You decide to turn back.")
-                get_loc_descriptions(place=loc.currentPlace)
-                print(loc.current)
-                print(loc.current.description)
-
-            else:
-                print("There's nothing over that way.\n")
             print(f"You're facing {assign_colour(loc.current.place_name)}.")
             if loc.current.cardinal_data:
                 get_loc_descriptions(place=loc.currentPlace)
                 print(loc.current)
-                #print(f"loc current: {loc.current}")
-                #print(f"vars loc.current: \n{vars(loc.current)}")
                 print(loc.current.description)
-                #print("loc.current.description ^ ")
-            #get_loc_descriptions(place=loc.currentPlace)
-            #print(loc.current.description)
-            #print("loc.current.description ^ ")
 
         return
-        #print(f"turning_to: {turning_to}, type: {type(turning_to)}") ## Shouldn't have this, should be able to use this function for just turning.
-        #print(f"You turn to the {turning_to.ern_name}")
-        #return "new_cardinal", turning_to
+
     else:
-        #print(f"Prospective cardinal: {prospective_cardinal}")
-        #print(f"Prospective cardinal.name: {prospective_cardinal.name}")
         if turning:
             print(f"You're already already facing the {assign_colour(prospective_cardinal, card_type="ern_name")}.")
         if prospective_cardinal.cardinal_data:
@@ -768,28 +748,29 @@ def lock_unlock(format_tuple, input_dict, do_open=False):
     lock=None
     logging_fn()
     verb = get_verb(input_dict)
+    noun = get_noun(input_dict)
     if len(format_tuple) == 2:
-        print("Requires a key, no?")
+        print(f"{noun.name} requires a key, no?")
     elif len(format_tuple) == 4:
-        print(f"Format is len 4: {format_tuple}")
+        #print(f"Format is len 4: {format_tuple}")
         if format_tuple.count("noun") == 2:
-            print("format tuple has 2 nouns")
+            #print("format tuple has 2 nouns")
             noun_1 = get_noun(input_dict)
             accessible_1, _ = can_interact(noun_1)
             noun_2 = get_noun(input_dict, 2)
             accessible_2, _ = can_interact(noun_2)
             if accessible_1 and accessible_2:
-                print(f"{noun_1} and {noun_2} are both accessible.")
+                #print(f"{noun_1} and {noun_2} are both accessible.")
                 success = check_key_lock_pairing(noun_1, noun_2)
                 if success:
-                    print(f"Key {noun_1} is accessible and will open lock {noun_2}")
+                    #print(f"Key {noun_1} is accessible and will open lock {noun_2}")
                     key = noun_1
                     lock = noun_2
 
                 else:
                     success = check_key_lock_pairing(noun_2, noun_1)
                     if success:
-                        print(f"Key {noun_2} is accessible and will open lock {noun_1}")
+                        #print(f"Key {noun_2} is accessible and will open lock {noun_1}")
                         key = noun_2
                         lock = noun_1
                 if key and lock:
@@ -1075,6 +1056,7 @@ def turn(format_tuple, input_dict):
     #return "new_cardinal", new_cardinal
 
 def take(format_tuple, input_dict):
+    from eventRegistry import events
     logging_fn()
 
     added_to_inv = False
@@ -1083,7 +1065,7 @@ def take(format_tuple, input_dict):
         added_to_inv = False
 
         inst, container, reason_val, meaning = registry.check_item_is_accessible(noun_inst)
-        #print(f"TAKE: {reason_val} Meaning: {meaning}")
+        print(f"TAKE: {reason_val} Meaning: {meaning}")
         if reason_val not in (0, 3, 4, 5, 8):
             print(f"Sorry, you can't take the {assign_colour(noun_inst)} right now.")
             return 1, added_to_inv
@@ -1097,31 +1079,28 @@ def take(format_tuple, input_dict):
                 print("[cannot pick up because it's secretly inside a container.]")
                 return 8, added_to_inv
             import verb_membrane
-            can_pickup = verb_membrane.check_noun_actions(noun_inst, "take")
-            if can_pickup:
-                #print(f"CAN PICK UP {noun_inst}")
+            #can_pickup = verb_membrane.check_noun_actions(noun_inst, "take")
+            if noun_inst.can_pick_up:
+                #print(f"CAN PICK UP {noun_inst} according to check_noun_actions")
                 #print("VARS noun_inst")
                # print(vars(noun_inst))
-                if hasattr(noun_inst, "can_pick_up"):
-                    #print("hasattr(noun_inst, 'can_pick_up'):")
-                    #print(f"{hasattr(noun_inst, 'can_pick_up')}:")
-                    if noun_inst.can_pick_up:
-                        #print("noun_inst.can_pick_up")
-                        if reason_val in (3, 4):
-                            registry.move_from_container_to_inv(noun_inst, inventory=game.inventory, parent=container)
-                            if noun_inst in game.inventory:
-                                added_to_inv = True
-                                return 0, added_to_inv
-                        elif reason_val == 0:
-                            #print("About to try to pick up")
-                            registry.pick_up(noun_inst, inventory_list=game.inventory) ## the can_take function shouldn't be doing this part.
-                            #print("Did pick_up")
-                            if noun_inst in game.inventory:
-                                added_to_inv = True
-                                return 0, added_to_inv
-                    else:
-                        print(f"You can't pick up the {assign_colour(noun_inst)}, it's either too heavy or stuck somehow.")
-                        return 1, added_to_inv
+                if hasattr(noun_inst, "can_pick_up") and noun_inst.can_pick_up == True:
+                    #print("passed noun_inst.can_pick_up")
+                    if reason_val in (3, 4):
+                        registry.move_from_container_to_inv(noun_inst, inventory=game.inventory, parent=container)
+                        if noun_inst in game.inventory:
+                            added_to_inv = True
+                            return 0, added_to_inv
+                    elif reason_val == 0:
+                        print("About to try to pick up")
+                        registry.pick_up(noun_inst, inventory_list=game.inventory) ## the can_take function shouldn't be doing this part.
+                        print("Did pick_up")
+                        if noun_inst in game.inventory:
+                            added_to_inv = True
+                            return 0, added_to_inv
+                else:
+                    print(f"You can't pick up the {assign_colour(noun_inst)}.")
+                    return 1, added_to_inv
             else:
                 print(f"You can't pick up the {assign_colour(noun_inst)}.")
                 return 1, added_to_inv
@@ -1131,6 +1110,7 @@ def take(format_tuple, input_dict):
         noun_idx = format_tuple.index("noun")
         noun_inst = inst_from_idx(input_dict[noun_idx], "noun")
         #print(f"IS NOUN: {noun_inst}")
+        noun_loc = noun_inst.location
         cannot_take, added_to_inv = can_take(noun_inst)
 
         if cannot_take and hasattr(noun_inst, "can_consume"):
@@ -1143,6 +1123,7 @@ def take(format_tuple, input_dict):
             #print(f"INPUT DICT FOR v,n,d,n in take: {input_dict}")
             noun_idx = format_tuple.index("noun")
             noun_inst = inst_from_idx(input_dict[noun_idx], "noun")
+            noun_loc = noun_inst.location
             dir_inst = inst_from_idx(input_dict[noun_idx+1], "direction", return_str=True)
             if dir_inst not in ("and", "from"):
                 print(f"dir_inst is {dir_inst}; was expecting 'from' or 'and'. May need to adjust take function.")
@@ -1175,8 +1156,8 @@ def take(format_tuple, input_dict):
 
     if added_to_inv:
         #print(f"{assign_colour(noun_inst)} is now in your inventory.") # original
-
         print(f"The {assign_colour(noun_inst)} {is_plural_noun(noun_inst)} now in your inventory.")
+        events.is_event_trigger(noun_inst, noun_loc)
         return
 
 def put(format_tuple, input_dict, location=None):
@@ -1330,8 +1311,8 @@ def set_action(format_tuple, input_dict):
 
 def use_item_w_item(format_tuple, input_dict):
     logging_fn()
-    print(f"Format list: {format_tuple}")
-    print(f"Length format list: {len(format_tuple)}")
+    #print(f"Format list: {format_tuple}")
+    #print(f"Length format list: {len(format_tuple)}")
     ## use x on y
     verb_entry, noun_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
     if format_tuple == (('verb', 'noun', 'direction', 'noun')):
@@ -1371,7 +1352,7 @@ def use_item_w_item(format_tuple, input_dict):
 
 def use_item(format_tuple, input_dict):
     logging_fn()
-    print(f"format_tuple = {format_tuple}")
+    #print(f"format_tuple = {format_tuple}")
     if len(format_tuple) == 4:
         use_item_w_item(format_tuple, input_dict)
         return

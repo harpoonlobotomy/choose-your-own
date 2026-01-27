@@ -88,47 +88,28 @@ def load_world(relocate=False, rigged=False, new_loc=None):
     logging_fn()
     print("Starting load_world in set_up_game.py\n\n")
     from env_data import locRegistry as loc, weatherdict
-    from eventRegistry import events
-
-    rig_place = "shrine"#"a city hotel room"#
-    placerig = False
-
-    if events.travel_is_limited:
-        if events.held_at.get("held_at_loc"):
-            rig_place = events.held_at.get("held_at_loc")
-            events.play_event_msg(msg_type="held", print_txt=True)
-            placerig = True
 
     rigged = False#True
     rig_weather = "perfect"
     rig_time = "midnight"
 
     if loc.currentPlace != None:
-        loc.last_loc = loc.currentPlace # changed from game.last_loc
+        loc.last_loc = loc.currentPlace
 
-    if rigged or placerig:
-        if new_loc and relocate:
-            if placerig:
-                events.play_event_msg()
-            else:
-                loc.set_current(new_loc)
-        else:
-            loc.set_current(rig_place)
-        if rigged:
-            game.time=rig_time
-            game.weather=rig_weather
-
-
+    if rigged:
+        loc.set_current(new_loc)
+        game.time=rig_time
+        game.weather=rig_weather
 
     elif not relocate:
-            game.time = random.choice(choices.time_of_day)
-            weatherlist = list(weatherdict.keys())
-            game.weather = random.choice(weatherlist)#
+        game.time = random.choice(choices.time_of_day)
+        weatherlist = list(weatherdict.keys())
+        game.weather = random.choice(weatherlist)
+        if not new_loc:
             loc.set_current(random.choice(list(loc.places.values())))
 
-    else:
-        if new_loc:
-            loc.currentPlace = new_loc
+    if new_loc:
+        loc.set_current(new_loc)
 
     return loc.currentPlace
 
@@ -143,7 +124,7 @@ def init_game():
     init_settings()
     test_for_weird()
     #choices.set_choices()
-    load_world()
+    load_world(new_loc="graveyard") # always start at graveyard
     #initialise_itemRegistry()
     set_inventory()
     loadout() ## move loadout after load_world to allow for time_management to run first. Testing...

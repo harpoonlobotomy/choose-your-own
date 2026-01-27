@@ -341,7 +341,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
     bg = None
     bld = ita = u_line = invt = False
 
-    specials = ("location", "loc", "description", "title_bg", "title", "deco", "hash", "title_white", "equals", "underscore")
+    specials = ("location", "loc", "description", "title_bg", "title", "deco", "hash", "title_white", "equals", "underscore", "event_msg")
 
     Colours.colour_counter = Colours.colour_counter%len(cardinals)
 
@@ -376,6 +376,9 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
                 bld=True
             if colour == "title":
                 bld=True
+            if colour == "event_msg":
+                ita=True
+                colour = "yellow"
 
     elif isinstance(item, list):
         print(f"Item instance in assign_colour is a list: {item}")

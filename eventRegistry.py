@@ -50,6 +50,10 @@ class eventInstance:
         self.keys = set() ## items that effect the event
         self.msgs = attr.get("messages") # what prints when the event starts/ends/on certain cues
         self.limits_travel = False
+        self.held_items = {}
+        self.hidden_items = set()
+        self.start_trigger_location = None
+        self.end_trigger_location = None
 
         for item in attr:
             setattr(self, item, attr[item])
@@ -59,16 +63,30 @@ class eventInstance:
             if attr["effects"].get("limit_travel"):
                 self.limits_travel = True
                 self.travel_limited_to = set()
-                events.travel_is_limited = attr["effects"]["limit_travel"]
+                #events.travel_is_limited = attr["effects"]["limit_travel"] # OH this is broken. Can't overwrite it like this, otherwise adding a new event will just clear this.
                 if attr["effects"]["limit_travel"].get("cannot_leave"):
                     for location in attr["effects"]["limit_travel"].get("cannot_leave"):
                         self.travel_limited_to.add(location)
-                        events.held_at = dict({"held_at_loc": location, "held_by": self})
+                        #events.held_at = dict({"held_at_loc": location, "held_by": self}) ## only records 'held_at_loc' as the last one, so graveyard_gate event records 'graveyard' but not 'work shed' even though both are valid. Works okay with travel_limited_to though, so the potential locations are correct.
                     #events.held_at_loc = attr["effects"]["limit_travel"]["cannot_leave"]
 
                 #print(f"Initiated event limits travel: {attr["effects"].get("limit_travel")}")
 
-        self.attr = attr
+            if attr["effects"].get("hide_item"):
+                self.hidden_items.add(attr["effects"]["hide_item"]["item_name"])
+                self.items.add(attr["effects"]["hide_item"]["item_name"])
+
+            if attr["effects"].get("hold_item"):
+                print(f"Event holds an item: {attr["effects"]["hold_item"]["item_name"]}")
+                self.held_items[(attr["effects"]["hold_item"]["item_name"])] = attr["effects"]["hold_item"]["item_loc"] # only allows for one item to be held. Fine for now but will need changing.
+                self.items.add(attr["effects"]["hold_item"]["item_name"])
+
+        if attr.get("end_trigger"):
+            if attr.get("end_trigger"):
+                if attr["end_trigger"].get("item_trigger"):
+                    self.keys.add(attr["end_trigger"]["item_trigger"]["trigger_name"])
+                    self.end_trigger_location = attr["end_trigger"]["item_trigger"]["trigger_location"]
+
         """
         self.event_items
         self.event_triggers
@@ -90,19 +108,39 @@ class eventRegistry:
         for state in event_states.values():
             self.by_state[state] = set() ## really don't need these and the current/past/future. Will probably use this alone instead, it'll be easier to set up the direction.
 
+
+
+                    #if event_dict[event][trigger]["item_trigger"].get("trigger_location"):
+                        #event event_dict[event][trigger]["item_trigger"]["trigger_location"]:
+        # so braindead right now. Maybe I just ignore the whole trigger_location thing in this case because you can only pick up an item from its start location.
+
+
+
+
     def add_event(self, event_name, event_attr):
         event = eventInstance(event_name, event_attr)
         self.events.add(event)
         self.by_id[event.id] = event
         self.by_name[event.name] = event
 
-#'## Remove this bit with current_, future_, just use the dict.
+
         if hasattr(event, "starts_current"):
             self.by_state[1].add(event)
             event.event_state = 1 # (current event)
+            if event.limits_travel:
+                self.travel_is_limited = True # mark as true if event starts at runtime.
+            if event.held_items:
+                from interactions.item_interactions import set_attr_by_loc
+                for item in event.held_items:
+                    location = event.held_items[item]
+                    set_attr_by_loc(attr = "can_pick_up", val = "False", location = location, items = item)
+
+                print(f"Attribute set: can_pick_up")
         else:
             self.by_state[2].add(event)
             event.event_state = 2 # (future event)
+
+        return event
 
     def event_by_state(self, state)-> set:
         if not isinstance(state, int):
@@ -141,71 +179,49 @@ class eventRegistry:
                     return holder.msgs["held_msg"]
 
             else:
-                if event.event_state == 1:# in self.by_state.get(1):
+                if event.event_state == 1:
                     if event.msgs.get("held_msg"):
                         if print_txt:
                             print(event.msgs["held_msg"])
                         return event.msgs["held_msg"]
 
-    def play_event_msg(self, msg_type="held", event=None, print_txt=True): # later make this false so I can format the msg.
-
-        #print("Start of play_event_msg in eventReg")
-        #print(f"msg_type: {msg_type}, event: {event}")
+    def play_event_msg(self, msg_type="held", event=None, print_txt=True):
 
         def print_current(event, state_type="held", print_text=False):
-
-            #if event not in self.by_state.get(1): ## wait this shouldn't be checking validity here, right? It should just print what it's given.
-            #    msg = f"Event {event.name} is not currently happening: {event.event_state}"
-            #    print(msg)
-            #    return msg
 
             if event.msgs.get(f"{state_type}_msg"):
                 msg = event.msgs[f"{state_type}_msg"]
                 if print_text:
-                    print(assign_colour(msg, colour="description"))
+                    print(assign_colour(msg, colour="event_msg"))
                 return msg
 
 
             return f"Nothing to print print for event `{event}`, msg_type `{msg_type}`." # remove this later and replace with a type-defined default.
 
-
         if "_msg" in msg_type:
             msg_type = msg_type.replace("_msg", "")
 
         if msg_type == "held":
-            #self.play_held_msg(event, print_txt) # right now this is pointless, but I'd like to be able to direct the print messages through this instead of importing a function for each msg type.
 
             if self.travel_is_limited:
                 if event == None:
-                    event = self.held_at.get("held_by") # currently only works if you can only be restricted by one event, will have to change this later.
+                    event = self.held_at.get("held_by")
 
                 return print_current(event, state_type="held", print_text=print_txt)
-
 
         if not event:
             print("Need to define event for start/end messages.")
             return ""
 
         if msg_type == "start":
-
             return print_current(event, state_type="start", print_text=print_txt)
 
         if msg_type == "end":
             if not event:
                 print("Need to define event for start/end messages.")
                 return ""
-            #print("print_current msg_type 'end'")
+
             return print_current(event, state_type="end", print_text=print_txt)
-            #if event not in self.by_state.get(1):
-            #    print("Cannot play start message as the event isn't running")
-            #    return ""
-#
-            #if event.msgs.get("start_msg"):
-            #    if print_txt:
-            #        print(event.msgs["start_msg"])
-            #    return event.msgs["start_msg"]
-
-
 
 
     def start_event(self, event_name:str):
@@ -258,10 +274,26 @@ class eventRegistry:
                 event_to_end.event_state = 2
 
             if event_to_end.limits_travel:
-                self.travel_is_limited = False ## Maybe do it with ints instead of a bool, so if multiple events limit travel it doesn't remove it for all? Or really, I need staged limits (eg one event limits to only x places, while another limits to a specific room temporarily.) Or, maybe this is a bool, then it can specify elsewhere.
+                no_limits = True
+                for event in self.by_state:
+                    if event != event_to_end and hasattr(event, "limits_travel"):
+                        no_limits = False
 
-            #if event_to_end.limits_travel == "cannot_leave":
-            #    print(f"Cannot leave {event_to_end.limits_travel["cannot_leave"]}") # did not mean to end this to end_events...
+                if no_limits:
+                    self.travel_is_limited = False # untested
+
+            if event_to_end.hidden_items:
+                #print(f"event_to_end.hidden_items: {event_to_end.hidden_items}")
+                #print("Here we need to unhide any hidden items.")
+                event_to_end.end_trigger_location
+                from interactions.item_interactions import set_attr_by_loc
+                set_attr_by_loc(attr = "is_hidden", val = "False", location = event_to_end.end_trigger_location, items = event_to_end.hidden_items)
+
+            if event_to_end.held_items:
+                from interactions.item_interactions import set_attr_by_loc
+                set_attr_by_loc(attr = "is_pick_up", val = "True", location = event_to_end.end_trigger_location, items = event_to_end.hidden_items)
+                print(f"event_to_end.held_items: {event_to_end.held_items}")
+                print("Here we need to release any held items (eg what the padlock should be but currently isn't).")
 
             self.play_event_msg(msg_type="end", event=event_to_end)
 
@@ -269,7 +301,30 @@ class eventRegistry:
             print(f"Cannot set event {event_name} as ended event, because it is not present in current_events: {self.event_by_state(1)} (type: { type(self.event_by_state(1))})")
             exit()
 
+    def check_movement_limits(self)-> dict:
 
+        allowed_locations = {}
+        allowed_locations_by_loc = {}
+        for event in self.by_state[1]:
+            if hasattr(event, "travel_limited_to"):
+                allowed_locations[event] = set()
+                for loc in event.travel_limited_to:
+                    allowed_locations[event].add(loc)
+                    allowed_locations_by_loc.setdefault(loc, set()).add(event)
+
+        #return allowed_locations
+        return allowed_locations_by_loc
+
+    def is_event_trigger(self, noun_inst, noun_loc):
+
+        for event in self.events:
+            if event.event_state != 1:
+                continue
+            for item in event.keys:
+                if item == noun_inst.name:
+                    if event.end_trigger_location == noun_loc.place_name:
+                        self.end_event(event)
+                        break
 
     """
     What else do I need here.
@@ -309,18 +364,19 @@ def add_items_to_events(item_data):
             event.items.add(item_data[item].get("item")) ## by using the instance here (""item""") instead of the name, it means that only this specific instance is the trigger, not any random one. Should be a benefit, but need to keep in mind that if a thing has many possible triggers, all need the flags. Should be okay though, just be mindful.
             if item_data[item].get("event_key"):
                event.keys.add(item_data[item].get("item")) ## add by name or by id... or maybe just send the damn instance over. Only reason to send an ID is to make savestates easier, but I can get grab the ID when needed if that's the case...
-            if event_dict[event_name].get("item_trigger"):
-                if event_dict[event_name]["item_trigger"].get("item_flags"):
-                    for flag in event_dict[event_name]["item_trigger"]["item_flags"]:
-                        item_data[item].get("item").flag = event_dict[event_name]["item_trigger"]["item_flags"].get(flag)
+            if event_dict[event_name].get("end_trigger"):
+                if event_dict[event_name]["end_trigger"].get("item_trigger"):
+                    if event_dict[event_name]["end_trigger"]["item_trigger"].get("item_flags"):
+                        for flag in event_dict[event_name]["end_trigger"]["item_trigger"]["item_flags"]:
+                            item_data[item].get("item").flag = event_dict[event_name]["end_trigger"]["item_trigger"]["item_flags"].get(flag)
 
-                if event_dict[event_name]["item_trigger"].get("flags_on_event_end"):
-                    if not hasattr(event, "flags_to_restore"):
-                        event.flags_to_restore = {}
-                    event.flags_to_restore[item] = event_dict[event_name]["item_trigger"]["flags_on_event_end"]
+                    if event_dict[event_name]["end_trigger"]["item_trigger"].get("flags_on_event_end"):
+                        if not hasattr(event, "flags_to_restore"):
+                            event.flags_to_restore = {}
+                        event.flags_to_restore[item] = event_dict[event_name]["end_trigger"]["item_trigger"]["flags_on_event_end"]
+
 
                #events.trigger_items[item_data[item].get("item")] = {event} # for ready access for the main script to check against. But might remove this. Functionally, I just need a quick way for 'this item says its an event trigger, do I need to do anything rn?' to check things. But again, if it's an item trigger, the item itself should be managing its trigger, no? Just sending word to the event if trigger happens. events isn't checking each item for trigger-ness.
-
 
 
             """
@@ -343,7 +399,7 @@ def initialise_eventRegistry():
     event_dict = load_json()
 
     for event_name in event_dict:
-        events.add_event(event_name, event_dict[event_name])
+        event = events.add_event(event_name, event_dict[event_name])
 
 
 

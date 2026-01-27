@@ -56,7 +56,6 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
     if new_location and not isinstance(new_location, placeInstance): ##TODO: chech if it's a viable placename str
         if isinstance(new_location, cardinalInstance):
             new_cardinal = new_location
-
         else:
             print("new_relocate requires new_location is a placeInstance.")
             print(f"It received: {new_location}, type: {type(new_location)}")#
@@ -69,23 +68,19 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
     #print(f"loc.current.place: {loc.current.place}")
     #print(f"new location: {new_location}")
     if events.travel_is_limited and not (new_location and new_location == loc.current.place):
-        cannot_leave_loc = events.held_at.get("held_at_loc")
-        holding_event = events.held_at.get("held_by") # make held by a set, each event instance carries which locations it allows.
+        allowed_locations = events.check_movement_limits()
+        #cannot_leave_loc = events.held_at.get("held_at_loc")
+        #holding_event = events.held_at.get("held_by") # make held by a set, each event instance carries which locations it allows.
+        if not allowed_locations.get(new_location.name):
+            #print(f"Location {new_location} is allowed by location-limiting event {allowed_locations[new_location.name]}")
+        #else:
+            holding_event = list(allowed_locations[loc.currentPlace.name])[0]
+            msg = events.play_event_msg("held", holding_event, print_txt=False)
+            print(f"You want to go to the {assign_colour(new_location)}, but...\n         {assign_colour(msg, colour='event_msg')}")
+            return
 
-        if holding_event:
-            if holding_event.event_state == 1:
-                allowed_loc = holding_event.travel_limited_to # set, any locations allowed by this event.
-                if not (loc.current.place.name in allowed_loc and new_location.name in allowed_loc):
-                    #print(f"{new_location} is allowed by {allowed_loc}")
-                #else:
-                #print(f"Holding event: {holding_event}, type: {type(holding_event)}")
-                #print(f"Holding event.event_state: {holding_event.event_state}")
-                    msg = events.play_event_msg("held", holding_event, print_txt=False)
-                    print(f"You try to go to the {assign_colour(new_location)}, but... {assign_colour(msg, colour='description')}")
-                    #print(f"Holding event {holding_event.name} is preventing this movement.")
-                    return
-
-    elif events.travel_is_limited and (new_location and new_location == loc.current.place):
+    if new_location and new_location == loc.current.place:
+    #elif events.travel_is_limited and (new_location and new_location == loc.current.place):
         print(f"You're already in the {assign_colour(loc.current.place)}")
         get_loc_descriptions(place=loc.currentPlace)
         print(loc.current.description)
@@ -99,7 +94,8 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
             for card in new_location.cardinals:
                 new_card_inst = new_location.cardinals.get(card)
                 if new_card_inst.cardinal_data:
-                    break
+                    new_relocate(new_cardinal=new_card_inst)
+                    return
 
         if new_card_inst:
             #print(f"NEW CARD INST: {new_card_inst}")
@@ -113,6 +109,21 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
                     break
 
     elif new_cardinal and isinstance(new_cardinal, cardinalInstance):
+
+        if not new_cardinal.cardinal_data:
+        #if not (hasattr(new_card_inst, new_card_inst.name) and getattr(new_card_inst, new_card_inst.name)):
+            #print(f"This is not a viable direction for {new_location.name}")
+            for card in new_location.cardinals:
+                new_card_inst = new_location.cardinals.get(card)
+                if new_card_inst.cardinal_data:
+                    new_relocate(new_cardinal=new_card_inst)
+                    return
+
+            if new_cardinal.missing_cardinal:
+                #print("new_cardinal.missing_cardinal")
+                print(assign_colour(new_cardinal.missing_cardinal, "event_msg"))
+                return
+
         if new_location:
             loc.set_current(loc = new_location, cardinal=new_cardinal)
         else:

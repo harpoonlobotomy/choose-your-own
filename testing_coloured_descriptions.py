@@ -16,8 +16,14 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
         loc_dict = json.load(loc_items_file)
 
     if d_type == "area_descrip":
-        if location == "hotel room":
-            location = "city hotel room" ## just for the moment, working on other things.
+        if not loc_dict.get(location):
+            for loc in loc_dict:
+                if loc_dict[loc].get("alt_names"):
+                    for name in loc_dict[loc]["alt_names"]:
+                        if name == location:
+                            location = name
+        #if location == "hotel room":
+        #    location = "city hotel room" ## just for the moment, working on other things.
         description = loc_dict[location]["descrip"]
         if "PPP" in description:
             first_part, second_part = description.split("PPP")
@@ -38,6 +44,7 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
             location = "city hotel room"
         if loc_dict[location].get(cardinal) and loc_dict[location][cardinal].get("item_desc"):
             long_dict = loc_dict[location][cardinal]["item_desc"]
+            no_items_text = long_dict.get("no_items")
             for item in long_dict:
                 if item == "generic":
                     start = long_dict[item]
@@ -48,26 +55,19 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                     if item:
                         if itemRegistry.registry.instances_by_name(item):
                             local_items = itemRegistry.registry.get_item_by_location(f"{location} {cardinal}")
-                            print(f"local_items: {local_items}")
 
                             item_inst = None
                             if local_items:
                                 for inst in itemRegistry.registry.instances_by_name(item):
-                                    print(f"Instance by name: {inst}")
                                     if inst in local_items:
-                                        print(f"instance {inst.name} in local items: {inst}")
+                                        if hasattr(inst, "is_hidden") and inst.is_hidden:
+                                            continue
                                         item_inst = inst
-                            if not item_inst:
-                                print(f"No local instance for {item}")
-                                exit()
+                                        if "[[]]" in long_dict[item]:
+                                            long_parts = long_dict[item].split("[[]]")
+                                            test = long_parts[0] + assign_colour(item_inst) + long_parts[1]
 
-                            if "[[]]" in long_dict[item]:
-                                long_parts = long_dict[item].split("[[]]")
-                                test = long_parts[0] + assign_colour(item_inst) + long_parts[1]
-
-                            else:
-                                test = long_dict[item]
-                            long_desc.append(test)
+                                            long_desc.append(test)
 
             if len(long_desc) == 1 and no_items_text:
                 long_desc.append(no_items_text)
@@ -92,7 +92,6 @@ def init_loc_descriptions(place=None):
     loc_items_json = "loc_data.json"
     with open(loc_items_json, 'r') as loc_items_file:
         loc_dict = json.load(loc_items_file)
-
 
     for location in loc_dict:
         if place != None:

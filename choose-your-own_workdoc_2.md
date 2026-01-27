@@ -2512,3 +2512,80 @@ Still two iron keys being generated. So
 
 #   if local_items and itemRegistry.registry.instances_by_name(item)[0] in local_items:
 fails because the other iron key was [0].
+
+4.54pm
+Hm. Cardinal descriptions are broken again...
+
+You're facing east. You see a variety of headstones, most quite worn and decorated by .
+
+Also, only the iron key is being duplicated. Need to look into why.
+
+5.04pm
+Think I fixed cardinal descriptions again.
+Working on the iron key duplication now.
+
+ITEM: (<ItemInstance iron key (b5949920-15d2-4312-8bb8-39f6f8649111)>, 'apply_loc_data_to_item')
+ITEM: (<ItemInstance local map (256cc9a6-3d9f-44da-88ca-96bfa6a4e990)>, 'apply_loc_data_to_item')
+ITEM: (<ItemInstance iron key (278b7c93-0a18-4df5-a668-455174758a9a)>, 'apply_loc_data_to_item')
+
+lmao oh. It's creating two because I still have it creating an iron key in graveyard south, which I set before I decided to make the work shed its own thing. Oops.
+
+5.23pm
+I want to clean up the 'allowed to travel' thing.
+self.travel_limited_to.add(location)
+surely just 'for current events: if current_event in current_events, if hasattr(current_event, "travel_limited_to"): allowed_locations = current_event.travel_limited_to
+
+5.47pm
+okay that's nicer now. Still could do some clean up but better.
+
+
+6.23pm
+Ok, this is an odd one:
+
+[[  take local map  ]]
+
+The local map is now in your inventory.
+
+
+[[  look around  ]]
+
+No local instance for local map
+
+We shouldn't expect local map to be local, as it's been picked up... Oops.
+
+6.42 Fixed that.
+
+Now added a mini event, where the iron key is hidden until the map is picked up. Or am working on it.
+
+OH: Need to add work shed + work shed door as items so they work properly. Please remember to do that next.
+
+Re events: Currently there's an annoying amount of data in item defs. Really shouldn't even have the event flag, let alone be relying on it.
+Have this:
+
+    "effects": {"hold_item": {"item_name": "padlock", "item_loc": "work shed north"},
+
+ in the event dict, and I think i'm happier with that. 'padlock' the item is its own thing, the event is applying attributes to it, limited by location (to cut down on the potential for misattribution.)
+
+
+
+###
+8.41pm
+    if hasattr(noun, "event"):
+        #print(f"Noun {noun} has event ties. Do things here.")
+
+currently, some items have noun.event tied to them directly, while others are allocated by events by location. idk which I prefer. Probably the latter, otherwise I /have/ to preordain a specific item instance for an event, instead of maybe 'any x from place y' at some point.
+Leaving both in for now, but keep in mind, need to reduce the multiple ways of allocating this all. eventReg is a pain rn because there's two entirely separate ways of adding data and I don't think either are actually complete. Really really need to set specific event types I think. Rn it's just a messy scramble.
+
+It does work, though. Event ends and reveals the key, then you can use the key to open the gate and expand travel options.
+
+
+To fix:
+
+[[  go to north graveyard  ]]
+
+You're already in the graveyard
+You're facing south. There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble.
+
+
+Sure I'm already in the graveyard, but I specified a cardinal. It should abide that.
+

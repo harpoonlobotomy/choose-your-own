@@ -307,6 +307,9 @@ class placeRegistry:
 
             if isinstance(loc, cardinalInstance):
                 self.current = loc
+                if loc.place != self.currentPlace:
+                    self.currentPlace = loc.place
+                    self.route.append(loc)
 
             assert isinstance(self.current, cardinalInstance)
             return
@@ -360,7 +363,11 @@ class placeRegistry:
             loc, cardinal_str = next(iter(cardinal_str.items()))
         elif isinstance(cardinal_str, str):
             if " " in cardinal_str:
-                [loc, cardinal_str] = cardinal_str.rsplit(" ", 1)
+                [loc, cardinal_str2] = cardinal_str.rsplit(" ", 1)
+                if not self.by_name.get(loc):
+                    [cardinal_str2, loc] = cardinal_str.split(" ", 1)
+                cardinal_str = cardinal_str2
+
 
         if loc == None:
             loc = self.currentPlace
