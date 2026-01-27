@@ -2478,3 +2478,37 @@ How does it give me all that, then:
 AttributeError: 'cardinalInstance' object has no attribute 'description'
 
 And yeah I know, iut's because apparently there are two different norths. I'll try again tomorrow, today's been too hard and I need to stop.
+
+
+4.21pm 27/1/26
+Oh. So I just tested, and /every/ location has two cardinals:
+
+Place: <placeInstance forked tree branch (ad7659c1-5559-4232-9c84-a3d7eb1b6c99)>
+9853bd62-801b-4d3b-81d9-058720bedde3, north
+bf89d943-9490-4965-9c13-0c0a4a532347, south
+5f52a681-ab0a-4146-b2bd-deb4a3690473, east
+50c8103c-f329-4955-9b56-de882e36d725, west
+d4059e55-168d-4d04-9500-8b2333a531d7, north
+21a4e980-1820-47cd-9ae3-6cf6221a29d8, south
+78b3eaf6-ddce-4846-be17-23dd7b27c550, east
+29155034-9d91-47bf-8cfc-202107bca1fe, west
+Place: <placeInstance work shed (34ca7986-6786-4402-a167-05015fb07203)>
+0fe19a15-0c4a-4824-a415-1cbd9f7693c6, north
+da26ad22-1f79-41c6-a727-84dba974708c, south
+1f0ce52a-d922-40f7-bd0a-c7d60ca5280f, east
+f309dfab-5952-4d92-8b05-14e91a17d664, west
+c0f7967e-d1a4-4eae-9b36-9bf52dfdb471, north
+21df7732-e7f5-4a3d-a48a-bae10de66bd0, south
+23703f9f-283c-4ae0-ada2-6fc2f9618a22, east
+0d63dc01-ef44-4985-9000-704f7c082194, west
+
+Well shit. Glad I finally realised this...
+
+4.24pm
+Okay, fixed. I'd added a specific 'add cardinals' function, but hadn't removed the original code that that function was meant to replaced. All places now have only one cardinal. This probably would have caused other issues so I'm very glad I found it now.
+
+4.39pm
+Still two iron keys being generated. So
+
+#   if local_items and itemRegistry.registry.instances_by_name(item)[0] in local_items:
+fails because the other iron key was [0].

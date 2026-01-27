@@ -1259,17 +1259,8 @@ def initialise_itemRegistry():
 
     for item_name in registry.item_defs.keys():
         if len(item_name.split()) > 1:
-            #printing.print_red(f"This is a plural word: {item_name}")
             plural_word_dict[item_name] = tuple(item_name.split())
-            #printing.print_yellow(f"This is the word in plural word dict: {plural_word_dict[item_name]}")
     registry.add_plural_words(plural_word_dict)
-
-    #printing.print_yellow(all_item_names_generated)
-    #exit()
-
-   # initialise_itemRegistry()
-    #for item in registry.item_defs:
-    #    printing.print_yellow(item)
 
     return registry.event_items
 

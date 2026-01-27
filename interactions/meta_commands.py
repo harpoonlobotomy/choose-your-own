@@ -453,6 +453,23 @@ def edit_location(location):
             card = edit_cardinal(cardinal) # card == 0 if failed/return to choose cardinal again.
             if card:
                 return
+def do_other():
+
+    print("Do you want to print all cardinals?")
+    if yes_test():
+
+        card_dict = {}
+
+        from env_data import all_cardinals
+        print(f"All cardinals: {all_cardinals}")
+        for item in all_cardinals:
+            card_dict.setdefault(item.place, list()).append(item)
+            print(f"{item.id}: {item.place_name}")
+
+        for place in card_dict:
+            print(f"Place: {place}")
+            for card in card_dict[place]:
+                print(f"{card.id}, {card.name}")
 
 def add_temp_to_loc_data():
 
@@ -477,14 +494,17 @@ def meta_control(input_format, noun=None, location=None, cardinal=None):
     print("\n")
     while True:
         print("\nWhat do you want to do?\n")
-        test = input("\n1: See/edit an item\n2: See/edit a location\n3: See/edit an event\n3: Add temp location data to main loc_data file\n4: Leave meta control\n\n")
-        if test in ("1", "2", "3"):
+        test = input("\n1: See/edit an item\n2: See/edit a location\n3: See/edit an event\n3: Add temp location data to main loc_data file\n4: Leave meta control\n5: Other\n\n")
+        if test in ("1", "2", "3", "5"):
             if test == "1":
                 edit_noun(select_noun())
             elif test == "2":
                 edit_location(select_location())
             elif test == "3":
                 add_temp_to_loc_data()
+            elif test == "5":
+                print("Going to do_other")
+                do_other()
             else:
                 print("I haven't added anything here yet.")
                 break

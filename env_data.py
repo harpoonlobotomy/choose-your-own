@@ -169,7 +169,8 @@ leave_options = str("'leave', 'stay', preamble='Do you want to leave, or stay?'"
 #            }
 #        }
 #
-
+global all_cardinals
+all_cardinals = set()
 import uuid
 
 class cardinalInstance:
@@ -194,6 +195,7 @@ class cardinalInstance:
             self.cardinal_actions = leave_options
 
         self.by_placename = {}
+        all_cardinals.add(self)
 
     def __repr__(self):
         return f"<cardinalInstance {self.place_name} ({self.id})>"
@@ -261,6 +263,8 @@ class placeRegistry:
         for card in cardinals_list:
             cardinal_inst = cardinalInstance(card, locationInstance)
             cardinals_dict[card] = cardinal_inst
+
+        locationInstance.cardinals=cardinals_dict
 
         # placeInstance.name = {"south": southInstance, "north": northInstance, etc}
         return cardinals_dict
@@ -394,20 +398,18 @@ def add_new_loc(name, reset_current=True):
 
     locRegistry.cardinals[place] = locRegistry.add_cardinals(place)
     ## add cardinals to place instance so it's directly referable.
-    cardinals_dict = {}
-    for card in cardinals_list:
-        cardinal_inst = cardinalInstance(card, place)
-        cardinals_dict[card] = cardinal_inst
-    place.cardinals=cardinals_dict
+    #cardinals_dict = {}
+    #for card in cardinals_list:
+    #    cardinal_inst = cardinalInstance(card, place)
+    #    cardinals_dict[card] = cardinal_inst
+    #place.cardinals=cardinals_dict
     if reset_current:
         locRegistry.set_current(place)
 
 def initialise_placeRegistry():
 
-
     for name in loc_dict.keys():
         add_new_loc(name)
-
 
         #place.set_scene_descrip(name, place)
 

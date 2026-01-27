@@ -143,8 +143,8 @@ def look_around():
     print("\033[37m \033[0m")
 
     print(loc.currentPlace.overview, "\n")
-    print(f"loc.current: {loc.current}")
-    print(f"loc.current vars: \n{vars(loc.current)}")
+    #print(f"loc.current: {loc.current}")
+    #print(f"loc.current vars: \n{vars(loc.current)}")
     print(f"{loc.current.description}")
     #print(f"You're facing {assign_colour(loc.current, card_type="name")}. {loc.current.description}")
 

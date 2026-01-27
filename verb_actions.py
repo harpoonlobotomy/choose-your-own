@@ -439,15 +439,15 @@ def turn_cardinal(prospective_cardinal, turning = True):
     if not bool_test:
         if not prospective_cardinal.cardinal_data:
             print(prospective_cardinal.place.missing_cardinal)
-            print(f"[[Can't turn that way. Not allowed. ({prospective_cardinal} doesn't have cardinal data.)]]")
-            print("You decide to turn back.")
+            #print(f"[[Can't turn that way. Not allowed. ({prospective_cardinal} doesn't have cardinal data.)]]")
+            print(assign_colour("You decide to turn back.", colour="description"))
             get_loc_descriptions(place=loc.currentPlace)
-            print(loc.current)
+            #print(loc.current)
             print(loc.current.description)
             return
         cardinal_str = prospective_cardinal.name
         intended_cardinal = (loc_dict[loc.currentPlace.name][cardinal_str] if loc_dict[loc.currentPlace.name].get(cardinal_str) else None)
-        print(f"Intended_cardinal: {intended_cardinal}")
+        #print(f"Intended_cardinal: {intended_cardinal}")
         if intended_cardinal:# and intended_cardinal.cardinal_data:
             turn_around(prospective_cardinal)
         else:
