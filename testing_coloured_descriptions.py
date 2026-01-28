@@ -150,13 +150,14 @@ def init_loc_descriptions(place=None):
                     else:
                         item_description = (f"{long_desc[0]}{', '.join(long_desc[1:-1])}, and {long_desc[-1]}")
 
-                    new_desc = f"You're facing {assign_colour(cardinal)}. " + item_description
+                    #new_desc = f"You're facing {assign_colour(cardinal)}. " + item_description
+                    new_desc = item_description
                     if not new_desc.endswith("."):
                         new_desc = new_desc + "."
                     compiled_cardinals[location][cardinal] = new_desc
 
                 else:
-                    compiled_cardinals[location][cardinal] = f"You're facing {assign_colour(cardinal)}. " + loc_dict[location][cardinal].get("long_desc")
+                    compiled_cardinals[location][cardinal] = loc_dict[location][cardinal].get("long_desc")
 
         output = " ".join(output)
         output = str(area_descrip + "\n" + output)

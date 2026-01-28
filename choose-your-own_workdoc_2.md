@@ -2680,3 +2680,46 @@ Ohh. It's because there's only one cardinal in work shed, so it doesn't add anyt
 #   The entrance gates are to the north. To the east sit a variety of headstones, to the south stands a mausoleum, and to the west is what looks like a work shed of some kind.
 #
 #   You're facing east. You see a variety of headstones, most quite worn, and decorated by clumps of moss, and a glass jar being used as a vase in front of one of the headstones, with some dried flowers left long ago.
+
+1.48pm
+Changing descriptions:
+
+
+#   "Look east"
+#   You turn to face east graveyard
+#   You're facing east. You see a variety of headstones, most quite worn, and decorated by clumps of moss, and a glass jar being used as a vase in front of one of the headstones, with some dried flowers left long ago.
+
+Need to remove the 'You're facing east'. We know, we just turned. This will apply for any [go/look/turn (dir/car)].
+
+#   "look around"
+#   You see a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+#   The entrance gates are to the north. To the east sit a variety of headstones, to the south stands a mausoleum, and to the west is what looks like a work shed of some kind.
+#
+#   You're facing east. You see a variety of headstones, most quite worn, and decorated by clumps of moss, and a glass jar being used as a vase in front of one of the headstones, with some dried flowers left long ago.
+
+Here, 'you're facing east' is good.
+
+1.54pm Okay. Have removed 'you're facing east' in general, and added it for 'look around' specifically, so it won't print when you're facing an expressed direction.
+
+It's an improvement.
+
+Next: I need to set the colours of the cardinal instances, so they match the cardinal directions themselves. Otherwise:
+
+#   There's a simple desk, hazily lit by the window over it to the <red>north.
+#
+#   You're facing <cyan>north.
+
+Just looks bad.
+
+2.02pm okay, that's fixed.
+
+Hm. I think I want to change it so items aren't given their colours early, because currently it's not depending on when they're encountered, so you can get repeats of colours unnecessarily.
+
+here,
+local map
+iron key
+
+both are red, discovered one after the other. It makes it seem like they're connected somehow.
+
+2.25pm
+Have added a door and the work shed as items. Now I need to reconfigure the parser, because currently it just says 'it's a noun', then gets upset when 'verb direction noun' isn't a viable sentence.

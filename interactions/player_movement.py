@@ -13,7 +13,8 @@ def get_viable_cardinal(cardinal_inst:cardinalInstance): # 0 == match, 1 == had 
         #print('cardinal_inst.cardinal_data.get("item_desc"): {cardinal_inst.cardinal_data.get("item_desc")}')
         return cardinal_inst, 0
     else:
-        #print("No item desc, is not a viable cardinal. Need a better way of doing this tho.")
+
+        #print(f"No item desc, {cardinal_inst} is not a viable cardinal. Need a better way of doing this tho.")
         for card in cardinal_inst.place.cardinals:
             #print(f"CARD: {card}")
             #if cardinal_inst.place.cardinals.get(card) and getattr(cardinal_inst.place.cardinals[card].cardinal_data, "item_desc"):
@@ -97,11 +98,12 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
 
     to_loc, to_card, is_same_loc, is_same_card = check_loc_card(new_location, new_cardinal)
 
-    if is_same_card:
+    if is_same_card and is_same_loc:
         print(f"You're already at {assign_colour(loc.current, card_type="place_name")}")
+        return
 
-    if is_same_loc:
-        print(f"You're already at {assign_colour(loc.current.place)}")
+    #if is_same_loc:
+    #    print(f"You're already at {assign_colour(loc.current.place)}")
 
     #print(f"loc.current.place: {loc.current.place}")
     #print(f"new location: {new_location}")
@@ -125,8 +127,8 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
             return
 
     elif is_same_loc:
-        print(f"You're already in the {assign_colour(loc.current.place)}")
-        get_loc_descriptions(place=loc.currentPlace)
+        #print(f"You're already in the {assign_colour(loc.current.place)}")
+        #get_loc_descriptions(place=loc.currentPlace)
         print(loc.current.description)
         turn_around(new_cardinal)
         return

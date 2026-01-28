@@ -143,9 +143,12 @@ def look_around():
     print("\033[37m \033[0m")
 
     print(loc.currentPlace.overview, "\n")
+    #print("^ loc overview ^")
     #print(f"loc.current: {loc.current}")
     #print(f"loc.current vars: \n{vars(loc.current)}")
-    print(f"{loc.current.description}")
+
+    print(f"You're facing {assign_colour(loc.current)}. {loc.current.description}")
+    #print("^ loc current.description ^")
     #print(f"You're facing {assign_colour(loc.current, card_type="name")}. {loc.current.description}")
 
     is_items = registry.get_item_by_location() ## Need to merge this with the dict writing to account for missing items.
@@ -153,18 +156,19 @@ def look_around():
     #is_items = get_items_at_here(print_list=False, place=loc.current)
 
     applicable_items = []
-
-    if is_items:
-        for item in is_items:
-            #print(f"ITEM: {item}, type: {type(item)}")
-            _, _, reason_val, _ = registry.check_item_is_accessible(item)
-            #print(f"REASON VAL FOR `{item}`: {reason_val}")
-            if reason_val == 0:
-                applicable_items.append(item)
-        if applicable_items:
-            print(assign_colour("\nYou see a few scattered objects in this area:", "b_white"))
-            is_items = ", ".join(col_list(applicable_items))
-            print(f"   {is_items}")
+    import config
+    if config.print_items_in_area:
+        if is_items:
+            for item in is_items:
+                #print(f"ITEM: {item}, type: {type(item)}")
+                _, _, reason_val, _ = registry.check_item_is_accessible(item)
+                #print(f"REASON VAL FOR `{item}`: {reason_val}")
+                if reason_val == 0:
+                    applicable_items.append(item)
+            if applicable_items:
+                print(assign_colour("\nYou see a few scattered objects in this area:", "b_white"))
+                is_items = ", ".join(col_list(applicable_items))
+                print(f"   {is_items}")
 
 
 

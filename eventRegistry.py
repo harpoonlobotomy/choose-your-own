@@ -192,7 +192,7 @@ class eventRegistry:
             if event.msgs.get(f"{state_type}_msg"):
                 msg = event.msgs[f"{state_type}_msg"]
                 if print_text:
-                    print(assign_colour(msg, colour="event_msg"))
+                    print("\n", assign_colour(msg, colour="event_msg"))
                 return msg
 
 
@@ -291,9 +291,9 @@ class eventRegistry:
 
             if event_to_end.held_items:
                 from interactions.item_interactions import set_attr_by_loc
-                set_attr_by_loc(attr = "is_pick_up", val = "True", location = event_to_end.end_trigger_location, items = event_to_end.hidden_items)
-                print(f"event_to_end.held_items: {event_to_end.held_items}")
-                print("Here we need to release any held items (eg what the padlock should be but currently isn't).")
+                set_attr_by_loc(attr = "is_pick_up", val = "True", location = event_to_end.end_trigger_location, items = event_to_end.held_items)
+                #print(f"event_to_end.held_items: {event_to_end.held_items}")
+                #print("Here we need to release any held items (eg what the padlock should be but currently isn't).")
 
             self.play_event_msg(msg_type="end", event=event_to_end)
 

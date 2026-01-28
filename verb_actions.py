@@ -69,10 +69,10 @@ def set_noun_attr(*values, noun):
     for item_val in values:
         item, val = item_val
         if end_trigger and item in end_trigger:
-            print(f"[Event trigger: {noun}, {event}, {end_trigger}:{item}/{val}]")
+            pass#print(f"[Event trigger: {noun}, {event}, {end_trigger}:{item}/{val}]")
         elif end_trigger and "item_unlocked" in end_trigger: ## need a dict or something that converts trigger-name to relevant item/val requirements.
             if item == "is_locked" and val == False:
-                print(f"[Event trigger: lock unlocked: {noun}, {event}, {end_trigger}:{item}/{val}]")
+                #print(f"[Event trigger: lock unlocked: {noun}, {event}, {end_trigger}:{item}/{val}]")
                 events.end_event(event)
                 trigger_done=True
         elif end_trigger and "item_in_inv" in end_trigger:
@@ -736,12 +736,12 @@ def break_item(format_tuple, input_dict):
 def check_key_lock_pairing(noun_1, noun_2):
 
     if hasattr(noun_1, "is_key"):
-        print(f"{noun_1} is_key")
+        #print(f"{noun_1} is_key")
         if hasattr(noun_2, "requires_key"):
-            print(f"{noun_2} requires_key")
+            #print(f"{noun_2} requires_key")
             #if isinstance(noun_2.requires_key, str):
             if noun_1 == noun_2.requires_key:
-                print(f"{noun_1.name} is the key required by {noun_2.name}")
+                #print(f"{noun_1.name} is the key required by {noun_2.name}")
                 return 1
             else:
                 print(f"{noun_1.name} is not the key required by {noun_2.name}: {noun_2.requires_key}")
