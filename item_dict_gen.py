@@ -307,6 +307,7 @@ def get_all_other_items():
         get_item_data(item, item_defs[item])
 
 def init_item_dict():
+
     get_loc_items_dict(loc=None, cardinal=None)
     get_all_other_items() # just ensures that every item in item_defs is covered.
 

@@ -28,7 +28,7 @@ def look_at_item(item_inst): ## this is just using everything from registry. Sho
     if isinstance(item_inst, ItemInstance):
         #print(f"item_inst.location: {item_inst.location}")
         confirmed, container, reason_val, meaning = registry.check_item_is_accessible(item_inst)
-        #print(f"Look at item MEANING: {meaning}")
+        print(f"Look at item MEANING: {meaning}")
         if reason_val not in (0, 5, 8):
             print(f"Cannot look at {item_inst.name}.")
         else:
@@ -36,7 +36,7 @@ def look_at_item(item_inst): ## this is just using everything from registry. Sho
                 extra = " in your inventory."
             else:
                 extra = "."
-            print(f"You look at the {item_inst.name}{extra}")
+            print(f"You look at the {assign_colour(item_inst)}{extra}")
             print(assign_colour(registry.describe(item_inst, caps=True), colour="description"))
             children = registry.instances_by_container(item_inst)
             if children:
@@ -59,7 +59,7 @@ def set_attr_by_loc(attr = "is_hidden", val = "False", location=None, items=None
         if items:
             if isinstance(items, str):
                 if items in named_local:
-                    print(f"Found local item: {items}")
+                    #print(f"Found local item: {items}")
                     instances.add(named_local[items])
 
 
@@ -67,14 +67,14 @@ def set_attr_by_loc(attr = "is_hidden", val = "False", location=None, items=None
                 for item in items:
                     if isinstance(item, str):
                         if item in named_local:
-                            print(f"Found local item: {item}")
+                            #print(f"Found local item: {item}")
                             instances.add(named_local[item])
 
     for item in instances:
-        print(f"Instances: {item}")
+        #print(f"Instances: {item}")
         if hasattr(item, attr) and getattr(item, attr):
             setattr(item, attr, val)
-            print(f"SET ATTRIBUTE: {item}, {attr}, {val}")
+            #print(f"SET ATTRIBUTE: {item}, {attr}, {val}")
 
 def add_item_to_loc(item_instance, location=None):
 

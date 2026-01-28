@@ -142,19 +142,20 @@
       }
     },
     "south": {
-      "item_desc": {},
+      "item_desc": {"generic": "There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble."},
       "short_desc": "stands a mausoleum",
       "long_desc": "There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble.",
       "items": {}
     },
     "west": {
       "item_desc": {
-        "generic": "Standing in unkempt long grass, you see what looks like"},
+        "generic": "Standing in unkempt long grass, you see what looks like",
         "work shed": "a [[]] of some kind, with",
-        "shed door": "a wooden [[]] that looks like it was barricaded until recently",
+        "shed door": "a wooden [[]] that looks like it was barricaded until recently"},
       "short_desc": "is what looks like a work shed of some kind",
       "long_desc": "There's a work shed, with a wheelbarrow outside and a large padlock on the door.",
-      "items": {}
+      "items": {
+        "work shed": {"description": "a simple shed, with wood panelled walls"}, "shed door": {"description": "a closed wooden door", "enter_location": "work shed", "exit_to_location": "graveyard"}}
     },
     "descrip": "You're in a rather poorly kept PPPgraveyardEEE - smaller than you might have expected given the scale of the gate and fences"
   },

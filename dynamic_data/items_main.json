@@ -796,5 +796,29 @@
     "print_on_investigate": true,
     "can_read": true,
     "description": "a yellowed [[]], showing the region surrounding the graveyard"
+  },
+"work shed": {
+    "name": "work shed",
+    "item_type": "{'wall', 'static'}",
+    "is_vertical_surface": true,
+    "can_examine": false,
+    "breakable": false,
+    "description": "a simple shed, with wood panelled walls"
+  },
+  "shed door": {
+    "alt_names": ["shed doorway"],
+    "name": "shed door",
+    "item_type": "{'wall', 'can_open', 'static'}",
+    "is_vertical_surface": true,
+    "is_open": false,
+    "can_be_opened": true,
+    "can_be_closed": true,
+    "can_be_locked": false,
+    "is_locked": false,
+    "requires_key": false,
+    "can_examine": false,
+    "breakable": false,
+    "if_open_description": "a plain wooden door, sitting slightly ajar",
+    "description": "a closed wooden door, with nail-marks from a cross-bar removed somewhat recently"
   }
 }

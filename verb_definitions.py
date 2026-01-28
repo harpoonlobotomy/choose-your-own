@@ -206,7 +206,8 @@ verb_defs_dict = {
     "eat": {"alt_words": ["consume", "drink"], "allowed_null": None, "formats": [verb_noun]},
     "look": {"alt_words": ["watch", "observe", "investigate", "examine"], "allowed_null": ["at", "to"],  "formats": [verb_only, verb_noun, verb_dir, verb_sem, verb_loc, verb_dir_meta, verb_noun_sem_noun, verb_noun_dir_noun, verb_dir_noun, verb_dir_noun_sem_noun, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car]}, # look, look at book, look at book with magnifying glass
     "set": {"alt_words": [""], "allowed_null": None, "formats": [verb_noun_dir, verb_noun_sem_noun, verb_noun], "distinction": {"second_noun":"fire", "new_verb":"burn", "else_verb":"put"}}, ## not implemented, just an idea. 'if fire is the second noun, the correct verb to use is 'burn', else the verb is 'put'. So 'set' is not its own thing, just a membrane/signpost.
-    "clean": {"alt_words": ["wipe"], "allowed_null": None, "formats": [verb_noun, verb_loc, verb_noun_sem_noun]}
+    "clean": {"alt_words": ["wipe"], "allowed_null": None, "formats": [verb_noun, verb_loc, verb_noun_sem_noun]},
+    "enter": {"alt_words": [], "allowed_null": None, "formats": [verb_loc, verb_dir_loc, verb_noun, verb_dir_noun]}
     }
 
 ## also, how to deal with something like 'set paper on fire'

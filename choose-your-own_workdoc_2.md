@@ -2723,3 +2723,16 @@ both are red, discovered one after the other. It makes it seem like they're conn
 
 2.25pm
 Have added a door and the work shed as items. Now I need to reconfigure the parser, because currently it just says 'it's a noun', then gets upset when 'verb direction noun' isn't a viable sentence.
+
+2.44pm
+Hm.
+WORD: shed, KINDS: {'location', 'noun'}
+idx 3, word: door
+No canonical for idx `3`, word `door`
+
+Trying to say 'look at shed door', but it takes 'shed' and then ignores 'door'.
+
+Maybe we check if there are multiple plural words with that word, and only decide on the correct one after the check?
+
+5.18pm
+Have employed what I described above. Works now, though I want to do some more intense testing to make sure I didn't break it. Now checks for perfect matches if there are multiple, and takes the perfect instead of defaulting to the first-found. (So, 'open shed door' will take 'shed door', instead of 'work shed' because it's a better match, whereas previously it just depended on the ordering. Still uses local_items to determine which items to choose from etc.) Still needs more cleaning up but it's better now, I think. does work with the noun/location "work shed", at least, and other things don't seem broken. I've massively increased the volume of searches through the plural dict though, so I probably need to rethink it at some point. Maybe add the plural-parts to a dict themselves, with a list/set of other-part + full words, so I can match 'work' directly, instead of 'if everything else failed, try plurals', because that just runs always now so it catches both noun and location options instead of always defaulting to one or the other.

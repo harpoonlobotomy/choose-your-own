@@ -4,7 +4,7 @@
 #import time
 from asyncio import events
 from logger import logging_fn, traceback_fn
-from env_data import cardinalInstance, locRegistry as loc, placeInstance
+from env_data import cardinalInstance, locRegistry as loc, placeInstance, placeRegistry
 from interactions import item_interactions
 from interactions.player_movement import new_relocate, turn_around
 from itemRegistry import ItemInstance, registry
@@ -968,10 +968,15 @@ def simple_open_close(format_tuple, input_dict):
                     open_close(format_tuple, input_dict)
                     return
                 print(f"noun_inst.is_open now: {noun_inst.is_open}")
-                print(f"You open the {assign_colour(noun_inst)}.")
-                noun_inst.is_open = True
-                print(f"noun_inst.is_open now: {noun_inst.is_open}")
-                return
+                confirmed_inst, confirmed_container, reason_val, meaning  = registry.check_item_is_accessible(noun_inst)
+                if reason_val in (0, 5, 8):
+                    print(f"You open the {assign_colour(noun_inst)}.")
+                    noun_inst.is_open = True
+                    print(f"noun_inst.is_open now: {noun_inst.is_open}")
+                    return
+                else:
+                    print(f"Cannot open {noun_inst.name} because {meaning}.")
+                    return
         else:
             print(f"{assign_colour(noun_inst)} cannot be opened; this is odd. Potentially. Or maybe a totally normal thing.")
     else:
@@ -1363,6 +1368,29 @@ def use_item(format_tuple, input_dict):
         return
     print(f"Cannot process {input_dict} in def use_item() End of function, unresolved. (Function not yet written)")
 
+def enter(format_tuple, input_dict):
+    noun = get_noun(input_dict)
+    if hasattr(noun, "is_open") and noun.is_open == True:
+        if hasattr(noun, "enter_location"):
+            print(f"noun.enter_location: {noun.enter_location}")
+            target_location = noun.enter_location
+            print(f"target location: {target_location}, type: {type(target_location)}")
+            if isinstance(target_location, placeInstance):
+                print("Target location is placeInstance type.")
+                if hasattr(noun, "exit_to_location") and noun.exit_to_location == loc.current.place.name:
+                    print(f"noun.exit_to_location: {noun.exit_to_location}")
+                    print(assign_colour("You open the door and head inside.", colour="event_msg"))
+                    new_relocate(target_location)
+
+
+                #if target_location == loc.current.place:
+            else:
+                print(f"Enter [location] requires a placeInstance, received {target_location}, {type(target_location)} instead.")
+        print(f"This {noun.name} doesn't lead anywhere")
+
+    else:
+        print("You can't enter a closed door.")
+
 
 def router(viable_format, inst_dict):
     logging_fn()
@@ -1373,7 +1401,7 @@ def router(viable_format, inst_dict):
         for data in v.values():
             quick_list.append(data["str_name"])
     MOVE_UP = "\033[A"
-    print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {" ".join(quick_list)}  ]]\033[0m\n') ## TODO put this back on when the testing's done.
+    #print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {" ".join(quick_list)}  ]]\033[0m\n') ## TODO put this back on when the testing's done.
     #print(f"Dict for output: {inst_dict}")
 
     for data in inst_dict.values():
@@ -1401,6 +1429,8 @@ def router(viable_format, inst_dict):
         "unlock": lock_unlock,
         "open": simple_open_close,#open_close,#open_item,
         "close": simple_open_close,#open_close,#close,
+
+        "enter": enter,
 
         "combine": combine,
         "separate": take,

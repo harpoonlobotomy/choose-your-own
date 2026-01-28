@@ -1,11 +1,9 @@
 
-from time import sleep
 import uuid
 
 from env_data import cardinalInstance, placeInstance
 from logger import logging_fn, traceback_fn
 from env_data import locRegistry as loc
-import testclass
 import printing
 
 global all_item_names_generated, all_items_generated
@@ -15,9 +13,8 @@ all_items_generated = set()
 CARDINALS = ["north", "east", "south", "west"]
 
 print("Item registry is being run right now.")
-#sleep(.5)
 
-type_defaults = { # gently ordered - will overwrite earlier attrs with later ones (eg 'is horizontal surface' for flooring with overwrite 'static''s.)
+type_defaults = {
     "standard": {},
     "static": {"can_examine": False, "breakable": False},
     "all_items": {"starting_location": None, "current_loc": None, "alt_names": {}, "is_hidden": False},
@@ -130,17 +127,6 @@ class ItemInstance:
         for attribute in ("can_pick_up", "can_be_opened", "print_on_investigate", "can_be_locked"):
             if hasattr(self, attribute):
                     self.verb_actions.add(attribute)
-        #print(f"self.verb_actions: {self.verb_actions}")
-        #    self.started_contained_in = attr.get("contained_in")  # parent instance id if inside a container
-        #    if self.started_contained_in:
-        #        self.contained_in = self.started_contained_in ## do this later like testclass does
-        #else:
-        #    self.can_pick_up=False
-
-            #self.needs_key = attr.get("key")
-#
-            #if "needs_key_to_lock" in self.flags:
-            #    self.needs_key_to_lock = (attr.get("key") if attr.get("key") else True)
 
         if hasattr(self, "can_be_charged"):
             self.verb_actions.add("can_charge")
@@ -164,6 +150,9 @@ class ItemInstance:
         if hasattr(self, "is_hidden") and self.is_hidden:
             self.set_hidden()
             #self.children = list() ## Maybe we create all instances first, then add 'children' afterwards, otherwise they won't be initialised yet. Currently this works because I've listed the parents first in the item defs.
+
+        if hasattr(self, "enter_location"):
+            self.enter_location = loc.by_name.get(self.enter_location)
 
     def __repr__(self):
         return f"<ItemInstance {self.name} ({self.id})>"
@@ -632,6 +621,7 @@ class itemRegistry:
                         reason = 6
             else:
                 confirmed_inst = in_local_items_list(inst, local_items_list)
+                print(f"Confirmed_inst in local items: {confirmed_inst}")
                 if confirmed_inst:
                     reason = 0
                 else:
@@ -819,6 +809,9 @@ class itemRegistry:
                     description = inst.description_no_children # works now. If it's a container with no children, it prints this instead.
                 # still need to make it non-binary but that can happen later. This'll do for now.
 
+        if hasattr(inst, "is_open") and inst.is_open == True:
+            if hasattr(inst, "if_open_description"):
+                description = inst.if_open_description
         """Convenience method to return a formatted description."""
         if caps:
             from misc_utilities import smart_capitalise
@@ -826,6 +819,9 @@ class itemRegistry:
 
         if description:
             return description
+
+
+
         return "You see nothing special."
 
     def nicename(self, inst: ItemInstance):
@@ -1047,7 +1043,7 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, part
     if item_name == "":
         print('Item name is `""` .')
         print(f"item_name: {item_name}, input_str: {input_str}, loc_cardinal: {loc_cardinal}, partial_dict: {partial_dict}")
-    #type_defaults = list(testclass.type_defaults)
+
     if not input_str:
         print("\n")
         printing.print_green(f"Options: {list(type_defaults)}", invert=True)
@@ -1264,6 +1260,7 @@ def initialise_itemRegistry():
 
     for item_name in registry.item_defs.keys():
         if len(item_name.split()) > 1:
+            printing.print_blue(f"split name: {item_name}")
             plural_word_dict[item_name] = tuple(item_name.split())
     registry.add_plural_words(plural_word_dict)
 
