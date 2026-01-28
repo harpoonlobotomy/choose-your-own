@@ -426,44 +426,46 @@ def turn_cardinal(prospective_cardinal, turning = True):
             if test:
                 prospective_cardinal = test
 
-    if isinstance(prospective_cardinal, str):
-        prospective_cardinal = loc.by_cardinal_str(prospective_cardinal)
+    #if isinstance(prospective_cardinal, str):
+    #    prospective_cardinal = loc.by_cardinal_str(prospective_cardinal)
 
-    bool_test, _, _ = is_loc_current_loc(None, prospective_cardinal)
+    from interactions.player_movement import check_loc_card
+    #print(f"PROSPECTIVE CARDINAL: {prospective_cardinal}")
+    to_loc, to_card, is_same_loc, is_same_card = check_loc_card(location=None, cardinal=prospective_cardinal)
+    #bool_test, _, _ = is_loc_current_loc(None, prospective_cardinal)
     from env_data import loc_dict, get_loc_descriptions
-    if not bool_test:
-        if not prospective_cardinal.cardinal_data:
-            if hasattr(prospective_cardinal.place, "missing_cardinal"):
-                print(prospective_cardinal.place.missing_cardinal)
+
+    if not is_same_card:
+    #if not bool_test:
+        #print(f"Is not the same card\nto_card.cardinal_data: {to_card.cardinal_data}")
+        if not to_card.cardinal_data:
+            #print("to_card has no cardinal_data")
+            if hasattr(to_card.place, "missing_cardinal"):
+                print(assign_colour(to_card.place.missing_cardinal, "event_msg"))
+
             else:
-                print("There's nothing over that way.")
+                print(assign_colour("There's nothing over that way.", colour="event_msg"))
 
             print(assign_colour("\n    You decide to turn back.\n", colour="event_msg"))
             get_loc_descriptions(place=loc.currentPlace)
-
             print(loc.current.description)
             return
 
-        cardinal_str = prospective_cardinal.name
-        intended_cardinal = (loc_dict[loc.currentPlace.name][cardinal_str] if loc_dict[loc.currentPlace.name].get(cardinal_str) else None)
-
-        if intended_cardinal:
-            turn_around(prospective_cardinal)
         else:
-            print(f"You're facing {assign_colour(loc.current.place_name)}.")
-            if loc.current.cardinal_data:
-                get_loc_descriptions(place=loc.currentPlace)
-                print(loc.current)
-                print(loc.current.description)
-
-        return
-
+            turn_around(to_card)
     else:
+        #if loc.current.cardinal_data:
+        #    print("loc current cardinal data is here.")
+        #    get_loc_descriptions(place=loc.currentPlace)
+        #    print(loc.current)
+        #    print(loc.current.description)
+        #    return
         if turning:
-            print(f"You're already already facing the {assign_colour(prospective_cardinal, card_type="ern_name")}.")
-        if prospective_cardinal.cardinal_data:
+            print(f"You're already facing the {assign_colour(loc.current, card_type="ern_name")}.\n")
+        else:
+            print(f"You're facing the {assign_colour(loc.current, card_type="place_name")}.")
             get_loc_descriptions(place=loc.currentPlace)
-            print(prospective_cardinal.description)
+            print(loc.current.description)
 
         return "no_change", None
 
@@ -529,7 +531,8 @@ def go(format_tuple, input_dict): ## move to a location/cardinal/inside
             new_relocate(new_location=location_entry["instance"])
 
         elif cardinal_entry and not location_entry:
-            if cardinal_entry["instance"].place == loc.currentPlace:
+            #print(f"CARDINAL ENTRY: {cardinal_entry}\nloc.current: {loc.current}, loc.current.place: {loc.current.place}, loc.currentPlace: {loc.currentPlace}")
+            if cardinal_entry["instance"].place == loc.current.place:
                 turn_cardinal(cardinal_entry["instance"])
             else:
                 new_relocate(new_location=location_entry["instance"], new_cardinal = cardinal_entry["instance"])
@@ -544,6 +547,8 @@ def go(format_tuple, input_dict): ## move to a location/cardinal/inside
                 new_relocate(new_location=location_entry["instance"], new_cardinal = cardinal_entry["instance"])
 
         else:
+
+            #print("has location and cardinal")
             new_relocate(new_location=location_entry["instance"], new_cardinal = cardinal_entry["instance"])
 
     elif direction_entry["str_name"] in in_words:
@@ -608,7 +613,7 @@ def look(format_tuple=None, input_dict=None):
     elif len(format_tuple) == 4:
         if cardinal_entry and location_entry:
             if location_entry["instance"] != loc.currentPlace:
-                print(f"You can only look at locations you're currently in. Do you want to go to {location_entry["instance"].name}?")
+                print(f"You can only look at locations you're currently in. You'll need to go to {location_entry["instance"].name} first.")
             else:
                 turn_cardinal(cardinal_entry["instance"], turning = False)
 
@@ -1065,7 +1070,7 @@ def take(format_tuple, input_dict):
         added_to_inv = False
 
         inst, container, reason_val, meaning = registry.check_item_is_accessible(noun_inst)
-        print(f"TAKE: {reason_val} Meaning: {meaning}")
+        #print(f"TAKE: {reason_val} Meaning: {meaning}")
         if reason_val not in (0, 3, 4, 5, 8):
             print(f"Sorry, you can't take the {assign_colour(noun_inst)} right now.")
             return 1, added_to_inv
@@ -1092,9 +1097,9 @@ def take(format_tuple, input_dict):
                             added_to_inv = True
                             return 0, added_to_inv
                     elif reason_val == 0:
-                        print("About to try to pick up")
+                        #print("About to try to pick up")
                         registry.pick_up(noun_inst, inventory_list=game.inventory) ## the can_take function shouldn't be doing this part.
-                        print("Did pick_up")
+                        #print("Did pick_up")
                         if noun_inst in game.inventory:
                             added_to_inv = True
                             return 0, added_to_inv

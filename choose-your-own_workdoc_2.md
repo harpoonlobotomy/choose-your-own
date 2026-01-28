@@ -2589,3 +2589,94 @@ You're facing south. There's a locked mausoleum here; graffiti that looks years-
 
 Sure I'm already in the graveyard, but I specified a cardinal. It should abide that.
 
+11.07am 28/1/26
+okay. Trying to work on this now. No sleep again and stressful yesterday so it's going to be a slog.
+
+Reworking new_relocate, because it's messy.
+
+First, should just check what parts we have.
+
+if new_location:
+    if new_location and isinstance placeinstance:
+        to_loc = new_location # I tend to make new variables as a way of confirming data, probably a bad practice.
+    elif new loc and isinst str:
+        test = loc.by_name.get(new_location)
+        if test:
+        to_loc = test
+    to_loc and to_lock == loc.currentPlace:
+        same_location = True
+
+then similar for cardinals.
+/Then/ we sort out the actual movement parts.
+
+Maybe I should make that a separate little function, just for cleaning both loc and card and outputting corrected versions. Not sure I'll use it again but maybe. The turn/look/go functions are split up a bit rn.
+
+
+11.27am
+so I have 'is_loc_current_loc' fn in verb_actions, but i think this one's better. Might just replace it entirely.
+
+Temporarily replaced it, remember to remove is_loc_current_loc if it works out.
+
+I'm curious about the notion of multiple print variants for :
+
+You're facing south graveyard.
+
+eg:
+    you're facing the south of the graveyard
+    you're facing the southern graveyard
+    you're facing graveyard south.
+    you're in the graveyard, facing south. <- honestly this might be the best default actually.
+
+
+Hm. Okay so I can't do a one to one replacement, because
+
+self.in_loc_facing_card = f"the {loc.name}, facing {self.name}"
+
+results in
+
+You turn to face the in the graveyard, facing east
+
+where all of
+
+You turn to face the [in the graveyard, facing east] is graveyard-east text formatting.
+
+
+##   in_loc_facing_card(loc.current) # remember this for later.
+
+
+You're facing the east graveyard.
+You're facing east. You see a variety of headstones, most quite worn, and decorated by clumps of moss, and a glass jar being used as a vase in front of one of the headstones, with some dried flowers left long ago.
+
+
+I really hate this repetition. It's because loc.current.description has the 'You're facing east' at the start, because you don't /always/ need the 'you're facing the east graveyard' text. Or maybe you do? Maybe I should just remove the 'You're facing east', and add it manually when it's needed.
+
+
+1.13pm Okay, the navigation seems to be fixed. It's really far too brittle, I shouldn't be having to come back to fix it again and again.
+
+1.36 I really need to clean up the location descriptions. This:
+
+#  Around you, you see the interior of a rather run-down looking work shed, previously boarded up but seemingly, not anymore.
+#  There's a simple desk, hazily lit by the window over it to the north.
+#
+#  You're facing north. A simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's a yellowed local map, showing the region surrounding the graveyard.
+#
+#  You see a few scattered objects in this area:
+#     secateurs, local map
+
+is just so... redundancy-filled. The descriptions themselves aren't great but that's fine, the issue is the parts don't fit together nicely. Too much repetition.
+
+A better version...
+
+
+#   Around you, you see the interior of a rather run-down looking work shed, previously boarded up but seemingly, not anymore.
+#
+#   You're facing north. A simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's a yellowed local map, showing the region surrounding the graveyard.
+
+Honestly, just removing the "'s a simple desk, hazily lit" line improves it.
+
+Ohh. It's because there's only one cardinal in work shed, so it doesn't add anything, just rephrases. For graveyard, it makes more sense:
+
+#   You see a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+#   The entrance gates are to the north. To the east sit a variety of headstones, to the south stands a mausoleum, and to the west is what looks like a work shed of some kind.
+#
+#   You're facing east. You see a variety of headstones, most quite worn, and decorated by clumps of moss, and a glass jar being used as a vase in front of one of the headstones, with some dried flowers left long ago.

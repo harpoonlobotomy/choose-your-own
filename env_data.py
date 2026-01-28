@@ -180,6 +180,7 @@ class cardinalInstance:
         self.name = cardinal # "east"
         self.place_name = cardinal + " " + loc.name # eg "east graveyard"        },
         self.ern_name = cardinal + "ern " + loc.name # eg "eastern graveyard"
+        self.in_loc_facing_card = f"the {loc.name}, facing {self.name}"
         self.place = loc
         self.alt_names = (loc_dict[loc.name].get("alt_names") if loc_dict[loc.name].get("alt_names") else None)
         #self.short_desc = (loc_dict[loc.name][cardinal].get("short_desc") if loc_dict[loc.name].get(cardinal) else None)
@@ -270,6 +271,7 @@ class placeRegistry:
         return cardinals_dict
 
     def set_current(self, loc=None, cardinal=None):
+        #print(f"set current: loc: {loc}, cardinal: {cardinal}")
 
         if loc and cardinal:
             if isinstance(loc, placeInstance) and isinstance(cardinal, cardinalInstance):
@@ -280,6 +282,10 @@ class placeRegistry:
 
                 self.current = cardinal
                 self.currentPlace = loc
+                if cardinal.place != self.currentPlace:
+                    self.currentPlace = cardinal.place
+                    self.route.append(loc)
+                #print(f"Set self.current to {cardinal}, self.currentPlace to {loc}")
                 return
 
         if loc:
@@ -315,14 +321,18 @@ class placeRegistry:
             return
                 #print(f"self.current_cardinal set to {loc.name}")
 
-        if cardinal: ## cardinal setting always operates on current loc. If loc and cardinal have both changed, loc should be set first. Can't 'move to west graveyard' by moving west first, then going to graveyard.
+        if cardinal:
             if isinstance(cardinal, str):
                 cardinal = self.cardinals[self.currentPlace][cardinal]
 
             if isinstance(cardinal, cardinalInstance):
                 #print(f"before setting current: cardinal.name: {cardinal.place_name}")
                 self.current = cardinal
-                #print("self.current_cardinal.name: ", self.current_cardinal.place_name)
+                if cardinal.place != self.currentPlace:
+                    self.currentPlace = cardinal.place
+                    self.route.append(cardinal.place)
+                self.current = cardinal
+                #print("self.current_cardinal.name: ", cardinal.place_name)
 
     def place_by_name(self, loc_name):
 
@@ -374,6 +384,7 @@ class placeRegistry:
         elif isinstance(loc, str):
             loc = self.place_by_name(loc)
 
+        #print(f"by cardinal str: cardinal_str: {cardinal_str}, loc: {loc}")
         cardinal_inst = locRegistry.cardinals[loc][cardinal_str]
         return cardinal_inst
 

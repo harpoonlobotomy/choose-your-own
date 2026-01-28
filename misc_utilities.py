@@ -469,6 +469,9 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
             item = item.ern_name
         elif card_type == "place_name":
             item = item.place_name
+        elif card_type == "in_loc_facing_card":
+            item = item.in_loc_facing_card
+
     elif isinstance(item, cardinalInstance):
         item = item.name
 
@@ -487,6 +490,12 @@ def col_list(print_list:list=[], colour:str=None)->list: ## merge this to the ab
             coloured_text = assign_colour(item, colour)
         coloured_list.append(coloured_text)
     return coloured_list
+
+
+def in_loc_facing_card(cardinal:cardinalInstance):
+    # just putting this here because the things that will need it probably import locRegistry anyway.
+    text = f"the {assign_colour(cardinal.place,)}, facing {assign_colour(cardinal)}."
+    return text
 
 ### END COLOUR ASSIGNMENT
 
