@@ -215,7 +215,7 @@ class Parser:
                             print(f"item in parts_dict: {item}")
                             compound_word, word_parts in parts_dict.get(item)
                             print(compound_word, word_parts)
-                            print(parts[idx+matches_count])# and parts[idx+matches_count].lower() in word_parts
+                            #print(parts[idx+matches_count])# and parts[idx+matches_count].lower() in word_parts
                         print(f"Item in local_named: {item}")
 #{matches_count+1} `{parts[idx+matches_count+1]
                         match = item
@@ -274,7 +274,7 @@ class Parser:
 
             else:
                 canonical = None # reset to None here just so I can test_print the prior 'canonical' for word parts.
-                print(f"idx {idx}, word: {word}")
+                #print(f"idx {idx}, word: {word}")
 
                 if word in verbs.all_meta_verbs:
                     if word not in verbs.meta_verbs:
@@ -318,14 +318,14 @@ class Parser:
                             canonical = word
 
                         if word in loc_options or f"a {word}" in loc_options:
-                            print(f"word in location: {word}")
+                            #print(f"word in location: {word}")
                             if word in current_location or f"a {word}" in current_location:
                                 canonical = current_location[0]
                                 #print("Location is current_location")
                             else:
                                 canonical = word
                             kinds.add("location")
-                            print(f"kinds: {kinds}")
+                            #print(f"kinds: {kinds}")
 
 
                 if word in verbs.all_verbs:
@@ -402,7 +402,7 @@ class Parser:
                         omit_next = second_omit_next
 
                     if canonical:
-                        print(f"WORD: {word}, KINDS: {kinds}")
+                        #print(f"WORD: {word}, KINDS: {kinds}")
                         #print(f"canonical loc: {canonical}")
                         tokens.append(Token(idx, word, kinds, canonical))
                     #if canonical:
@@ -499,21 +499,26 @@ class Parser:
             print("More than one viable sequence. Help?")
             print(sequences)
             print("[This should be where it's culled down, right? Idk. Or maybe we just go with the first here and refine it later if it breaks. Idk yet. For now, just quit. Shouldn't be more than one I think.]")
-            exit()
+            #exit()
 
-        sequence = sequences[0]
-        matched = 0
-        for token in tokens:
-            if matched == len(sequence):
-                break
-            if token.kind != {"null"} and token.kind != set():
-                if sequence[matched] in token.kind:
-                    #print(f"This is {token.kind}")
-                    #print(f"Token: {token}")
+        #sequence = sequences[0]
+        for sequence in sequences:
+            #print(f"Sequence: {sequence}")
+            matched = 0
+            for token in tokens:
+                if matched == len(sequence):
+                    break
+                if token.kind != {"null"} and token.kind != set():
+                    if sequence[matched] in token.kind:
+                        #print(f"This is {token.kind}")
+                        #print(f"Token: {token}")
 
-                    reformed_dict[matched] = {sequence[matched]: token.canonical}
-                    matched += 1
+                        reformed_dict[matched] = {sequence[matched]: token.canonical}
+                        #print(reformed_dict[matched])
 
+                        matched += 1
+
+        #print(f"Final reformed dict: {reformed_dict}, sequence: {sequence}")
         return reformed_dict, sequence
 
     def get_sequences_from_tokens(tokens) -> list:
@@ -525,7 +530,7 @@ class Parser:
 
         for i, token in enumerate(tokens):
             options = Parser.token_role_options(token)
-            print(f"Options: {options}")
+            #print(f"Options: {options}")
             if len(tokens) in (1, 2):
                 #print(f"Token.kind: {token.kind}, type: {type(token.kind)}")
                 if list(token.kind)[0] in ("location", "direction"):
@@ -729,7 +734,7 @@ class Parser:
 
         tokens = self.tokenise(input_str, nouns_list, locations, directions, cardinals, membrane)
 
-        print(f"Tokens: {tokens}")
+        #print(f"Tokens: {tokens}")
 
         sequences, verb_instances = self.get_sequences_from_tokens(tokens)
 

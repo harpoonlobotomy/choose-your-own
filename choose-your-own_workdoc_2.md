@@ -2736,3 +2736,49 @@ Maybe we check if there are multiple plural words with that word, and only decid
 
 5.18pm
 Have employed what I described above. Works now, though I want to do some more intense testing to make sure I didn't break it. Now checks for perfect matches if there are multiple, and takes the perfect instead of defaulting to the first-found. (So, 'open shed door' will take 'shed door', instead of 'work shed' because it's a better match, whereas previously it just depended on the ordering. Still uses local_items to determine which items to choose from etc.) Still needs more cleaning up but it's better now, I think. does work with the noun/location "work shed", at least, and other things don't seem broken. I've massively increased the volume of searches through the plural dict though, so I probably need to rethink it at some point. Maybe add the plural-parts to a dict themselves, with a list/set of other-part + full words, so I can match 'work' directly, instead of 'if everything else failed, try plurals', because that just runs always now so it catches both noun and location options instead of always defaulting to one or the other.
+
+6.29pm
+currently, it always 'corrects' entries to the correct verb/noun. So if you type 'open door' even if you're not at a door, it says 'You can't open the shed door'.
+
+First thought was to bring the raw input text through in the dict and use that, but maybe I just make it something more general; 'You can't open something you can't reach'. Still gets the point across. Using the verb-proper-name works fine if it's something you were trying to open but failed because it was locked etc.
+
+1.52pm
+29/1/26
+
+I want to try to clean up the move-location/change-cardinal system.
+
+Part of which I think is removing loc.currentPlace. It's a nice idea, but serves the same function as loc.current.place, but needs updating separately, which is just silly. A point of failure to replace a dot with an uppercasing. It is updated with set_current though, which should always be used when setting location changes. Not sure.
+
+Input, loc + cardinal.
+Both loc and card should be loc/card instances respectively if present. If str, get instances.
+
+If no loc, get from cardinal.
+If no cardinal, get from loc.
+
+(Really, should only need cardinal. If cardinal, ignore loc?
+If loc and not card, card == existing loc card.
+If loc and card, if loc == card.place, ignore loc, use card.
+If just card, use card.
+Check card is valid loc.card, if not, use next valid new_loc card
+set_current to new card.)
+
+[[{todo // formalise doors/transition objects}]]
+[[{todo // take cleaned self.verb_actions in item init from attr if found.}]]
+
+Okay have set up
+    "transition": {"is_transition_obj": True, "enter_location": None, "exit_to_location": None},
+and
+    "loc_exterior": {"is_loc_exterior":True, "transition_objects": set()}
+
+for door/other transition objects, and location exteriors (eg shed door and work shed obj, respectively.). The parsing will still get broken, but hopefully it helps.
+Like, I can't do 'open work shed door', because it doesn't consider that a viable sequence (either 'verb loc noun' or 'verb noun noun'.) Guess I can add that one; 'verb location noun' where 'location' has a transition object and 'noun' is transition obj for 'location'. hm.
+
+2.31pm
+Okay so it's not adding item_types from loc_data, I think.
+
+4.52pm
+Doors etc work a bit better now. 'go into work shed'/enter work shed recognises that you mean to enter the door, 'open work shed door' uses the door noun not the loc_ext noun, '
+
+5.32pm
+Can now 'leave' a location through a door, even though technically the door isn't in the same location as you. Really need to formalise the door operations, but for now this works well enough. Can enter a location throgh a door if it's open, open/close the door from inside, and leave the location through the door if it's open. Basically works okay. (i need to add 'is_transition' to check_item_is_accessible' maybe. Will think on it.)
+Added item_types generation to itemReg properly again, so it adds all the flags it should now, even if the type_default was added via loc_data.

@@ -48,18 +48,21 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
             for item in long_dict:
                 if item == "generic":
                     start = long_dict[item]
+                    #print(f"generic: {start}")
                     long_desc.append(start)
                 elif item == "no_items":
                     no_items_text = long_dict[item]
                 else:
                     if item:
+                        #print(f"Item: {item}")
                         if itemRegistry.registry.instances_by_name(item):
                             local_items = itemRegistry.registry.get_item_by_location(f"{location} {cardinal}")
-
+                            #print(f"Local items: {local_items}")
                             item_inst = None
                             if local_items:
                                 for inst in itemRegistry.registry.instances_by_name(item):
                                     if inst in local_items:
+                                        #print(f"inst in local items: {inst}")
                                         if hasattr(inst, "is_hidden") and inst.is_hidden:
                                             continue
                                         item_inst = inst

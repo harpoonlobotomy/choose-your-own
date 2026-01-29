@@ -102,6 +102,40 @@ def is_loc_current_loc(location=None, cardinal=None):
             return 1, current_location, current_cardinal
     return 0, current_location, current_cardinal # 0 if not matching. Always returns current.
 
+def get_transition_noun(noun, format_tuple, input_dict):
+
+    local_items_list = registry.get_item_by_location(loc.current)
+    if hasattr(noun, "is_loc_exterior"):
+        if hasattr(noun, "transition_objs"):
+            print(f"noun {noun} is loc ext has transition objects: {noun.transition_objs}")
+            if isinstance(noun.transition_objs, ItemInstance):
+                noun = noun.transition_objs
+                return noun
+
+            else:
+                for noun in noun.transition_objs:
+                    if enter(format_tuple, input_dict, noun=noun):
+                        return noun
+    if not noun:
+        print("No noun found, finding from location.")
+        if get_location(input_dict):
+            location = get_location(input_dict)
+            print(f"Location in input_dict: {location}")
+            if hasattr(location, "entry_item"):
+                print(f"location has transition objects: {location.entry_item}")
+                loc_item = location.entry_item
+                if isinstance(loc_item, str):
+                    for loc_item in local_items_list:
+                        if loc_item.name == loc_item:
+                            noun = loc_item
+                            return noun
+
+                elif isinstance(loc_item, ItemInstance):
+                    if loc_item in local_items_list:
+                        noun = loc_item
+                        return noun
+
+    return noun
 
 def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
     logging_fn()
@@ -289,7 +323,7 @@ def get_verb(input_dict:dict) -> ItemInstance:
 
     #print(f"get_verb failed to find the verb instance: {input_dict}")
 
-def get_noun(input_dict:dict, x_noun:int=None) -> ItemInstance:
+def get_noun(input_dict:dict, x_noun:int=None, get_str=False) -> ItemInstance:
     logging_fn()
     # x_noun: 1 == 1st noun, 2 == "2nd noun", etc. Otherwise will always return the first found.
 
@@ -300,8 +334,12 @@ def get_noun(input_dict:dict, x_noun:int=None) -> ItemInstance:
                 if x_noun:
                     noun_counter += 1
                     if noun_counter == x_noun:
+                        if get_str:
+                            return entry["text"]
                         return entry["instance"]
                 else:
+                    if get_str:
+                        return entry["text"]
                     return entry["instance"]
 
     #print(f"get_noun failed to find the noun instance: {input_dict}")
@@ -433,7 +471,7 @@ def turn_cardinal(prospective_cardinal, turning = True):
     #print(f"PROSPECTIVE CARDINAL: {prospective_cardinal}")
     to_loc, to_card, is_same_loc, is_same_card = check_loc_card(location=None, cardinal=prospective_cardinal)
     #bool_test, _, _ = is_loc_current_loc(None, prospective_cardinal)
-    from env_data import loc_dict, get_loc_descriptions
+    from env_data import get_loc_descriptions
 
     if not is_same_card:
     #if not bool_test:
@@ -524,11 +562,35 @@ def go(format_tuple, input_dict): ## move to a location/cardinal/inside
 
     if (direction_entry and direction_entry["str_name"] in to_words and len(format_tuple) < 5) or (not direction_entry and len(format_tuple) < 4) or (direction_entry and not cardinal_entry and not location_entry):
         if location_entry and not cardinal_entry:
+            #print(f"Location entry, no card: {location_entry}")
+            #print(f"location vars: \n{vars(location_entry["instance"])}")
             if location_entry["instance"] == loc.currentPlace:
                 if input_dict[0].get("verb") and input_dict[0]["verb"]["str_name"] == "leave":
+                    if hasattr(loc.current.place, "entry_item"):
+                        print(f"loc.current has entry item: {loc.current.place.entry_item}")
+                        if enter(format_tuple, input_dict, noun=loc.current.place.entry_item):
+                            return
+
+                        #for item in loc.current.entry_item:
+                        #    if item.get("exit_to_location"):
+                        #        print(f"Go through the {item} to leave {loc.current}")
+                    #else:
+                       # print(f"No entry item for loc.current. Vars: {vars(loc.current.place)}")
+
                     print("You can't leave without a new destination in mind. Where do you want to go?")
                     return
+
+            if hasattr(location_entry["instance"], "entry_item"):
+                print(location_entry["instance"].entry_item)
+                if not get_noun(input_dict):
+                    input_dict[len(format_tuple)] = {}
+                    input_dict[len(format_tuple)]["noun"] = ({"instance": location_entry["instance"].entry_item, "str_name": location_entry["instance"].entry_item.name})
+                    print(f"input_dict: {input_dict}")
+
+                enter(format_tuple, input_dict) # Anything that needs you to go through a door goes via enter.
+                return
             new_relocate(new_location=location_entry["instance"])
+            return
 
         elif cardinal_entry and not location_entry:
             #print(f"CARDINAL ENTRY: {cardinal_entry}\nloc.current: {loc.current}, loc.current.place: {loc.current.place}, loc.currentPlace: {loc.currentPlace}")
@@ -541,6 +603,9 @@ def go(format_tuple, input_dict): ## move to a location/cardinal/inside
             if direction_entry["str_name"] in ("left", "right"):
                 turn_cardinal(direction_entry["str_name"])
             else:
+                if get_noun(input_dict):
+                    enter(format_tuple, input_dict)
+                    return
                 print("If this does not have a location, it breaks. Why am I still using location_entry etc after determining they don't exist. Works if the direction is something internal, but not if I just type 'go to church', a location that doesn't exist.")
                 #if len(format_tuple) == 3:
                 print(f"FORMAT TUPLE: {format_tuple}")
@@ -552,8 +617,18 @@ def go(format_tuple, input_dict): ## move to a location/cardinal/inside
             new_relocate(new_location=location_entry["instance"], new_cardinal = cardinal_entry["instance"])
 
     elif direction_entry["str_name"] in in_words:
-        print(f"Can {input_dict[1]["direction"]["str_name"]} be entered?")
-        print("This isn't done yet.")
+        if location_entry.get("instance"):
+            #print(f"loc vars: {vars(location_entry['instance'])}")
+            if hasattr(location_entry["instance"], "entry_item"):
+                #print(f"Location {location_entry['instance']} can be entered via {location_entry["instance"].entry_item}")
+
+            #if not get_noun(input_dict):
+                input_dict[len(format_tuple)] = {}
+                input_dict[len(format_tuple)].setdefault("noun", dict()).setdefault("instance", location_entry['instance'].entry_item)
+                input_dict[len(format_tuple)]["noun"]["str_name"] = location_entry['instance'].entry_item.name
+            enter(format_tuple, input_dict)
+        #print(f"Can {input_dict[1]["direction"]["str_name"]} be entered?")
+        #print("This isn't done yet.")
 
     elif direction_entry["str_name"] == "from":
         if location_entry and location_entry["instance"] != current_loc():
@@ -813,6 +888,8 @@ def open_item(format_tuple, input_dict):
         for noun in (noun_inst, get_noun(input_dict, 2)):
             if hasattr(noun, "is_key"):
                 lock_unlock(format_tuple, input_dict, do_open=True)
+    if hasattr(noun, "is_transition_obj"):
+        noun_inst = noun
 
     inst, container, reason_val, meaning = registry.check_item_is_accessible(noun_inst)
     if reason_val in (0, 3, 4, 5, 8):
@@ -851,6 +928,11 @@ def open_close(format_tuple, input_dict):
     logging_fn()
 
     noun_inst = get_noun(input_dict)
+    if get_noun(input_dict, 2):
+        for option in noun_inst, get_noun(input_dict, 2):
+            if hasattr(option, "is_open"):
+                noun_inst = option # if one of the nouns mentioned can be opened, assume we mean to open that one.
+
     verb_inst = get_verb(input_dict)
 
     inst, container, reason_val, meaning = registry.check_item_is_accessible(noun_inst)
@@ -858,7 +940,8 @@ def open_close(format_tuple, input_dict):
         print(f"{noun_inst.name} isn't accessible, you can't interact with it.")
         print(f"[{meaning}]")
         return
-    print(f"open_close noun vars: {vars(noun_inst)}")
+
+    #print(f"open_close noun vars: {vars(noun_inst)}")
 
     if verb_inst.name == "open":
         if hasattr(noun_inst, "is_locked") and noun_inst.is_locked:
@@ -959,6 +1042,13 @@ def simple_open_close(format_tuple, input_dict):
     noun_inst = get_noun(input_dict)
 
     if verb_inst.name == "open":
+        if hasattr(noun_inst, "is_loc_exterior"):
+            if hasattr(noun_inst, "is_loc_exterior"):
+            #print("This is the outside of a thing. Get the transition object and use it here.")
+               noun = noun_inst.transition_objs
+
+            if isinstance(noun, ItemInstance):
+                noun_inst = noun
         if hasattr(noun_inst, "is_open"):
             if noun_inst.is_open == True:
                 print(f"{assign_colour(noun_inst)} is already open.")
@@ -969,10 +1059,16 @@ def simple_open_close(format_tuple, input_dict):
                     return
                 print(f"noun_inst.is_open now: {noun_inst.is_open}")
                 confirmed_inst, confirmed_container, reason_val, meaning  = registry.check_item_is_accessible(noun_inst)
-                if reason_val in (0, 5, 8):
+                if reason_val in (0, 5, 8) or (reason_val == 6 and hasattr(noun_inst, "is_transition_obj") and noun_inst.enter_location == loc.current.place):
+
                     print(f"You open the {assign_colour(noun_inst)}.")
                     noun_inst.is_open = True
                     print(f"noun_inst.is_open now: {noun_inst.is_open}")
+                    return
+
+                if reason_val == 6:
+                    #print(f"There's no {get_noun(input_dict, get_str=True)} to open here.")
+                    print(f"You can't open something you aren't nearby to...")
                     return
                 else:
                     print(f"Cannot open {noun_inst.name} because {meaning}.")
@@ -1252,6 +1348,23 @@ def throw(format_tuple, input_dict):
 
 def push(format_tuple, input_dict):
     logging_fn()
+    noun = get_noun(input_dict)
+    if "door_window" in noun.item_type:
+        if hasattr(noun, "can_be_opened"):
+            if noun.is_open:
+                print(f"You push against the {assign_colour(noun)}, but it doesn't move much further.")
+            elif not noun.is_open:
+                if noun.is_locked:
+                    print(f"You push against the {noun}, but it doesn't budge.")
+                else:
+                    print(f"You push against the {noun}, and it opens just enough for you to see inside.")
+                    if noun.location == loc.current:
+                        if noun.exit_to_location == loc.current.place:
+                            enter(format_tuple, input_dict)
+                    else:
+                        print("No description here. Should be one eventually.")
+
+
     # verb_noun == to move things out the way in general
     # verb_noun_dir == #push box left
     # verb_noun_dir_noun == push box away from cabinet
@@ -1368,28 +1481,48 @@ def use_item(format_tuple, input_dict):
         return
     print(f"Cannot process {input_dict} in def use_item() End of function, unresolved. (Function not yet written)")
 
-def enter(format_tuple, input_dict):
-    noun = get_noun(input_dict)
-    if hasattr(noun, "is_open") and noun.is_open == True:
-        if hasattr(noun, "enter_location"):
-            print(f"noun.enter_location: {noun.enter_location}")
-            target_location = noun.enter_location
-            print(f"target location: {target_location}, type: {type(target_location)}")
-            if isinstance(target_location, placeInstance):
-                print("Target location is placeInstance type.")
-                if hasattr(noun, "exit_to_location") and noun.exit_to_location == loc.current.place.name:
-                    print(f"noun.exit_to_location: {noun.exit_to_location}")
-                    print(assign_colour("You open the door and head inside.", colour="event_msg"))
-                    new_relocate(target_location)
+def enter(format_tuple, input_dict, noun=None):
+    ### NEED TO FORMALISE DOORS/TRANSITION OBJECTS.
+    if not noun:
+        if format_tuple == ("verb", "noun", "noun"):
+            noun = get_noun(input_dict, 2)
+        else:
+            noun = get_noun(input_dict)
 
 
-                #if target_location == loc.current.place:
+    #if hasattr(noun, "is_loc_exterior"):
+    #    print(f"{noun} is a location exterior object, this will work later.")
+    if not noun or hasattr(noun, "is_loc_exterior") or hasattr(noun, "is_transition_obj"):
+        noun = get_transition_noun(noun, format_tuple, input_dict)
+
+    if hasattr(noun, "enter_location"):
+        print(f"noun.enter_location: {noun.enter_location}")
+        inside_location = noun.enter_location ## Noun must have both enter loc and exit_to_loc if it has either.
+        outside_location = noun.exit_to_location
+        if hasattr(noun, "exit_to_location"):
+            if outside_location == loc.current.place:
+                if hasattr(noun, "is_open") and noun.is_open == True:
+                    print(assign_colour("The door creaks, but allows you to head inside.", colour="event_msg")) # want like, recklessly/cautiously/quietly, depending on playstyle. Long way off that but wanted to note it.
+                    new_relocate(inside_location)
+                    return 1
+                else:
+                    print("You can't enter through a closed door.")
+                    return 1
+            elif inside_location == loc.current.place:
+                if hasattr(noun, "is_open") and noun.is_open == True:
+                    print(assign_colour("You head back out through the door.", colour="event_msg"))
+                    new_relocate(outside_location)
+                    return 1
+                else:
+                    print("You can't leave through a closed door.")
+                    return 1
             else:
-                print(f"Enter [location] requires a placeInstance, received {target_location}, {type(target_location)} instead.")
-        print(f"This {noun.name} doesn't lead anywhere")
-
+                print("You can't go through the door unless you're nearby to it.")
+                return 1
     else:
-        print("You can't enter a closed door.")
+
+        print(f"This {noun} doesn't lead anywhere")
+
 
 
 def router(viable_format, inst_dict):
@@ -1401,7 +1534,7 @@ def router(viable_format, inst_dict):
         for data in v.values():
             quick_list.append(data["str_name"])
     MOVE_UP = "\033[A"
-    #print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {" ".join(quick_list)}  ]]\033[0m\n') ## TODO put this back on when the testing's done.
+    print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {" ".join(quick_list)}  ]]\033[0m\n') ## TODO put this back on when the testing's done.
     #print(f"Dict for output: {inst_dict}")
 
     for data in inst_dict.values():

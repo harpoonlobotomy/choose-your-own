@@ -10,28 +10,7 @@ global loc_items_dict
 loc_items_dict = {}
 
 from itemRegistry import type_defaults
-#type_defaults = { # gently ordered - will overwrite earlier attrs with later ones (eg 'is horizontal surface' for flooring with overwrite 'static''s.)
-#    "standard": {},
-#    "static": {"can_examine": False, "breakable": False},
-#    "all_items": {"starting_location": None, "current_loc": None, "alt_names": {}, "is_hidden": False},
-#    "container": {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False, 'starting_children': None, 'container_limits': 4, "name_no_children": None, "description_no_children": None},
-#    "key": {"is_key": True},
-#    "can_pick_up": {"can_pick_up": True, "item_size": 0, "started_contained_in": None, "contained_in": None},
-#    "event": {"event": None, "event_type": "item_triggered", "event_key": None, "event_item": None},
-#    "trigger": {"trigger_type": "plot_advance", "trigger_target": None, "is_exhausted": False},
-#    "flooring": {"is_horizontal_surface": True},
-#    "wall": {"is_vertical_surface": True},
-#    "food_drink": {"can_consume": True, "can_spoil": True, "is_safe": True, "effect": None},
-#    "fragile": {"broken_name": None, "flammable": False, "can_break": True},
-#    "electronics": {"can_be_charged": True, "is_charged": False, "takes_batteries": False, "has_batteries": False},
-#    "books_paper": {'print_on_investigate': True, 'flammable': True, 'can_read': True},
-#    "can_speak" : {'can_speak': True, 'speaks_common': True},
-#    "can_open": {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False}
-#
-#    #{"special_traits: set("dirty", "wet", "panacea", "dupe", "weird", "can_combine")}, # aka random attr storage I'm not using yet
-#    #"exterior": {"is_interior": False} ## Can be set scene-wide, so 'all parts of 'graveyard east' are exterior unless otherwise mentioned'. (I say 'can', I mean 'will be when I set it up')
-#}
-#
+
 class itemGenerator:
     def __init__(self):
         self.item_defs = {}
@@ -176,7 +155,9 @@ def get_item_data(item_name, incoming_data=None): # note: no locations here. Thi
         cleaned_dict[field] = item_data[field]
 
     for field in incoming_data:
+        print(f"Field in incoming data: {field}")
         if not cleaned_dict.get(field):
+            print(f"Field in incoming data not in cleaned dict (will be added): {field}")
             cleaned_dict[field] = incoming_data[field]
 
     if cleaned_dict.get("item_type"):

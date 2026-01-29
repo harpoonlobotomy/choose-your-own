@@ -30,7 +30,9 @@ type_defaults = {
     "electronics": {"can_be_charged": True, "is_charged": False, "takes_batteries": False, "has_batteries": False},
     "books_paper": {'print_on_investigate': True, 'flammable': True, 'can_read': True},
     "can_speak" : {'can_speak': True, 'speaks_common': True},
-    "can_open": {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False}
+    "can_open": {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False},
+    "transition": {"is_transition_obj": True, "enter_location": None, "exit_to_location": None},
+    "loc_exterior": {"is_loc_exterior":True, "transition_objs": set()}
 
     #{"special_traits: set("dirty", "wet", "panacea", "dupe", "weird", "can_combine")}, # aka random attr storage I'm not using yet
     #"exterior": {"is_interior": False} ## Can be set scene-wide, so 'all parts of 'graveyard east' are exterior unless otherwise mentioned'. (I say 'can', I mean 'will be when I set it up')
@@ -53,6 +55,7 @@ class ItemInstance:
 
     def clean_item_types(self, attr):
 
+
         if isinstance(self.item_type, str):
             if isinstance(attr, str):
                 if attr == self.item_type:
@@ -63,6 +66,13 @@ class ItemInstance:
             elif isinstance(attr, set):
                 attr.add(self.item_type)
                 self.item_type = set()
+
+        elif isinstance(self.item_type, list):
+            print(f"self.item_type was a list: {self.item_type}")
+            temp = self.item_type
+            self.item_type = set()
+            for item in temp:
+                self.item_type.add(item)
 
         if isinstance(attr, str):
             #print(f"cleaning itemtypes: `{attr}` (type: {type(attr)}), existing: {self.item_type} type: {type(self.item_type)}")
@@ -85,38 +95,39 @@ class ItemInstance:
             for item_type in attr:
                 self.item_type.add(item_type)
 
-        #for item_type in self.item_type:
-        #    print(f"{self}  ITEM TYPE: {item_type}")
-        #    for flag in type_defaults.get(item_type):
-        #        if not hasattr(self, flag):
-        #            setattr(self, flag, type_defaults[item_type][flag])
+        # Added this section back in, apparently it needs it sometimes. Oh, right, because item_gen doesn't overwrite fields, so it doesn't add the transition data to generic items. Fair enough.
+        for item_type in self.item_type:
+            #print(f"{self}  ITEM TYPE: {item_type}")
+            for flag in type_defaults.get(item_type):
+                if not hasattr(self, flag):
+                    setattr(self, flag, type_defaults[item_type][flag])
 
         return self.item_type
 
 
     def __init__(self, definition_key:str, attr:dict):
-        #print(f"\n\n@@@@@@@@@@@@@@@@@ITEM {definition_key} in INIT ITEMINSTANCE@@@@@@@@@@@@@@@\n\n")
+        #print(f"\n\n@@@@@@@@@@@@@@@@@ITEM {definition_key} in INIT ITEMINANCE@@@@@@@@@@@@@@@\n\n")
         #print(f"definition_key: {definition_key}, attr: {attr}")
-        #print(f"Init in item instance is running now. {definition_key}")
         self.id = str(uuid.uuid4())  # unique per instance
         for attribute in attr:
-            #print(f"ATTRIBUTE: {attribute}, value: {attr[attribute]}")
             setattr(self, attribute, attr[attribute])
+
         self.name:str = definition_key
         self.nicename:str = attr.get("name")
-        #print(f"ATTR: {attr}")
-        self.item_type = self.clean_item_types(attr["item_type"])#attr["item_type"] ## have it here and/or in the registry. I guess both? covers the 'is_container' thing neatly enough.
-
+        self.is_transition_obj = False
+        self.item_type = self.clean_item_types(attr["item_type"])
         self.colour = None
         self.description:str = attr.get("description")
         self.starting_location:dict = attr.get("starting_location") # currently is styr
         self.verb_actions = set()
         self.location:cardinalInstance = None
+
         if attr.get("exceptions"):
             if attr["exceptions"].get("starting_location"):
                 if isinstance(attr["exceptions"]["starting_location"], cardinalInstance):
                     self.location = attr["exceptions"]["starting_location"]
                     self.starting_location = attr["exceptions"]["starting_location"]
+
         if attr.get("alt_names"):
             self.alt_names = set(i for i in attr.get("alt_names"))
         else:
@@ -152,7 +163,15 @@ class ItemInstance:
             #self.children = list() ## Maybe we create all instances first, then add 'children' afterwards, otherwise they won't be initialised yet. Currently this works because I've listed the parents first in the item defs.
 
         if hasattr(self, "enter_location"):
-            self.enter_location = loc.by_name.get(self.enter_location)
+            self.enter_location = loc.place_by_name(self.enter_location)
+            print(f"self.enter_location: {self.enter_location}")
+            setattr(self.enter_location, "entry_item", self)
+            setattr(self.enter_location, "location_entered", False)
+            self.is_transition_obj = True
+
+        if hasattr(self, "exit_to_location"):
+            self.exit_to_location = loc.by_name.get(self.exit_to_location)
+            setattr(self.exit_to_location, "exit_item", self)
 
     def __repr__(self):
         return f"<ItemInstance {self.name} ({self.id})>"
@@ -621,7 +640,7 @@ class itemRegistry:
                         reason = 6
             else:
                 confirmed_inst = in_local_items_list(inst, local_items_list)
-                print(f"Confirmed_inst in local items: {confirmed_inst}")
+                #print(f"Confirmed_inst in local items: {confirmed_inst}")
                 if confirmed_inst:
                     reason = 0
                 else:
@@ -1113,27 +1132,33 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, part
 
 def apply_loc_data_to_item(item, item_data, loc_data):
 
-    #print(f"\n\nApplying loc data to item: {item}, item data: ``{item_data}``, loc data: ``{loc_data}``")
+    print(f"\n\nApplying loc data to item: {item}, item data: ``{item_data}``, loc data: ``{loc_data}``")
+
     if loc_data:
         for field in loc_data:
+            #print(f"field: {field}, entry: {loc_data[field]}")
             if field == item:
                 #print(f"FIELD: {field}")
                 for attr in loc_data[field]:
                     if attr == item:
                         continue
                     else:
-                        item_data[field] = loc_data[field][attr]
+                        item_data[attr] = loc_data[field][attr]
             else:
                 item_data[field] = loc_data[field] # just always apply loc_data, right? It should overrule always. I think. Shit.
-    if item_data.get("description"):
-        if "[[]]" in item_data["description"]:
-            item_data["description"] = item_data["description"].replace("[[]]", item)
+
+#NOTE removed this, don't think it's ever used and the [[]] is there for a reason.
+#    if item_data.get("description"):
+#        if "[[]]" in item_data["description"]:
+#            item_data["description"] = item_data["description"].replace("[[]]", item)
 
     if loc_data and loc_data.get("starting_location"):
         #print(f"STarting location for {item}: {loc_data["starting_location"]}, ty[e: {type(loc_data["starting_location"])}]")
         item_data["starting_location"] = loc_data["starting_location"]
 
     inst = registry.init_single(item, item_data)
+    #print(f"Init'd item: {inst}")
+    #print(f"vars: \n{vars(inst)}")
     all_item_names_generated.append((inst, "apply_loc_data_to_item"))
     if hasattr(inst, "starting_children") and getattr(inst, "starting_children"):
         if not hasattr(registry, "check_for_children"):
@@ -1247,8 +1272,8 @@ def get_loc_items(loc=None, cardinal=None):
 def initialise_itemRegistry():
 
     registry.complete_location_dict()
-    from env_data import initialise_placeRegistry
-    initialise_placeRegistry()
+    #from env_data import initialise_placeRegistry
+    #initialise_placeRegistry()
     #     ***************************************
     from item_dict_gen import init_item_dict
     init_item_dict()
@@ -1262,6 +1287,18 @@ def initialise_itemRegistry():
         if len(item_name.split()) > 1:
             printing.print_blue(f"split name: {item_name}")
             plural_word_dict[item_name] = tuple(item_name.split())
+
+    for obj in registry.instances:
+        if hasattr(obj, "is_loc_exterior"):
+            #print(f"obj with is_loc_exterior: {obj}")
+            location = loc.place_by_name(obj.name)
+            #print(f"location:: {location}")
+            #print(f"loc vars: {vars(location)}")
+            if hasattr(location, "entry_item"):
+                #print(f"loc has objects: {location.entry_item}")
+                obj.transition_objs = location.entry_item
+
+
     registry.add_plural_words(plural_word_dict)
 
     return registry.event_items

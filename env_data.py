@@ -52,6 +52,21 @@ class cardinalInstance:
         self.by_placename = {}
         all_cardinals.add(self)
 
+        if loc_dict[self.place.name].get(self.name) and loc_dict[self.place.name][self.name].get("items"):
+            print(f"{self.place_name} loc has items.")
+            for item in loc_dict[self.place.name][self.name]["items"]:
+                if loc_dict[self.place.name][self.name]["items"][item].get("item_type"):
+                    if "loc_exterior" in loc_dict[self.place.name][self.name]["items"][item]["item_type"]:
+                        if not hasattr(self, "loc_exterior_items"):
+                            self.loc_exterior_items = set()
+                        self.loc_exterior_items.add(item) # TODO should do this a different way, because this doesn't use the instance, only the name.
+                    if "transition" in loc_dict[self.place.name][self.name]["items"][item]["item_type"]:
+                        if not hasattr(self, "transition_objs"):
+                            self.transition_objs = dict()
+                        self.transition_objs[item] = {"enter_location": loc_dict[self.place.name][self.name]["items"][item].get("enter_location"), "exit_to_location": (loc_dict[self.place.name][self.name]["items"][item].get("exit_to_location") if loc_dict[self.place.name][self.name]["items"][item].get("exit_to_location") != self.name else self)}
+
+
+
     def __repr__(self):
         return f"<cardinalInstance {self.place_name} ({self.id})>"
 
@@ -82,6 +97,8 @@ class placeInstance:
             value = loc_dict[name].get(attr)
             setattr(self, attr, value) # might work?
 
+
+
     #def set_scene_descrip(self, name, loc):
     #    ## place.set_scene_descrip(name, place) ## <- calls here
     #    if loc_dict[name].get("descrip"):
@@ -109,7 +126,7 @@ class placeRegistry:
         self.route = list() # store everywhere you go for a game, in order. Could be interesting to use later.
         self.last_loc = None # used for history tracking, just track place, not card.
         self.cardinals = {} # locRegistry.cardinals[place_instance_obj][cardinal_direction_str]
-        self.current = None # Not sure if I want to use this, or keep it in game.facing_direction. This might make more sense, keep it centralised? Not sure.
+        self.current = None # cardinal instance
         self.currentPlace = None
 
     def add_cardinals(self, locationInstance):
@@ -139,10 +156,10 @@ class placeRegistry:
                 if cardinal.place != self.currentPlace:
                     self.currentPlace = cardinal.place
                     self.route.append(loc)
-                #print(f"Set self.current to {cardinal}, self.currentPlace to {loc}")
+
                 return
 
-        if loc:
+        elif loc:
             if isinstance(loc, str):
                 loc_test = self.by_name[loc]
                 if isinstance(loc_test, placeInstance):
@@ -160,9 +177,7 @@ class placeRegistry:
                     current_card = self.current.name
                 new_card = self.cardinals[self.currentPlace][current_card]
                 self.current = new_card
-                #print(f"loc.name: {loc.name}")
                 self.currentPlace = loc
-                #print("self.current: ", self.current)
                 self.route.append(loc)
 
             if isinstance(loc, cardinalInstance):
@@ -277,11 +292,48 @@ def add_new_loc(name, reset_current=True):
     #place.cardinals=cardinals_dict
     if reset_current:
         locRegistry.set_current(place)
+    return place
 
 def initialise_placeRegistry():
 
     for name in loc_dict.keys():
-        add_new_loc(name)
+        place = add_new_loc(name)
+
+        if hasattr(place, "transition_objs"):
+            for item in place.transition_objs:
+                enter_location = place.transition_objs[item].get("enter_location")
+                exit_to_location = place.transition_objs[item].get("exit_to_location")
+                if not enter_location:
+                    print(f"No enter location found for {place} transition object {item}")
+                    exit()
+                if not exit_to_location:
+                    print(f"No exit_to location found for {place} transition object {item}")
+                    exit()
+                for loc in (enter_location, exit_to_location):
+                    if isinstance(loc, str):
+                        loc_inst = locRegistry.place_by_name(loc)
+                        if loc == enter_location:
+                            place.transition_objs[item]["enter_location"] = loc_inst
+                        else:
+                            place.transition_objs[item]["exit_to_location"] = loc_inst
+
+                target_place = enter_location
+                if not hasattr(target_place, "transition_obj"):
+                    target_place.transition_objs = dict()
+
+                    target_place.transition_objs[item] = {}
+                    target_place.transition_objs[item][enter_location] = target_place
+                    target_place.transition_objs[item][exit_to_location] = place
+
+                else:
+                    print(f"Target place transition objects: {target_place.transition_objs}")
+
+
+
+
+
+
+
 
         #place.set_scene_descrip(name, place)
 
