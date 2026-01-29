@@ -48,12 +48,15 @@ def check_loc_card(location, cardinal):
     if to_card and not to_loc:
         to_loc = to_card.place
 
-    if to_loc and to_loc == loc.currentPlace:
+    if to_loc and to_loc == loc.current.place:
         is_same_loc = True
 
     if to_card and to_card == loc.current:
         is_same_card = True
 
+    if not to_card and not to_loc:
+        print(f"End of check_loc_card, no location or cardinal from {location}, {cardinal}")
+        exit(code="Exiting because reason given above.")
     return to_loc, to_card, is_same_loc, is_same_card
 
 
@@ -83,18 +86,18 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
         game.weather=weather_options[new_weather_index]
         game.bad_weather = weatherdict[game.weather].get("bad_weather")
 
-        if loc.currentPlace==prev_loc:
-            print(f"loc.places[loc.current]: {loc.currentPlace.name}")
-            print(f"You decided to stay at {assign_colour(loc.currentPlace.the_name, 'loc')} a while longer.")
+        if loc.current.place==prev_loc:
+            print(f"loc.places[loc.current]: {loc.current.place.name}")
+            print(f"You decided to stay at {assign_colour(loc.current.place.the_name, 'loc')} a while longer.")
         else:
-            print(f"You make your way to {assign_colour(loc.currentPlace.the_name, 'loc')}. It's {game.time}, the weather is {game.weather}, and you're feeling {game.emotional_summary}.")
-            if loc.currentPlace.visited:
-                print(f"You've been here before... It was {loc.currentPlace.first_weather} the first time you came.")
-                if loc.currentPlace.first_weather == game.weather:
+            print(f"You make your way to {assign_colour(loc.current.place.the_name, 'loc')}. It's {game.time}, the weather is {game.weather}, and you're feeling {game.emotional_summary}.")
+            if loc.current.place.visited:
+                print(f"You've been here before... It was {loc.current.place.first_weather} the first time you came.")
+                if loc.current.place.first_weather == game.weather:
                     print(weatherdict[game.weather].get("same_weather"))
             else:
-                loc.currentPlace.visited = True # maybe a counter instead of a bool. Maybe returning x times means something. No idea what. Probably not.
-                loc.currentPlace.first_weather = current_weather
+                loc.current.place.visited = True # maybe a counter instead of a bool. Maybe returning x times means something. No idea what. Probably not.
+                loc.current.place.first_weather = current_weather
 
     to_loc, to_card, is_same_loc, is_same_card = check_loc_card(new_location, new_cardinal)
 
@@ -102,61 +105,37 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
         print(f"You're already at {assign_colour(loc.current, card_type="place_name")}")
         return
 
-    #if is_same_loc:
-    #    print(f"You're already at {assign_colour(loc.current.place)}")
-
-    #print(f"loc.current.place: {loc.current.place}")
-    #print(f"new location: {new_location}")
     if events.travel_is_limited and not (to_loc and to_loc == loc.current.place):
         allowed_locations = events.check_movement_limits()
-        #print(f"Allowed locations: {allowed_locations}")
-        #print(f"Allowed locations get to_loc.name: {to_loc.name}: {allowed_locations.get(to_loc.name)}")
-        #for entry in allowed_locations:
-            #print(f"Entry: {entry}")
-            #if entry == to_loc.name:
-                #print("Entry == to_loc name")
-        #cannot_leave_loc = events.held_at.get("held_at_loc")
-        #holding_event = events.held_at.get("held_by") # make held by a set, each event instance carries which locations it allows.
-        #if allowed_locations.get(to_loc.name):
-            #print(f"Location {to_loc} is allowed by location-limiting event {allowed_locations[to_loc.name]}")
-        #else:
+
         if not allowed_locations.get(to_loc.name):
-            holding_event = list(allowed_locations[loc.currentPlace.name])[0]
+            holding_event = list(allowed_locations[loc.current.place.name])[0]
             msg = events.play_event_msg("held", holding_event, print_txt=False)
             print(f"You want to go to the {assign_colour(to_loc)}, but...\n      {assign_colour(msg, colour='event_msg')}")
             return
 
     elif is_same_loc:
-        #print(f"You're already in the {assign_colour(loc.current.place)}")
-        #get_loc_descriptions(place=loc.currentPlace)
-        print(loc.current.description)
+        print(f"You're already in the {assign_colour(loc.current.place)}")
+        if is_same_card or not new_cardinal:
+            return
         turn_around(new_cardinal)
         return
 
     if new_location and isinstance(new_location, placeInstance) and not new_cardinal:
         new_cardinal = loc.current.name
-        #print(f"loc.current: {loc.current}, loc current name: {loc.current.name}")
         new_card_inst = loc.by_cardinal_str(loc.current.name, new_location)
         if not new_card_inst.cardinal_data:
-        #if not (hasattr(new_card_inst, new_card_inst.name) and getattr(new_card_inst, new_card_inst.name)):
-            #print(f"This is not a viable direction for {new_location.name}")
             for card in new_location.cardinals:
                 new_card_inst = new_location.cardinals.get(card)
                 if new_card_inst.cardinal_data:
-                    #print(f"new card inst 00: {new_card_inst}")
-                    loc.set_current(loc = new_location, cardinal=new_card_inst)
-                    #new_relocate(new_cardinal=new_card_inst)
                     break
 
         if new_card_inst:
-            #print(f"NEW CARD INST: {new_card_inst}")
-            #print(vars(new_card_inst))
             loc.set_current(loc = new_location, cardinal=new_card_inst)
         else:
             for card in new_location.cardinals:
                 new_card_inst = (new_location.cardinals.get(card) if new_location.cardinals.get(card) else None)
                 if new_card_inst and new_card_inst.cardinal_data.get("item_desc"):
-                    #print(f"new_card inst 2: {new_card_inst}")
                     loc.set_current(loc = new_location, cardinal=new_card_inst) # if just going from place to place, just pick the first viable cardinal silently.
                     break
 
@@ -164,14 +143,14 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
 
         if not new_cardinal.cardinal_data:
         #if not (hasattr(new_card_inst, new_card_inst.name) and getattr(new_card_inst, new_card_inst.name)):
-            #print(f"This is not a viable direction for {new_cardinal.place}")
+            print(f"This {new_cardinal} is not a viable direction for {new_cardinal.place}")
             if new_cardinal.place.missing_cardinal:
                 #print("new_cardinal.missing_cardinal")
                 print(assign_colour(new_cardinal.missing_cardinal, "event_msg"))
             for card in new_location.cardinals:
                 new_card_inst = new_location.cardinals.get(card)
                 if new_card_inst.cardinal_data:
-                    #print(f"new_card_inst: {new_card_inst}")
+                    print(f"new_card_inst: {new_card_inst}")
                     turn_around(new_cardinal)
                     #new_relocate(new_cardinal=new_card_inst)
                     return
@@ -179,17 +158,10 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
         if new_location:
             loc.set_current(loc = new_location, cardinal=new_cardinal)
         else:
-           # new_cardinal = loc.by_cardinal_str(new_cardinal)
-          #  if new_cardinal:
             loc.set_current(cardinal=new_cardinal)
-           # else:
-           #     for card in new_location.cardinals:
-            #        new_card_inst = (new_location.cardinals.get(card) if new_location.cardinals.get(card) else None)
-             #       if new_card_inst:
-             #           loc.set_current(loc = new_location, cardinal=new_card_inst)
 
     from misc_utilities import in_loc_facing_card
-    print(f"You're now in {in_loc_facing_card(loc.current)}\n") # prev "place_name"
+    print(f"You're now in {in_loc_facing_card(loc.current)}\n")
     get_loc_descriptions(loc.current.place)
 
     if new_location:
@@ -202,7 +174,6 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
 
 def turn_around(new_cardinal):
 
-    from misc_utilities import in_loc_facing_card
     logging_fn()
     if not isinstance(new_cardinal, cardinalInstance):
         print(f"turn_around in player_movement requires cardinalInstance, but got type: {type(new_cardinal)}:")
@@ -213,12 +184,10 @@ def turn_around(new_cardinal):
     cardinal, alt_match = get_viable_cardinal(new_cardinal)
     if alt_match:
         if cardinal.place.missing_cardinal:
-            #print("new_cardinal.place.missing_cardinal")
             print(assign_colour(new_cardinal.missing_cardinal, "event_msg"))
             return
     loc.set_current(loc=None, cardinal=cardinal)
-    #print(f"loc.current_cardinal after turn_around: {loc.current}, type: {type(loc.current)}")
-    print(f"You turn to face {assign_colour(loc.current, card_type="place_name")}") #prev "ern_name"
-    get_loc_descriptions(place=loc.currentPlace)
+    print(f"You turn to face the {assign_colour(loc.current, card_type="place_name")}")
+    get_loc_descriptions(place=loc.current.place)
     print(f"{loc.current.description}")
 

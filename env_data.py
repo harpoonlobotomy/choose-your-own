@@ -53,7 +53,7 @@ class cardinalInstance:
         all_cardinals.add(self)
 
         if loc_dict[self.place.name].get(self.name) and loc_dict[self.place.name][self.name].get("items"):
-            print(f"{self.place_name} loc has items.")
+            #print(f"{self.place_name} loc has items.")
             for item in loc_dict[self.place.name][self.name]["items"]:
                 if loc_dict[self.place.name][self.name]["items"][item].get("item_type"):
                     if "loc_exterior" in loc_dict[self.place.name][self.name]["items"][item]["item_type"]:

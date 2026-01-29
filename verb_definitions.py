@@ -38,12 +38,11 @@ meta = "meta"
 #    "verb_noun_noun": f"{verb} o{null} {noun} {null} o{null} {noun}"
 #}
 cardinals = ["north", "east", "south", "west"]
-directions = ["down", "up", "left", "right", "away", "toward", "towards", "closer", "further", "to", "into", "against", "across", "at", "in", "on", "from", "inside", "away", "into", "for", "elsewhere", "here"]
+directions = ["down", "up", "left", "right", "away", "toward", "towards", "closer", "further", "to", "into", "against", "across", "at", "in", "on", "from", "inside", "away", "into", "for", "elsewhere", "here", "through"]
 ## "in front of"?? Need to be able to cope with that.
 
 nulls = ["the", "a", "an"]
 semantics = ["with", "and", "around"]
-directions = directions
 
 positional_dict = {
     "in": {"alts": ["inside", "within"]},
@@ -187,7 +186,7 @@ verb_defs_dict = {
 #   ,making 'move' its own verb because it needs to route to both 'push' and 'go'. # Turns out I already had one but used it terribly and still had alt_words directing actions away. So now it's here.
     "move": {"alt_words": ["shift"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun, loc_only, loc_car, car_loc, verb_car_loc, verb_loc_car, dir_only, car_only, verb_only, verb_loc, verb_dir, verb_dir_loc, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car]},
     "turn": {"alt_words": [""], "allowed_null": None, "formats": [verb_car, verb_sem, verb_dir, verb_dir_car, verb_dir_car_loc]},
-    "leave": {"alt_words": ["depart", ""], "allowed_null": None, "formats": [verb_only, verb_loc, verb_dir_loc, verb_noun_dir_noun]},
+    "leave": {"alt_words": ["depart", ""], "allowed_null": None, "formats": [verb_only, verb_loc, verb_dir_loc, verb_noun_dir, verb_noun_dir_noun]},
     "combine": {"alt_words": ["mix", "add"], "allowed_null": ["with", "and"], "formats": [verb_noun_sem_noun, verb_noun_dir_noun, verb_noun]},
     "separate": {"alt_words": ["remove", ""], "allowed_null": ["from", "and"], "formats": [verb_noun_sem_noun, verb_noun_dir_noun, verb_noun]},
     "throw": {"alt_words": ["chuck", "lob"], "allowed_null": ["at"], "formats": [verb_noun, verb_noun_dir, verb_noun_sem_noun, verb_noun_dir_noun, verb_noun_dir_loc]}, # throw ball down, throw ball at tree

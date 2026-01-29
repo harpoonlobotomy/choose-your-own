@@ -2,6 +2,7 @@
 
 #Instinctively I want a new script for item interactions, that I can send to from membrane. But isn't that what the itemRegistry is for?
 #It kinda is...
+from interactions.player_movement import turn_around
 from itemRegistry import ItemInstance, registry
 from env_data import cardinalInstance, locRegistry as loc
 from misc_utilities import assign_colour
@@ -28,14 +29,17 @@ def look_at_item(item_inst): ## this is just using everything from registry. Sho
     if isinstance(item_inst, ItemInstance):
         #print(f"item_inst.location: {item_inst.location}")
         confirmed, container, reason_val, meaning = registry.check_item_is_accessible(item_inst)
-        print(f"Look at item MEANING: {meaning}")
+        #print(f"Look at item MEANING: {meaning}")
         if reason_val not in (0, 5, 8):
-            print(f"Cannot look at {item_inst.name}.")
+            print(f"You can't see that right now.")
         else:
             if reason_val == 2:
                 extra = " in your inventory."
             else:
                 extra = "."
+            if reason_val == 8:
+                turn_around(item_inst.location)
+                return
             print(f"You look at the {assign_colour(item_inst)}{extra}")
             print(assign_colour(registry.describe(item_inst, caps=True), colour="description"))
             children = registry.instances_by_container(item_inst)
@@ -80,14 +84,14 @@ def add_item_to_loc(item_instance, location=None):
 
     if location == None:
         location = loc.current
-    if location != None and location != loc.current:
+    elif location != loc.current:
         print(f"You're currently at {loc.current.place_name}. You can't leave {item_instance.name} at {location.name} unless you move there first.")
 
     if isinstance(location, cardinalInstance):
         registry.move_item(inst=item_instance, location=location)
     else:
-        print("add_item_to_location needs a cardinalInstance.")
-        exit
+        exit("add_item_to_location needs a cardinalInstance.")
+
 
 
 #container, reason_val = registry.check_item_is_accessible(noun_inst)

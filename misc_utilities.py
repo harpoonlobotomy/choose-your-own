@@ -13,7 +13,7 @@ accessible_dict = {
     5: "in inventory",
     6: "not at current location",
     7: "other error, investigate",
-    8: "in container but only technically (eg padlock in door)",# (can look/interact with, but not move/pick/up/drop)
+    8: "is a transitional item (eg a door that can be seen from both sides)",
     9: "item is hidden"# (must be discovered somehow, not shown in general 'look around' views.)
 }
 

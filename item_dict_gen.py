@@ -155,9 +155,9 @@ def get_item_data(item_name, incoming_data=None): # note: no locations here. Thi
         cleaned_dict[field] = item_data[field]
 
     for field in incoming_data:
-        print(f"Field in incoming data: {field}")
+        #print(f"Field in incoming data: {field}")
         if not cleaned_dict.get(field):
-            print(f"Field in incoming data not in cleaned dict (will be added): {field}")
+            #print(f"Field in incoming data not in cleaned dict (will be added): {field}")
             cleaned_dict[field] = incoming_data[field]
 
     if cleaned_dict.get("item_type"):

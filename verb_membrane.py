@@ -83,7 +83,7 @@ def get_noun_instances(dict_from_parser, viable_formats):
             loc_inst = locRegistry.currentPlace
         card = entry['str_name']
         #print(f"locRegistry.cardinals[loc_inst]: {locRegistry.cardinals[loc_inst]}")
-        
+
         card_inst = locRegistry.cardinals[loc_inst][card]
         dict_from_parser[idx][kind] = ({"instance": card_inst, "str_name": entry["str_name"]})
         return dict_from_parser
@@ -241,6 +241,8 @@ def run_membrane(input_str=None):
         from verbRegistry import Parser
         viable_format, dict_from_parser = Parser.input_parser(Parser, input_str)
 
+        if not viable_format:
+            return None
         inst_dict = get_noun_instances(dict_from_parser, viable_format)
 
         if inst_dict:

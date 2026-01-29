@@ -2782,3 +2782,24 @@ Doors etc work a bit better now. 'go into work shed'/enter work shed recognises 
 5.32pm
 Can now 'leave' a location through a door, even though technically the door isn't in the same location as you. Really need to formalise the door operations, but for now this works well enough. Can enter a location throgh a door if it's open, open/close the door from inside, and leave the location through the door if it's open. Basically works okay. (i need to add 'is_transition' to check_item_is_accessible' maybe. Will think on it.)
 Added item_types generation to itemReg properly again, so it adds all the flags it should now, even if the type_default was added via loc_data.
+
+5.48pm
+Thinking about 'go to work shed'. Surely it should move you to the front door of the shed, instead of just tell you 'you can't enter a closed door'. 'Work shed' means both int and ext to player.
+'Go to work shed' == go to outside of work shed, ie west graveyard.
+'Go into work shed/enter shed/etc' == go to location 'work shed'
+
+5.59pm
+Okay, that's nicer. 'Go to work shed' takes you to the outside/door loc facing the shed if the door is closed, and into the shed if the shed is open.
+
+Should also add 'go to shed door', and have it take you to the ext shed door.
+Well currently, 'go to shed door' just transitions you through the door. Not entirely sure that's what i want, but it'll do for now.
+
+Transition objects like the shed door should have description from inside + description from outside. Description already varies on open/closed state, but it'd be nice to have it say 'the door back out to the graveyard' or w/e.
+
+# I kinda want a... pseudo-place wordtype. Like 'ground', which would be 'on the floor/ground respective to where I am'. I guess I should use floor itemtype for that. Really haven't been using  the floor/walls much at all. Need to set that up. They won't be items in the typical sense, but if I 'throw x at all', it finds the wall for where I'm facing and throws at that (if there is one). Feels like it could rapidly get out of hand. Still, a hardcoded groundtype setup that indicates 'ground' would be good. 'Find floor-type at loc.current', else use default floor-type'
+
+gotta start using proper noun-types I think. standard for all regular 'items', then wall/floor/transitional. Not sure what else. Those are the key ones in terms of what the early stages need to know.
+
+Also need to formalise the transitional tags. I keep getting confused because they have different names in different places.
+
+
