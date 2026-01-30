@@ -119,10 +119,11 @@ class Parser:
                 for i, bit in enumerate(word_parts):
                     try:
                         #print(f"bit: {bit}, i+matches_count: {i+matches_count}, parts[idx + matches_count]: {parts[idx + matches_count]})")
-                        if len(parts) <= idx + matches_count and bit == parts[idx+matches_count]:
+                        #if len(parts) <= idx + matches_count and bit == parts[idx+matches_count]:
+                        if bit == parts[idx+matches_count]: # gives list out of range errors but does give the right results. Fix this later.
                             #print(f"Matching word segment: {bit}")
                             matches_count += 1
-                            if matches_count == len(word_parts):
+                            if matches_count == len(word_parts):# and matches_count == parts - idx:
                                 perfect_match = compound_word
                                 print(f"Perfect match: {perfect_match}")
                                 break

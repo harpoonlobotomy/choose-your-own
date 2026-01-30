@@ -2862,3 +2862,14 @@ Great. Now it doesn't recognise 'door'. Fuck meeeee.
 #  Raw tokens: [Token(idx=0, text='go', kind={'verb'}, canonical='go'), Token(idx=1, text='to', kind={'direction'}, canonical='to'), Token(idx=2, text='work', kind={'location', 'noun'}, canonical='work shed'), Token(idx=3, text='shed', kind={'location'}, canonical='work shed')]
 
 Yeah I really fucked some stuff up yesterday.
+
+3.46pm
+Still trying to figure out which parts are worth keeping. Should have left it alone.
+
+But, maybe better, slightly? Hard to say.
+
+Have already forgotten half of what had been improved and what needed to be done. Not a good few days.
+
+Also the gate needs to be unlocked when you unlock the padlock. Currently it describes it opening but doesn't actually unlock/open the gate, only the padlock itself.
+
+
