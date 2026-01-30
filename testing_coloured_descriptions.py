@@ -58,17 +58,15 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                         if itemRegistry.registry.instances_by_name(item):
                             local_items = itemRegistry.registry.get_item_by_location(f"{location} {cardinal}")
                             #print(f"Local items: {local_items}")
-                            item_inst = None
                             if local_items:
                                 for inst in itemRegistry.registry.instances_by_name(item):
                                     if inst in local_items:
                                         #print(f"inst in local items: {inst}")
                                         if hasattr(inst, "is_hidden") and inst.is_hidden:
                                             continue
-                                        item_inst = inst
                                         if "[[]]" in long_dict[item]:
                                             long_parts = long_dict[item].split("[[]]")
-                                            test = long_parts[0] + assign_colour(item_inst) + long_parts[1]
+                                            test = long_parts[0] + assign_colour(inst) + long_parts[1]
 
                                             long_desc.append(test)
 

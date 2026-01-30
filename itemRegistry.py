@@ -1074,20 +1074,18 @@ def apply_loc_data_to_item(item, item_data, loc_data):
                     else:
                         item_data[attr] = loc_data[field][attr]
             else:
-                item_data[field] = loc_data[field] # just always apply loc_data, right? It should overrule always. I think. Shit.
+                item_data[field] = loc_data[field]
 
-#NOTE removed this, don't think it's ever used and the [[]] is there for a reason.
-#    if item_data.get("description"):
-#        if "[[]]" in item_data["description"]:
-#            item_data["description"] = item_data["description"].replace("[[]]", item)
+    if item_data.get("description"):
+        if "[[]]" in item_data["description"]:
+            item_data["description"] = item_data["description"].replace("[[]]", item)
 
     if loc_data and loc_data.get("starting_location"):
-        #print(f"STarting location for {item}: {loc_data["starting_location"]}, ty[e: {type(loc_data["starting_location"])}]")
+
         item_data["starting_location"] = loc_data["starting_location"]
 
     inst = registry.init_single(item, item_data)
-    #print(f"Init'd item: {inst}")
-    #print(f"vars: \n{vars(inst)}")
+
     all_item_names_generated.append((inst, "apply_loc_data_to_item"))
     if hasattr(inst, "starting_children") and getattr(inst, "starting_children"):
         if not hasattr(registry, "check_for_children"):

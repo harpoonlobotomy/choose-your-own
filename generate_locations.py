@@ -3,22 +3,19 @@ CARDINALS = ["north", "east", "south", "west"]
 def edit_location_json():
 
     import json
-    loc_items_json = "loc_data.json" ## Add these to a base class to stop having to reopen the json all the time. Any time the JSON is to be edited, edit the class-stored dict, and at end of runtime, then update the JSON.
+    loc_items_json = "loc_data.json"
 
     with open(loc_items_json, 'r') as loc_items_file:
         loc_items = json.load(loc_items_file)
-        # combine the entries if they already exist. Don't know if I need this at all, I'm probably just doing it initially here.
-        # OR, automatically grab items from env_data's loc items in item_desc, and add them here. That's probably a good one.
 
     edited_dict = {}
     if loc_items:
         for place in loc_items:
             edited_dict[place] = {}
-            print(f"place: {place}")
+
             for cardinal in loc_items[place]:
                 if cardinal in CARDINALS and loc_items[place][cardinal] != None:
-                    #print(f"cardinal: {cardinal}")
-                #loc_base[place][cardinal] = loc_dict[place][cardinal]
+
                     for flag in loc_items[place][cardinal]:
                         if flag == "alt_names":
                             edited_dict[place]["alt_names"] = loc_items[place][cardinal][flag]
@@ -26,17 +23,14 @@ def edit_location_json():
                     edited_dict[place][cardinal] = loc_items[place][cardinal]
                     print(f"loc_items[place][cardinal]:: {loc_items[place][cardinal]}")
                     if not loc_items[place][cardinal].get("items"):
-                        edited_dict[place][cardinal]["items"] = {"": {"description": None, "is_hidden": False}} # empty template. Adding is_hidden here so I have a straightforward location-specific hidden flag, makes sense. Everything else can be from item gen or item_defs.
+                        edited_dict[place][cardinal]["items"] = {}
                 elif cardinal == "alt_names":
                     edited_dict[place]["alt_names"] = loc_items[place][cardinal]
-            #if not loc_items[place].get("alt_names"):
+
             print(f"loc_items[place].get('descrip'): {loc_items[place].get('descrip')}")
             edited_dict[place]["descrip"] = loc_items[place].get("descrip")
 
             edited_dict[place]["alt_names"] = (loc_items[place].get("alt_names") if loc_items[place].get("alt_names") != None else [])
-
-            #if not loc_items[place].get("descrip"):
-            #edited_dict[place]["descrip"] = (loc_items[place].get("descrip") if loc_items[place].get("descrip") != None else "")
 
         with open(loc_items_json, 'w') as loc_items_file:
             json.dump(edited_dict, loc_items_file, indent=2)
@@ -44,7 +38,7 @@ def edit_location_json():
 
 
 def edit_descriptions_in_cardinal(card, loc_dict_entry, name):
-    print(f"The format for cardinal descriptions is : ['generic'] + [item(s)], or ['generic'] + ['no_items']")
+    print(f"The format for cardinal descriptions is : ['generic'] + [item(s)], or ['generic'] + ['no_items']\n All entries must have at least [generic], and must have [no_items] if there are any item_desc items.\n")
 
     items = {}
 
@@ -58,6 +52,7 @@ def edit_descriptions_in_cardinal(card, loc_dict_entry, name):
             items[item_name] = item_desc
         else:
             break
+
     no_items = input("Enter the text for no_items: \n")
     items["no_items"] = no_items
 
@@ -110,10 +105,8 @@ def edit_items_in_cardinal(cardinal, loc_dict_entry, name):
         print(f"loc_dict_entry: {loc_dict_entry}")
 
 
-
 def change_loc_data(loc_dict_entry, name, cardinal_no):
     cardinal = None
-    #new_loc_dict[loc_name]
     print("Do you want to add [items], edit cardinal [descriptions], or peruse [all] fields?")
     test = input()
 
@@ -156,18 +149,16 @@ def change_loc_data(loc_dict_entry, name, cardinal_no):
 
 
 
-def generate_new_location(loc_name):
+def generate_new_location(loc_name:None):
+
+    if not loc_name:
+        loc_name = input(f"Please enter desired location name: ")
 
     cardinal_format = {
             "item_desc": {},
             "short_desc": "",
             "long_desc": "",
-            "items": {
-                "": {
-                "description": "",
-                "is_hidden": False
-                }
-            }
+            "items": {}
         }
 
     format = {
@@ -177,45 +168,25 @@ def generate_new_location(loc_name):
             "item_desc": {},
             "short_desc": "",
             "long_desc": "",
-            "items": {
-                "": {
-                "description": "",
-                "is_hidden": False
-                }
-            }
+            "items": {}
         },
         "east": {
             "item_desc": {},
             "short_desc": "",
             "long_desc": "",
-            "items": {
-                "": {
-                "description": "",
-                "is_hidden": False
-                }
-            }
+            "items": {}
         },
         "south": {
             "item_desc": {},
             "short_desc": "",
             "long_desc": "",
-            "items": {
-                "": {
-                "description": "",
-                "is_hidden": False
-                }
-            }
+            "items": {}
         },
         "west": {
             "item_desc": {},
             "short_desc": "",
             "long_desc": "",
-            "items": {
-                "": {
-                "description": "",
-                "is_hidden": False
-                }
-            }
+            "items": {}
         },
         "descrip": ""
         }
@@ -243,7 +214,6 @@ def generate_new_location(loc_name):
 
     change_loc_data(new_loc_dict[loc_name], loc_name, int(cardinal_no))
 
-    print(f"new_loc_dict: {new_loc_dict[loc_name]}")
     import json
     loc_data_json = "loc_data.json"
     with open(loc_data_json, 'r') as loc_data_file:
@@ -251,6 +221,7 @@ def generate_new_location(loc_name):
 
     if loc_dict.get(loc_name):
         print(f"Location {loc_name} already exists. Press y to replace, otherwise skip and leave JSON unchanged.")
+        print(f"Existing: {loc_dict[loc_name]}\nNew: {new_loc_dict[loc_name]}")
         test = input()
         if test in ("y", "yes"):
             loc_dict[loc_name] = new_loc_dict[loc_name]
@@ -260,7 +231,6 @@ def generate_new_location(loc_name):
     with open(loc_data_json, 'w') as file:
         json.dump(loc_dict, file, indent=2)
 
-
     from env_data import add_new_loc
     add_new_loc(loc_name, reset_current=True)
     return new_loc_dict
@@ -268,5 +238,4 @@ def generate_new_location(loc_name):
 if __name__ == "__main__":
 
     #edit_location_json()
-    new_loc = input(f"Please enter desired location name: ")
-    generate_new_location(new_loc)
+    generate_new_location()

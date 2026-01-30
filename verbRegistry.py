@@ -115,16 +115,18 @@ class Parser:
             if word in word_parts:
                 #print(f"word parts: {word_parts}")
                 #test_print(f"MATCH IN PLURAL WORDS: `{word}` FOR COMPOUND WORD: {compound_word}", print_true=True)
+                max_number = len(parts)
                 matches_count = 0
                 for i, bit in enumerate(word_parts):
                     try:
                         #print(f"bit: {bit}, i+matches_count: {i+matches_count}, parts[idx + matches_count]: {parts[idx + matches_count]})")
-                        if bit == parts[idx+matches_count]:
+                        #if len(parts) <= idx + matches_count and bit == parts[idx+matches_count]:
+                        if bit == parts[idx+matches_count]: # gives list out of range errors but does give the right results. Fix this later.
                             #print(f"Matching word segment: {bit}")
                             matches_count += 1
-                            if matches_count == len(word_parts):
+                            if matches_count == len(word_parts):# and matches_count == parts - idx:
                                 perfect_match = compound_word
-                                #print(f"Perfect match: {perfect_match}")
+                                print(f"Perfect match: {perfect_match}")
                                 break
                         #if parts[idx+matches_count] and parts[idx+matches_count].lower() in word_parts:
                         #    test_print(f"parts[{idx}+{matches_count}]: {parts[idx+matches_count]}", print_true=True)
@@ -159,7 +161,9 @@ class Parser:
             else:
                 canonical = list(compound_matches)[0] ## just add it if it's the only possible match, for now. Make it more rigorous later, but this'll catch most cases.
             if isinstance(kinds, str):
-                kinds = set()
+                if kinds == "No match":
+                    kinds = set()
+
             kinds.add(word_type)
             potential_match=True
             omit_next = matches_count ## Skip however many successful matches there were, so we don't re-test words confirmed to be part of a compound word.
@@ -211,7 +215,19 @@ class Parser:
                 test = input()
                 if test in matches:
                     match = test
-
+            else:
+                for item in compound_matches: # this just takes the first match, so if 'gold key' and 'iron key' are both there, it will take gold key regardless.
+                    if item in local_named:
+                        print(f"item in local_named: {item}")
+                        if item in parts_dict:
+                            print(f"item in parts_dict: {item}")
+                            compound_word, word_parts in parts_dict.get(item)
+                            print(compound_word, word_parts)
+                            #print(parts[idx+matches_count])# and parts[idx+matches_count].lower() in word_parts
+                        print(f"Item in local_named: {item}")
+#{matches_count+1} `{parts[idx+matches_count+1]
+                        match = item
+                        break
             if match:
                 canonical = match
                 kinds.add(word_type)
@@ -328,6 +344,7 @@ class Parser:
                     tokens.append(Token(idx, word, kinds, canonical))
                     potential_match = True
                 else:
+                    second_perfect = None
                     idx, word, kinds, canonical, potential_match, omit_next, perfect = Parser.check_compound_words(parts_dict = compound_nouns, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "noun", omit_next=omit_next)
                     second_perfect = None
                     try:
@@ -340,22 +357,39 @@ class Parser:
                         kinds = (("noun",))
                         tokens.append(Token(idx, word, kinds, canonical))
                         continue
+                    #    tokens.append(Token(idx, word, kinds, canonical))
+                    #    continue
 
                     elif second_perfect and not perfect:
                         kinds = (("location",))
                         tokens.append(Token(second_idx, second_word, second_kinds, second_canonical))
+                        continue
+                    #    tokens.append(Token(second_idx, second_word, second_kinds, second_canonical))
+                    #
+#
+                    #elif perfect and second_perfect:
+                    #    kinds = (("location",))
+                    #    tokens.append(Token(second_idx, second_word, second_kinds, second_canonical))
+                    #if perfect:
+                        #print(f"Perfect: idx: {idx}, word: {word}, canonical: {canonical}")
+                        #tokens.append(Token(idx, word, kinds, canonical))
+                        #continue
 
 
-                    if not canonical:
+                    if not canonical:# or (second_perfect and not perfect) or (second_canonical and not perfect and not canonical):
                         idx = second_idx
                         word = second_word
                         kinds = second_kinds
                         canonical = second_canonical
                         potential_match = second_potential_match
                         omit_next = second_omit_next
+                        tokens.append(Token(idx, word, kinds, canonical))
+                        continue
 
+                    #if canonical and not second_perfect:
                     if canonical:
                         tokens.append(Token(idx, word, kinds, canonical))
+                        continue
 
                     if not canonical:
                         if kinds == "No match":
@@ -376,6 +410,7 @@ class Parser:
                                 #    json.dump(temp_def_dict, file, indent=2)
 
                             tokens.append(Token(idx, word, [test], word))
+                            continue
 
                     #print(f"verbs.compound_words: {verbs.compound_words}")
 
@@ -434,11 +469,11 @@ class Parser:
         #sequence = sequences[0]
         full_matches = {}
         for i, sequence in enumerate(sequences):
-            #print(f"Sequence: {sequence}")
+            print(f"Sequence: {sequence}")
             matched = 0
             for token in tokens:
                 if matched == len(sequence):
-                    full_matches[i] = reformed_dict[matched-1]
+                    full_matches = reformed_dict
                     break
                 if token.kind != {"null"} and token.kind != set():
                     if sequence[matched] in token.kind:
@@ -449,8 +484,11 @@ class Parser:
                         #print(reformed_dict[matched])
 
                         matched += 1
+
         if len(full_matches) > 1:
             print(f"More than one fully viable sequence:\n{full_matches}")
+        elif len(full_matches) == 1:
+            reformed_dict = full_matches
         return reformed_dict, sequence
 
     def get_sequences_from_tokens(tokens) -> list:
@@ -619,6 +657,7 @@ class Parser:
                         break
 
             print(" ".join(clean_parts))
+            print(f"Raw tokens: {tokens}")
             return clean_parts, None
 
             #TODO:  If no functional sequences, need to pick out parts that might be applicable to make reasonable guesses. Like if we have 'go'  and 'location', 'did you mean 'go to location', etc. Need a way to pause mid-parse, get confirmation then come back and run the sequencer again. Not today, but soon.

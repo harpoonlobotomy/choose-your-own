@@ -132,7 +132,7 @@ def get_transition_noun(noun, format_tuple, input_dict):
                             return noun
 
                 elif isinstance(loc_item, ItemInstance):
-                    if loc_item in local_items_list:
+                    if local_items_list and loc_item in local_items_list:
                         noun = loc_item
                         return noun
 
@@ -861,9 +861,14 @@ def lock_unlock(format_tuple, input_dict, do_open=False):
                         return
 
                     elif lock.is_locked and do_open:
-                            print(f"You use the {key.name} to unlock the {lock.name}, and open it.")
+                            print(f"You use the {assign_colour(key)} to unlock the {assign_colour(lock)}, and open it.")
                             set_noun_attr(("is_locked", False), ("is_open", True), noun=lock)
                             return
+
+                    elif not lock.is_locked:
+                        print(f"You use the {assign_colour(key)} to lock the {assign_colour(lock)}.")
+                        set_noun_attr(("is_open", False), ("is_locked", True), noun=lock)
+
                 else:
                     print(f"{noun_1} and {noun_2} are not a pairing. Key: {key}, lock: {lock}")
 
@@ -889,6 +894,7 @@ def open_item(format_tuple, input_dict):
         for noun in (noun_inst, get_noun(input_dict, 2)):
             if hasattr(noun, "is_key"):
                 lock_unlock(format_tuple, input_dict, do_open=True)
+                return
     if hasattr(noun, "is_transition_obj"):
         noun_inst = noun
 
@@ -929,8 +935,11 @@ def open_close(format_tuple, input_dict):
     logging_fn()
 
     noun_inst = get_noun(input_dict)
+
     if get_noun(input_dict, 2):
         for option in noun_inst, get_noun(input_dict, 2):
+            open_item(format_tuple, input_dict)
+            return
             if hasattr(option, "is_open"):
                 noun_inst = option # if one of the nouns mentioned can be opened, assume we mean to open that one.
 
@@ -1499,13 +1508,16 @@ def enter(format_tuple, input_dict, noun=None):
                         turn_around(new_cardinal = noun.location)
                     return 1
             elif inside_location == loc.current.place:
-                if hasattr(noun, "is_open") and noun.is_open == True:
-                    print(assign_colour("You head back out through the door.", colour="event_msg"))
-                    new_relocate(outside_location)
-                    return 1
+                if not get_location(input_dict) or (get_location(input_dict) and get_location(input_dict) != loc.current):
+                    if hasattr(noun, "is_open") and noun.is_open == True:
+                        print(assign_colour("You head back out through the door.", colour="event_msg"))
+                        new_relocate(outside_location)
+                        return 1
+                    else:
+                        print("You can't leave through a closed door.")
+                        return 1
                 else:
-                    print("You can't leave through a closed door.")
-                    return 1
+                    print(f"You're already in the {assign_colour(loc.current.place)}.")
             else:
                 print("You can't go through the door unless you're nearby to it.")
                 return 1
