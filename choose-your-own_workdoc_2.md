@@ -2873,3 +2873,18 @@ Have already forgotten half of what had been improved and what needed to be done
 Also the gate needs to be unlocked when you unlock the padlock. Currently it describes it opening but doesn't actually unlock/open the gate, only the padlock itself.
 
 
+4.32pm
+Okay. So I've got rid of the new errors I introduced, but now 'go into shed' isn't working again. It was this morning, according to the test logs.
+
+4.41pm
+Fixed a couple more, found another part I'd removed and put it back in.
+
+Current errors:
+    [[  open work shed shed door  ]] still appears when you write 'open work shed door'. Honestly, just going to rename the goddamn door and add the capacity for loc_exteriors to have door-objs.
+
+    constant Failed: list index out of range errors, but then it finds the next one and it works. So that's just part of the process I guess, just need to make it more intentional.
+
+    input str: `go to work shed door` doesn't parse at all, but the above mentioned will/should fix that.
+
+    Need to fix the 'cannot set event because event has ended' error.
+    But basically back to this morning, now. Yay...

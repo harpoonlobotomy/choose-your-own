@@ -215,7 +215,19 @@ class Parser:
                 test = input()
                 if test in matches:
                     match = test
-
+            else:
+                for item in compound_matches: # this just takes the first match, so if 'gold key' and 'iron key' are both there, it will take gold key regardless.
+                    if item in local_named:
+                        print(f"item in local_named: {item}")
+                        if item in parts_dict:
+                            print(f"item in parts_dict: {item}")
+                            compound_word, word_parts in parts_dict.get(item)
+                            print(compound_word, word_parts)
+                            #print(parts[idx+matches_count])# and parts[idx+matches_count].lower() in word_parts
+                        print(f"Item in local_named: {item}")
+#{matches_count+1} `{parts[idx+matches_count+1]
+                        match = item
+                        break
             if match:
                 canonical = match
                 kinds.add(word_type)

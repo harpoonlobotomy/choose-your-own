@@ -1,0 +1,521 @@
+{ "Change": "if len(parts) > idx + matches_count and bit == parts[idx+matches_count]:",
+  "0 go west": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance go (2969d590-6fa8-48d7-b200-b673ecb190f4)>",
+        "str_name": "go"
+      }
+    },
+    "1": {
+      "cardinal": {
+        "instance": "<cardinalInstance west graveyard (d49c78fd-d756-40e1-bc85-4bf3bf36960d)>",
+        "str_name": "west"
+      }
+    },
+    "OUTCOME": "yes"
+  },
+  "1 go north": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance go (2969d590-6fa8-48d7-b200-b673ecb190f4)>",
+        "str_name": "go"
+      }
+    },
+    "1": {
+      "cardinal": {
+        "instance": "<cardinalInstance north graveyard (28655529-a8a7-421b-a142-a6baee420751)>",
+        "str_name": "north"
+      }
+    },
+    "OUTCOME": "yes"
+  },
+  "2 go to shed": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance go (2969d590-6fa8-48d7-b200-b673ecb190f4)>",
+        "str_name": "go"
+      }
+    },
+    "1": {
+      "direction": {
+        "instance": null,
+        "str_name": "to"
+      }
+    },
+    "2": {
+      "location": {
+        "instance": "<placeInstance work shed (945d90e5-d4ea-445c-aef8-a08ea2fb5176)>",
+        "str_name": "work shed"
+      }
+    },
+    "3": {
+      "noun": {
+        "instance": "<ItemInstance shed door (0027c33f-ba2b-412e-b77a-4a16360393b7)>",
+        "str_name": "shed door"
+      }
+    },
+    "OUTCOME": "yes"
+  },
+  "3 go north": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance go (2969d590-6fa8-48d7-b200-b673ecb190f4)>",
+        "str_name": "go"
+      }
+    },
+    "1": {
+      "cardinal": {
+        "instance": "<cardinalInstance north graveyard (28655529-a8a7-421b-a142-a6baee420751)>",
+        "str_name": "north"
+      }
+    },
+    "OUTCOME": "yes"
+  },
+  "4 go to work shed": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance go (2969d590-6fa8-48d7-b200-b673ecb190f4)>",
+        "str_name": "go"
+      }
+    },
+    "1": {
+      "direction": {
+        "instance": null,
+        "str_name": "to"
+      }
+    },
+    "2": {
+      "noun": {
+        "instance": "<ItemInstance work shed (2a47ace8-9d80-4b30-aac7-b20563c885cb)>",
+        "str_name": "work shed"
+      }
+    },
+    "OUTCOME": "yes"
+  },
+  "5 go north": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance go (2969d590-6fa8-48d7-b200-b673ecb190f4)>",
+        "str_name": "go"
+      }
+    },
+    "1": {
+      "cardinal": {
+        "instance": "<cardinalInstance north graveyard (28655529-a8a7-421b-a142-a6baee420751)>",
+        "str_name": "north"
+      }
+    },
+    "OUTCOME": "yes"
+  },
+  "6 go to shed door": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance go (2969d590-6fa8-48d7-b200-b673ecb190f4)>",
+        "str_name": "go"
+      }
+    },
+    "1": {
+      "direction": {
+        "instance": null,
+        "str_name": "to"
+      }
+    },
+    "2": {
+      "noun": {
+        "instance": "<ItemInstance shed door (0027c33f-ba2b-412e-b77a-4a16360393b7)>",
+        "str_name": "shed door"
+      }
+    },
+    "OUTCOME": "yes"
+  },
+  "8 open door": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance open (8e77096f-9dd4-4ee5-85a7-c641ea1f50ee)>",
+        "str_name": "open"
+      }
+    },
+    "1": {
+      "noun": {
+        "instance": "<ItemInstance shed door (0027c33f-ba2b-412e-b77a-4a16360393b7)>",
+        "str_name": "shed door"
+      }
+    },
+    "OUTCOME": "yes"
+  },
+  "9 close door": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance close (856ae76a-fa93-4e6f-b017-064a4e4258b5)>",
+        "str_name": "close"
+      }
+    },
+    "1": {
+      "noun": {
+        "instance": "<ItemInstance shed door (0027c33f-ba2b-412e-b77a-4a16360393b7)>",
+        "str_name": "shed door"
+      }
+    },
+    "OUTCOME": "yes"
+  },
+  "10 open shed door": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance open (8e77096f-9dd4-4ee5-85a7-c641ea1f50ee)>",
+        "str_name": "open"
+      }
+    },
+    "1": {
+      "noun": {
+        "instance": "<ItemInstance shed door (0027c33f-ba2b-412e-b77a-4a16360393b7)>",
+        "str_name": "shed door"
+      }
+    },
+    "OUTCOME": "yes"
+  },
+  "11 close shed door": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance close (856ae76a-fa93-4e6f-b017-064a4e4258b5)>",
+        "str_name": "close"
+      }
+    },
+    "1": {
+      "noun": {
+        "instance": "<ItemInstance shed door (0027c33f-ba2b-412e-b77a-4a16360393b7)>",
+        "str_name": "shed door"
+      }
+    },
+    "OUTCOME": "yes"
+  },
+  "12 go into shed": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance go (2969d590-6fa8-48d7-b200-b673ecb190f4)>",
+        "str_name": "go"
+      }
+    },
+    "1": {
+      "direction": {
+        "instance": null,
+        "str_name": "into"
+      }
+    },
+    "2": {
+      "noun": {
+        "instance": "<ItemInstance shed door (0027c33f-ba2b-412e-b77a-4a16360393b7)>",
+        "str_name": "shed door"
+      }
+    },
+    "OUTCOME": "yes"
+  },
+  "13 open door": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance open (8e77096f-9dd4-4ee5-85a7-c641ea1f50ee)>",
+        "str_name": "open"
+      }
+    },
+    "1": {
+      "noun": {
+        "instance": "<ItemInstance shed door (0027c33f-ba2b-412e-b77a-4a16360393b7)>",
+        "str_name": "shed door"
+      }
+    },
+    "OUTCOME": "yes"
+  },
+  "14 go into work shed": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance go (2969d590-6fa8-48d7-b200-b673ecb190f4)>",
+        "str_name": "go"
+      }
+    },
+    "1": {
+      "direction": {
+        "instance": null,
+        "str_name": "into"
+      }
+    },
+    "2": {
+      "noun": {
+        "instance": "<ItemInstance work shed (2a47ace8-9d80-4b30-aac7-b20563c885cb)>",
+        "str_name": "work shed"
+      }
+    },
+    "OUTCOME": "yes"
+  },
+  "15 go into work shed": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance go (2969d590-6fa8-48d7-b200-b673ecb190f4)>",
+        "str_name": "go"
+      }
+    },
+    "1": {
+      "direction": {
+        "instance": null,
+        "str_name": "into"
+      }
+    },
+    "2": {
+      "noun": {
+        "instance": "<ItemInstance work shed (2a47ace8-9d80-4b30-aac7-b20563c885cb)>",
+        "str_name": "work shed"
+      }
+    },
+    "OUTCOME": "No, I am already in the shed, it should not take me outside because I asked to enter again."
+  },
+  "16 leave shed": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance leave (ba2f1ddf-2b51-4e6e-9305-c9fc6dd51626)>",
+        "str_name": "leave"
+      }
+    },
+    "1": {
+      "location": {
+        "instance": "<placeInstance work shed (945d90e5-d4ea-445c-aef8-a08ea2fb5176)>",
+        "str_name": "work shed"
+      }
+    },
+    "2": {
+      "noun": {
+        "instance": "<ItemInstance shed door (0027c33f-ba2b-412e-b77a-4a16360393b7)>",
+        "str_name": "shed door"
+      }
+    },
+    "OUTCOME": "no, leaving the work shed should not make me enter the work shed. enter/leave need to be unidirectional."
+  },
+  "17 inventory": {
+    "0": {
+      "meta": {
+        "instance": null,
+        "str_name": "inventory"
+      }
+    },
+    "OUTCOME": "yes"
+  },
+  "21 go into work shed": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance go (2969d590-6fa8-48d7-b200-b673ecb190f4)>",
+        "str_name": "go"
+      }
+    },
+    "1": {
+      "direction": {
+        "instance": null,
+        "str_name": "into"
+      }
+    },
+    "2": {
+      "noun": {
+        "instance": "<ItemInstance work shed (2a47ace8-9d80-4b30-aac7-b20563c885cb)>",
+        "str_name": "work shed"
+      }
+    },
+    "OUTCOME": "no, same issue as before; I am already in the shed, 'go into work shed' should fail because I'm already in it, regardless of entry_item status."
+  },
+  "22 open work shed door": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance open (8e77096f-9dd4-4ee5-85a7-c641ea1f50ee)>",
+        "str_name": "open"
+      }
+    },
+    "1": {
+      "noun": {
+        "instance": "<ItemInstance work shed (2a47ace8-9d80-4b30-aac7-b20563c885cb)>",
+        "str_name": "work shed"
+      }
+    },
+    "2": {
+      "noun": {
+        "instance": "<ItemInstance shed door (0027c33f-ba2b-412e-b77a-4a16360393b7)>",
+        "str_name": "shed door"
+      }
+    },
+    "OUTCOME": "no, 'you can't open the' line prints twice."
+  },
+  "23 open door": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance open (8e77096f-9dd4-4ee5-85a7-c641ea1f50ee)>",
+        "str_name": "open"
+      }
+    },
+    "1": {
+      "noun": {
+        "instance": "<ItemInstance shed door (0027c33f-ba2b-412e-b77a-4a16360393b7)>",
+        "str_name": "shed door"
+      }
+    },
+    "OUTCOME": "yes"
+  },
+  "24 go into shed": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance go (2969d590-6fa8-48d7-b200-b673ecb190f4)>",
+        "str_name": "go"
+      }
+    },
+    "1": {
+      "direction": {
+        "instance": null,
+        "str_name": "into"
+      }
+    },
+    "2": {
+      "location": {
+        "instance": "<placeInstance work shed (945d90e5-d4ea-445c-aef8-a08ea2fb5176)>",
+        "str_name": "work shed"
+      }
+    },
+    "3": {
+      "noun": {
+        "instance": "<ItemInstance shed door (0027c33f-ba2b-412e-b77a-4a16360393b7)>",
+        "str_name": "shed door"
+      }
+    },
+    "OUTCOME": "yes"
+  },
+  "25 take map": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance take (6b043466-b56b-4856-af78-18a8b4bff128)>",
+        "str_name": "take"
+      }
+    },
+    "1": {
+      "noun": {
+        "instance": "<ItemInstance local map (c68a270c-e82d-4821-bacc-25a52dfd557e)>",
+        "str_name": "local map"
+      }
+    },
+    "OUTCOME": "yes"
+  },
+  "26 take key": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance take (6b043466-b56b-4856-af78-18a8b4bff128)>",
+        "str_name": "take"
+      }
+    },
+    "1": {
+      "noun": {
+        "instance": "<ItemInstance iron key (ced9186d-b606-4702-9375-7a740fdf7e86)>",
+        "str_name": "iron key"
+      }
+    },
+    "OUTCOME": "yes"
+  },
+  "27 go to north graveyard": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance go (2969d590-6fa8-48d7-b200-b673ecb190f4)>",
+        "str_name": "go"
+      }
+    },
+    "1": {
+      "direction": {
+        "instance": null,
+        "str_name": "to"
+      }
+    },
+    "2": {
+      "cardinal": {
+        "instance": "<cardinalInstance north graveyard (28655529-a8a7-421b-a142-a6baee420751)>",
+        "str_name": "north"
+      }
+    },
+    "3": {
+      "location": {
+        "instance": "<placeInstance graveyard (98a9e4ff-813e-4f9d-972a-cd66a900479e)>",
+        "str_name": "graveyard"
+      }
+    },
+    "OUTCOME": "yes"
+  },
+  "28 use key on padlock": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance use (df64cec7-39b6-411f-af09-8cdd1aad9d49)>",
+        "str_name": "use"
+      }
+    },
+    "1": {
+      "noun": {
+        "instance": "<ItemInstance iron key (ced9186d-b606-4702-9375-7a740fdf7e86)>",
+        "str_name": "iron key"
+      }
+    },
+    "2": {
+      "direction": {
+        "instance": null,
+        "str_name": "on"
+      }
+    },
+    "3": {
+      "noun": {
+        "instance": "<ItemInstance padlock (2164c9e9-323e-40a0-a82d-8d664efe2983)>",
+        "str_name": "padlock"
+      }
+    },
+    "OUTCOME": "yes"
+  },
+  "29 lock padlock with key": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance lock (4869cd3f-361a-42b5-8e59-e2728a752a38)>",
+        "str_name": "lock"
+      }
+    },
+    "1": {
+      "noun": {
+        "instance": "<ItemInstance padlock (2164c9e9-323e-40a0-a82d-8d664efe2983)>",
+        "str_name": "padlock"
+      }
+    },
+    "2": {
+      "sem": {
+        "instance": null,
+        "str_name": "with"
+      }
+    },
+    "3": {
+      "noun": {
+        "instance": "<ItemInstance iron key (ced9186d-b606-4702-9375-7a740fdf7e86)>",
+        "str_name": "iron key"
+      }
+    },
+    "OUTCOME": "no, 'verbname == lock, don't know why I'm here'  prints after it posts success in locking the key with the padlock."
+  },
+  "30 unlock padlock with key": {
+    "0": {
+      "verb": {
+        "instance": "<verbInstance unlock (4869cd3f-361a-42b5-8e59-e2728a752a38)>",
+        "str_name": "unlock"
+      }
+    },
+    "1": {
+      "noun": {
+        "instance": "<ItemInstance padlock (2164c9e9-323e-40a0-a82d-8d664efe2983)>",
+        "str_name": "padlock"
+      }
+    },
+    "2": {
+      "sem": {
+        "instance": null,
+        "str_name": "with"
+      }
+    },
+    "3": {
+      "noun": {
+        "instance": "<ItemInstance iron key (ced9186d-b606-4702-9375-7a740fdf7e86)>",
+        "str_name": "iron key"
+      }
+    },
+    "OUTCOME": "no, it tries to set the event again and errors as the gate-opens event has already ended."
+  }
+}
