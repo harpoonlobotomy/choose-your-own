@@ -1025,7 +1025,7 @@ def open_close(format_tuple, input_dict):
                 else:
                     print(f"The {assign_colour(noun_inst)} is already closed.")
                 return
-            if noun_inst.is_open:
+            if hasattr(noun_inst, "is_open") and noun_inst.is_open:
                 print(f"{assign_colour(noun_inst)} is already open.")
                 return
             elif verb_inst.name == "open":
