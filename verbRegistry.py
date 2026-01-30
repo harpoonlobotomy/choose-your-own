@@ -158,6 +158,8 @@ class Parser:
                 canonical = perfect_match
             else:
                 canonical = list(compound_matches)[0] ## just add it if it's the only possible match, for now. Make it more rigorous later, but this'll catch most cases.
+            if isinstance(kinds, str):
+                kinds = set()
             kinds.add(word_type)
             potential_match=True
             omit_next = matches_count ## Skip however many successful matches there were, so we don't re-test words confirmed to be part of a compound word.
@@ -170,6 +172,8 @@ class Parser:
             if perfect_match:
                 #print(f"PERFECT MATCH: {perfect_match}")
                 canonical = perfect_match
+                if isinstance(kinds, str):
+                    kinds = set()
                 kinds.add(word_type)
                 potential_match=True
                 omit_next = 1
@@ -325,7 +329,7 @@ class Parser:
                     potential_match = True
                 else:
                     idx, word, kinds, canonical, potential_match, omit_next, perfect = Parser.check_compound_words(parts_dict = compound_nouns, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "noun", omit_next=omit_next)
-
+                    second_perfect = None
                     try:
                         second_idx, second_word, second_kinds, second_canonical, second_potential_match, second_omit_next, second_perfect = Parser.check_compound_words(parts_dict = compound_locs, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "location", omit_next=omit_next)
                     except Exception as e:
