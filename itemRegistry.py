@@ -264,6 +264,7 @@ class itemRegistry:
         if item_entry.get("alt_names"):
             for altname in item_entry.get("alt_names"):
                 self.by_alt_names[altname] = item_name
+                self.item_defs[altname] = item_entry
 
         if hasattr(inst, "starting_children") and inst.starting_children != None:
             self.new_parents.add(inst.id)

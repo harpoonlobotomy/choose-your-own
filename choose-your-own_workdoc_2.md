@@ -2862,3 +2862,67 @@ Great. Now it doesn't recognise 'door'. Fuck meeeee.
 #  Raw tokens: [Token(idx=0, text='go', kind={'verb'}, canonical='go'), Token(idx=1, text='to', kind={'direction'}, canonical='to'), Token(idx=2, text='work', kind={'location', 'noun'}, canonical='work shed'), Token(idx=3, text='shed', kind={'location'}, canonical='work shed')]
 
 Yeah I really fucked some stuff up yesterday.
+
+10.08am 30/1/26
+So, what is now broken:
+
+
+#   open work shed door
+#   No canonical for idx `3`, word `door`
+
+
+#   open work shed door
+#   Perfect match: work shed
+#   Perfect: idx: 1, word: work, canonical: work shed
+#   [[  open work shed shed door  ]]'
+^ If at the door
+
+
+#   [[  open work shed shed door  ]]')
+#
+#   You can't open the shed door right now.
+#   You can't open the shed door right now.
+#   shed door isn't accessible, you can't interact with it.
+^ if away from door card
+
+#   [[  open work shed shed door  ]]')
+#
+#   MEANING for <ItemInstance shed door (29b3f80f-6c19-4bdb-997b-bd484ea3204a)> (0): accessible
+#   noun.is_open: False
+#   You open the shed door.
+#   noun.is_open: True
+#   MEANING for <ItemInstance shed door (29b3f80f-6c19-4bdb-997b-bd484ea3204a)> (0): accessible
+#   MEANING for <ItemInstance shed door (29b3f80f-6c19-4bdb-997b-bd484ea3204a)> (0): accessible
+#   is_closed, is_locked, locked_and_have_key :  False False False
+#   shed door is already open.
+
+^ if shed door is closed
+
+10.35am
+okay. So i want to make a list of commands to run as a test to see how changes affect the outcomes. Need to fix the changes I made in itemRegistry(mostly) and see if I can fix it without just undoing everything.
+
+## Maybe I just need to add 'work shed door' as an alt_name for 'shed door'
+# Try that after tests.
+
+go west
+go north
+go to shed
+go north
+go to work shed
+go north
+go to shed door #<- should fail
+go to work shed door < - should probably pass? Really I should just call the item 'door' T_T
+open door
+close door
+open shed door
+close shed door
+go into shed
+open door
+go into work shed
+go into work shed
+leave shed
+
+
+
+
+
