@@ -4,7 +4,7 @@
 
 #from locations import places
 
-from logger import traceback_fn
+from logger import logging_fn, traceback_fn
 import json
 loc_data_json = "loc_data.json"
 with open(loc_data_json, 'r') as loc_data_file:
@@ -142,6 +142,7 @@ class placeRegistry:
         return cardinals_dict
 
     def set_current(self, loc=None, cardinal=None):
+        logging_fn()
         #print(f"set current: loc: {loc}, cardinal: {cardinal}")
 
         if loc and cardinal:
@@ -204,7 +205,7 @@ class placeRegistry:
                 #print("self.current_cardinal.name: ", cardinal.place_name)
 
     def place_by_name(self, loc_name):
-
+        logging_fn()
         #print(f"Loc name in place_by_name: {loc_name}")
         loc_inst = self.by_name.get(loc_name.lower())
         if not loc_inst:
@@ -237,7 +238,7 @@ class placeRegistry:
 
 
     def by_cardinal_str(self, cardinal_str:str|dict, loc=None) -> cardinalInstance:
-
+        logging_fn()
         if isinstance(cardinal_str, dict):
             loc, cardinal_str = next(iter(cardinal_str.items()))
         elif isinstance(cardinal_str, str):
@@ -360,6 +361,7 @@ def get_descriptions(place):
             #print(f"PLACE VARS: {vars(place)}")
 
 def get_loc_descriptions(place=None):
+
     if place == None:
         for place in locRegistry.places:
             #print(f"PLACE IN PLACES : {place}")

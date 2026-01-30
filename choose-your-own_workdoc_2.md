@@ -2803,3 +2803,62 @@ gotta start using proper noun-types I think. standard for all regular 'items', t
 Also need to formalise the transitional tags. I keep getting confused because they have different names in different places.
 
 
+11.32pm
+
+[[  open padlock with iron key  ]]
+
+You cannot open a locked padlock.
+
+If I try to open a padlock /with a key/, it should unlock + open, the intent is clear.
+
+(I was just in the process of removing long_desc from all the loc_data entries and using item_desc 'generic' instead exclusively, and was testing when I found this.)
+
+11.53pm
+Hm.
+#   open shed door
+now becomes
+#   [[  open shed door shed door  ]]
+
+Still works, but that's just silly.
+
+Also,
+# 'go into shed'
+triggers this:
+# More than one viable sequence. Help?
+# [('verb', 'direction', 'noun'), ('verb', 'direction', 'location')]
+# ...
+# Failed to get placeInstance for shed door. Please investigate. Exiting from env_data.
+
+Okay so: for 'go into shed':
+works fine if you're not in west graveyard.
+
+Oh, now it works. Did I fix it?
+Yes.
+
+12.00am
+[[  go into work shed  ]]
+when inside the shed, takes you outside the shed. That's just silly. Need to amend the 'if there's a transition item' thing to stop it just taking you outside again, it should just tell you you're already there like it does with any other location.
+
+12.02am
+#   go into work shed
+#   No viable sequences found for go into work shed.
+#   verb direction noun noun
+
+Hm. why is it counting that as two nouns??
+
+12:10am
+open door
+No viable sequences found for open door.
+verb
+Raw tokens: [Token(idx=0, text='open', kind={'verb'}, canonical='open')]
+
+Great. Now it doesn't recognise 'door'. Fuck meeeee.
+
+
+#  go to work shed
+#  Nothing found here by the name `shed`.
+#  No viable sequences found for go to work shed.
+#  verb direction location location
+#  Raw tokens: [Token(idx=0, text='go', kind={'verb'}, canonical='go'), Token(idx=1, text='to', kind={'direction'}, canonical='to'), Token(idx=2, text='work', kind={'location', 'noun'}, canonical='work shed'), Token(idx=3, text='shed', kind={'location'}, canonical='work shed')]
+
+Yeah I really fucked some stuff up yesterday.
