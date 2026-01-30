@@ -894,6 +894,7 @@ def open_item(format_tuple, input_dict):
         for noun in (noun_inst, get_noun(input_dict, 2)):
             if hasattr(noun, "is_key"):
                 lock_unlock(format_tuple, input_dict, do_open=True)
+                return
     if hasattr(noun, "is_transition_obj"):
         noun_inst = noun
 
@@ -934,9 +935,11 @@ def open_close(format_tuple, input_dict):
     logging_fn()
 
     noun_inst = get_noun(input_dict)
+
     if get_noun(input_dict, 2):
         for option in noun_inst, get_noun(input_dict, 2):
             open_item(format_tuple, input_dict)
+            return
             if hasattr(option, "is_open"):
                 noun_inst = option # if one of the nouns mentioned can be opened, assume we mean to open that one.
 

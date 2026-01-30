@@ -115,6 +115,7 @@ class Parser:
             if word in word_parts:
                 #print(f"word parts: {word_parts}")
                 #test_print(f"MATCH IN PLURAL WORDS: `{word}` FOR COMPOUND WORD: {compound_word}", print_true=True)
+                max_number = len(parts)
                 matches_count = 0
                 for i, bit in enumerate(word_parts):
                     try:
@@ -340,33 +341,38 @@ class Parser:
                         print(f"Could not get location: {e}")
 
 
-                    #if perfect and not second_perfect:
-                    #    kinds = (("noun",))
+                    if perfect and not second_perfect:
+                        kinds = (("noun",))
+                        tokens.append(Token(idx, word, kinds, canonical))
+                        continue
                     #    tokens.append(Token(idx, word, kinds, canonical))
                     #    continue
 
-                    #elif second_perfect and not perfect:
-                    #    kinds = (("location",))
+                    elif second_perfect and not perfect:
+                        kinds = (("location",))
+                        tokens.append(Token(second_idx, second_word, second_kinds, second_canonical))
+                        continue
                     #    tokens.append(Token(second_idx, second_word, second_kinds, second_canonical))
                     #
 #
                     #elif perfect and second_perfect:
                     #    kinds = (("location",))
                     #    tokens.append(Token(second_idx, second_word, second_kinds, second_canonical))
-                    if perfect:
-                        print(f"Perfect: idx: {idx}, word: {word}, canonical: {canonical}")
-                        tokens.append(Token(idx, word, kinds, canonical))
-                        continue
+                    #if perfect:
+                        #print(f"Perfect: idx: {idx}, word: {word}, canonical: {canonical}")
+                        #tokens.append(Token(idx, word, kinds, canonical))
+                        #continue
 
 
-                    if not canonical or (second_perfect and not perfect) or (second_canonical and not perfect and not canonical):
+                    if not canonical:# or (second_perfect and not perfect) or (second_canonical and not perfect and not canonical):
                         idx = second_idx
                         word = second_word
                         kinds = second_kinds
                         canonical = second_canonical
                         potential_match = second_potential_match
                         omit_next = second_omit_next
-                        #tokens.append(Token(idx, word, kinds, canonical))
+                        tokens.append(Token(idx, word, kinds, canonical))
+                        continue
 
                     #if canonical and not second_perfect:
                     if canonical:
