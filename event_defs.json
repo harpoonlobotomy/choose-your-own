@@ -1,28 +1,50 @@
 {
-  "reveal_iron_key": {
-    "starts_current":true,
-    "end_trigger":
-      {"item_trigger": {
-          "trigger_name": "local map", "trigger_location": "north work shed", "trigger": ["item_in_inv"], "item_flags": {}
-      }
+    "reveal_iron_key": {
+        "starts_current":true,
+        "end_trigger":
+        {"item_trigger": {
+            "trigger_name": "local map", "trigger_location": "north work shed", "trigger": ["item_in_inv"], "flags_on_event_start": {}
+        }
+        },
+        "effects": {"hide_item": {"item_name": "iron key", "item_loc": "north work shed"}},
+        "messages": {"start_msg": null, "end_msg": "As you pick up the regional map, an iron key falls from the folded paper and lands on the desk with a heavy thwack.", "held_msg": null}
     },
-    "effects": {"hide_item": {"item_name": "iron key", "item_loc": "north work shed"}},
-    "messages": {"start_msg": "", "end_msg": "As you pick up the regional map, an iron key falls from the folded paper and lands on the desk with a heavy thwack.", "held_msg": null}
-  },
+
     "graveyard_gate_opens": {
     "starts_current":true,
     "end_trigger":
-      {"item_trigger": {
-          "trigger_name": "padlock", "trigger_location": "north work shed", "trigger": ["item_broken", "item_unlocked"], "item_flags": {"can_pick_up": false, "requires_key": "iron key", "flags_on_event_end": {"can_pick_up": true}}
-      }
+        {"item_trigger": {
+            "trigger_name": "padlock",
+            "trigger_location": "north graveyard",
+            "trigger": ["item_broken", "item_unlocked"],
+            "flags_on_event_start": {
+                "can_pick_up": false, "requires_key": "iron key", "key_is_placed_elsewhere": {"item_in_event": "reveal_iron_key"}
+                },
+            "flags_on_event_end": {
+                "can_pick_up": true
+                }
+        }
     },
-    "effects": {"hold_item": {"item_name": "padlock", "item_loc": "north graveyard"}, "limit_travel": {"cannot_leave": ["work shed", "graveyard"]}},
-    "messages": {"start_msg": "", "end_msg": "As the padlock falls to the ground and the chain unravells, the graveyard gate creaks open.", "held_msg": "Until the gate's unlocked, you don't see a way out of here."}
+    "effects":
+        {"hold_item":
+            {"item_name": "padlock", "item_loc": "north graveyard"},
+        "limit_travel":
+            {"cannot_leave": ["work shed", "graveyard"]},
+        "lock_item":
+            {"item_name": "gate", "item_loc": "north graveyard",
+                "while_event": {
+                    "is_locked": true, "is_closed": true},
+                "flags_on_event_end": {
+                    "is_locked": false, "is_closed": false}}},
+    "messages": {
+        "start_msg": "",
+        "end_msg": "As the padlock falls to the ground and the chain unravells, the graveyard gate creaks open.\n\n You see beyond the threshold of the graveyard, a variety of locations to explore.\n\n [Look at your map to see where else you can go.]\n",
+        "held_msg": "Until the gate's unlocked, you don't see a way out of here."}
   },
   "mermaid_grotto_appears": {
     "start_trigger": {
       "item_trigger":{
-          "trigger_name": "ocean crown", "trigger_location": null, "trigger": "item_collected"
+          "trigger_name": "ocean crown", "trigger_location": null, "trigger": ["item_in_inv"]
       }
     }
   }

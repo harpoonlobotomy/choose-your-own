@@ -2723,3 +2723,447 @@ both are red, discovered one after the other. It makes it seem like they're conn
 
 2.25pm
 Have added a door and the work shed as items. Now I need to reconfigure the parser, because currently it just says 'it's a noun', then gets upset when 'verb direction noun' isn't a viable sentence.
+
+2.44pm
+Hm.
+WORD: shed, KINDS: {'location', 'noun'}
+idx 3, word: door
+No canonical for idx `3`, word `door`
+
+Trying to say 'look at shed door', but it takes 'shed' and then ignores 'door'.
+
+Maybe we check if there are multiple plural words with that word, and only decide on the correct one after the check?
+
+5.18pm
+Have employed what I described above. Works now, though I want to do some more intense testing to make sure I didn't break it. Now checks for perfect matches if there are multiple, and takes the perfect instead of defaulting to the first-found. (So, 'open shed door' will take 'shed door', instead of 'work shed' because it's a better match, whereas previously it just depended on the ordering. Still uses local_items to determine which items to choose from etc.) Still needs more cleaning up but it's better now, I think. does work with the noun/location "work shed", at least, and other things don't seem broken. I've massively increased the volume of searches through the plural dict though, so I probably need to rethink it at some point. Maybe add the plural-parts to a dict themselves, with a list/set of other-part + full words, so I can match 'work' directly, instead of 'if everything else failed, try plurals', because that just runs always now so it catches both noun and location options instead of always defaulting to one or the other.
+
+6.29pm
+currently, it always 'corrects' entries to the correct verb/noun. So if you type 'open door' even if you're not at a door, it says 'You can't open the shed door'.
+
+First thought was to bring the raw input text through in the dict and use that, but maybe I just make it something more general; 'You can't open something you can't reach'. Still gets the point across. Using the verb-proper-name works fine if it's something you were trying to open but failed because it was locked etc.
+
+1.52pm
+29/1/26
+
+I want to try to clean up the move-location/change-cardinal system.
+
+Part of which I think is removing loc.currentPlace. It's a nice idea, but serves the same function as loc.current.place, but needs updating separately, which is just silly. A point of failure to replace a dot with an uppercasing. It is updated with set_current though, which should always be used when setting location changes. Not sure.
+
+Input, loc + cardinal.
+Both loc and card should be loc/card instances respectively if present. If str, get instances.
+
+If no loc, get from cardinal.
+If no cardinal, get from loc.
+
+(Really, should only need cardinal. If cardinal, ignore loc?
+If loc and not card, card == existing loc card.
+If loc and card, if loc == card.place, ignore loc, use card.
+If just card, use card.
+Check card is valid loc.card, if not, use next valid new_loc card
+set_current to new card.)
+
+[[{todo // formalise doors/transition objects}]]
+[[{todo // take cleaned self.verb_actions in item init from attr if found.}]]
+
+Okay have set up
+    "transition": {"is_transition_obj": True, "enter_location": None, "exit_to_location": None},
+and
+    "loc_exterior": {"is_loc_exterior":True, "transition_objects": set()}
+
+for door/other transition objects, and location exteriors (eg shed door and work shed obj, respectively.). The parsing will still get broken, but hopefully it helps.
+Like, I can't do 'open work shed door', because it doesn't consider that a viable sequence (either 'verb loc noun' or 'verb noun noun'.) Guess I can add that one; 'verb location noun' where 'location' has a transition object and 'noun' is transition obj for 'location'. hm.
+
+2.31pm
+Okay so it's not adding item_types from loc_data, I think.
+
+4.52pm
+Doors etc work a bit better now. 'go into work shed'/enter work shed recognises that you mean to enter the door, 'open work shed door' uses the door noun not the loc_ext noun, '
+
+5.32pm
+Can now 'leave' a location through a door, even though technically the door isn't in the same location as you. Really need to formalise the door operations, but for now this works well enough. Can enter a location throgh a door if it's open, open/close the door from inside, and leave the location through the door if it's open. Basically works okay. (i need to add 'is_transition' to check_item_is_accessible' maybe. Will think on it.)
+Added item_types generation to itemReg properly again, so it adds all the flags it should now, even if the type_default was added via loc_data.
+
+5.48pm
+Thinking about 'go to work shed'. Surely it should move you to the front door of the shed, instead of just tell you 'you can't enter a closed door'. 'Work shed' means both int and ext to player.
+'Go to work shed' == go to outside of work shed, ie west graveyard.
+'Go into work shed/enter shed/etc' == go to location 'work shed'
+
+5.59pm
+Okay, that's nicer. 'Go to work shed' takes you to the outside/door loc facing the shed if the door is closed, and into the shed if the shed is open.
+
+Should also add 'go to shed door', and have it take you to the ext shed door.
+Well currently, 'go to shed door' just transitions you through the door. Not entirely sure that's what i want, but it'll do for now.
+
+Transition objects like the shed door should have description from inside + description from outside. Description already varies on open/closed state, but it'd be nice to have it say 'the door back out to the graveyard' or w/e.
+
+# I kinda want a... pseudo-place wordtype. Like 'ground', which would be 'on the floor/ground respective to where I am'. I guess I should use floor itemtype for that. Really haven't been using  the floor/walls much at all. Need to set that up. They won't be items in the typical sense, but if I 'throw x at all', it finds the wall for where I'm facing and throws at that (if there is one). Feels like it could rapidly get out of hand. Still, a hardcoded groundtype setup that indicates 'ground' would be good. 'Find floor-type at loc.current', else use default floor-type'
+
+gotta start using proper noun-types I think. standard for all regular 'items', then wall/floor/transitional. Not sure what else. Those are the key ones in terms of what the early stages need to know.
+
+Also need to formalise the transitional tags. I keep getting confused because they have different names in different places.
+
+
+11.32pm
+
+[[  open padlock with iron key  ]]
+
+You cannot open a locked padlock.
+
+If I try to open a padlock /with a key/, it should unlock + open, the intent is clear.
+
+(I was just in the process of removing long_desc from all the loc_data entries and using item_desc 'generic' instead exclusively, and was testing when I found this.)
+
+11.53pm
+Hm.
+#   open shed door
+now becomes
+#   [[  open shed door shed door  ]]
+
+Still works, but that's just silly.
+
+Also,
+# 'go into shed'
+triggers this:
+# More than one viable sequence. Help?
+# [('verb', 'direction', 'noun'), ('verb', 'direction', 'location')]
+# ...
+# Failed to get placeInstance for shed door. Please investigate. Exiting from env_data.
+
+Okay so: for 'go into shed':
+works fine if you're not in west graveyard.
+
+Oh, now it works. Did I fix it?
+Yes.
+
+12.00am
+[[  go into work shed  ]]
+when inside the shed, takes you outside the shed. That's just silly. Need to amend the 'if there's a transition item' thing to stop it just taking you outside again, it should just tell you you're already there like it does with any other location.
+
+12.02am
+#   go into work shed
+#   No viable sequences found for go into work shed.
+#   verb direction noun noun
+
+Hm. why is it counting that as two nouns??
+
+12:10am
+open door
+No viable sequences found for open door.
+verb
+Raw tokens: [Token(idx=0, text='open', kind={'verb'}, canonical='open')]
+
+Great. Now it doesn't recognise 'door'. Fuck meeeee.
+
+
+#  go to work shed
+#  Nothing found here by the name `shed`.
+#  No viable sequences found for go to work shed.
+#  verb direction location location
+#  Raw tokens: [Token(idx=0, text='go', kind={'verb'}, canonical='go'), Token(idx=1, text='to', kind={'direction'}, canonical='to'), Token(idx=2, text='work', kind={'location', 'noun'}, canonical='work shed'), Token(idx=3, text='shed', kind={'location'}, canonical='work shed')]
+
+Yeah I really fucked some stuff up yesterday.
+
+3.46pm
+Still trying to figure out which parts are worth keeping. Should have left it alone.
+
+But, maybe better, slightly? Hard to say.
+
+Have already forgotten half of what had been improved and what needed to be done. Not a good few days.
+
+Also the gate needs to be unlocked when you unlock the padlock. Currently it describes it opening but doesn't actually unlock/open the gate, only the padlock itself.
+
+
+4.32pm
+Okay. So I've got rid of the new errors I introduced, but now 'go into shed' isn't working again. It was this morning, according to the test logs.
+
+4.41pm
+Fixed a couple more, found another part I'd removed and put it back in.
+
+Current errors:
+    [[  open work shed shed door  ]] still appears when you write 'open work shed door'. Honestly, just going to rename the goddamn door and add the capacity for loc_exteriors to have door-objs.
+
+    constant Failed: list index out of range errors, but then it finds the next one and it works. So that's just part of the process I guess, just need to make it more intentional.
+
+    input str: `go to work shed door` doesn't parse at all, but the above mentioned will/should fix that.
+
+    Need to fix the 'cannot set event because event has ended' error.
+    But basically back to this morning, now. Yay...
+
+7.55pm
+Making notes to try to remember.
+Redoing eventRegistry slightly.
+    - Changed hidden_items from a set to a dict, to include the item loc (same format as hold_item)
+    - Added 'self.end_trigger' to be trigger_name = existed previously but I can't see where it was ever filled.
+
+Removing trigger_target and trigger_type, can add them back at some point if I need to. Those are being held in the item_registry side, which is not good. Honestly I kinda want to remove all the event data from items def and have it all in locations unless /all padlocks/ are part of the quest.
+
+Hmm. But then how do I indicate to itemReg that it's an event item at all...
+
+I guess I don't. It just generates it as an item, then eventReg applies the event flags. Okay.
+
+Line 390 in eventReg, add item and cardinal instances to event.end_trigger and event.end_trigger_location (and same for start if/when relevant.) Prev it got the instance data from item_defs, but that doesn't get its information from event_defs.
+
+Oh wait, it did pull data from loc_data, though.
+          "event": {
+            "event_name": "graveyard_gate_opens",
+            "event_item": true}
+            that's in loc data... So maybe this was entirely unnecessary.
+
+Leaving it there for now. Not sure what's going to be easier, setting the event data in event_defs or loc_data. For now, will let it draw from both and see what happens. Not at capacity to make arbitrary decisions today.
+
+Tests fine in isolation, applies loc data etc.
+
+Loc data applied to instance:
+#   Applying loc data to item: iron key, item data: ``{'name': 'iron key', 'item_type': "{'key', 'can_pick_up'}", 'is_key': True, 'can_pick_up': True, 'item_size': 0, 'description': 'an old [[]], mottled with age', 'is_key_to': 'padlock', 'is_hidden': True, 'event': {'event_name': 'graveyard_gate_opens', 'event_item': True}, 'starting_location': <cardinalInstance north work shed (2e6e3753-c8c7-4cef-a57a-69321b4551fb)>}``, loc data: ``{'description': 'An old iron key, pitted on the surface but still appears functional.', 'is_key_to': 'padlock', 'is_hidden': True, 'event': {'event_name': 'graveyard_gate_opens', 'event_item': True}}``
+
+Then eventReg applies event tags itself:
+reveal_iron_key iron key attribute set: is_hidden: True
+Event holds an item: padlock
+graveyard_gate_opens padlock attribute set: can_pick_up: False
+Travel is limited: True
+{'work shed': {<eventInstance graveyard_gate_opens (c0f586c4-1010-4e36-97da-0380b28d030b, event state: 1>}, 'graveyard': {<eventInstance graveyard_gate_opens (c0f586c4-1010-4e36-97da-0380b28d030b, event state: 1>}}
+
+
+9.07pm
+Hm.
+Sequence: ('verb', 'direction', 'location')
+[[  go into work shed  ]]tion', 'noun')
+
+noun <ItemInstance work shed (42755faf-bfc3-429b-89d8-1eb633941744)> is loc ext has transition objects: {<ItemInstance wooden door (0b1718c8-5537-4394-9c8f-85d2d2460b23)>}
+noun.enter_location: <placeInstance work shed (32bd754d-a605-4464-9ae5-e985ba24bc02)>
+The door creaks, but allows you to head inside.
+CARDINAL STR: west
+You're now in the work shed, facing north.
+
+CARDINAL STR: work shed north
+CARDINAL STR: work shed north
+Around you, you see the interior of a rather run-down looking work shed, previously boarded up but seemingly, not anymore.
+There's a simple desk, hazily lit by the window over it to the north.
+noun.enter_location: <placeInstance work shed (32bd754d-a605-4464-9ae5-e985ba24bc02)>
+You head back out through the door.
+CARDINAL STR: north
+You're now in the graveyard, facing north.
+
+CARDINAL STR: graveyard north
+CARDINAL STR: graveyard north
+CARDINAL STR: graveyard east
+CARDINAL STR: graveyard east
+CARDINAL STR: graveyard west
+You're in a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+The entrance gates are to the north. To the east sit a variety of headstones, to the south stands a mausoleum, and to the west is what looks like a work shed of some kind.
+
+
+It takes you inside, and immediately back out. Oops.
+
+Okay so events are temporarily broken, probably changed a variable somewhere and didn't update the rest of the script. Local map still gets picked up, but doesn't trigger anything.
+
+In the morning:
+    Check exactly why local map doesn't trigger the end of hide the iron key event
+
+
+Goddamn it it keeps /immediately/ bouncing me out of the shed.
+
+noun <ItemInstance work shed (3538bdc7-488a-4940-9890-99599cb53124)> is loc ext has transition objects: {<ItemInstance wooden door (e25442c2-4d9d-4e6e-9644-df31c38e6be8)>}
+noun.enter_location: <placeInstance work shed (7dcb71f9-41c4-4672-8413-eba52a8d4bf8)>
+The door creaks, but allows you to head inside.
+CARDINAL STR: west
+You're now in the work shed, facing north.
+
+CARDINAL STR: work shed north
+CARDINAL STR: work shed north
+Around you, you see the interior of a rather run-down looking work shed, previously boarded up but seemingly, not anymore.
+There's a simple desk, hazily lit by the window over it to the north.
+noun.enter_location: <placeInstance work shed (7dcb71f9-41c4-4672-8413-eba52a8d4bf8)>
+You head back out through the door.
+CARDINAL STR: north
+You're now in the graveyard, facing north.
+
+No additional commands.
+
+Maybe fixed? But I thought that earlier.
+
+Bed soon. So tired.
+
+#   take map
+#   item in local_named: local map
+#   item in parts_dict: local map
+#   wooden door ('wooden', 'door')
+#   Item in local_named: local map
+#   [[  take local map  ]]un')
+#
+#   The local map is now in your inventory.
+#   Failed parser: 'ItemInstance' object is not iterable
+
+
+2.44pm
+The above error was because it was trying to iterate over event.end_trigger, but end_trigger was just the itemInstance. Thinking maybe I should make it a dict, so that going forward an event can have multiple objects act as the end_trigger. Or just leave it for now. Don't know.
+
+2.48pm
+Why is it STILL throwing me out of the shed again??
+Okay, printing args so I can see what's happening.
+
+
+#   [[  go into work shed  ]]
+#
+#   (  Func:  go   )
+#   format_tuple: ('verb', 'direction', 'noun')
+#   input_dict: {0: {'verb': {'instance': <verbInstance go (ec3d74d8-8d27-4a06-9a65-ceebb2c32ace)>, 'str_name': 'go'}}, 1: {'direction': {'instance': None, 'str_name': 'into'}}, 2: {'noun': {'instance': <ItemInstance work shed (33c9aa9b-135f-458c-bf56-2351acd86f6e)>, 'str_name': 'work shed'}}}
+#   (  Func:  get_current_loc   )
+#   (  Func:  get_entries_from_dict   )
+#   input_dict: {0: {'verb': {'instance': <verbInstance go (ec3d74d8-8d27-4a06-9a65-ceebb2c32ace)>, 'str_name': 'go'}}, 1: {'direction': {'instance': None, 'str_name': 'into'}}, 2: {'noun': {'instance': <ItemInstance work shed (33c9aa9b-135f-458c-bf56-2351acd86f6e)>, 'str_name': 'work shed'}}}
+#   (  Func:  get_noun   )
+#   input_dict: {0: {'verb': {'instance': <verbInstance go (ec3d74d8-8d27-4a06-9a65-ceebb2c32ace)>, 'str_name': 'go'}}, 1: {'direction': {'instance': None, 'str_name': 'into'}}, 2: {'noun': {'instance': <ItemInstance work shed (33c9aa9b-135f-458c-bf56-2351acd86f6e)>, 'str_name': 'work shed'}}}
+#   (  Func:  get_noun   )
+#   input_dict: {0: {'verb': {'instance': <verbInstance go (ec3d74d8-8d27-4a06-9a65-ceebb2c32ace)>, 'str_name': 'go'}}, 1: {'direction': {'instance': None, 'str_name': 'into'}}, 2: {'noun': {'instance': <ItemInstance work shed (33c9aa9b-135f-458c-bf56-2351acd86f6e)>, 'str_name': 'work shed'}}}
+#   (  Func:  get_item_by_location   )
+#   loc_cardinal: <cardinalInstance north graveyard (bae382df-66f4-47c8-8df6-491bf617dac3)>
+#   noun <ItemInstance work shed (33c9aa9b-135f-458c-bf56-2351acd86f6e)> is loc ext has transition objects: {<ItemInstance wooden door (e7f2d53e-3ccb-4e34-9d40-e1ec9a868540)>}
+#   (  Func:  get_item_by_location   )
+#   loc_cardinal: <cardinalInstance north graveyard (bae382df-66f4-47c8-8df6-491bf617dac3)>
+#   noun.enter_location: <placeInstance work shed (8a1ab931-29ad-4590-9acb-f989e06ee702)>
+#   (  Func:  check_name   )
+#   item_name: The door creaks, but allows you to head inside.
+#   (  Func:  instances_by_name   )
+#   definition_key: The door creaks, but allows you to head inside.
+#   The door creaks, but allows you to head inside.
+#   (  Func:  new_relocate   )
+#   new_location: <placeInstance work shed (8a1ab931-29ad-4590-9acb-f989e06ee702)>
+#   (  Func:  by_cardinal_str   )
+#   cardinal_str: north
+#   loc: <placeInstance work shed (8a1ab931-29ad-4590-9acb-f989e06ee702)>
+#   CARDINAL STR: north
+#   (  Func:  set_current   )
+#   loc: <placeInstance work shed (8a1ab931-29ad-4590-9acb-f989e06ee702)>
+#   cardinal: <cardinalInstance north work shed (61fbf0c0-a65f-4484-b212-07e654b9e825)>
+#   You're now in the work shed, facing north.
+#
+#   (  Func:  place_by_name   )
+#   loc_name: work shed
+#   (  Func:  instances_by_name   )
+#   definition_key: local map
+#   (  Func:  get_item_by_location   )
+#   loc_cardinal: work shed north
+#   (  Func:  by_cardinal_str   )
+#   cardinal_str: work shed north
+#   CARDINAL STR: work shed north
+#   (  Func:  place_by_name   )
+#   loc_name: work shed
+#   (  Func:  instances_by_name   )
+#   definition_key: local map
+#   (  Func:  instances_by_name   )
+#   definition_key: iron key
+#   (  Func:  get_item_by_location   )
+#   loc_cardinal: work shed north
+#   (  Func:  by_cardinal_str   )
+#   cardinal_str: work shed north
+#   CARDINAL STR: work shed north
+#   (  Func:  place_by_name   )
+#   loc_name: work shed
+#   (  Func:  instances_by_name   )
+#   definition_key: iron key
+#   Around you, you see the interior of a rather run-down looking work shed, previously boarded up but seemingly, not anymore.
+#   There's a simple desk, hazily lit by the window over it to the north.
+#   noun.enter_location: <placeInstance work shed (8a1ab931-29ad-4590-9acb-f989e06ee702)>
+#   (  Func:  get_location   )
+#   input_dict: {0: {'verb': {'instance': <verbInstance go (ec3d74d8-8d27-4a06-9a65-ceebb2c32ace)>, 'str_name': 'go'}}, 1: {'direction': {'instance': None, 'str_name': 'into'}}, 2: {'noun': {'instance': <ItemInstance work shed (33c9aa9b-135f-458c-bf56-2351acd86f6e)>, 'str_name': 'work shed'}}}
+#   (  Func:  check_name   )
+#   item_name: You head back out through the door.
+#   (  Func:  instances_by_name   )
+#   definition_key: You head back out through the door.
+#   You head back out through the door.
+#   (  Func:  new_relocate   )
+#   new_location: <placeInstance graveyard (43a2e404-7acf-4dd5-9523-5f8567605c0a)>
+#   (  Func:  by_cardinal_str   )
+#   cardinal_str: north
+#   loc: <placeInstance graveyard (43a2e404-7acf-4dd5-9523-5f8567605c0a)>
+#   CARDINAL STR: north
+#   (  Func:  set_current   )
+#   loc: <placeInstance graveyard (43a2e404-7acf-4dd5-9523-5f8567605c0a)>
+#   cardinal: <cardinalInstance north graveyard (bae382df-66f4-47c8-8df6-491bf617dac3)>
+#   You're now in the graveyard, facing north.
+#
+#   (  Func:  place_by_name   )
+#   loc_name: graveyard
+#   (  Func:  instances_by_name   )
+#   definition_key: gate
+#   (  Func:  get_item_by_location   )
+#   loc_cardinal: graveyard north
+#   (  Func:  by_cardinal_str   )
+#   cardinal_str: graveyard north
+#   CARDINAL STR: graveyard north
+#   (  Func:  place_by_name   )
+#   loc_name: graveyard
+#   (  Func:  instances_by_name   )
+#   definition_key: gate
+#   (  Func:  instances_by_name   )
+#   definition_key: padlock
+#   (  Func:  get_item_by_location   )
+#   loc_cardinal: graveyard north
+#   (  Func:  by_cardinal_str   )
+#   cardinal_str: graveyard north
+#   CARDINAL STR: graveyard north
+#   (  Func:  place_by_name   )
+#   loc_name: graveyard
+#   (  Func:  instances_by_name   )
+#   definition_key: padlock
+#   (  Func:  instances_by_name   )
+#   definition_key: moss
+#   (  Func:  get_item_by_location   )
+#   loc_cardinal: graveyard east
+#   (  Func:  by_cardinal_str   )
+#   cardinal_str: graveyard east
+#   CARDINAL STR: graveyard east
+#   (  Func:  place_by_name   )
+#   loc_name: graveyard
+#   (  Func:  instances_by_name   )
+#   definition_key: moss
+#   (  Func:  instances_by_name   )
+#   definition_key: glass jar
+#   (  Func:  get_item_by_location   )
+#   loc_cardinal: graveyard east
+#   (  Func:  by_cardinal_str   )
+#   cardinal_str: graveyard east
+#   CARDINAL STR: graveyard east
+#   (  Func:  place_by_name   )
+#   loc_name: graveyard
+#   (  Func:  instances_by_name   )
+#   definition_key: glass jar
+#   (  Func:  instances_by_name   )
+#   definition_key: work shed
+#   (  Func:  get_item_by_location   )
+#   loc_cardinal: graveyard west
+#   (  Func:  by_cardinal_str   )
+#   cardinal_str: graveyard west
+#   CARDINAL STR: graveyard west
+#   (  Func:  place_by_name   )
+#   loc_name: graveyard
+#   (  Func:  instances_by_name   )
+#   definition_key: work shed
+#   You're in a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+#   The entrance gates are to the north. To the east sit a variety of headstones, to the south stands a mausoleum, and to the west is what looks like a work shed of some kind.
+#   (  Func:  option   )
+#
+
+Okay. Had to add a few more logging lines but - it's because I had
+                for noun in noun.transition_objs:
+                    if enter(format_tuple, input_dict, noun=noun):
+                        return
+
+inside of get_transition_noun.
+
+
+So half the time it goes fine and we end up in the shed. The other half, I get kicked out.
+
+When I don't get kicked out, I get this:
+#   This None doesn't lead anywhere
+which is from def enter() when the noun is None.
+So the path is /trying/ to run enter twice, but when I start with verb/dir/loc, it only runs once (and looks successful) because the noun doesn't exist and it navigates by location. In the alternate case, it doubles back on itself because th second 'enter' succeeds because it finds the transition noun.
+
+
+
+Okay so --- how about a trigger subclass. Each event gets trigger instances, and the trigger instances are what hold trigger item, trigger type, trigger state, etc. That sounds actually good.
+
+9.00pm
+Have set up the trigger class. It's still not fully implemented and I need to streamline attribute alignment for items etc, but it works.
+
+Hopefully have fixed the direction/location entry. Still got the issue of it sending me out of the shed immediately once but /think/ I fixed it since then.

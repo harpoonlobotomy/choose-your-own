@@ -52,24 +52,48 @@
   "forked tree branch": {
     "alt_names": [],
     "north": {
-      "item_desc": {"generic": "This is the north part of a tree..."},
+      "item_desc": {},
       "short_desc": "The northern tree parts are ",
-      "items": {}
+      "long_desc": "This is the north part of a tree...",
+      "items": {
+        "": {
+          "description": null,
+          "is_hidden": false
+        }
+      }
     },
     "east": {
-      "item_desc": {"generic": "This is the east of a forked tree. Not sure what's here. Maybe a bird's nest.."},
+      "item_desc": {},
       "short_desc": "an eastern tree part",
-      "items": {}
+      "long_desc": "This is the east of a forked tree. Not sure what's here. Maybe a bird's nest..",
+      "items": {
+        "": {
+          "description": null,
+          "is_hidden": false
+        }
+      }
     },
     "south": {
-      "item_desc": {"generic": "South of a tree. Should probably be the exit."},
+      "item_desc": {},
       "short_desc": "a southern tree part",
-      "items": {}
+      "long_desc": "South of a tree. Should probably be the exit.",
+      "items": {
+        "": {
+          "description": null,
+          "is_hidden": false
+        }
+      }
     },
     "west": {
-      "item_desc": {"generic": "West of the tree. Maybe a very nice view..."},
+      "item_desc": {},
       "short_desc": "what looks like a a western tree part",
-      "items": {}
+      "long_desc": "West of the tree. Maybe a very nice view...",
+      "items": {
+        "": {
+          "description": null,
+          "is_hidden": false
+        }
+      }
     },
     "descrip": "You've climbed up a gnarled old tree to a PPPforked tree branchEEE, and found a relatively safe place to sit in its broad branches."
   },
@@ -77,33 +101,22 @@
     "alt_names": [],
     "north": {
       "item_desc": {
-        "generic": "There's a dark fence blocking the horizon, prominently featuring ",
-        "gate": "a heavy wrought-iron [[]] - standing strong but run-down",
-        "padlock": "an old dark-metal [[]] on a chain, holding the gate closed"
+        "generic": "There's a dark fence blocking the view beyond, ",
+        "gate": "a heavy wrought-iron [[]] - imposing but run-down",
+        "padlock": "an old dark-metal [[]] on a chain holding the gate closed"
       },
-      "items": {
-        "padlock": {
-          "event_key": true,
-          "event": "graveyard_gate_opens",
-          "is_locked": true,
-          "requires_key": "iron key",
-          "key_is_placed_elsewhere": true
-        },
-        "gate": {
-          "event_item": true,
-          "event": "graveyard_gate_opens"
-        }
-      },
-      "short_desc": "The entrance gates are"
+      "items": {"padlock": {"event_key": true, "event": "graveyard_gate_opens", "is_locked": true, "requires_key": "iron key", "key_is_placed_elsewhere": true}, "gate": {"event_item": true, "event": "graveyard_gate_opens"}},
+      "short_desc": "The entrance gates are",
+      "long_desc": "You think you could leave through the large wrought-iron gates to the north. They're imposing but run-down; this graveyard doesn't get as much love as it could."
     },
     "east": {
       "item_desc": {
-        "generic": "You see a variety of headstones, most quite worn, and ",
-        "moss": "decorated by clumps of [[]]",
-        "glass jar": "a [[]] being used as a vase in front of one of the headstones, with some dried flowers left long ago",
-        "no_items": "not much else. It's quite empty here..."
+        "generic": "You see a variety of headstones, most quite worn and decorated by ",
+        "moss": "clumps of [[]]",
+        "glass jar": "a [[]] being used as a vase in front of one of the headstones, with some dried flowers left long ago"
       },
       "short_desc": "sit a variety of headstones",
+      "long_desc": "You see a variety of headstones, most quite worn and decorated by clumps of moss. There's a glass jar being used as a vase in front of one of the headstones, with dried flowers left long ago.",
       "items": {
         "": {
           "description": null,
@@ -116,19 +129,29 @@
       }
     },
     "south": {
-      "item_desc": {"generic": "There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble."},
+      "item_desc": {},
       "short_desc": "stands a mausoleum",
-      "items": {}
+      "long_desc": "There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble.",
+      "items": {
+        "iron key": {
+          "description": "An iron key, handy for a quest or something, probably.",
+          "is_key_to": "padlock",
+          "is_hidden": false
+        }
+      }
     },
     "west": {
-      "item_desc": {
-        "generic": "Standing in unkempt long grass, you see what looks like ",
-        "work shed": "a [[]] of some kind, with a wooden door that looks like it was barricaded until recently"},
+      "item_desc": {},
       "short_desc": "is what looks like a work shed of some kind",
+      "long_desc": "There's a work shed, with a wheelbarrow outside and a large padlock on the door.",
       "items": {
-        "work shed": {"description": "a simple shed, with wood panelled walls", "item_type": ["loc_exterior", "wall", "static"]}, "wooden door": {"description": "a closed wooden door", "enter_location": "work shed", "exit_to_location": "graveyard", "item_type": ["wall", "can_open", "static", "transition", "is_door"]}}
+        "": {
+          "description": null,
+          "is_hidden": false
+        }
+      }
     },
-    "descrip": "You're in a rather poorly kept PPPgraveyardEEE - smaller than you might have expected given the scale of the gate and fences"
+    "descrip": "You see a rather poorly kept PPPgraveyardEEE - smaller than you might have expected given the scale of the gate and fences"
   },
   "pile of rocks": {
     "alt_names": [],
@@ -262,30 +285,6 @@
       }
     },
     "descrip": "It's a PPPchurchEEE."
-  },
-  "work shed": {
-    "alt_names": [],
-    "missing_cardinal": "There's not much else to see around here. Dusty and largely disused, nothing really catches your eye.",
-    "north": {
-      "item_desc": {
-        "generic": "A simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's ",
-        "local map": "a yellowed [[]], showing the region surrounding the graveyard",
-        "iron key": "an old [[]], mottled with age",
-        "no_items": "not much of any real interest."
-      },
-      "short_desc": "There's a simple desk, hazily lit by the window over it",
-      "items": {
-        "secateurs": {"description": "Slightly rusted secateurs, still likely sharp enough to do their job.", "is_hidden": false},
-        "iron key": {
-          "description": "An old iron key, pitted on the surface but still appears functional.",
-          "is_key_to": "padlock",
-          "is_hidden": true,
-          "event": {
-            "event_name": "graveyard_gate_opens",
-            "event_item": true}
-            }
-        }
-      },
-    "descrip": "Around you, you see the interior of a rather run-down looking PPPwork shedEEE, previously boarded up but seemingly, not anymore."
-    }
+  }
 }
+

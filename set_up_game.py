@@ -146,6 +146,7 @@ def set_up(weirdness, bad_language, player_name): # skip straight to init_game t
     return game
 
 class game:
+    map_item = None
     weirdness = False
     bad_language = False
     show_rolls = False

@@ -15,8 +15,12 @@
 # Checks the nouns are viable for the verb.
 # Then sends the format and dict onward to verb_actions.
 
+import pprint
+from env_data import cardinalInstance, placeInstance
+from eventRegistry import eventInstance
 from itemRegistry import ItemInstance, registry
 from logger import logging_fn
+from printing import print_yellow
 from verbRegistry import VerbInstance
 
 movable_objects = ["put", "take", "combine", "separate", "throw", "push", "drop", "set", "move"]
@@ -83,7 +87,7 @@ def get_noun_instances(dict_from_parser, viable_formats):
             loc_inst = locRegistry.currentPlace
         card = entry['str_name']
         #print(f"locRegistry.cardinals[loc_inst]: {locRegistry.cardinals[loc_inst]}")
-        
+
         card_inst = locRegistry.cardinals[loc_inst][card]
         dict_from_parser[idx][kind] = ({"instance": card_inst, "str_name": entry["str_name"]})
         return dict_from_parser
@@ -173,11 +177,11 @@ class Membrane:
 
         from itemRegistry import registry
         self.nouns_list = list(registry.item_defs.keys())
+        self.plural_words_dict = registry.plural_words
 
         from env_data import loc_dict
         self.locations = list(loc_dict.keys())
 
-        self.plural_words_dict = registry.plural_words
         compound_locs = {}
         for word in self.locations:
             compound_locs[word] = tuple(word.split())
@@ -210,9 +214,32 @@ membrane = Membrane()
 
 test_input_list = ["take the paperclip", "pick up the glass jar", "put the paperclip in the wallet", "place the dried flowers on the headstone", "go to the graveyard", "approach the forked tree branch", "look at the moss", "examine the damp newspaper", "read the puzzle mag", "read the fashion mag in the city hotel room", "open the glass jar", "close the window", "pry open the TV set", "smash the TV set", "break the glass jar", "clean the watch", "clean the severed tentacle", "mix the unlabelled cream with the anxiety meds", "combine the fish food and the moss", "eat the dried flowers", "consume the fish food", "drink the unlabelled cream", "burn the damp newspaper", "burn the fashion mag in a pile of rocks", "throw the pretty rock", "lob the pretty rock at the window", "chuck the glass jar into a pile of rocks", "drop the wallet", "discard the paper scrap with number", "remove the batteries from the TV set", "add the batteries to the mobile phone", "put the car keys in the plastic bag", "set the watch", "lock the window", "unlock the window", "shove the TV set", "move the headstone", "barricade the window with the TV set", "separate the costume jewellery", "investigate the exact thing", "observe the graveyard", "watch the watch", "go to a city hotel room", "leave the graveyard", "depart", "go", "go to the pile of rocks", "take the exact thing", "put the severed tentacle in the glass jar", "open the wallet with the paperclip", "read the mail order catalogue at the forked tree branch", "pick the moss", "pick the watch", "pick up moss", "throw anxiety meds", "put batteries into watch", "clean a pile of rocks"]
 
+test_input_list = ["go west", "go north", "go to shed", "go north", "go to work shed", "go north", "go to shed door", "go to work shed door", "open door", "close door", "open shed door", "close shed door", "go into shed", "open door", "go into work shed", "go into work shed", "leave shed", "inventory", "drop mag", "take mag", "drop mag at church", "go into work shed", "open work shed door", "open door", "go into shed", "take map", "take key", "go to north graveyard", "use key on padlock", "lock padlock with key", "unlock padlock with key", "take padlock"]
+
+
+import json
+class UserEncoder(json.JSONEncoder):
+    def default(self, o):
+        try:
+            iterable = iter(o)
+        except TypeError:
+            pass
+        else:
+            return str(iterable)
+
+        if isinstance(o, ItemInstance|placeInstance|cardinalInstance|eventInstance|VerbInstance):
+            return str(o)
+        # Let the base class default method raise the TypeError
+        return super().default(o)
+
+input_outcome_dict = {}
+to_json = False
 def run_membrane(input_str=None):
 
+    #if run_tests:
+    #    def loop(input_str, i)
     def loop(input_str):
+    #def loop(input_str):
 
         logging_fn()
 
@@ -238,29 +265,76 @@ def run_membrane(input_str=None):
         if input_str == None:
             input_str = input()
 
-        from verbRegistry import Parser
-        viable_format, dict_from_parser = Parser.input_parser(Parser, input_str)
+        try:
+            from verbRegistry import Parser
+            #print("Before input_parser")
+            viable_format, dict_from_parser = Parser.input_parser(Parser, input_str)
+            #print("After input_parser")
+            if not viable_format:
+                return None
+            inst_dict = get_noun_instances(dict_from_parser, viable_format)
+            #print("after get_noun_instances")
+            if to_json:
+                input_outcome_dict[(str(i) + " " + input_str)] = inst_dict
+                import json
+                test_file = "test_31_1_26.json"
+            #try:
+            #    for entry in input_outcome_dict:
+            #        #print(f"ENTRY: {entry}")
+            #        input_outcome_dict[entry]["OUTCOME"] = ""
+            #except Exception as e:
+            #    print(f"couldn't add 'outcome' to {entry}: {e}")
+            #    if input_outcome_dict[entry] == None:
+            #        input_outcome_dict[entry] = "OUTCOME:"
+                with open(test_file, 'w') as file:
+                    json.dump(input_outcome_dict, file, indent=2, cls=UserEncoder)
+            #with open(test_file, 'w') as file:
+            #    json.dump(input_outcome_dict, file, indent=2)
+            #print(f"input_outcome_dict: ")
+            #pprint.pprint(input_outcome_dict)
 
-        inst_dict = get_noun_instances(dict_from_parser, viable_format)
+            if inst_dict:
+                from verb_actions import router
+                response = router(viable_format, inst_dict)
+                if to_json:
+                    test = input("Did it do what you wanted? Make notes here.\n")
+                    if test:
+                        input_outcome_dict[(str(i) + " " + input_str)] = inst_dict
+                        input_outcome_dict[(str(i) + " " + input_str)].update({f"OUTCOME": test})
 
-        if inst_dict:
-            from verb_actions import router
-            response = router(viable_format, inst_dict)
-        return response
+                return response
+        except Exception as e:
+            print(f"Failed parser: {e}")
 
-    from config import run_tests
-
+    #from config import run_tests
+    run_tests = False#True
     if run_tests:
+        print("run tests on")
         from time import sleep
-        test_inputs = ["get scroll", "open scroll", "go to east graveyard", "get glass jar", "put glass jar in scroll", "put scroll in glass jar"]
+        test_inputs = test_input_list#["get scroll", "open scroll", "go to east graveyard", "get glass jar", "put glass jar in scroll", "put scroll in glass jar"]
         for i, input_str in enumerate(test_inputs):
-            sleep(.3)
-            loop(input_str)
+            #input_outcome_dict[str(i, input_str)] = None
+            print_yellow(f"#    input str: `{input_str}`")
+            loop(input_str, i)
+
+            sleep(.05)
 
             print()
             if i == len(test_inputs)-1:
                 run_tests = False
 
     else:
+        #import json
+        #test_file = "test_31_1_26.json"
+        #with open(test_file, 'w') as file:
+        #    json.dump(input_outcome_dict, file, indent=2)
+        if run_tests:
+            print(f"input_outcome_dict: ")
+            pprint.pprint(input_outcome_dict)
+            print("\n\n")
+
+            print()
+            exit("Exiting, please check JSON file.")
+        #loop(input_str, i)
         loop(input_str)
 
