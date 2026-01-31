@@ -65,8 +65,6 @@ class cardinalInstance:
                             self.transition_objs = dict()
                         self.transition_objs[item] = {"enter_location": loc_dict[self.place.name][self.name]["items"][item].get("enter_location"), "exit_to_location": (loc_dict[self.place.name][self.name]["items"][item].get("exit_to_location") if loc_dict[self.place.name][self.name]["items"][item].get("exit_to_location") != self.name else self)}
 
-
-
     def __repr__(self):
         return f"<cardinalInstance {self.place_name} ({self.id})>"
 
@@ -157,7 +155,6 @@ class placeRegistry:
                 if cardinal.place != self.currentPlace:
                     self.currentPlace = cardinal.place
                     self.route.append(loc)
-
                 return
 
         elif loc:
@@ -254,7 +251,6 @@ class placeRegistry:
         elif isinstance(loc, str):
             loc = self.place_by_name(loc)
 
-        #print(f"by cardinal str: cardinal_str: {cardinal_str}, loc: {loc}")
         cardinal_inst = locRegistry.cardinals[loc][cardinal_str]
         return cardinal_inst
 
@@ -366,11 +362,15 @@ def get_loc_descriptions(place=None):
         for place in locRegistry.places:
             #print(f"PLACE IN PLACES : {place}")
             get_descriptions(place)
-    elif place and isinstance(place, placeInstance):
-        get_descriptions(place)
+            return
+    if place and isinstance(place, cardinalInstance):
+        place = place.place
     elif place and isinstance(place, str):
         place - locRegistry.place_by_name(place)
+
+    if place and isinstance(place, placeInstance):
         get_descriptions(place)
+
 
 
 

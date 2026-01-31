@@ -3,7 +3,7 @@
     "name": "padlock",
     "nicename": "a padlock",
     "description": "An old dark-metal padlock.",
-    "item_type": "{'can_pick_up', 'fragile', 'all_items', 'trigger', 'can_open'}",
+    "item_type": "{'can_pick_up', 'fragile', 'all_items', 'can_open'}",
     "can_pick_up": true,
     "item_size": 0,
     "broken_name": "broken padlock",
@@ -11,18 +11,12 @@
     "can_break": true,
     "alt_names": {},
     "is_hidden": false,
-    "trigger_type": "plot_advance",
-    "trigger_target": "graveyard_gate_opens",
     "is_exhausted": false,
     "is_open": false,
     "can_be_opened": true,
     "can_be_closed": true,
     "can_be_locked": true,
-    "is_locked": true,
-    "requires_key": "iron key",
-    "event_key": true,
-    "event": "graveyard_gate_opens",
-    "key_is_placed_elsewhere": true
+    "is_locked": true
   },
   "gate": {
     "name": "gate",
@@ -795,7 +789,7 @@
     "event_item": null,
     "print_on_investigate": true,
     "can_read": true,
-    "description": "a yellowed [[]], showing the region surrounding the graveyard"
+    "description": "a yellowed [[]], showing the region surrounding the graveyard."
   },
 "work shed": {
     "name": "work shed",
@@ -805,8 +799,8 @@
     "breakable": false,
     "description": "a simple shed, with wood panelled walls"
   },
-  "shed door": {
-    "alt_names": ["shed doorway"],
+  "wooden door": {
+    "alt_names": ["shed doorway", "shed door"],
     "name": "shed door",
     "item_type": "{'wall', 'can_open', 'static'}",
     "is_vertical_surface": true,
