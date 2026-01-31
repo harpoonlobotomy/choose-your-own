@@ -236,7 +236,9 @@ input_outcome_dict = {}
 to_json = False
 def run_membrane(input_str=None):
 
-    def loop(input_str, i):
+    #if run_tests:
+    #    def loop(input_str, i)
+    def loop(input_str):
     #def loop(input_str):
 
         logging_fn()
@@ -265,11 +267,13 @@ def run_membrane(input_str=None):
 
         try:
             from verbRegistry import Parser
+            print("Before input_parser")
             viable_format, dict_from_parser = Parser.input_parser(Parser, input_str)
-
+            print("After input_parser")
             if not viable_format:
                 return None
             inst_dict = get_noun_instances(dict_from_parser, viable_format)
+            print("after get_noun_instances")
             if to_json:
                 input_outcome_dict[(str(i) + " " + input_str)] = inst_dict
                 import json
@@ -303,7 +307,7 @@ def run_membrane(input_str=None):
             print(f"Failed parser: {e}")
 
     #from config import run_tests
-    run_tests = True
+    run_tests = False#True
     if run_tests:
         print("run tests on")
         from time import sleep
@@ -324,12 +328,13 @@ def run_membrane(input_str=None):
         #test_file = "test_31_1_26.json"
         #with open(test_file, 'w') as file:
         #    json.dump(input_outcome_dict, file, indent=2)
-        print(f"input_outcome_dict: ")
-        pprint.pprint(input_outcome_dict)
-        print("\n\n")
+        if run_tests:
+            print(f"input_outcome_dict: ")
+            pprint.pprint(input_outcome_dict)
+            print("\n\n")
 
-        print()
-        exit("Exiting, please check JSON file.")
+            print()
+            exit("Exiting, please check JSON file.")
         #loop(input_str, i)
         loop(input_str)
 

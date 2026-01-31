@@ -2888,3 +2888,110 @@ Current errors:
 
     Need to fix the 'cannot set event because event has ended' error.
     But basically back to this morning, now. Yay...
+
+7.55pm
+Making notes to try to remember.
+Redoing eventRegistry slightly.
+    - Changed hidden_items from a set to a dict, to include the item loc (same format as hold_item)
+    - Added 'self.end_trigger' to be trigger_name = existed previously but I can't see where it was ever filled.
+
+Removing trigger_target and trigger_type, can add them back at some point if I need to. Those are being held in the item_registry side, which is not good. Honestly I kinda want to remove all the event data from items def and have it all in locations unless /all padlocks/ are part of the quest.
+
+Hmm. But then how do I indicate to itemReg that it's an event item at all...
+
+I guess I don't. It just generates it as an item, then eventReg applies the event flags. Okay.
+
+Line 390 in eventReg, add item and cardinal instances to event.end_trigger and event.end_trigger_location (and same for start if/when relevant.) Prev it got the instance data from item_defs, but that doesn't get its information from event_defs.
+
+Oh wait, it did pull data from loc_data, though.
+          "event": {
+            "event_name": "graveyard_gate_opens",
+            "event_item": true}
+            that's in loc data... So maybe this was entirely unnecessary.
+
+Leaving it there for now. Not sure what's going to be easier, setting the event data in event_defs or loc_data. For now, will let it draw from both and see what happens. Not at capacity to make arbitrary decisions today.
+
+Tests fine in isolation, applies loc data etc.
+
+Loc data applied to instance:
+#   Applying loc data to item: iron key, item data: ``{'name': 'iron key', 'item_type': "{'key', 'can_pick_up'}", 'is_key': True, 'can_pick_up': True, 'item_size': 0, 'description': 'an old [[]], mottled with age', 'is_key_to': 'padlock', 'is_hidden': True, 'event': {'event_name': 'graveyard_gate_opens', 'event_item': True}, 'starting_location': <cardinalInstance north work shed (2e6e3753-c8c7-4cef-a57a-69321b4551fb)>}``, loc data: ``{'description': 'An old iron key, pitted on the surface but still appears functional.', 'is_key_to': 'padlock', 'is_hidden': True, 'event': {'event_name': 'graveyard_gate_opens', 'event_item': True}}``
+
+Then eventReg applies event tags itself:
+reveal_iron_key iron key attribute set: is_hidden: True
+Event holds an item: padlock
+graveyard_gate_opens padlock attribute set: can_pick_up: False
+Travel is limited: True
+{'work shed': {<eventInstance graveyard_gate_opens (c0f586c4-1010-4e36-97da-0380b28d030b, event state: 1>}, 'graveyard': {<eventInstance graveyard_gate_opens (c0f586c4-1010-4e36-97da-0380b28d030b, event state: 1>}}
+
+
+9.07pm
+Hm.
+Sequence: ('verb', 'direction', 'location')
+[[  go into work shed  ]]tion', 'noun')
+
+noun <ItemInstance work shed (42755faf-bfc3-429b-89d8-1eb633941744)> is loc ext has transition objects: {<ItemInstance wooden door (0b1718c8-5537-4394-9c8f-85d2d2460b23)>}
+noun.enter_location: <placeInstance work shed (32bd754d-a605-4464-9ae5-e985ba24bc02)>
+The door creaks, but allows you to head inside.
+CARDINAL STR: west
+You're now in the work shed, facing north.
+
+CARDINAL STR: work shed north
+CARDINAL STR: work shed north
+Around you, you see the interior of a rather run-down looking work shed, previously boarded up but seemingly, not anymore.
+There's a simple desk, hazily lit by the window over it to the north.
+noun.enter_location: <placeInstance work shed (32bd754d-a605-4464-9ae5-e985ba24bc02)>
+You head back out through the door.
+CARDINAL STR: north
+You're now in the graveyard, facing north.
+
+CARDINAL STR: graveyard north
+CARDINAL STR: graveyard north
+CARDINAL STR: graveyard east
+CARDINAL STR: graveyard east
+CARDINAL STR: graveyard west
+You're in a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+The entrance gates are to the north. To the east sit a variety of headstones, to the south stands a mausoleum, and to the west is what looks like a work shed of some kind.
+
+
+It takes you inside, and immediately back out. Oops.
+
+Okay so events are temporarily broken, probably changed a variable somewhere and didn't update the rest of the script. Local map still gets picked up, but doesn't trigger anything.
+
+In the morning:
+    Check exactly why local map doesn't trigger the end of hide the iron key event
+
+
+Goddamn it it keeps /immediately/ bouncing me out of the shed.
+
+noun <ItemInstance work shed (3538bdc7-488a-4940-9890-99599cb53124)> is loc ext has transition objects: {<ItemInstance wooden door (e25442c2-4d9d-4e6e-9644-df31c38e6be8)>}
+noun.enter_location: <placeInstance work shed (7dcb71f9-41c4-4672-8413-eba52a8d4bf8)>
+The door creaks, but allows you to head inside.
+CARDINAL STR: west
+You're now in the work shed, facing north.
+
+CARDINAL STR: work shed north
+CARDINAL STR: work shed north
+Around you, you see the interior of a rather run-down looking work shed, previously boarded up but seemingly, not anymore.
+There's a simple desk, hazily lit by the window over it to the north.
+noun.enter_location: <placeInstance work shed (7dcb71f9-41c4-4672-8413-eba52a8d4bf8)>
+You head back out through the door.
+CARDINAL STR: north
+You're now in the graveyard, facing north.
+
+No additional commands.
+
+Maybe fixed? But I thought that earlier.
+
+Bed soon. So tired.
+
+#   take map
+#   item in local_named: local map
+#   item in parts_dict: local map
+#   wooden door ('wooden', 'door')
+#   Item in local_named: local map
+#   [[  take local map  ]]un')
+#
+#   The local map is now in your inventory.
+#   Failed parser: 'ItemInstance' object is not iterable
+
+

@@ -651,10 +651,13 @@ class Parser:
             clean_parts = []
             token_parts = [i.kind for i in tokens if i.kind != "null"]
             for parts in token_parts:
-                for part in parts:
-                    if part != "null":
-                        clean_parts.append(part)
-                        break
+                if isinstance(parts, str):
+                    clean_parts.append(parts)
+                else:
+                    for part in parts:
+                        if part != "null":
+                            clean_parts.append(part)
+                            break
 
             print(" ".join(clean_parts))
             print(f"Raw tokens: {tokens}")

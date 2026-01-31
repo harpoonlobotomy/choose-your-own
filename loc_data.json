@@ -126,7 +126,7 @@
         "work shed": "a [[]] of some kind, with a wooden door that looks like it was barricaded until recently"},
       "short_desc": "is what looks like a work shed of some kind",
       "items": {
-        "work shed": {"description": "a simple shed, with wood panelled walls", "item_type": ["loc_exterior", "wall", "static"]}, "shed door": {"description": "a closed wooden door", "enter_location": "work shed", "exit_to_location": "graveyard", "item_type": ["wall", "can_open", "static", "transition"]}}
+        "work shed": {"description": "a simple shed, with wood panelled walls", "item_type": ["loc_exterior", "wall", "static"]}, "wooden door": {"description": "a closed wooden door", "enter_location": "work shed", "exit_to_location": "graveyard", "item_type": ["wall", "can_open", "static", "transition", "is_door"]}}
     },
     "descrip": "You're in a rather poorly kept PPPgraveyardEEE - smaller than you might have expected given the scale of the gate and fences"
   },
@@ -279,7 +279,11 @@
         "iron key": {
           "description": "An old iron key, pitted on the surface but still appears functional.",
           "is_key_to": "padlock",
-          "is_hidden": true}
+          "is_hidden": true,
+          "event": {
+            "event_name": "graveyard_gate_opens",
+            "event_item": true}
+            }
         }
       },
     "descrip": "Around you, you see the interior of a rather run-down looking PPPwork shedEEE, previously boarded up but seemingly, not anymore."

@@ -32,7 +32,8 @@ type_defaults = {
     "can_speak" : {'can_speak': True, 'speaks_common': True},
     "can_open": {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False},
     "transition": {"is_transition_obj": True, "enter_location": None, "exit_to_location": None},
-    "loc_exterior": {"is_loc_exterior":True, "transition_objs": set()}
+    "loc_exterior": {"is_loc_exterior":True, "transition_objs": set(), "has_door": False},
+    "is_door": {"door_loc": None, "loc_ext_obj": None}
 
     #{"special_traits: set("dirty", "wet", "panacea", "dupe", "weird", "can_combine")}, # aka random attr storage I'm not using yet
     #"exterior": {"is_interior": False} ## Can be set scene-wide, so 'all parts of 'graveyard east' are exterior unless otherwise mentioned'. (I say 'can', I mean 'will be when I set it up')
@@ -272,11 +273,11 @@ class itemRegistry:
         if hasattr(inst, "contained_in") and inst.contained_in != None:
             self.contained_in_temp.add(inst)
 
-        if hasattr(inst, "event"):
-            for key in ("event_key", "event_item"):
-                if not hasattr(inst, key):
-                    setattr(inst, key, None)
-            self.event_items[inst.name] = {"event_name": inst.event, "event_key": inst.event_key, "event_item": inst.event_item, "item": inst}
+        #f hasattr(inst, "event"):
+        #   for key in ("event_key", "event_item"):
+        #       if not hasattr(inst, key):
+        #           setattr(inst, key, None)
+        #   self.event_items[inst.name] = {"event_name": inst.event, "event_key": inst.event_key, "event_item": inst.event_item, "item": inst}
 
         if hasattr(inst, "is_key"):
             self.keys.add(inst)
@@ -1223,7 +1224,7 @@ def initialise_itemRegistry():
             #print(f"loc vars: {vars(location)}")
             if hasattr(location, "entry_item"):
                 #print(f"loc has objects: {location.entry_item}")
-                obj.transition_objs = location.entry_item
+                obj.transition_objs.add(location.entry_item)
 
 
     registry.add_plural_words(plural_word_dict)

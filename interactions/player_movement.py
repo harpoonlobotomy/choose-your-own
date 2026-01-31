@@ -170,7 +170,7 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
         print(loc.current.description)
 
     assert isinstance(loc.current, cardinalInstance)
-
+    return 1
 
 def turn_around(new_cardinal):
 

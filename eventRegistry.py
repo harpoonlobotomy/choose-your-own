@@ -43,7 +43,7 @@ class eventInstance:
     def __init__(self, name, attr):
         self.name = name
         self.id = str(uuid.uuid4())
-        self.event_state:int
+        self.state:int
         self.start_trigger = None # just to make sure these are here so other things can be more solid.
         self.end_trigger = None
         self.items = set() ## items affected by the event
@@ -51,7 +51,7 @@ class eventInstance:
         self.msgs = attr.get("messages") # what prints when the event starts/ends/on certain cues
         self.limits_travel = False
         self.held_items = {}
-        self.hidden_items = set()
+        self.hidden_items = {}
         self.start_trigger_location = None
         self.end_trigger_location = None
 
@@ -62,30 +62,42 @@ class eventInstance:
         if attr.get("effects"):
             if attr["effects"].get("limit_travel"):
                 self.limits_travel = True
-                self.travel_limited_to = set()
                 #events.travel_is_limited = attr["effects"]["limit_travel"] # OH this is broken. Can't overwrite it like this, otherwise adding a new event will just clear this.
                 if attr["effects"]["limit_travel"].get("cannot_leave"):
+                    if not hasattr(self, "travel_limited_to"):
+                        self.travel_limited_to = set()
                     for location in attr["effects"]["limit_travel"].get("cannot_leave"):
                         self.travel_limited_to.add(location)
+                        print(f"self.travel_limited_to: {self.travel_limited_to}")
                         #events.held_at = dict({"held_at_loc": location, "held_by": self}) ## only records 'held_at_loc' as the last one, so graveyard_gate event records 'graveyard' but not 'work shed' even though both are valid. Works okay with travel_limited_to though, so the potential locations are correct.
                     #events.held_at_loc = attr["effects"]["limit_travel"]["cannot_leave"]
 
                 #print(f"Initiated event limits travel: {attr["effects"].get("limit_travel")}")
 
             if attr["effects"].get("hide_item"):
-                self.hidden_items.add(attr["effects"]["hide_item"]["item_name"])
-                self.items.add(attr["effects"]["hide_item"]["item_name"])
+                items = attr["effects"]["hide_item"]
+                for item in items:
+                    self.hidden_items[items["item_name"]] = items["item_loc"]
+                    self.items.add(items["item_name"])
 
             if attr["effects"].get("hold_item"):
-                print(f"Event holds an item: {attr["effects"]["hold_item"]["item_name"]}")
-                self.held_items[(attr["effects"]["hold_item"]["item_name"])] = attr["effects"]["hold_item"]["item_loc"] # only allows for one item to be held. Fine for now but will need changing.
-                self.items.add(attr["effects"]["hold_item"]["item_name"])
+                items = attr["effects"]["hold_item"]
+                print(f"Event holds an item: {items["item_name"]}")
+                self.held_items[(items["item_name"])] = items["item_loc"]
+                self.items.add(items["item_name"])
 
-        if attr.get("end_trigger"):
-            if attr.get("end_trigger"):
-                if attr["end_trigger"].get("item_trigger"):
-                    self.keys.add(attr["end_trigger"]["item_trigger"]["trigger_name"])
-                    self.end_trigger_location = attr["end_trigger"]["item_trigger"]["trigger_location"]
+        for trigger in ("start_trigger", "end_trigger"):
+            if attr.get(trigger):
+                if attr[trigger].get("item_trigger"):
+                    self.keys.add(attr[trigger]["item_trigger"]["trigger_name"])
+
+                    setattr(self, trigger, attr[trigger]["item_trigger"]["trigger_name"])
+                    #self.end_trigger = (attr[trigger]["item_trigger"]["trigger_name"])
+
+                    setattr(self, f"{trigger}_location", attr[trigger]["item_trigger"]["trigger_location"])
+                    print(f"attr[trigger]: {attr[trigger]}")
+                    print(f"self trigger location: {getattr(self, f"{trigger}_location")}")
+                    #self.end_trigger_location = attr[trigger]["item_trigger"]["trigger_location"]
 
         """
         self.event_items
@@ -118,24 +130,31 @@ class eventRegistry:
 
 
     def add_event(self, event_name, event_attr):
+        from interactions.item_interactions import set_attr_by_loc
+
         event = eventInstance(event_name, event_attr)
         self.events.add(event)
         self.by_id[event.id] = event
         self.by_name[event.name] = event
 
-
         if hasattr(event, "starts_current"):
             self.by_state[1].add(event)
             event.event_state = 1 # (current event)
             if event.limits_travel:
-                self.travel_is_limited = True # mark as true if event starts at runtime.
-            if event.held_items:
-                from interactions.item_interactions import set_attr_by_loc
+                self.travel_is_limited = True
+
+            if hasattr(event, "held_items"):
                 for item in event.held_items:
                     location = event.held_items[item]
                     set_attr_by_loc(attr = "can_pick_up", val = "False", location = location, items = item)
+                    print(f"{event.name} {item} attribute set: can_pick_up: False")
 
-                print(f"Attribute set: can_pick_up")
+            if hasattr(event, "hidden_items"):
+                for item in event.hidden_items:
+                    print(f"ITEM: {item}")
+                    location = event.hidden_items.get(item)#.get("item_loc")
+                    set_attr_by_loc(attr = "is_hidden", val = "True", location = location, items = item)
+                    print(f"{event.name} {item} attribute set: is_hidden: True")
         else:
             self.by_state[2].add(event)
             event.event_state = 2 # (future event)
@@ -283,15 +302,21 @@ class eventRegistry:
                     self.travel_is_limited = False # untested
 
             if event_to_end.hidden_items:
-                #print(f"event_to_end.hidden_items: {event_to_end.hidden_items}")
-                #print("Here we need to unhide any hidden items.")
-                event_to_end.end_trigger_location
-                from interactions.item_interactions import set_attr_by_loc
-                set_attr_by_loc(attr = "is_hidden", val = "False", location = event_to_end.end_trigger_location, items = event_to_end.hidden_items)
+                for item in event_to_end.hidden_items:
+                    #print(f"event_to_end.hidden_items: {event_to_end.hidden_items}")
+                    #print("Here we need to unhide any hidden items.")
+
+                    from interactions.item_interactions import set_attr_by_loc
+                    set_attr_by_loc(attr = "is_hidden", val = "False", location = event_to_end.end_trigger_location, items = event_to_end.hidden_items)
+                    event_to_end.hidden_items.pop(item)
+
 
             if event_to_end.held_items:
-                from interactions.item_interactions import set_attr_by_loc
-                set_attr_by_loc(attr = "is_pick_up", val = "True", location = event_to_end.end_trigger_location, items = event_to_end.held_items)
+                for item in event_to_end.held_items:
+
+                    from interactions.item_interactions import set_attr_by_loc
+                    set_attr_by_loc(attr = "is_pick_up", val = "True", location = event_to_end.end_trigger_location, items = event_to_end.held_items)
+                    event_to_end.held_items.pop(item)
                 #print(f"event_to_end.held_items: {event_to_end.held_items}")
                 #print("Here we need to release any held items (eg what the padlock should be but currently isn't).")
 
@@ -320,7 +345,8 @@ class eventRegistry:
         for event in self.events:
             if event.event_state != 1:
                 continue
-            for item in event.keys:
+            #for item in event.keys:
+            for item in event.end_trigger:
                 if item == noun_inst.name:
                     if event.end_trigger_location == noun_loc.place_name:
                         self.end_event(event)
@@ -357,11 +383,35 @@ def add_items_to_events(item_data):
         "messages": {"start_msg": "", "end_msg": "", "held_msg": "Until the gate's unlocked, you don't see a way out of here."}
     },
     """
+    if not item_data:
+        from env_data import locRegistry as loc
+        from itemRegistry import registry
+        for event in events.events:
+            for trigger in ("start_trigger", "end_trigger"):
+                if hasattr(event, trigger) and getattr(event, trigger):
+                    trigger_item_name = getattr(event, trigger)
+                    trigger_item_location = getattr(event, f"{trigger}_location")
+                    if trigger_item_location:
+                        trigger_loc = loc.by_cardinal_str(trigger_item_location)
+                        loc_items = registry.get_item_by_location(trigger_loc)
+                        for item in loc_items:
+                            if item.name == trigger_item_name:
+                                setattr(event, trigger, item)
+                                setattr(event, f"{trigger}_location", trigger_loc)
+                    else:
+                        print(f"This event item [{event} trigger, {getattr(event, trigger)}] does not have a location")
+
+                    #setattr(self, trigger, attr[trigger]["item_trigger"]["trigger_name"])
+                        #self.end_trigger = (attr[trigger]["item_trigger"]["trigger_name"])
+
+                    #setattr(self, f"{trigger}_location", attr[trigger]["item_trigger"]["trigger_location"])
+
     for item in item_data:
         event_name = item_data[item].get("event_name")
         if events.event_by_name(event_name):
             event = events.event_by_name(event_name)
-            event.items.add(item_data[item].get("item")) ## by using the instance here (""item""") instead of the name, it means that only this specific instance is the trigger, not any random one. Should be a benefit, but need to keep in mind that if a thing has many possible triggers, all need the flags. Should be okay though, just be mindful.
+            event.items.add(item_data[item].get("item"))
+            print(f"event.items: {event.items}")
             if item_data[item].get("event_key"):
                event.keys.add(item_data[item].get("item")) ## add by name or by id... or maybe just send the damn instance over. Only reason to send an ID is to make savestates easier, but I can get grab the ID when needed if that's the case...
             if event_dict[event_name].get("end_trigger"):
@@ -405,10 +455,14 @@ def initialise_eventRegistry():
 
 if __name__ == "__main__":
 
+    from env_data import initialise_placeRegistry
+    initialise_placeRegistry()
+    from itemRegistry import initialise_itemRegistry
+    initialise_itemRegistry()
     initialise_eventRegistry()
     if events.travel_is_limited:
         print(f"Travel is limited: {(events.travel_is_limited)}")
-        print(f"{events.held_at}")
+        print(events.check_movement_limits())
 
     #print("For event in events: vars.")
     #for event in events.by_name:

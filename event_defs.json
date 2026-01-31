@@ -13,11 +13,32 @@
     "starts_current":true,
     "end_trigger":
       {"item_trigger": {
-          "trigger_name": "padlock", "trigger_location": "north work shed", "trigger": ["item_broken", "item_unlocked"], "item_flags": {"can_pick_up": false, "requires_key": "iron key", "flags_on_event_end": {"can_pick_up": true}}
+            "trigger_name": "padlock",
+            "trigger_location": "north work shed",
+            "trigger": ["item_broken", "item_unlocked"],
+            "item_flags": {
+                "can_pick_up": false, "requires_key": "iron key", "key_is_placed_elsewhere": true
+                },
+            "flags_on_event_end": {
+                "can_pick_up": true
+                }
       }
     },
-    "effects": {"hold_item": {"item_name": "padlock", "item_loc": "north graveyard"}, "limit_travel": {"cannot_leave": ["work shed", "graveyard"]}},
-    "messages": {"start_msg": "", "end_msg": "As the padlock falls to the ground and the chain unravells, the graveyard gate creaks open.", "held_msg": "Until the gate's unlocked, you don't see a way out of here."}
+    "effects":
+        {"hold_item":
+            {"item_name": "padlock", "item_loc": "north graveyard"},
+        "limit_travel":
+            {"cannot_leave": ["work shed", "graveyard"]},
+        "lock_item":
+            {"item_name": "gate", "item_loc": "north graveyard",
+                "while_event": {
+                    "is_locked": true, "is_closed": true},
+                "flags_on_event_end": {
+                    "is_locked": false, "is_closed": false}}},
+    "messages": {
+        "start_msg": "",
+        "end_msg": "As the padlock falls to the ground and the chain unravells, the graveyard gate creaks open.",
+        "held_msg": "Until the gate's unlocked, you don't see a way out of here."}
   },
   "mermaid_grotto_appears": {
     "start_trigger": {

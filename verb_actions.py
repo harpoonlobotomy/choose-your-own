@@ -4,6 +4,7 @@
 #import time
 from asyncio import events
 from calendar import c
+from time import sleep
 from logger import logging_fn, traceback_fn
 from env_data import cardinalInstance, locRegistry as loc, placeInstance, placeRegistry
 from interactions import item_interactions
@@ -53,7 +54,7 @@ def set_noun_attr(*values, noun):
     end_trigger=None
     trigger_done=False
     ##check noun for event ties before applying attr changes.
-    if hasattr(noun, "event"):
+    if hasattr(noun, "event") and noun.event != None:
         #print(f"Noun {noun} has event ties. Do things here.")
         from eventRegistry import events
 
@@ -90,6 +91,7 @@ def set_noun_attr(*values, noun):
                         setattr(noun, flag, event.end_trigger["item_trigger"]["item_flags"]["flags_on_event_end"][flag])
 
         setattr(noun, item, val)
+        noun.event = None # Once it's served its purpose, stop it being an event obj. TODO add a proper function here to remove it from anywhere it's stored. Need to formalise the language for that first though. This works for now as the padlock can now be picked up.
 
 
 def is_loc_current_loc(location=None, cardinal=None):
@@ -609,12 +611,15 @@ def go(format_tuple, input_dict): ## move to a location/cardinal/inside
             #print(f"CARDINAL ENTRY: {cardinal_entry}\nloc.current: {loc.current}, loc.current.place: {loc.current.place}, loc.currentPlace: {loc.currentPlace}")
             if cardinal_entry["instance"].place == loc.current.place:
                 turn_cardinal(cardinal_entry["instance"])
+                return
             else:
                 new_relocate(new_location=location_entry["instance"], new_cardinal = cardinal_entry["instance"])
+                return
 
         elif direction_entry and not location_entry and not cardinal_entry:# and verb_entry["str_name"] in ("go", "turn", "head", "travel", "move"):
             if direction_entry["str_name"] in ("left", "right"):
                 turn_cardinal(direction_entry["str_name"])
+                return
             else:
                 if get_noun(input_dict):
                     enter(format_tuple, input_dict)
@@ -623,11 +628,13 @@ def go(format_tuple, input_dict): ## move to a location/cardinal/inside
                 #if len(format_tuple) == 3:
                 print(f"FORMAT TUPLE: {format_tuple}")
                 new_relocate(new_location=location_entry["instance"], new_cardinal = cardinal_entry["instance"])
+                return
 
         elif location_entry and cardinal_entry:
 
             #print("has location and cardinal")
             new_relocate(new_location=location_entry["instance"], new_cardinal = cardinal_entry["instance"])
+            return
 
     elif direction_entry["str_name"] in in_words:
         if location_entry.get("instance"):
@@ -640,6 +647,7 @@ def go(format_tuple, input_dict): ## move to a location/cardinal/inside
                 input_dict[len(format_tuple)].setdefault("noun", dict()).setdefault("instance", location_entry['instance'].entry_item)
                 input_dict[len(format_tuple)]["noun"]["str_name"] = location_entry['instance'].entry_item.name
             enter(format_tuple, input_dict)
+            return
         #print(f"Can {input_dict[1]["direction"]["str_name"]} be entered?")
         #print("This isn't done yet.")
 
@@ -868,6 +876,7 @@ def lock_unlock(format_tuple, input_dict, do_open=False):
                     elif not lock.is_locked:
                         print(f"You use the {assign_colour(key)} to lock the {assign_colour(lock)}.")
                         set_noun_attr(("is_open", False), ("is_locked", True), noun=lock)
+                        return
 
                 else:
                     print(f"{noun_1} and {noun_2} are not a pairing. Key: {key}, lock: {lock}")
@@ -1499,8 +1508,10 @@ def enter(format_tuple, input_dict, noun=None):
             if outside_location == loc.current.place:
                 if hasattr(noun, "is_open") and noun.is_open == True:
                     print(assign_colour("The door creaks, but allows you to head inside.", colour="event_msg")) # want like, recklessly/cautiously/quietly, depending on playstyle. Long way off that but wanted to note it.
-                    new_relocate(inside_location)
-                    return 1
+                    return new_relocate(inside_location)
+                    sleep(.02)
+                    print("Done new_relocate")
+
                 else:
                     if noun.location == loc.current:
                         print("You can't enter through a closed door.")

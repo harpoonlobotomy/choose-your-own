@@ -57,8 +57,9 @@ def set_attr_by_loc(attr = "is_hidden", val = "False", location=None, items=None
     if location:
         named_local = {}
         local_items = registry.get_item_by_location(location)
-        for item in local_items:
-            named_local[item.name] = item
+        if local_items:
+            for item in local_items:
+                named_local[item.name] = item
 
         if items:
             if isinstance(items, str):
