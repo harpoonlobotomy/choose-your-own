@@ -166,6 +166,10 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
 
     if new_location:
         print(loc.current.place.overview)
+        print("\n", loc.current.description) # Turned off description printing for a while but I think it needs it.
+        #if loc.current.place.name == "work shed":
+        #    print("\n", loc.current.description)
+
     else:
         print(loc.current.description)
 

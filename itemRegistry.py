@@ -69,7 +69,7 @@ class ItemInstance:
                 self.item_type = set()
 
         elif isinstance(self.item_type, list):
-            print(f"self.item_type was a list: {self.item_type}")
+            #print(f"self.item_type was a list: {self.item_type}")
             temp = self.item_type
             self.item_type = set()
             for item in temp:
@@ -165,7 +165,7 @@ class ItemInstance:
 
         if hasattr(self, "enter_location"):
             self.enter_location = loc.place_by_name(self.enter_location)
-            print(f"self.enter_location: {self.enter_location}")
+            #print(f"self.enter_location: {self.enter_location}")
             setattr(self.enter_location, "entry_item", self)
             setattr(self.enter_location, "location_entered", False)
             self.is_transition_obj = True
@@ -1062,7 +1062,7 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, part
 
 def apply_loc_data_to_item(item, item_data, loc_data):
 
-    print(f"\n\nApplying loc data to item: {item}, item data: ``{item_data}``, loc data: ``{loc_data}``")
+    #print(f"\n\nApplying loc data to item: {item}, item data: ``{item_data}``, loc data: ``{loc_data}``")
 
     if loc_data:
         for field in loc_data:
@@ -1144,7 +1144,8 @@ def get_loc_items(loc=None, cardinal=None):
                         if not item_data:
                             print(f"Item {item} not in generator? : {item_data}")
                             print("generator.item_defs: ", generator.item_defs, "\n\n")
-                        item_data["description"] = loc_data["item_desc"].get(item)
+                        if not item_data["description"]: ## only overwrite the item description if there isn't one written. Use location-descrip in location name, but item descrip in item descriptions. This works for now, might need to change it later. Not sure.
+                            item_data["description"] = loc_data["item_desc"].get(item)
                         item_data["starting_location"] = card_inst
                         inst = apply_loc_data_to_item(item, item_data, loc_data["items"].get(item)) # maybe this should be inside an init func. Or maybe not.
                         #print(f"GENERATED INST: {inst}")

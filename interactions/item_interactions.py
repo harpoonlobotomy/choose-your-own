@@ -7,6 +7,7 @@ from itemRegistry import ItemInstance, registry
 from env_data import cardinalInstance, locRegistry as loc
 from misc_utilities import assign_colour
 from logger import logging_fn
+from printing import print_green
 
 def look_at(response):
     print("[LOOK_AT] in item interactions.")
@@ -26,7 +27,9 @@ def instance_name_in_inventory(inst_name:str)->ItemInstance:
 
 def look_at_item(item_inst): ## this is just using everything from registry. Should really just be in registry....
 
+
     if isinstance(item_inst, ItemInstance):
+
         #print(f"item_inst.location: {item_inst.location}")
         confirmed, container, reason_val, meaning = registry.check_item_is_accessible(item_inst)
         #print(f"Look at item MEANING: {meaning}")
@@ -40,6 +43,7 @@ def look_at_item(item_inst): ## this is just using everything from registry. Sho
             if reason_val == 8:
                 turn_around(item_inst.location)
                 return
+
             print(f"You look at the {assign_colour(item_inst)}{extra}")
             print(assign_colour(registry.describe(item_inst, caps=True), colour="description"))
             children = registry.instances_by_container(item_inst)
@@ -49,10 +53,22 @@ def look_at_item(item_inst): ## this is just using everything from registry. Sho
                 children = ", ".join(col_list(children))
                 print(f"  {children}")
 
-def set_attr_by_loc(attr = "is_hidden", val = "False", location=None, items=None):
+            from set_up_game import game
+            if item_inst == game.map_item:
+                print()
+                print_green("<     This is where we show a map image in some kinda way.     >", invert=True)
 
+def set_attr_by_loc(attr = "is_hidden", val = "False", location=None, items=None):
+    logging_fn()
     from itemRegistry import registry
     instances = set()
+
+    if items and isinstance(items, ItemInstance):
+        if hasattr(items, attr) and getattr(items, attr):
+            print(f"Items {items} is an instance and will be set directly.")
+            setattr(items, attr, val)
+            return
+        print(f"Item(s) were provided but failed to set attributes: {items}. Continuing by using location.")
 
     if location:
         named_local = {}

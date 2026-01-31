@@ -267,13 +267,13 @@ def run_membrane(input_str=None):
 
         try:
             from verbRegistry import Parser
-            print("Before input_parser")
+            #print("Before input_parser")
             viable_format, dict_from_parser = Parser.input_parser(Parser, input_str)
-            print("After input_parser")
+            #print("After input_parser")
             if not viable_format:
                 return None
             inst_dict = get_noun_instances(dict_from_parser, viable_format)
-            print("after get_noun_instances")
+            #print("after get_noun_instances")
             if to_json:
                 input_outcome_dict[(str(i) + " " + input_str)] = inst_dict
                 import json

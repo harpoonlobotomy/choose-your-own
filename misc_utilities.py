@@ -183,7 +183,7 @@ def get_inst_list_names(inventory_inst_list) -> list:
     return inventory_names_list
 
 def from_inventory_name(test:str, inst_inventory:list=None) -> ItemInstance:
-
+    logging_fn()
     if isinstance(test, ItemInstance):
         test = test.name
 
@@ -336,7 +336,7 @@ def separate_loot(child_input=None, parent_input=None, inventory=[]): ## should 
 ### COLOUR ASSIGNMENT
 
 def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=False, not_bold=False, caps=False, card_type = None):
-
+    logging_fn()
     from tui.colours import Colours
 
 #    if item is a list, run it through col_list. Might be recursive as hell though. idk. Need to figure how how/when col_list is used first.

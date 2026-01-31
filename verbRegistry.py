@@ -126,7 +126,7 @@ class Parser:
                             matches_count += 1
                             if matches_count == len(word_parts):# and matches_count == parts - idx:
                                 perfect_match = compound_word
-                                print(f"Perfect match: {perfect_match}")
+                                #print(f"Perfect match: {perfect_match}")
                                 break
                         #if parts[idx+matches_count] and parts[idx+matches_count].lower() in word_parts:
                         #    test_print(f"parts[{idx}+{matches_count}]: {parts[idx+matches_count]}", print_true=True)
@@ -218,13 +218,13 @@ class Parser:
             else:
                 for item in compound_matches: # this just takes the first match, so if 'gold key' and 'iron key' are both there, it will take gold key regardless.
                     if item in local_named:
-                        print(f"item in local_named: {item}")
+                        #print(f"item in local_named: {item}")
                         if item in parts_dict:
-                            print(f"item in parts_dict: {item}")
+                            #print(f"item in parts_dict: {item}")
                             compound_word, word_parts in parts_dict.get(item)
-                            print(compound_word, word_parts)
+                            #print(compound_word, word_parts)
                             #print(parts[idx+matches_count])# and parts[idx+matches_count].lower() in word_parts
-                        print(f"Item in local_named: {item}")
+                        #print(f"Item in local_named: {item}")
 #{matches_count+1} `{parts[idx+matches_count+1]
                         match = item
                         break
@@ -460,16 +460,16 @@ class Parser:
     def generate_initial_dict(tokens, sequences) -> tuple[dict, int]:
         reformed_dict = {}
 
-        if len(sequences) > 1:
-            print("More than one viable sequence. Help?")
-            print(sequences)
-            print("[This should be where it's culled down, right? Idk. Or maybe we just go with the first here and refine it later if it breaks. Idk yet. For now, just quit. Shouldn't be more than one I think.]")
+        #if len(sequences) > 1:
+            #print("More than one viable sequence. Help?")
+            #print(sequences)
+            #print("[This should be where it's culled down, right? Idk. Or maybe we just go with the first here and refine it later if it breaks. Idk yet. For now, just quit. Shouldn't be more than one I think.]")
             #exit()
 
         #sequence = sequences[0]
         full_matches = {}
         for i, sequence in enumerate(sequences):
-            print(f"Sequence: {sequence}")
+            #print(f"Sequence: {sequence}")
             matched = 0
             for token in tokens:
                 if matched == len(sequence):
@@ -647,7 +647,7 @@ class Parser:
         sequences, verb_instances = self.get_sequences_from_tokens(tokens)
 
         if not sequences:
-            print(f"No viable sequences found for {input_str}.")
+            #print(f"No viable sequences found for {input_str}.")
             clean_parts = []
             token_parts = [i.kind for i in tokens if i.kind != "null"]
             for parts in token_parts:
@@ -659,8 +659,8 @@ class Parser:
                             clean_parts.append(part)
                             break
 
-            print(" ".join(clean_parts))
-            print(f"Raw tokens: {tokens}")
+            #print(" ".join(clean_parts))
+            #print(f"Raw tokens: {tokens}")
             return clean_parts, None
 
             #TODO:  If no functional sequences, need to pick out parts that might be applicable to make reasonable guesses. Like if we have 'go'  and 'location', 'did you mean 'go to location', etc. Need a way to pause mid-parse, get confirmation then come back and run the sequencer again. Not today, but soon.

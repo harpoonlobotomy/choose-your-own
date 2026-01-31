@@ -2995,3 +2995,175 @@ Bed soon. So tired.
 #   Failed parser: 'ItemInstance' object is not iterable
 
 
+2.44pm
+The above error was because it was trying to iterate over event.end_trigger, but end_trigger was just the itemInstance. Thinking maybe I should make it a dict, so that going forward an event can have multiple objects act as the end_trigger. Or just leave it for now. Don't know.
+
+2.48pm
+Why is it STILL throwing me out of the shed again??
+Okay, printing args so I can see what's happening.
+
+
+#   [[  go into work shed  ]]
+#
+#   (  Func:  go   )
+#   format_tuple: ('verb', 'direction', 'noun')
+#   input_dict: {0: {'verb': {'instance': <verbInstance go (ec3d74d8-8d27-4a06-9a65-ceebb2c32ace)>, 'str_name': 'go'}}, 1: {'direction': {'instance': None, 'str_name': 'into'}}, 2: {'noun': {'instance': <ItemInstance work shed (33c9aa9b-135f-458c-bf56-2351acd86f6e)>, 'str_name': 'work shed'}}}
+#   (  Func:  get_current_loc   )
+#   (  Func:  get_entries_from_dict   )
+#   input_dict: {0: {'verb': {'instance': <verbInstance go (ec3d74d8-8d27-4a06-9a65-ceebb2c32ace)>, 'str_name': 'go'}}, 1: {'direction': {'instance': None, 'str_name': 'into'}}, 2: {'noun': {'instance': <ItemInstance work shed (33c9aa9b-135f-458c-bf56-2351acd86f6e)>, 'str_name': 'work shed'}}}
+#   (  Func:  get_noun   )
+#   input_dict: {0: {'verb': {'instance': <verbInstance go (ec3d74d8-8d27-4a06-9a65-ceebb2c32ace)>, 'str_name': 'go'}}, 1: {'direction': {'instance': None, 'str_name': 'into'}}, 2: {'noun': {'instance': <ItemInstance work shed (33c9aa9b-135f-458c-bf56-2351acd86f6e)>, 'str_name': 'work shed'}}}
+#   (  Func:  get_noun   )
+#   input_dict: {0: {'verb': {'instance': <verbInstance go (ec3d74d8-8d27-4a06-9a65-ceebb2c32ace)>, 'str_name': 'go'}}, 1: {'direction': {'instance': None, 'str_name': 'into'}}, 2: {'noun': {'instance': <ItemInstance work shed (33c9aa9b-135f-458c-bf56-2351acd86f6e)>, 'str_name': 'work shed'}}}
+#   (  Func:  get_item_by_location   )
+#   loc_cardinal: <cardinalInstance north graveyard (bae382df-66f4-47c8-8df6-491bf617dac3)>
+#   noun <ItemInstance work shed (33c9aa9b-135f-458c-bf56-2351acd86f6e)> is loc ext has transition objects: {<ItemInstance wooden door (e7f2d53e-3ccb-4e34-9d40-e1ec9a868540)>}
+#   (  Func:  get_item_by_location   )
+#   loc_cardinal: <cardinalInstance north graveyard (bae382df-66f4-47c8-8df6-491bf617dac3)>
+#   noun.enter_location: <placeInstance work shed (8a1ab931-29ad-4590-9acb-f989e06ee702)>
+#   (  Func:  check_name   )
+#   item_name: The door creaks, but allows you to head inside.
+#   (  Func:  instances_by_name   )
+#   definition_key: The door creaks, but allows you to head inside.
+#   The door creaks, but allows you to head inside.
+#   (  Func:  new_relocate   )
+#   new_location: <placeInstance work shed (8a1ab931-29ad-4590-9acb-f989e06ee702)>
+#   (  Func:  by_cardinal_str   )
+#   cardinal_str: north
+#   loc: <placeInstance work shed (8a1ab931-29ad-4590-9acb-f989e06ee702)>
+#   CARDINAL STR: north
+#   (  Func:  set_current   )
+#   loc: <placeInstance work shed (8a1ab931-29ad-4590-9acb-f989e06ee702)>
+#   cardinal: <cardinalInstance north work shed (61fbf0c0-a65f-4484-b212-07e654b9e825)>
+#   You're now in the work shed, facing north.
+#
+#   (  Func:  place_by_name   )
+#   loc_name: work shed
+#   (  Func:  instances_by_name   )
+#   definition_key: local map
+#   (  Func:  get_item_by_location   )
+#   loc_cardinal: work shed north
+#   (  Func:  by_cardinal_str   )
+#   cardinal_str: work shed north
+#   CARDINAL STR: work shed north
+#   (  Func:  place_by_name   )
+#   loc_name: work shed
+#   (  Func:  instances_by_name   )
+#   definition_key: local map
+#   (  Func:  instances_by_name   )
+#   definition_key: iron key
+#   (  Func:  get_item_by_location   )
+#   loc_cardinal: work shed north
+#   (  Func:  by_cardinal_str   )
+#   cardinal_str: work shed north
+#   CARDINAL STR: work shed north
+#   (  Func:  place_by_name   )
+#   loc_name: work shed
+#   (  Func:  instances_by_name   )
+#   definition_key: iron key
+#   Around you, you see the interior of a rather run-down looking work shed, previously boarded up but seemingly, not anymore.
+#   There's a simple desk, hazily lit by the window over it to the north.
+#   noun.enter_location: <placeInstance work shed (8a1ab931-29ad-4590-9acb-f989e06ee702)>
+#   (  Func:  get_location   )
+#   input_dict: {0: {'verb': {'instance': <verbInstance go (ec3d74d8-8d27-4a06-9a65-ceebb2c32ace)>, 'str_name': 'go'}}, 1: {'direction': {'instance': None, 'str_name': 'into'}}, 2: {'noun': {'instance': <ItemInstance work shed (33c9aa9b-135f-458c-bf56-2351acd86f6e)>, 'str_name': 'work shed'}}}
+#   (  Func:  check_name   )
+#   item_name: You head back out through the door.
+#   (  Func:  instances_by_name   )
+#   definition_key: You head back out through the door.
+#   You head back out through the door.
+#   (  Func:  new_relocate   )
+#   new_location: <placeInstance graveyard (43a2e404-7acf-4dd5-9523-5f8567605c0a)>
+#   (  Func:  by_cardinal_str   )
+#   cardinal_str: north
+#   loc: <placeInstance graveyard (43a2e404-7acf-4dd5-9523-5f8567605c0a)>
+#   CARDINAL STR: north
+#   (  Func:  set_current   )
+#   loc: <placeInstance graveyard (43a2e404-7acf-4dd5-9523-5f8567605c0a)>
+#   cardinal: <cardinalInstance north graveyard (bae382df-66f4-47c8-8df6-491bf617dac3)>
+#   You're now in the graveyard, facing north.
+#
+#   (  Func:  place_by_name   )
+#   loc_name: graveyard
+#   (  Func:  instances_by_name   )
+#   definition_key: gate
+#   (  Func:  get_item_by_location   )
+#   loc_cardinal: graveyard north
+#   (  Func:  by_cardinal_str   )
+#   cardinal_str: graveyard north
+#   CARDINAL STR: graveyard north
+#   (  Func:  place_by_name   )
+#   loc_name: graveyard
+#   (  Func:  instances_by_name   )
+#   definition_key: gate
+#   (  Func:  instances_by_name   )
+#   definition_key: padlock
+#   (  Func:  get_item_by_location   )
+#   loc_cardinal: graveyard north
+#   (  Func:  by_cardinal_str   )
+#   cardinal_str: graveyard north
+#   CARDINAL STR: graveyard north
+#   (  Func:  place_by_name   )
+#   loc_name: graveyard
+#   (  Func:  instances_by_name   )
+#   definition_key: padlock
+#   (  Func:  instances_by_name   )
+#   definition_key: moss
+#   (  Func:  get_item_by_location   )
+#   loc_cardinal: graveyard east
+#   (  Func:  by_cardinal_str   )
+#   cardinal_str: graveyard east
+#   CARDINAL STR: graveyard east
+#   (  Func:  place_by_name   )
+#   loc_name: graveyard
+#   (  Func:  instances_by_name   )
+#   definition_key: moss
+#   (  Func:  instances_by_name   )
+#   definition_key: glass jar
+#   (  Func:  get_item_by_location   )
+#   loc_cardinal: graveyard east
+#   (  Func:  by_cardinal_str   )
+#   cardinal_str: graveyard east
+#   CARDINAL STR: graveyard east
+#   (  Func:  place_by_name   )
+#   loc_name: graveyard
+#   (  Func:  instances_by_name   )
+#   definition_key: glass jar
+#   (  Func:  instances_by_name   )
+#   definition_key: work shed
+#   (  Func:  get_item_by_location   )
+#   loc_cardinal: graveyard west
+#   (  Func:  by_cardinal_str   )
+#   cardinal_str: graveyard west
+#   CARDINAL STR: graveyard west
+#   (  Func:  place_by_name   )
+#   loc_name: graveyard
+#   (  Func:  instances_by_name   )
+#   definition_key: work shed
+#   You're in a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+#   The entrance gates are to the north. To the east sit a variety of headstones, to the south stands a mausoleum, and to the west is what looks like a work shed of some kind.
+#   (  Func:  option   )
+#
+
+Okay. Had to add a few more logging lines but - it's because I had
+                for noun in noun.transition_objs:
+                    if enter(format_tuple, input_dict, noun=noun):
+                        return
+
+inside of get_transition_noun.
+
+
+So half the time it goes fine and we end up in the shed. The other half, I get kicked out.
+
+When I don't get kicked out, I get this:
+#   This None doesn't lead anywhere
+which is from def enter() when the noun is None.
+So the path is /trying/ to run enter twice, but when I start with verb/dir/loc, it only runs once (and looks successful) because the noun doesn't exist and it navigates by location. In the alternate case, it doubles back on itself because th second 'enter' succeeds because it finds the transition noun.
+
+
+
+Okay so --- how about a trigger subclass. Each event gets trigger instances, and the trigger instances are what hold trigger item, trigger type, trigger state, etc. That sounds actually good.
+
+9.00pm
+Have set up the trigger class. It's still not fully implemented and I need to streamline attribute alignment for items etc, but it works.
+
+Hopefully have fixed the direction/location entry. Still got the issue of it sending me out of the shed immediately once but /think/ I fixed it since then.
