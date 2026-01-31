@@ -52,6 +52,19 @@ class cardinalInstance:
         self.by_placename = {}
         all_cardinals.add(self)
 
+        if loc_dict[self.place.name].get(self.name) and loc_dict[self.place.name][self.name].get("items"):
+            #print(f"{self.place_name} loc has items.")
+            for item in loc_dict[self.place.name][self.name]["items"]:
+                if loc_dict[self.place.name][self.name]["items"][item].get("item_type"):
+                    if "loc_exterior" in loc_dict[self.place.name][self.name]["items"][item]["item_type"]:
+                        if not hasattr(self, "loc_exterior_items"):
+                            self.loc_exterior_items = set()
+                        self.loc_exterior_items.add(item) # TODO should do this a different way, because this doesn't use the instance, only the name.
+                    if "transition" in loc_dict[self.place.name][self.name]["items"][item]["item_type"]:
+                        if not hasattr(self, "transition_objs"):
+                            self.transition_objs = dict()
+                        self.transition_objs[item] = {"enter_location": loc_dict[self.place.name][self.name]["items"][item].get("enter_location"), "exit_to_location": (loc_dict[self.place.name][self.name]["items"][item].get("exit_to_location") if loc_dict[self.place.name][self.name]["items"][item].get("exit_to_location") != self.name else self)}
+
     def __repr__(self):
         return f"<cardinalInstance {self.place_name} ({self.id})>"
 
@@ -139,7 +152,6 @@ class placeRegistry:
                 if cardinal.place != self.currentPlace:
                     self.currentPlace = cardinal.place
                     self.route.append(loc)
-                #print(f"Set self.current to {cardinal}, self.currentPlace to {loc}")
                 return
 
         if loc:
@@ -238,7 +250,6 @@ class placeRegistry:
         elif isinstance(loc, str):
             loc = self.place_by_name(loc)
 
-        #print(f"by cardinal str: cardinal_str: {cardinal_str}, loc: {loc}")
         cardinal_inst = locRegistry.cardinals[loc][cardinal_str]
         return cardinal_inst
 
@@ -312,11 +323,15 @@ def get_loc_descriptions(place=None):
         for place in locRegistry.places:
             #print(f"PLACE IN PLACES : {place}")
             get_descriptions(place)
-    elif place and isinstance(place, placeInstance):
-        get_descriptions(place)
+            return
+    if place and isinstance(place, cardinalInstance):
+        place = place.place
     elif place and isinstance(place, str):
         place - locRegistry.place_by_name(place)
+
+    if place and isinstance(place, placeInstance):
         get_descriptions(place)
+
 
 
 
