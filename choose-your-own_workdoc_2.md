@@ -3193,3 +3193,17 @@ Also it's not printing the right descriptions. It's still taking item descriptio
 Need to formalise breakability/flammability.
 
 Need a scale of damage types/strengths, and relative weaknesses. So you can 'break' a fabric object with a knife, but can't break an iron padlock with one. I want to padlock to be breakable, but with something like a tire iron, not just any old thing. (and equally, the padlock would be able to break something like a glass dome.)
+
+
+7.46am
+Well technically it /works/ in terms of running, but the current trigger setup doesn't actually trigger (ie picking up the map.)
+
+The event is assigned to the key correctly:
+ 'event': <eventInstance reveal_iron_key (2f6a6af0-a493-4e5a-9f4d-3386a2273634, event state: 1>,
+
+ as is the location and the padlock instance.
+
+ The map is also assigned to the right event
+ 'event': <eventInstance reveal_iron_key (2f6a6af0-a493-4e5a-9f4d-3386a2273634, event state: 1>,
+
+So it's likely a trigger failure. Need to check where it fails exactly.

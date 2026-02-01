@@ -51,3 +51,24 @@ Well actually, is there any data to be had from item_defs that /isn't/ in loc_da
 
 ... We already bring registry into get_event_triggers. This shouldn't even be a consideration.
 """
+
+"""
+first run after today's edits:
+
+event name: <eventInstance mermaid_grotto_appears (48f9e55b-8753-4a14-a680-20de3bfa1d4d, event state: 2>, event: None, trigger_check: None
+TRIGGER DICT: {'event': <eventInstance mermaid_grotto_appears (48f9e55b-8753-4a14-a680-20de3bfa1d4d, event state: 2>, 'trigger_model': 'item_trigger', 'trigger_type': 'start_trigger', 'trigger_item': 'ocean crown', 'trigger_item_loc': None, 'trigger_actions': ['item_in_inv'], 'item_flags_on_start': None, 'item_flags_on_end': None}
+event name: <eventInstance reveal_iron_key (2f6a6af0-a493-4e5a-9f4d-3386a2273634, event state: 1>, event: None, trigger_check: None
+TRIGGER DICT: {'event': <eventInstance reveal_iron_key (2f6a6af0-a493-4e5a-9f4d-3386a2273634, event state: 1>, 'trigger_model': 'item_trigger', 'trigger_type': 'end_trigger', 'trigger_item': <ItemInstance local map (32433b65-d183-4068-9822-222de6305711)>, 'trigger_item_loc': <cardinalInstance north work shed (506092bf-53d9-4313-9dbc-47b3544d4399)>, 'trigger_actions': ['item_in_inv'], 'item_flags_on_start': {}, 'item_flags_on_end': None}
+event name: <eventInstance moss_dries (d281bc94-7e3d-4087-a36a-f6c8d863adc4, event state: 2>, event: None, trigger_check: None
+TRIGGER DICT: {'event': <eventInstance moss_dries (d281bc94-7e3d-4087-a36a-f6c8d863adc4, event state: 2>, 'trigger_model': 'item_trigger', 'trigger_type': 'start_trigger', 'trigger_item': <ItemInstance moss (b77efc2b-5cb5-4844-83cc-4943ebf131c2)>, 'trigger_item_loc': <cardinalInstance east graveyard (971bb270-668b-41f0-8e9d-ac8a9bdb582b)>, 'trigger_actions': ['item_in_inv'], 'item_flags_on_start': None, 'item_flags_on_end': None}
+TRIGGER DICT: {'event': <eventInstance moss_dries (d281bc94-7e3d-4087-a36a-f6c8d863adc4, event state: 2>, 'trigger_model': 'item_trigger', 'trigger_type': 'end_trigger', 'trigger_item': 'moss', 'trigger_item_loc': None, 'trigger_actions': ['item_in_inv_continued'], 'item_flags_on_start': None, 'item_flags_on_end': None, 'trigger_constraint': {'time_constraint': {'days': 3}, 'constraint_tracking': {'days': 0}}, 'item_model': 'failure_trigger', 'failure_trigger': {'no_item_restriction': True, 'trigger_item': 'moss', 'trigger': ['item_removed_from_inv']}}
+event name: <eventInstance graveyard_gate_opens (ba8608bb-2e81-4373-843e-61849b09fb45, event state: 1>, event: None, trigger_check: None
+TRIGGER DICT: {'event': <eventInstance graveyard_gate_opens (ba8608bb-2e81-4373-843e-61849b09fb45, event state: 1>, 'trigger_model': 'item_trigger', 'trigger_type': 'end_trigger', 'trigger_item': <ItemInstance padlock (881642b7-ae08-4928-9385-88d2de81dba4)>, 'trigger_item_loc': <cardinalInstance north graveyard (53352177-9121-4125-9f9c-022853d4effc)>, 'trigger_actions': ['item_broken', 'item_unlocked'], 'item_flags_on_start': {'can_pick_up': False, 'requires_key': 'iron key', 'key_is_placed_elsewhere': {'item_in_event': 'reveal_iron_key'}}, 'item_flags_on_end': {'can_pick_up': True}}
+Get event item names: EVENT:: <eventInstance mermaid_grotto_appears (48f9e55b-8753-4a14-a680-20de3bfa1d4d, event state: 2>, type: <class 'eventRegistry.eventInstance'>
+This item does not have an instance: ocean crown (in event mermaid_grotto_appears)
+Get event item names: EVENT:: <eventInstance reveal_iron_key (2f6a6af0-a493-4e5a-9f4d-3386a2273634, event state: 1>, type: <class 'eventRegistry.eventInstance'>
+Get event item names: EVENT:: <eventInstance moss_dries (d281bc94-7e3d-4087-a36a-f6c8d863adc4, event state: 2>, type: <class 'eventRegistry.eventInstance'>
+This item does not have an instance: moss (in event moss_dries)
+Get event item names: EVENT:: <eventInstance graveyard_gate_opens (ba8608bb-2e81-4373-843e-61849b09fb45, event state: 1>, type: <class 'eventRegistry.eventInstance'>
+
+"""

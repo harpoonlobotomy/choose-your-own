@@ -18,34 +18,19 @@
       "item_desc": {},
       "short_desc": "a television and two decent sized windows overlooking the city",
       "long_desc": "Against the wall is a large television, sitting between two decent sized windows overlooking the city. The curtains are drawn.",
-      "items": {
-        "": {
-          "description": null,
-          "is_hidden": false
-        }
-      }
+      "items": {}
     },
     "south": {
       "item_desc": {},
       "short_desc": "a door, likely to a bathroom",
       "long_desc": "There's a door, lightly sun-yellowed. Nondescript; fair to assume it's a bathroom door.",
-      "items": {
-        "": {
-          "description": null,
-          "is_hidden": false
-        }
-      }
+      "items": {}
     },
     "west": {
       "item_desc": {},
       "short_desc": "the door out of the room, likely to the hallway",
       "long_desc": "There's a standard hotel room door, with the fire escape route poster on the back and an empty coat hook.",
-      "items": {
-        "": {
-          "description": null,
-          "is_hidden": false
-        }
-      }
+      "items": {}
     },
     "descrip": "You're in a 'budget' PPPhotel roomEEE; small but pleasant enough, at least to sleep in. The sound of traffic tells you you're a couple of floors up at least, and the carpet is well-trod"
   },
@@ -136,45 +121,25 @@
       "item_desc": {},
       "short_desc": "The",
       "long_desc": "You",
-      "items": {
-        "": {
-          "description": null,
-          "is_hidden": false
-        }
-      }
+      "items": {}
     },
     "east": {
       "item_desc": {},
       "short_desc": "a",
       "long_desc": "You",
-      "items": {
-        "": {
-          "description": null,
-          "is_hidden": false
-        }
-      }
+      "items": {}
     },
     "south": {
       "item_desc": {},
       "short_desc": "a",
       "long_desc": "There",
-      "items": {
-        "": {
-          "description": null,
-          "is_hidden": false
-        }
-      }
+      "items": {}
     },
     "west": {
       "item_desc": {},
       "short_desc": "what",
       "long_desc": "There",
-      "items": {
-        "": {
-          "description": null,
-          "is_hidden": false
-        }
-      }
+      "items": {}
     },
     "descrip": "PPPPile of rocksEEE."
   },
@@ -184,34 +149,19 @@
       "item_desc": {},
       "short_desc": "A wooden shrine, with aged fabric flags and various trinkets",
       "long_desc": "The shrine itself is fragile looking, with candles still not burnt down entirely.",
-      "items": {
-        "": {
-          "description": null,
-          "is_hidden": false
-        }
-      }
+      "items": {}
     },
     "east": {
       "item_desc": {},
       "short_desc": "a small 'interior' wall of the underhang",
       "long_desc": "The underhang's east wall is damp with spray from the waterfall outside, but otherwise unremarkable",
-      "items": {
-        "": {
-          "description": null,
-          "is_hidden": false
-        }
-      }
+      "items": {}
     },
     "south": {
       "item_desc": {},
       "short_desc": "open air",
       "long_desc": "The sky and fields beyond; nothing much to do here except leave.",
-      "items": {
-        "": {
-          "description": null,
-          "is_hidden": false
-        }
-      }
+      "items": {}
     },
     "descrip": "Sheltered from the rain you see a small PPPshrineEEE, built into the underhang of a cliff face."
   },
@@ -221,45 +171,25 @@
       "item_desc": {},
       "short_desc": "",
       "long_desc": "",
-      "items": {
-        "": {
-          "description": "",
-          "is_hidden": false
-        }
-      }
+      "items": {}
     },
     "east": {
       "item_desc": {},
       "short_desc": "",
       "long_desc": "",
-      "items": {
-        "": {
-          "description": "",
-          "is_hidden": false
-        }
-      }
+      "items": {}
     },
     "south": {
       "item_desc": {},
       "short_desc": "",
       "long_desc": "",
-      "items": {
-        "": {
-          "description": "",
-          "is_hidden": false
-        }
-      }
+      "items": {}
     },
     "west": {
       "item_desc": {},
       "short_desc": "",
       "long_desc": "",
-      "items": {
-        "": {
-          "description": "",
-          "is_hidden": false
-        }
-      }
+      "items": {}
     },
     "descrip": "It's a PPPchurchEEE."
   },
