@@ -2,11 +2,10 @@
 ### Interface between item_actions and the verbs.
 
 #import time
-from asyncio import events
 from calendar import c
 from time import sleep
 from logger import logging_fn, traceback_fn
-from env_data import cardinalInstance, locRegistry as loc, placeInstance, placeRegistry
+from env_data import cardinalInstance, locRegistry as loc, placeInstance
 from interactions import item_interactions
 from interactions.player_movement import new_relocate, turn_around
 from itemRegistry import ItemInstance, registry
@@ -53,9 +52,7 @@ def get_current_loc():
 def set_noun_attr(*values, noun):
     end_trigger=None
     trigger_done=False
-    ##check noun for event ties before applying attr changes.
     if hasattr(noun, "event") and noun.event != None:
-        #print(f"Noun {noun} has event ties. Do things here.")
         from eventRegistry import events
 
         event = events.event_by_name(noun.event)
@@ -73,7 +70,6 @@ def set_noun_attr(*values, noun):
                                     pass#print(f"[Event trigger: {noun}, {event}, {end_trigger}:{item}/{val}]")
                                 elif end_trigger and "item_unlocked" in end_trigger: ## need a dict or something that converts trigger-name to relevant item/val requirements.
                                     if item == "is_locked" and val == False:
-                                        #print(f"[Event trigger: lock unlocked: {noun}, {event}, {end_trigger}:{item}/{val}]")
                                         events.end_event(event)
                                         trigger_done=True
 
@@ -109,7 +105,6 @@ def get_transition_noun(noun, format_tuple, input_dict):
     local_items_list = registry.get_item_by_location(loc.current)
     if hasattr(noun, "is_loc_exterior"):
         if hasattr(noun, "transition_objs"):
-            #print(f"noun {noun} is loc ext has transition objects: {noun.transition_objs}")
             if isinstance(noun.transition_objs, ItemInstance):
                 noun = noun.transition_objs
                 return noun
@@ -121,15 +116,10 @@ def get_transition_noun(noun, format_tuple, input_dict):
                 else:
                     print(f"More than one transition object for {noun}. Can't deal with this yet. Exiting.")
                     exit()
-                    #if enter(format_tuple, input_dict, noun=noun):
-                    #    return
     if not noun:
-        #print("No noun found, finding from location.")
         if get_location(input_dict):
             location = get_location(input_dict)
-            #print(f"Location in input_dict: {location}")
             if hasattr(location, "entry_item"):
-                #print(f"location has transition objects: {location.entry_item}")
                 loc_item = location.entry_item
                 if isinstance(loc_item, str):
                     for loc_item in local_items_list:
@@ -328,10 +318,8 @@ def get_location(input_dict:dict) -> ItemInstance:
 def get_verb(input_dict:dict) -> ItemInstance:
     logging_fn()
     if input_dict[0].get("verb"):
-        #print(f"{input_dict[0]} is a verb, confirmed in get_verb")
         return list(input_dict[0].values())[0]["instance"] # works as long as verb is always first
 
-    #print(f"get_verb failed to find the verb instance: {input_dict}")
 
 def get_noun(input_dict:dict, x_noun:int=None, get_str=False) -> ItemInstance:
     logging_fn()
@@ -478,20 +466,13 @@ def turn_cardinal(prospective_cardinal, turning = True):
             if test:
                 prospective_cardinal = test
 
-    #if isinstance(prospective_cardinal, str):
-    #    prospective_cardinal = loc.by_cardinal_str(prospective_cardinal)
-
     from interactions.player_movement import check_loc_card
-    #print(f"PROSPECTIVE CARDINAL: {prospective_cardinal}")
     to_loc, to_card, is_same_loc, is_same_card = check_loc_card(location=None, cardinal=prospective_cardinal)
-    #bool_test, _, _ = is_loc_current_loc(None, prospective_cardinal)
     from env_data import get_loc_descriptions
 
     if not is_same_card:
     #if not bool_test:
-        #print(f"Is not the same card\nto_card.cardinal_data: {to_card.cardinal_data}")
         if not to_card.cardinal_data:
-            #print("to_card has no cardinal_data")
             if hasattr(to_card.place, "missing_cardinal"):
                 print(assign_colour(to_card.place.missing_cardinal, "event_msg"))
 
@@ -506,12 +487,6 @@ def turn_cardinal(prospective_cardinal, turning = True):
         else:
             turn_around(to_card)
     else:
-        #if loc.current.cardinal_data:
-        #    print("loc current cardinal data is here.")
-        #    get_loc_descriptions(place=loc.currentPlace)
-        #    print(loc.current)
-        #    print(loc.current.description)
-        #    return
         if turning:
             print(f"You're already facing the {assign_colour(loc.current, card_type="ern_name")}.\n")
         else:
@@ -580,7 +555,7 @@ def go(format_tuple, input_dict): ## move to a location/cardinal/inside
             if location_entry["instance"] == loc.currentPlace:
                 if input_dict[0].get("verb") and input_dict[0]["verb"]["str_name"] == "leave":
                     if hasattr(loc.current.place, "entry_item"):
-                        print(f"loc.current has entry item: {loc.current.place.entry_item}")
+                        #print(f"loc.current has entry item: {loc.current.place.entry_item}")
                         if enter(format_tuple, input_dict, noun=loc.current.place.entry_item):
                             return
 
@@ -594,18 +569,18 @@ def go(format_tuple, input_dict): ## move to a location/cardinal/inside
                     return
 
             if hasattr(location_entry["instance"], "entry_item"):
-                print(location_entry["instance"].entry_item)
+                #print(location_entry["instance"].entry_item)
                 if not get_noun(input_dict):
                     input_dict[len(format_tuple)] = {}
                     input_dict[len(format_tuple)]["noun"] = ({"instance": location_entry["instance"].entry_item, "str_name": location_entry["instance"].entry_item.name})
-                    print(f"input_dict: {input_dict}")
+                    #print(f"input_dict: {input_dict}")
 
                 #for cardinal in location_entry["instance"].cardinals:
                 #    card = location_entry["instance"].cardinals.get(cardinal)
                 #    if hasattr(card, "loc_exterior_items") or hasattr(card, "transition_objs"):
                 #        new_relocate(new_cardinal=card)
                 #        return
-                print("enter location via go")
+                #print("enter location via go")
                 enter(format_tuple, input_dict) # Anything that needs you to go through a door goes via enter.
                 return
             new_relocate(new_location=location_entry["instance"])
@@ -784,6 +759,7 @@ def clean(format_tuple, input_dict):
 def burn(format_tuple, input_dict):
     logging_fn()
     print("burn FUNCTION")
+
     # for all burn items = require fire source, noun1 must be flammable.
     # verb_noun == burn item
     # verb_noun_sem_noun == noun2 must be flammable
@@ -815,6 +791,21 @@ def burn(format_tuple, input_dict):
 def break_item(format_tuple, input_dict):
     logging_fn()
     print("break_item FUNCTION")
+
+    noun = get_noun(input_dict)
+    noun_2 = get_noun(input_dict, 2)
+
+    if hasattr(noun, "can_break"):
+        if not noun_2:
+            print(f"What do you want to break the {assign_colour(noun)} with?")
+
+    if noun_2:
+        dir_or_sem = get_dir_or_sem_if_singular(input_dict)
+        if dir_or_sem in ("with", "using", "on"):
+            if hasattr(noun_2, "can_break"):
+                print("Chance to break either object. Need to implement a breakability scale, so I can test which item breaks. Need to formalise the break/flammable setup overall.")
+
+
     # verb_noun == break item (if it's fragile enough)
     # verb_noun_sem_noun == break item with item2
     pass
@@ -825,15 +816,9 @@ def break_item(format_tuple, input_dict):
 def check_key_lock_pairing(noun_1, noun_2):
     logging_fn()
     if hasattr(noun_1, "is_key"):
-        #print(f"{noun_1} is_key")
         if hasattr(noun_2, "requires_key"):
-            #print(f"{noun_2} requires_key")
-            #if isinstance(noun_2.requires_key, str):
             if noun_1 == noun_2.requires_key:
-                #print(f"{noun_1.name} is the key required by {noun_2.name}")
                 return 1
-            #else:
-                #print(f"{noun_1.name} is not the key required by {noun_2.name}: {noun_2.requires_key}")
     return 0
 
 
@@ -855,7 +840,7 @@ def lock_unlock(format_tuple, input_dict, do_open=False):
             noun_2 = get_noun(input_dict, 2)
             accessible_2, _ = can_interact(noun_2)
             if accessible_1 and accessible_2:
-                #print(f"{noun_1} and {noun_2} are both accessible.")
+                #rint(f"{noun_1} and {noun_2} are both accessible.")
                 success = check_key_lock_pairing(noun_1, noun_2)
                 if success:
                     #print(f"Key {noun_1} is accessible and will open lock {noun_2}")
@@ -885,8 +870,9 @@ def lock_unlock(format_tuple, input_dict, do_open=False):
                         return
 
                 else:
-                    print(f"{noun_1} and {noun_2} are not a pairing. Key: {key}, lock: {lock}")
-
+                    print(f"You can't open the {assign_colour(noun_1)} with {assign_colour(noun_2)}")
+                    #print(f"{noun_1} and {noun_2} are not a pairing. Key: {key}, lock: {lock}")
+                    #print(f"VARS: {vars(noun_1)}\n Noun 2 vars: {vars(noun_2)}")
 
             else:
                 print(f"{noun_1} and/or {noun_2} are not accessible: 1: {accessible_1}, 2: {accessible_2}")
@@ -1277,7 +1263,7 @@ def take(format_tuple, input_dict):
     if added_to_inv:
         #print(f"{assign_colour(noun_inst)} is now in your inventory.") # original
         print(f"The {assign_colour(noun_inst)} {is_plural_noun(noun_inst)} now in your inventory.")
-        events.is_event_trigger(noun_inst, noun_loc)
+        events.is_event_trigger(noun_inst, noun_loc, reason = "added_to_inv")
         return
 
 def put(format_tuple, input_dict, location=None):
@@ -1561,7 +1547,7 @@ def router(viable_format, inst_dict):
         for data in v.values():
             quick_list.append(data["str_name"])
     MOVE_UP = "\033[A"
-    #print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {" ".join(quick_list)}  ]]\033[0m\n') ## TODO put this back on when the testing's done.
+    print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {" ".join(quick_list)}  ]]\033[0m\n') ## TODO put this back on when the testing's done.
     #print(f"Dict for output: {inst_dict}")
 
     for data in inst_dict.values():

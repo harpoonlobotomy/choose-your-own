@@ -3167,3 +3167,29 @@ Okay so --- how about a trigger subclass. Each event gets trigger instances, and
 Have set up the trigger class. It's still not fully implemented and I need to streamline attribute alignment for items etc, but it works.
 
 Hopefully have fixed the direction/location entry. Still got the issue of it sending me out of the shed immediately once but /think/ I fixed it since then.
+
+10.00pm
+
+unlock padlock with key
+<ItemInstance padlock (648656a5-05bb-40e3-9f17-a81977a9c65c)> and <ItemInstance iron key (510a67a0-9057-4175-827e-7a96819358ff)> are not a pairing. Key: None, lock: None
+Cannot process {0: {'verb': {'instance': <verbInstance unlock (aeb869ea-7269-4ce0-8e09-c41247409c07)>, 'str_name': 'unlock'}}, 1: {'noun': {'instance': <ItemInstance padlock (648656a5-05bb-40e3-9f17-a81977a9c65c)>, 'str_name': 'padlock'}}, 2: {'sem': {'instance': None, 'str_name': 'with'}}, 3: {'noun': {'instance': <ItemInstance iron key (510a67a0-9057-4175-827e-7a96819358ff)>, 'str_name': 'iron key'}}} in def lock() End of function, unresolved. (Function not yet written, should use open_close variant instead)
+
+For some reason, didn't find the key correctly. I thought I fixed it before, hopefully I didn't re-break it messing around with the commit earlier.
+
+10.24pm
+Dammit I did go backwards some.
+
+[[  look at wooden door  ]]
+
+You can't see that right now.
+
+Can't see the door from inside. Fuuuuuck.
+
+Also it's not printing the right descriptions. It's still taking item descriptions from loc_data when it should be taking it from item_defs where possible, when describing the item itself. F me.
+
+10.46pm Well I couldn't figure out exactly where it was overwriting the location descriptions. For now have just removed the description from the [loc][card][item] that I want it to use the item_defs description for, which I guess is just a better way of doing it. use item_desc for location descriptions, loc_data [item][description] for localised item descriptions, and item_defs for generic item descriptions. Makes perfect sense.
+
+1.23am 1/2/26
+Need to formalise breakability/flammability.
+
+Need a scale of damage types/strengths, and relative weaknesses. So you can 'break' a fabric object with a knife, but can't break an iron padlock with one. I want to padlock to be breakable, but with something like a tire iron, not just any old thing. (and equally, the padlock would be able to break something like a glass dome.)

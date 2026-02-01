@@ -3,7 +3,7 @@
         "starts_current":true,
         "end_trigger":
         {"item_trigger": {
-            "trigger_name": "local map", "trigger_location": "north work shed", "trigger": ["item_in_inv"], "flags_on_event_start": {}
+            "trigger_item": "local map", "trigger_location": "north work shed", "trigger": ["item_in_inv"], "flags_on_event_start": {}
         }
         },
         "effects": {"hide_item": {"item_name": "iron key", "item_loc": "north work shed"}},
@@ -14,7 +14,7 @@
     "starts_current":true,
     "end_trigger":
         {"item_trigger": {
-            "trigger_name": "padlock",
+            "trigger_item": "padlock",
             "trigger_location": "north graveyard",
             "trigger": ["item_broken", "item_unlocked"],
             "flags_on_event_start": {
@@ -44,8 +44,37 @@
   "mermaid_grotto_appears": {
     "start_trigger": {
       "item_trigger":{
-          "trigger_name": "ocean crown", "trigger_location": null, "trigger": ["item_in_inv"]
+          "trigger_item": "ocean crown", "trigger_location": null,
+          "trigger": ["item_in_inv"]
       }
     }
+  },
+  "moss_dries": {
+    "start_trigger": {
+        "item_trigger": {
+            "trigger_item": "moss",
+            "trigger_location": "east graveyard",
+            "trigger": ["item_in_inv"]
+        }
+    },
+    "end_trigger":{
+        "item_trigger": {
+            "no_item_restriction": true,
+            "trigger_item": "moss",
+            "trigger": ["item_in_inv_continued"],
+            "trigger_constraint": {
+                "time_constraint": {"days": 3},
+                "constraint_tracking": {"days": 0}
+            }
+        },
+        "failure_trigger": {
+            "no_item_restriction": true,
+            "trigger_item": "moss",
+            "trigger": ["item_removed_from_inv"]
+            }
+        },
+    "can_repeat":
+        {"repeats": "until_success"}
+
   }
 }

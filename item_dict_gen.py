@@ -227,8 +227,9 @@ def get_items_from_card(loc, cardinal, loc_data):
             item_desc = desc_items[item].get(item)
             item_attr = other_items[item].get(item)
 
-            if item_desc:
+            if item_desc and not item_attr.get("description"):
                 item_attr["description"] = item_desc
+
             loc_items_dict[loc][cardinal][item] = item_attr
         else:
             loc_items_dict[loc][cardinal][item] = other_items[item].get(item)

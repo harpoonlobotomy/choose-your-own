@@ -685,7 +685,6 @@ class itemRegistry:
 
         if isinstance(loc_cardinal, cardinalInstance):
             items_at_cardinal = self.by_location.get(loc_cardinal)
-            #print(f"items_at_cardinal: {items_at_cardinal}, type: {type(items_at_cardinal)}")
             if items_at_cardinal:
                 return items_at_cardinal
 
@@ -697,11 +696,9 @@ class itemRegistry:
             if isinstance(definition_key, list):
                 definition_key = definition_key[0]
         if self.by_name.get(definition_key):
-            #print(f"self.by_name.get(definition_key): {self.by_name.get(definition_key)}")
             return self.by_name.get(definition_key)
 
         elif self.by_alt_names.get(definition_key):
-            #print(f"self.by_alt_names.get(definition_key): {self.by_alt_names.get(definition_key)}")
             return self.by_name.get(self.by_alt_names.get(definition_key))
 
         #print(f"self.by_alt_names: {self.by_alt_names}")
@@ -715,16 +712,16 @@ class itemRegistry:
         logging_fn()
         return self.by_category.get(category, set())
 
+
     # -------------------------
     # Helpers
     # -------------------------
-
 
     def random_from(self, selection:int|str)->list:
         logging_fn()
         import random
         loot_table = {
-            1: "minor_loot",   ## Keeping this here temporarily until I update it properly.
+            1: "minor_loot",
             2: "medium_loot",
             3: "great_loot",
             4: "special_loot"
@@ -735,7 +732,7 @@ class itemRegistry:
             category = loot_table[selection]
         else:
             category = selection
-        items = list(self.by_category.get(category, set())) # should this still be a list?
+        items = list(self.by_category.get(category, set()))
 
         return random.choice(items)# if items else "No Items (RANDOM_FROM)"
 
@@ -771,8 +768,6 @@ class itemRegistry:
         if description:
             return description
 
-
-
         return "You see nothing special."
 
     def nicename(self, inst: ItemInstance):
@@ -780,7 +775,6 @@ class itemRegistry:
         if "container" in inst.flags:
             children = self.instances_by_container(inst)
             if not children:
-                #print(f"no children present. name: {inst.name_children_removed}")
                 return inst.name_children_removed
 
         if not inst:
@@ -799,7 +793,7 @@ class itemRegistry:
 
 
     def get_duplicate_details(self, inst, inventory_list):
-        #logging_fn()
+        logging_fn()
 
         if isinstance(inst, ItemInstance):
             items = self.instances_by_name(inst.name)
@@ -823,7 +817,7 @@ class itemRegistry:
 
         return inst.name
 
-    def pick_up(self, inst:str|ItemInstance, inventory_list=None, location=None, starting_objects=False) -> tuple[ItemInstance, list]: ## location == cardinalInstance
+    def pick_up(self, inst:str|ItemInstance, inventory_list=None, location=None, starting_objects=False) -> tuple[ItemInstance, list]:
         logging_fn()
 
         if isinstance(inst, set) or isinstance(inst, list):
@@ -861,17 +855,6 @@ class itemRegistry:
             print(f"inst.flags: {inst.flags}")
             return None, inventory_list
 
-        #if not starting_objects:
-        #    local_items = self.get_item_by_location(location)
-        #    if local_items:
-        #        if inst not in local_items:
-        #            print(f"[[Cannot pick up {inst.name} (not at current location)]]")
-        #            return None, inventory_list
-        #    else:
-        #        print(f"[[Cannot pick up {inst.name} (not at current location) (no items at {loc.current.place_name})]]")
-        #        return None, inventory_list
-
-
         if inst in inventory_list: ## TODO: Add a check so this only applies to items that can be duplicated. Though really those that can't should not still remain in the world when picked up... so the problem lies in the original pick up in that case, not the dupe.
             #print("Item already in inventory. Creating new...") ## Not sure about this.
             attr = self.item_defs.get(inst.name)
@@ -887,19 +870,17 @@ class itemRegistry:
 
     def drop(self, inst: ItemInstance, inventory_list):
         logging_fn()
-        #print("inventory_list")
         if inst not in inventory_list:
             return None, inventory_list
 
         inventory_list.remove(inst)
-        #print("inventory_list")
         self.move_item(inst, loc.current)
         return inst, inventory_list
 
 
     def complete_location_dict(self):
-
         logging_fn()
+
         from env_data import locRegistry as loc
         for placeInstance in loc.places:
             for cardinal in loc.cardinals[placeInstance]:
@@ -918,18 +899,15 @@ class itemRegistry:
     def add_plural_words(self, plural_words_dict):
         self.plural_words = plural_words_dict
 
-# setup
 registry = itemRegistry()
+
 
 if __name__ == "__main__":
 
     from env_data import initialise_placeRegistry
-
     initialise_placeRegistry()
 
 def use_generated_items(input_=None):
-
-
     import json
 
     json_to_edit = "dynamic_data/generated_items.json"
@@ -984,10 +962,8 @@ def use_generated_items(input_=None):
 def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, partial_dict=None)->str|ItemInstance:
 
     if partial_dict:
-        #print(f"partial_dict before: {partial_dict}")
         if partial_dict.get(item_name):
             partial_dict = partial_dict[item_name]
-        #print(f"partial_dict after: {partial_dict}")
 
     new_item_dict = {}
 
@@ -1004,7 +980,6 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, part
     if not isinstance(input_str, str):
         print(f"new_item_from_str requires a string input, not {type(input_str)}")
         return
-
 
     if " " in input_str.strip():
         input_str = input_str.replace(",", "")
@@ -1049,10 +1024,8 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, part
 
     new_item_dict["exceptions"] = {"starting_location": loc_cardinal}
 
-    #print(f"new_item_from_str: \n {new_item_dict}, {item_name}\n\n")
     inst = registry.init_single(item_name, new_item_dict)
     all_item_names_generated.append((inst, "new_item_from_str"))
-    #print(f"Inst after self.init_items(): {inst}, type: {type(inst)}")
     registry.instances.add(inst)
     registry.temp_items.add(inst)
 
@@ -1062,13 +1035,9 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, part
 
 def apply_loc_data_to_item(item, item_data, loc_data):
 
-    #print(f"\n\nApplying loc data to item: {item}, item data: ``{item_data}``, loc data: ``{loc_data}``")
-
     if loc_data:
         for field in loc_data:
-            #print(f"field: {field}, entry: {loc_data[field]}")
             if field == item:
-                #print(f"FIELD: {field}")
                 for attr in loc_data[field]:
                     if attr == item:
                         continue
@@ -1114,18 +1083,13 @@ def get_loc_items(loc=None, cardinal=None):
     from env_data import locRegistry
 
     def get_cardinal_items(loc, cardinal):
-
         name_to_inst_tmp = {}
 
         def from_single_cardinal(loc, cardinal, name_to_inst_tmp):
-            #print(f"name_to_inst_tmp: {name_to_inst_tmp}")
-
             if not loc_dict.get(loc.lower()):
-                #print(f"Location {loc} not in env_data.")
                 return name_to_inst_tmp
 
             def create_base_items(loc=None, cardinal=None, loc_data={}):
-
                 matched = {}
 
                 if loc == None:
@@ -1134,23 +1098,17 @@ def get_loc_items(loc=None, cardinal=None):
                     cardinal = locRegistry.current
                 card_inst = locRegistry.by_cardinal_str(cardinal, loc)
 
-                 # may need to remove later if in a container, but do this for now by default.
-
                 if loc_data.get("item_desc"):
                     for item in loc_data["item_desc"]:
                         if item == None or item == "" or item in excluded_itemnames:
                             continue
                         item_data = generator.item_defs.get(item)
-                        if not item_data:
-                            print(f"Item {item} not in generator? : {item_data}")
-                            print("generator.item_defs: ", generator.item_defs, "\n\n")
-                        if not item_data["description"]: ## only overwrite the item description if there isn't one written. Use location-descrip in location name, but item descrip in item descriptions. This works for now, might need to change it later. Not sure.
-                            item_data["description"] = loc_data["item_desc"].get(item)
+                        if item_data:
+                            if not item_data["description"]: ## only overwrite the item description if there isn't one written. Use location-descrip in location name, but item descrip in item descriptions. This works for now, might need to change it later. Not sure.
+                                print(f"No item data description for {item}")
+                                item_data["description"] = loc_data["item_desc"].get(item)
                         item_data["starting_location"] = card_inst
-                        inst = apply_loc_data_to_item(item, item_data, loc_data["items"].get(item)) # maybe this should be inside an init func. Or maybe not.
-                        #print(f"GENERATED INST: {inst}")
-
-
+                        apply_loc_data_to_item(item, item_data, loc_data["items"].get(item))
 
                 if loc_data.get("items"):
                     for item in loc_data["items"]:
@@ -1165,14 +1123,10 @@ def get_loc_items(loc=None, cardinal=None):
 
                         item_data = generator.item_defs.get(item)
                         item_data["starting_location"] = card_inst
-                        inst = apply_loc_data_to_item(item, item_data, loc_data["items"])
-                        ### NOTE: Above inits the instance.
-                        #print(f"GENERATED INST: {inst}")
-
+                        apply_loc_data_to_item(item, item_data, loc_data["items"])
 
             if loc_dict[loc.lower()].get(cardinal):
                 if loc_dict[loc.lower()][cardinal].get("item_desc") or loc_dict[loc.lower()][cardinal].get("items"):
-
                     create_base_items(loc.lower(), cardinal, loc_dict[loc.lower()][cardinal])
 
             return name_to_inst_tmp
@@ -1195,18 +1149,15 @@ def get_loc_items(loc=None, cardinal=None):
 
     registry.clean_relationships()
 
-    if registry.new_parents and registry.new_parents != None: # in case something slipped by, this should never be needed though.
+    if registry.new_parents and registry.new_parents != None:
         registry.generate_children_for_parent()
 
 def initialise_itemRegistry():
 
     registry.complete_location_dict()
-    #from env_data import initialise_placeRegistry
-    #initialise_placeRegistry()
-    #     ***************************************
+
     from item_dict_gen import init_item_dict
     init_item_dict()
-### NOTE: Need to cull a heap from itemReg, because it no longer needs to access the item def JSONs and build the item defs itself. What it does need to do is go through loc_data and create the required instances, using the item defs built by item_dict_gen. That's all it needs to focus on. Getting those relationships right and /only generating the instances it needs to/.
 
     get_loc_items()
 
@@ -1214,19 +1165,13 @@ def initialise_itemRegistry():
 
     for item_name in registry.item_defs.keys():
         if len(item_name.split()) > 1:
-            #printing.print_blue(f"split name: {item_name}")
             plural_word_dict[item_name] = tuple(item_name.split())
 
     for obj in registry.instances:
         if hasattr(obj, "is_loc_exterior"):
-            #print(f"obj with is_loc_exterior: {obj}")
             location = loc.place_by_name(obj.name)
-            #print(f"location:: {location}")
-            #print(f"loc vars: {vars(location)}")
             if hasattr(location, "entry_item"):
-                #print(f"loc has objects: {location.entry_item}")
                 obj.transition_objs.add(location.entry_item)
-
 
     registry.add_plural_words(plural_word_dict)
 
