@@ -3207,3 +3207,18 @@ The event is assigned to the key correctly:
  'event': <eventInstance reveal_iron_key (2f6a6af0-a493-4e5a-9f4d-3386a2273634, event state: 1>,
 
 So it's likely a trigger failure. Need to check where it fails exactly.
+
+9.39am
+Had a break for an hour or so. Back to testing for a little bit now.
+
+Added some prints to def is_event_trigger()
+#   The local map is now in your inventory.
+#   start of event_trigger:
+#   noun inst: <ItemInstance local map (64a6944e-45d8-45cf-92d4-def71b1bc3cc)>, noun_loc: <cardinalInstance north work shed (160c01fa-9fff-4828-b2b8-67839ca0a101)>, reason: item_in_inv.
+#   Events.no_item_restriction: {'moss': {<eventInstance moss_dries (c8a2a57c-0899-4bbc-95c9-be7c2e35802c, event state: 2>}}
+
+So, only moss is in item restrictions. That's correct, the map (what I'm looking for) isn't in that group.
+
+Oh ffs. I had a != instead of a ==.
+
+Well now it gets into def check_triggers(), but doesn't get any further. Still, it's something.

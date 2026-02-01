@@ -50,30 +50,47 @@ def get_current_loc():
     return location, cardinal
 
 def set_noun_attr(*values, noun):
-    end_trigger=None
+    logging_fn()
+
+    trigger_actions=None
     trigger_done=False
-    if hasattr(noun, "event") and noun.event != None:
+
+    print(f"Values: {values}")
+    print(f"Noun: {noun}")
+    print(f"noun.vars: {vars(noun)}")
+    print(f"Noun.event:")
+    print(noun.event)
+    print("^^ noun event ^^ ")
+    if hasattr(noun, "event") and getattr(noun, "event"):
+        event = getattr(noun, "event")
+        print(f"event = getattr(noun, 'event'): {event} ")
+        print(f"Has event: {event}")
         from eventRegistry import events
 
-        event = events.event_by_name(noun.event)
+        #event = events.event_by_name(noun.event) ## this needs to change...
+        print(f"Event by name: {event}")
         if event:
-            #print(f"EVENT VARS: {vars(event)}")
+            print(f"EVENT VARS: {vars(event)}")
             if event.end_triggers:
                 for trigger in event.end_triggers:
                     if trigger.is_item_trigger:
                         if trigger.item_inst == noun:
-                            end_trigger = trigger.triggers
+                            trigger_actions = trigger.triggers
+                            print(f"trigger_actions: {trigger_actions}")
 
                             for item_val in values:
+                                print(f"Values: {values}")
+                                print(f"item_val in values: {item_val}")
                                 item, val = item_val
-                                if end_trigger and item in end_trigger:
+                                print(f"item: {item}, val: {val}")
+                                if trigger_actions and item in trigger_actions:
                                     pass#print(f"[Event trigger: {noun}, {event}, {end_trigger}:{item}/{val}]")
-                                elif end_trigger and "item_unlocked" in end_trigger: ## need a dict or something that converts trigger-name to relevant item/val requirements.
+                                elif trigger_actions and "item_unlocked" in trigger_actions: ## need a dict or something that converts trigger-name to relevant item/val requirements.
                                     if item == "is_locked" and val == False:
                                         events.end_event(event)
                                         trigger_done=True
 
-                                elif end_trigger and "item_in_inv" in end_trigger:
+                                elif trigger_actions and "item_in_inv" in trigger_actions:
                                     from set_up_game import game
                                     if noun in game.inventory:
                                         events.end_event(event)
@@ -1263,7 +1280,7 @@ def take(format_tuple, input_dict):
     if added_to_inv:
         #print(f"{assign_colour(noun_inst)} is now in your inventory.") # original
         print(f"The {assign_colour(noun_inst)} {is_plural_noun(noun_inst)} now in your inventory.")
-        events.is_event_trigger(noun_inst, noun_loc, reason = "added_to_inv")
+        events.is_event_trigger(noun_inst, noun_loc, reason = "item_in_inv")
         return
 
 def put(format_tuple, input_dict, location=None):

@@ -656,35 +656,46 @@ class eventRegistry:
     def is_event_trigger(self, noun_inst, noun_loc, reason = None):
         logging_fn()
 
+        print(f"start of event_trigger:\nnoun inst: {noun_inst}, noun_loc: {noun_loc}, reason: {reason}.")
         def check_triggers(event, noun, reason):
+            print(f"start of check_triggers: event: {event}, noun: {noun}, reason: {reason}")
     # Reason == str containing the key phrase of the trig.trigger. eg 'added_to_inv'
             if event.end_triggers:
+                print(f"event.end_triggers: {event.end_triggers}")
                 for trig in event.end_triggers:
+                    print(f"For trig in event.end_triggers: {trig}")
+                    print(f"VARS: {vars(trig)}")
                     if hasattr(trig, "constraint_tracking"):
                         print("Whether the event ends or not depends on this constraint. Maybe it should be checked earlier, I feel like I do this check in item_interactions. Needs to be one or the other.")
                         exit()
                     #print(f"TRIG: {trig}, vars: {vars(trig)}")
                     if trig.is_item_trigger:
-                        if trig.item_inst == noun_inst:
+                        print("trig is item trigger")
+                        if trig.item_inst == noun:
+                            print("item inst == noun")
                             if reason in trig.triggers:
                                 if trig.item_inst_loc and trig.item_inst_loc != noun_loc:
                                     continue # fail if the fail should have a location but doesn't. Doesn't apply to any current ones, but if you have to read a book under a specific tree, this would apply.
 
                                 self.end_event(event, trig, noun_loc)
                                 break
+                        else:
+                            print(f"item inst {trig.item_inst} =! noun {noun}")
 #events.no_item_restriction[self.item_inst.name].add(event) # eventsRegistry holds instance name to event (this instance name gets managed by this event)
 #event.no_item_restriction[self.item_inst.name].add(self.item_inst) #the eventInstance holds (this item name goes to these itemInstances)
-
+        print(f"Events.no_item_restriction: {events.no_item_restriction}")
         if events.no_item_restriction.get(noun_inst.name):
+            print(f"events.no_item_restriction gets noun_inst.name: {noun_inst.name}")
             existing_event = False
             event_name = None
             for event in events.no_item_restriction[noun_inst.name]:
+                print(f"event in no_item_rest: {event}")
                 event_name = event.name # assume only one event per name, will work for now.
                 if event.no_item_restriction[noun_inst.name] == noun_inst:
                     existing_event = True
                     print(f"Item is part of an existing event: {event}")
                     print("Do anything involving item triggers here (eg if dropping it fails the event, that will happen here.)")
-                    check_triggers(event, noun=noun_inst)
+                    check_triggers(event, noun=noun_inst, reason=reason)
                     return
 
             if not existing_event:
@@ -695,10 +706,13 @@ class eventRegistry:
                 print(f"Event has now been created [{event}]. No need to check for triggers as no event will have an event start and finish in the same item interaction. I assume.")
                 return
 
+        print(f"events.items_to_events: {events.items_to_events}")
         if events.items_to_events.get(noun_inst):
+            print(f"noun inst is in items_to_events: {events.items_to_events.get(noun_inst)}")
             event = events.items_to_events[noun_inst]
-            if event.state != 1:
-                check_triggers(event, reason, noun_inst)
+            print(f"Event: {event}")
+            if event.state == 1:
+                check_triggers(event, noun_inst, reason)
 
             #pausing that for now, it seems far too messy.
 

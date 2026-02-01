@@ -797,7 +797,7 @@
     "is_vertical_surface": true,
     "can_examine": false,
     "breakable": false,
-    "description": "a simple shed, with wood panelled walls"
+    "description": "a simple shed, with wood panelled walls and a simple wooden door."
   },
   "wooden door": {
     "alt_names": ["shed doorway", "shed door"],
