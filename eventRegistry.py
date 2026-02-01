@@ -37,6 +37,30 @@ event_dict = load_json()
 
 event_effects = ["hold_item", "lock_item", "hide_item", "limit_travel"]
 
+class timedEvents:
+
+    def __init__(self, name, attr):
+        self.name = name
+        self.id = str(uuid.uuid4())
+        if attr.get("starts_current") or attr.get("generated_event"):
+            self.state:int = 1
+
+        self.time_unit = "days"
+        self.completion_duration = 3
+        self.current_duration = 0
+
+        self.start_trigger_names__conditions = {} # for the start trigger name, give the condition requirement (eg "moss": "item_in_inv")
+        self.end_trigger_names__conditions = {} # name (probably same, but could have another end_trigger alternative) eg "moss": {"removed_from_inv": "failure"}
+
+        self.start_trigger_items = {} #name: instance? # list of tuples, maybe? name/instance? Hard to access though. Not sure. Need to think on it.
+        self.end_trigger_items = {} #name: instance? ## if same name for start and end, make sure it's the same instance too.
+
+
+        """
+        So, if the duration is completed, the event succeeds.
+        If an end trigger is hit, it succeeds/fails depending on the state in the trigger (so possibly, an event might have an end trigger that makes it succeed early (you find a warm fire and put the moss near it, it dries in one day instead of 3, etc).).
+
+        """
 
 
 class eventInstance:
@@ -64,7 +88,8 @@ class eventInstance:
         self.triggers = set() #all triggers, delineate start/end after this point.
         self.start_triggers = set() # just to make sure these are here so other things can be more solid.
         self.end_triggers = set()
-        self.items = set() ## items affected by the event
+        self.item_instances = set() #items affected by the event
+        self.items = set() ## ## Explicitly (for the moment), item /names/, not instances.
         self.keys = set() ## items that effect the event
         self.msgs = attr.get("messages") # what prints when the event starts/ends/on certain cues
         self.limits_travel = False
@@ -80,20 +105,15 @@ class eventInstance:
         for item in attr:
             setattr(self, item, attr[item])
 
-        if attr.get("effects"):
-            if attr["effects"].get("limit_travel"):
-                self.limits_travel = True
+        if attr.get("effects") and attr["effects"].get("limit_travel"):
+            self.limits_travel = True
 
-                if attr["effects"]["limit_travel"].get("cannot_leave"):
-                    if not hasattr(self, "travel_limited_to"):
-                        self.travel_limited_to = set()
-                    for location in attr["effects"]["limit_travel"].get("cannot_leave"):
-                        self.travel_limited_to.add(location)
+            if attr["effects"]["limit_travel"].get("cannot_leave"):
+                if not hasattr(self, "travel_limited_to"):
+                    self.travel_limited_to = set()
+                for location in attr["effects"]["limit_travel"].get("cannot_leave"):
+                    self.travel_limited_to.add(location)
 
-        """
-        self.event_items
-        self.event_triggers
-        """
     def __repr__(self):
         return f"<eventInstance {self.name} ({self.id}, event state: {self.state}>"#, all attributes: {self.attr})>"
 
@@ -195,10 +215,12 @@ TRIGGER DICT: {'event': <eventInstance graveyard_gate_opens (27df1d29-6d80-4329-
                     event.no_item_restriction[item_name].add(self.item_inst) # Keeping this on the event. [Item_name] = [instance]
             # TODO: only works if items are instances already. Might need to keep a dict of things that don't have instances? Or just account for it later, this should only occur in the generating events so maybe I can just make it part of the intended process.
 
+
         if trigger_dict["trigger_model"] == "failure_trigger":
             self.item_inst = trigger_dict["trigger_item"]
             event.items.add(self.item_inst) # ,aybe don't need this one.
             events.items_to_events[self.item_inst] = event
+
 
         if isinstance(trigger_dict["trigger_actions"], str):
             self.triggers.add(trigger_dict["trigger_actions"])
@@ -746,6 +768,20 @@ class eventRegistry:
 
 events = eventRegistry()
 
+class eventIntake:
+
+    def __init__(self):
+        self.event_name = None
+        self.is_generated_event = False
+        
+        """
+        Basically I think this should be the base 'structure' of each event. No item instances, no triggerInst, no locInst, just the raw data but processed to be exactly what eventRegistry expects for init.
+        Hell, maybe we use this for /all/ events during setup, but only stick around for the generated ones. Can just delete the old ones if we really care that much.
+        """
+        pass
+
+
+event_intake = eventIntake()
 
 def add_items_to_events(event = None, noun_inst = None):
 
@@ -753,7 +789,6 @@ def add_items_to_events(event = None, noun_inst = None):
 
         for item in event.items:
             if hasattr(item, "requires_key"):
-                required_key = item.requires_key
                 if hasattr(item, "key_is_placed_elsewhere"):
                     if isinstance(item.key_is_placed_elsewhere, dict):
                         if item.key_is_placed_elsewhere.get("item_in_event"):
@@ -766,13 +801,13 @@ def add_items_to_events(event = None, noun_inst = None):
                                 if isinstance(potential_key, ItemInstance):
                                     key_item_names[potential_key.name] = potential_key
 
-                            if key_item_names.get(required_key):
-                                item.requires_key = key_item_names[required_key]
+                            if key_item_names.get(item.requires_key):
+                                item.requires_key = key_item_names[item.requires_key]
                         else:
                             print("Later, can add item locations to the event dict and find them through this. For now it only does event-held keys though.")
                 else:
-                    if events.item_names.get(required_key):
-                        item.requires_key = events.item_names[events.item_names[required_key]]
+                    if events.item_names.get(item.requires_key):
+                        item.requires_key = events.item_names[events.item_names[item.requires_key]]
 
     if noun_inst:
         noun = noun_inst

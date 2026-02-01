@@ -50,27 +50,27 @@
     }
   },
   "moss_dries": {
-    "start_trigger": {
-        "item_trigger": {
-            "trigger_item": "moss",
-            "trigger_location": "east graveyard",
-            "trigger": ["item_in_inv"]
-        }
-    },
-    "end_trigger":{
-        "item_trigger": {
-            "no_item_restriction": true,
-            "trigger_item": "moss",
-            "trigger": ["item_in_inv_continued"],
-            "trigger_constraint": {
-                "time_constraint": {"days": 3},
-                "constraint_tracking": {"days": 0}
+      "start_trigger": {
+          "item_trigger": {
+              "no_item_restriction": true,
+              "trigger_item": "moss",
+              "trigger_location": null,
+              "trigger": ["item_in_inv"]
             }
         },
-        "failure_trigger": {
-            "no_item_restriction": true,
+    "end_trigger": {
+        "timed_trigger": {
+            "time_unit": "days",
+            "full_duration": 3,
+            "constraint_tracking": 0,
             "trigger_item": "moss",
-            "trigger": ["item_removed_from_inv"]
+            "trigger_item_is_start_trigger": true,
+            "trigger_outcome": "success"
+            },
+        "item_trigger": {
+            "trigger_item": "moss",
+            "trigger": ["item_removed_from_inv"],
+            "trigger_outcome": "failure"
             }
         },
     "can_repeat":
