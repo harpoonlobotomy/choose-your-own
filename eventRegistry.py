@@ -35,7 +35,14 @@ def load_json():
 
 event_dict = load_json()
 
+
+trigger_acts = { # the k/v a verb action has to send in order to meet the trigger requirement.
+    "item_broken": {"is_broken": True},
+    "item_unlocked": {"is_locked": False}
+}
+
 event_effects = ["hold_item", "lock_item", "hide_item", "limit_travel"]
+event_effects = ["held_items", "locked_items", "hidden_items", "limit_travel"]
 
 effect_attrs = {
     "held_items": {
@@ -52,31 +59,7 @@ effect_attrs = {
 
    # "limit_travel": {"on_event_start": {"travel_limited": True}, "on_event_end":{"travel_limited": False}}
 
-#not sure about this whole thing. Might make it worse, not better.
-class timedEvents:
 
-    def __init__(self, name, attr):
-        self.name = name
-        self.id = str(uuid.uuid4())
-        if attr.get("starts_current") or attr.get("generated_event"):
-            self.state:int = 1
-
-        self.time_unit = "days"
-        self.completion_duration = 3
-        self.current_duration = 0
-
-        self.start_trigger_names__conditions = {} # for the start trigger name, give the condition requirement (eg "moss": "item_in_inv")
-        self.end_trigger_names__conditions = {} # name (probably same, but could have another end_trigger alternative) eg "moss": {"removed_from_inv": "failure"}
-
-        self.start_trigger_items = {} #name: instance? # list of tuples, maybe? name/instance? Hard to access though. Not sure. Need to think on it.
-        self.end_trigger_items = {} #name: instance? ## if same name for start and end, make sure it's the same instance too.
-
-
-        """
-        So, if the duration is completed, the event succeeds.
-        If an end trigger is hit, it succeeds/fails depending on the state in the trigger (so possibly, an event might have an end trigger that makes it succeed early (you find a warm fire and put the moss near it, it dries in one day instead of 3, etc).).
-
-        """
 
 
 class eventInstance:
@@ -95,11 +78,18 @@ class eventInstance:
         self.item_name_to_inst = {} # to track 'iron key' to instance, to make sure instances are tracked through events. Note: Only works as intended if only one instance per name. If an event has multiple instances of one itemname, will need an alt route.
         self.msgs = attr.get("messages") # what prints when the event starts/ends/on certain cues
         self.limits_travel = False
-        self.held_items = set()
-        self.hidden_items = set() # These were dicts with item: item_loc. I can't see where/why I'm using the location though, that should be done with in item inst identification. Changing (back?) to sets.
-        self.locked_items = set()
+        print(f"\n{name} ATTR@ ::: {attr} \n\n")
+        print(f"STATE: {self.state}")
+        self.held_items = (attr.get("held_items") if attr.get("held_items") else set())
+        self.hidden_items = (attr.get("hidden_items") if attr.get("hidden_items") else set()) # These were dicts with item: item_loc. I can't see where/why I'm using the location though, that should be done with in item inst identification. Changing (back?) to sets.
+        self.locked_items = (attr.get("locked_items") if attr.get("locked_items") else set())
+        print(f'attr.get("hidden_items"): {attr.get("hidden_items")}')
+        print(f'self.hidden_items: {self.hidden_items}')
         self.start_trigger_location = None
         self.end_trigger_location = None
+
+        self.condition_items = set() ## for keeping items that are part of timed triggers.
+
         self.no_item_restriction = {} # Keeping this on the event. [Item_name] = [instance]
         self.constraint_tracking = {} # [constraint_type (eg 'days')] = int(starts at 0)} #each instance triggers its own event, so one instance per event. At least for now, so I can track failures/successes by event state, instead of managing sub-event failures/successes. # might get rid of this and just use timed_triggers below instead.
         self.timed_triggers = set()
@@ -116,16 +106,155 @@ class eventInstance:
                 for location in attr["effects"]["limit_travel"].get("cannot_leave"):
                     self.travel_limited_to.add(location)
 
+        print(f"End of init: {self.state}")
+
     def __repr__(self):
         return f"<eventInstance {self.name} ({self.id}, event state: {self.state}>"#, all attributes: {self.attr})>"
 
-trigger_actions = ["item_in_inv", "item_broken", "item_unlocked"]
+trigger_actions = ["item_in_inv", "item_broken", "item_unlocked", "item_not_in_inv"]
+
+
+
+#not sure about this whole thing. Might make it worse, not better.
+class timedTrigger:
+    """
+    Maybe  this should be a timedTrigger, instead of timedEvent. All we need is for the event to notify 'i have a timed trigger' and redirect. Better that than a whole separate event class, maybe. Not really sure, still too tired to think.
+
+    """
+
+    def __init__(self, trigger_dict, event:eventInstance):
+
+        self.id = str(uuid.uuid4())
+        self.event = event#trigger_dict["event"]
+        self.state = event.state
+        self.is_item_trigger = False
+        self.item_inst = None
+        self.triggers = set() #item_broken, 'item_in_inv', etc.
+
+        """
+        trigger_dict = {
+            "event": event,
+            "trigger_model": "item_trigger",
+            "trigger_type": trigger,
+            "trigger_item": trigger_item,
+            "trigger_item_loc": trigger_loc,
+            "trigger_actions": trigger_actions,
+            "item_flags_on_start": item_flags_on_start,
+            "item_flags_on_end": item_flags_on_end
+            }
+            """
+
+        #if trigger_dict["trigger_type"] == "end_trigger": # surely will always be end_trigger, no?
+        # Saying now that timed triggers will always be end_triggers. Don't bother with the rest of it.
+        self.start_trigger = False
+        self.end_trigger = True
+        event.end_triggers.add(self)
+       # else:
+       #     self.start_trigger = False
+       #     self.end_trigger = True
+       #     event.start_triggers.add(self)
+
+       # Honestly maybe this shouldn't be a trigger at all, maybe it should just be part of the event itself....
+       # Well no, I need an end trigger to stop the duration. That's
+
+        timed_dict = trigger_dict["timed_trigger"]
+        self.time_unit = timed_dict["time_unit"]  # "days",
+        self.full_duration = timed_dict["full_duration"]  # 3,
+
+        event.constraint_tracking[self.time_unit] = {"full_duration": self.full_duration, "current_duration": 0}
+
+        self.persistent_condition = timed_dict["persistent_condition"]  # true,
+
+        if self.persistent_condition:
+            print(f"Event must have condition maintained until completion of {self.full_duration} {self.time_unit}s.")
+            print("Add something to set_up_game to manage 'when day changes, add to duration'.")
+            print("I feel like the duration should be tracked on the event, not the trigger, though.")
+
+        self.required_condition = timed_dict["required_condition"]  # {"item_in_inv": "moss"},
+        print(f"SELF REQUIRED CONDITION: {self.required_condition}")
+        self.condition_item_is_start_trigger = timed_dict["condition_item_is_start_trigger"]  # true
+
+        for condition, value in self.required_condition.items():
+            print(f"condition: {condition}, value: {value}")
+            self.triggers.add(condition)
+            if condition not in trigger_actions:
+                print(f"Required_condition not known: {condition} // [value ({value}])")
+                continue
+
+            if event.is_generated_event or not event.item_name_to_inst.get(value):
+                if self.required_condition.get(condition):
+                    print(f"self.required_condition[condition]: {self.required_condition[condition]}")
+                    condition_item = self.required_condition[condition]
+                    print(f"TRIGGER DICT: {trigger_dict}")
+                    #print(f":::::::: {trigger_dict["trigger_item"]}")
+                    if trigger_dict.get("trigger_item") and isinstance(trigger_dict["trigger_item"], ItemInstance):
+                        print(f"TRIGGER ITEM: {trigger_dict["trigger_item"]}")
+                        self.is_item_trigger = True
+                        if trigger_dict["trigger_item"].name == self.required_condition[condition]:
+                                print("The instance sent with the trigger data will be used.")
+                                self.item_inst = trigger_dict["trigger_item"]
+                        #if trig_data["trigger_item"].name == self.required_condition["item_in_inv"]:
+                                setattr(self, self.required_condition[condition], trigger_dict["trigger_item"])
+                                #self.required_condition["item_in_inv"] = trig_data["trigger_item"]
+
+                        else:
+                            print("Needs an instance here but apparently couldn't find one. This is real bad, something's wrong upstream.")
+                            exit()
+                    elif trigger_dict.get("timed_trigger"):
+                        print(f"Trigger dict[timed_trigger]: {trigger_dict["timed_trigger"]}")
+                        for entry, v in self.required_condition[condition].items():# == self.required_condition[condition]:
+                            print(f"V: {v}")
+                            if event.item_name_to_inst.get(v):
+                                print("The instance of this name used with this event will be used.")
+                                self.item_inst = v
+                                setattr(self, self.required_condition[condition], v)
+                        #if trig_data["trigger_item"].name == self.required_condition["item_in_inv"]:
+                                #setattr(self, self.required_condition[condition], trig_data["trigger_item"])
+                else:
+                    print(f"No self.required_condition[condition]: {self.required_condition[condition]}")
+
+            elif event.item_name_to_inst.get(value):
+
+                print("THIS SHOUILD NOT BE HERE IF THE EVENT IS AUTOGENNED. Same for regular triggers.")
+                self.item_inst = event.item_name_to_inst[value]
+                self.required_condition[condition] = self.item_inst
+                print(f"required condition[condition]: {self.required_condition[condition]}")
+
+            event.condition_items.add(self.item_inst)
+
+            event.constraint_tracking[self.time_unit].update({"required_condition": condition, "condition_item": self.item_inst})
+
+            event.items.add(self.item_inst) # ,aybe don't need this one.
+            events.items_to_events[self.item_inst] = event
+
+            """
+        So event.constraint_tracking should be:
+            event.constraint_tracking: {
+                "day: {
+                    "full_duration": self.full_duration,
+                    "current_duration": 0,
+                    "condition": "item_in_inv",
+                    "condition_item": <moss_instance>}
+                }
+
+            """
+
+
+        """
+        So, if the duration is completed, the event succeeds.
+        If an end trigger is hit, it succeeds/fails depending on the state in the trigger (so possibly, an event might have an end trigger that makes it succeed early (you find a warm fire and put the moss near it, it dries in one day instead of 3, etc).).
+
+        """
+
+    def __repr__(self):
+        return f"<timedTrigger {self.id} for event {self.event.name}, event state: {event_state_by_int[self.state]}, {(f'Trigger item: {self.item_inst}' if isinstance(self.item_inst, ItemInstance) else None)}>"
+
 
 class Trigger:
 
     def __init__(self, trigger_dict, event:eventInstance):
 
-        print(f"TRIGGER DICT: {trigger_dict}")
+        #print(f"TRIGGER DICT: {trigger_dict}")
         """
 TRIGGER DICT: {'event': <eventInstance graveyard_gate_opens (27df1d29-6d80-4329-b955-77f39de45be5, event state: 1>,
 'trigger_model': 'item_trigger',
@@ -138,6 +267,7 @@ TRIGGER DICT: {'event': <eventInstance graveyard_gate_opens (27df1d29-6d80-4329-
 'item_flags_on_end': {'can_pick_up': True}}
 
         """
+
         self.id = str(uuid.uuid4())
         self.event = event#trigger_dict["event"]
         self.state = event.state
@@ -167,7 +297,7 @@ TRIGGER DICT: {'event': <eventInstance graveyard_gate_opens (27df1d29-6d80-4329-
         if trigger_dict["trigger_model"] == "item_trigger":
             self.is_item_trigger = True
             if self.is_item_trigger:
-                if not trigger_dict.get("no_item_restriction") or isinstance(trigger_dict["trigger_item"], ItemInstance):
+                if isinstance(trigger_dict["trigger_item"], ItemInstance):
                     self.item_inst = trigger_dict["trigger_item"]
                 else:
                     if (isinstance(trigger_dict["trigger_item"], list|set|tuple) and len(len(trigger_dict["trigger_item"]) == 1)):
@@ -193,42 +323,16 @@ TRIGGER DICT: {'event': <eventInstance graveyard_gate_opens (27df1d29-6d80-4329-
                     #    for flag in self.item_flags_on_end:
                     #        setattr(self.item_inst, flag, self.item_flags_on_end[flag]) # duh, don't set these flags at the start, they're for the /end/.
 
-                if trigger_dict.get("trigger_constraint"):
-                    self.time_constraint = trigger_dict["trigger_constraint"].get("time_constraint")
-                    event.timed_triggers.add(self)
-                    #   how long the event needs to run in order to succeed (days/less time (time blocks are roughly 2 hrs))
-                    self.constraint_tracking:dict = trigger_dict["trigger_constraint"].get("constraint_tracking")
-                    #event.constraint_tracking = {trigger_dict["item_trigger"]["trigger_constraint"].get("constraint_tracking")} # turning this one off, will use event.timed_triggers to get trig.constraint_tracking.
-
-                    # if constraint_tracking:
-                    #   when day advances, add 1 to any constraint_tracking value (constraint_tracking == int.)
-                    ## TODO: set up constraint checking for timed events.
-
-                    if isinstance(self.item_inst, ItemInstance):
-                        item_name = self.item_inst.name
-                    else:
-                        item_name = self.item_inst
-                    if not events.no_item_restriction.get(item_name):
-                        events.no_item_restriction[item_name] = set()
-                    events.no_item_restriction[item_name].add(event)
-
-                    if not event.no_item_restriction.get(item_name):
-                        event.no_item_restriction[item_name] = set()
-                    event.no_item_restriction[item_name].add(self.item_inst) # Keeping this on the event. [Item_name] = [instance]
             # TODO: only works if items are instances already. Might need to keep a dict of things that don't have instances? Or just account for it later, this should only occur in the generating events so maybe I can just make it part of the intended process.
-
-
-        if trigger_dict["trigger_model"] == "failure_trigger":
-            self.item_inst = trigger_dict["trigger_item"]
-            event.items.add(self.item_inst) # ,aybe don't need this one.
-            events.items_to_events[self.item_inst] = event
-
+        else:
+            self.is_item_trigger = False
 
         if isinstance(trigger_dict["trigger_actions"], str):
             self.triggers.add(trigger_dict["trigger_actions"])
         else:
             for action in trigger_dict["trigger_actions"]:
                 self.triggers.add(action)
+        event.triggers.add(self)
 
 
     def __repr__(self):
@@ -253,10 +357,11 @@ class eventRegistry:
 
         self.items_to_events = dict() # just every item attached to an event, for now. Won't keep this but it'll be convenient for testing the general shape of things.
         self.no_item_restriction = {} # no I was right the first time. noun_name: event_name. Then check if noun in events by that name. Makes way more sense. Don't check all events then all items, check if the item is viable before events are even considered.
-
+        self.generate_events_from_itemname = {}
         # Actual way of doing it: event_name:item_name # event NAME, so it can start a new event when the item is encountered.
         # dict: item_name: event (assuming item_trigger) May only allow one event per item, though could make it a set. Though actually it's already checking all events when items are encountered, so really should just do it in that same pass. Okay.#
         self.timed_triggers = set()
+        self.condition_items = set()
 
         for state in event_states.values():
             self.by_state[state] = set() ## really don't need these and the current/past/future. Will probably use this alone instead, it'll be easier to set up the direction.
@@ -267,10 +372,8 @@ class eventRegistry:
                         #event event_dict[event][trigger]["item_trigger"]["trigger_location"]:
         # so braindead right now. Maybe I just ignore the whole trigger_location thing in this case because you can only pick up an item from its start location.
 
-    def add_event(self, event_name, event_attr=None):
+    def add_event(self, event_name, event_attr):
 
-        if not event_attr:
-            event_attr = event_dict.get(event_name)
         event = eventInstance(event_name, event_attr)
         self.events.add(event)
         self.by_id[event.id] = event
@@ -278,47 +381,59 @@ class eventRegistry:
             self.by_name[event.name] = set()
         self.by_name[event.name].add(event)
 
-        if hasattr(event, "starts_current"):
+        if hasattr(event, "starts_current") and getattr(event, "starts_current"):
             self.by_state[1].add(event)
-            event.event_state = 1 # (current event)
+            event.state = 1 # (current event)
             if event.limits_travel:
                 self.travel_is_limited = True
 
         else:
+            print(f"Event not starts_current: {event}")
             self.by_state[2].add(event)
-            event.event_state = 2 # (future event)
+            event.state = 2 # (future event)
 
         if self.timed_triggers:
             events.timed_events.add(self)
 
         return event, event_attr
 
-    def get_all_item_instances(self, event:eventInstance, event_entry):
+    def get_all_item_instances(self, event:eventInstance, event_entry, noun=None):
 
         from itemRegistry import registry
-        item_name_to_inst = {}
+        event.item_name_to_inst = {}
 
         if not hasattr(event, "item_name_to_loc"):
             print(f"No item_name_to_loc dict for {event}\n")
 
         # Need to add a thing here for generated events to apply the newly found noun inst to the event directly.
 
+        if noun and noun.name not in event.item_names:
+            event.item_names.add(noun.name)
+
+
         for item in event.item_names:
-            if item_name_to_inst.get(item):
+            if event.item_name_to_inst.get(item) and not noun:
                 continue
             instance = None
-            if event.item_name_to_loc.get(item):
-                item_loc = event.item_name_to_loc[item]
-                loc_items = registry.get_item_by_location(item_loc)
-                for loc_item in loc_items:
-                    if loc_item.name in event.item_names: # instead of just the given item, add any matches found at once.#== item:
-                        #print(f"Found instance for {loc_item.name} in {item_loc}: {loc_item}")
-                        instance = loc_item
-                        item_name_to_inst[loc_item.name] = instance
+            if not noun:
+                if event.item_name_to_loc.get(item):
+                    item_loc = event.item_name_to_loc[item]
+                    loc_items = registry.get_item_by_location(item_loc)
+                    for loc_item in loc_items:
+                        if loc_item.name in event.item_names: # instead of just the given item, add any matches found at once.#== item:
+                            #print(f"Found instance for {loc_item.name} in {item_loc}: {loc_item}")
+                            instance = loc_item
+                            event.item_name_to_inst[loc_item.name] = instance
+
+            if noun:
+                instance = noun
+                event.item_name_to_inst[noun.name] = instance
+                event.items.add(instance)
+
+
             if not instance:
                 print(f"No instance found by location for {item}")
 
-        event.item_name_to_inst = item_name_to_inst
         """
         remove_dict = {}
         add_dict = {}
@@ -341,7 +456,7 @@ class eventRegistry:
 
 
 
-        missing = list(i for i in event.item_names if i not in item_name_to_inst)
+        missing = list(i for i in event.item_names if i not in event.item_name_to_inst)
         if missing:
             print(f"Missing instances: [[{missing}]]")
         #exit()
@@ -382,7 +497,7 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
 
         return False
 
-    def get_event_triggers(self, event_name = None, event = None, trigger_check = None):
+    def get_event_triggers(self, event, event_name = None, trigger_check = None):
         logging_fn()
         #event_dict = load_json()
 
@@ -394,34 +509,45 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
             if isinstance(event, eventInstance):
                 if not event_name:
                     event_name = event.name
+            elif isinstance(event, str):
+                event_name = event
+                event = events.event_by_name(str)
+                if not event:
+                    print(f"No event by the name {event_name}")
+                    exit()
+                if isinstance(event, list):
+                    if len(event) > 1:
+                        print(f"There is more than one event named {event_name}. Arbitrarily picking the first, but this may be wrong.")
+                    event = event[0]
 
         if not event and event_name:
             if isinstance(event_name, eventInstance):
                 event = event_name
                 event_name = event.name
 
-        event_entry = event_dict.get(event_name)
-        print(f"EVENT ENTRY: {event_entry}")
+        #event_entry = event_dict.get(event_name)
+        #print(f"EVENT ENTRY: {event_entry}")
+        if event.is_generated_event:
+            print(f"{event} is a generated event, no pre-defined instances here.")
+
         for trigger in ("start_trigger", "end_trigger"):
             trigger_dict = {}
-            if event_entry.get(trigger):
-                if event_entry[trigger].get("item_trigger"):
-                    trigger_item = event_entry[trigger]["item_trigger"]["trigger_item"]
-                    trigger_loc = event_entry[trigger]["item_trigger"].get("trigger_location")
-                    trigger_actions = event_entry[trigger]["item_trigger"]["trigger"]
-                    item_flags_on_start = event_entry[trigger]["item_trigger"].get("flags_on_event_start")
-                    item_flags_on_end = event_entry[trigger]["item_trigger"].get("flags_on_event_end")
-                    if trigger_loc:
-                        trigger_loc = loc.by_cardinal_str(trigger_loc)
-                        loc_items = registry.get_item_by_location(trigger_loc)
-                        for item in loc_items:
-                            if item.name == trigger_item:
-                                trigger_item = item
-                                break
+            trig_data = {}
+            if hasattr(event, trigger) and getattr(event, trigger):
+                for entry in getattr(event, trigger):
+                    trig_data[entry] = getattr(event, trigger)[entry]
 
-                    elif event_entry[trigger]["item_trigger"].get("no_item_restriction"):
+            #if event_entry.get(trigger):
+                if trig_data.get("item_trigger"):
+                    trigger_item = trig_data["item_trigger"]["trigger_item"]
+                    if event.is_generated_event:
                         if trigger_check:
                             trigger_item = trigger_check
+                            event.items.add(trigger_item)
+                            event.item_names.add(trigger_item.name)
+                    else:
+                        if event.item_name_to_inst.get(trigger_item):
+                            trigger_item = event.item_name_to_inst[trigger_item]
                         else:
                             trigger_items = registry.instances_by_name(trigger_item)
                             for item in trigger_items:
@@ -430,66 +556,90 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
                                     break
                             # Assumes that an item of that name will be correct by default. Not ideal. Should probably check it has the event tag, but here we're ruling those /out/ instead of prioritising them. TODO: Will work on this later.
 
-                    if event_entry[trigger]["item_trigger"].get("trigger_constraint"):
-                        trigger_dict["trigger_constraint"] = event_entry[trigger]["item_trigger"]["trigger_constraint"]
+                    trigger_actions = trig_data["item_trigger"]["trigger"]
+
+
+                    item_flags_on_start = trig_data["item_trigger"].get("on_event_start")
+                    item_flags_on_end = trig_data["item_trigger"].get("on_event_end")
+
+                    if trig_data["item_trigger"].get("trigger_constraint"):
+                        trigger_dict["trigger_constraint"] = trig_data["item_trigger"]["trigger_constraint"]
+
 
                 trigger_dict.update({
                     "event": event,
                     "trigger_model": "item_trigger",
                     "trigger_type": trigger,
                     "trigger_item": trigger_item,
-                    "trigger_item_loc": trigger_loc,
+                    "trigger_item_loc": (trigger_item.location if isinstance(trigger_item, ItemInstance) else None),
                     "trigger_actions": trigger_actions,
                     "item_flags_on_start": item_flags_on_start,
                     "item_flags_on_end": item_flags_on_end
                     })
 
-                if event_entry[trigger].get("timed_trigger"):
-                    trigger_dict["item_model"] = "timed_trigger"
-                    trigger_dict["timed_trigger"] = event_entry[trigger]["timed_trigger"]
+                if trig_data.get("item_trigger"):
+                    event.triggers.add(Trigger(trigger_dict, event))
 
-                event.triggers.add(Trigger(trigger_dict, event))
+                if trig_data.get("timed_trigger"):
+                    print("trig data timed trigger")
+                    if event.is_generated_event:
+                        print("event is generated event")
+                        if trigger_check:
+                            print(f"is trigger check: {trigger_check}")
+                            trigger_item = trigger_check
+                            trigger_dict["trigger_item"] = trigger_item
+                            print(f'trigger_dict["trigger_item"] : {trigger_dict["trigger_item"] }')
+                        else:
+                            print("no trigger check")
+                    else:
+                        print(f"event {event} is not is_generated_event")
+                    print(f"Trig data timed trigger: {trig_data["timed_trigger"]}")
+                    trigger_dict["trigger_model"] = "timed_trigger"
+                    trigger_dict["timed_trigger"] = trig_data["timed_trigger"]
+                    event.triggers.add(timedTrigger(trigger_dict, event))
+                    print(f"EVENT TRIGGERS: {event.triggers}")
+
                 events.items_to_events[trigger_item] = event
 
-        if event_entry.get("effects"):
-            for effect in event_entry["effects"]:
-                event_item = None
-                if effect in event_effects:
-                    if "item_loc" in event_entry["effects"][effect]:
-                        event_loc = loc.by_cardinal_str(event_entry["effects"][effect]["item_loc"])
-                        loc_items = registry.get_item_by_location(event_loc)
-                        for item in loc_items:
-                            if item.name == event_entry["effects"][effect]["item_name"]:
-                                event_item = item
-                                break
+        effects_dict = {}
+        for effect in event_effects:
+            if hasattr(event, effect) and getattr(event, effect):
+                if effect_attrs.get(effect):
+                    effects_dict[effect] = {}
 
-                        if effect == "hide_item":
-                            event.hidden_items.add(event_item) # Why does this need the loc?
-                            setattr(event_item, "is_hidden", True)
-                            setattr(event_item, "can_pick_up", False)
+                    for item in getattr(event, effect):
+                        if isinstance(item, ItemInstance):
+                            event_item = item
+                        else:
+                            event_item = event.item_name_to_inst.get(item)
+                        if not event_item:
+                            print(f"No event item found for {event} with name {item}")
+                            exit()
+
+                        effects_dict[effect][item] = event_item
+
+                        if effect_attrs[effect].get("on_event_start"):
+                            #print(f"effect_attrs[effect]['on_event_start']: {effect_attrs[effect]['on_event_start']}")
+                            for k, v in effect_attrs[effect]["on_event_start"].items():
+                                setattr(event_item, k, v)
+
+                        if not event_item in event.items:
                             event.items.add(event_item)
+
+                        if not events.items_to_events.get(event_item):
                             events.items_to_events[event_item] = event
-                            setattr(event_item, "event", event)
 
-                        elif effect == "hold_item":
-                            event.held_items.add(event_item)
-                            setattr(event_item, "can_pick_up", False)
-                            event.items.add(event_item)
-                            events.items_to_events[event_item] = event
-                            setattr(event_item, "event", event)
+                        setattr(event_item, "event", event)
 
-                        elif effect == "lock_item":
-                            event.locked_items.add(event_item)
-                            setattr(event_item, "is_locked", True)
-                            setattr(event_item, "can_pick_up", False)
+        if effects_dict:
+            for effect in effects_dict:
+                for item in effects_dict[effect]:
+                    if isinstance(item, str):
+                        #print(f"Before removing the str and adding the instance: \n{getattr(event, effect)}")
+                        getattr(event, effect).remove(item)
+                        getattr(event, effect).add(effects_dict[effect][item])
+                        #print(f"Removed {item} from event.{effect}, added {effects_dict[effect][item]}:\n{getattr(event, effect)}")
 
-                            event.items.add(event_item)
-                            events.items_to_events[event_item] = event
-                            setattr(event_item, "event", event)
-
-                else:
-                    print(f"Effect not in event_effects: {event_entry["effects"][effect]}")
-                    exit()
         return event
 
     def get_event_item_names(self, event):
@@ -510,7 +660,7 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
             event_options = self.event_by_name(event)
             for event in event_options:
                 get_items_inner(event)
-                return
+            return
 
         get_items_inner(event)
 
@@ -562,7 +712,7 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
                     return holder.msgs["held_msg"]
 
             else:
-                if event.event_state == 1:
+                if event.state == 1:
                     if event.msgs.get("held_msg"):
                         if print_txt:
                             print(event.msgs["held_msg"])
@@ -573,10 +723,12 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
 
         def print_current(event, state_type="held", print_text=False):
 
+            if not event.msgs:
+                return
             if event.msgs.get(f"{state_type}_msg"):
                 msg = event.msgs[f"{state_type}_msg"]
                 if print_text:
-                    print("\n", assign_colour(msg, colour="event_msg"))
+                    print("\n",assign_colour(msg, colour="event_msg"))
                 return msg
 
 
@@ -611,6 +763,7 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
     def start_event(self, event_name:str, event:eventInstance=None):
         logging_fn()
 
+
         # Note that events can be concurrent, so setting a current event does not necessarily remove an existing event.
         if not event:
             to_be_current = self.event_by_name(event_name) # assumes all events already init, does not support dynamic event generation.
@@ -618,24 +771,26 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
         else:
             to_be_current = event
 
-        event_state = to_be_current.event_state
+        event_state = to_be_current.state
 
         if event_state == 0:
             print(f"Event {event_name} is already over.")
             return
+
         if event_state == 1:
             print(f"Event {event_name} is already happening.")
             return
 
         for trigger in to_be_current.triggers:
-            trigger.state == 1
+            trigger.state = 1
+            #print(f"Trigger: {trigger}, trig state: {trigger.state}")
 
         self.by_state.get(2).remove(to_be_current)
-        self.by_state.get(1).add(to_be_current)
-        to_be_current.event_state = 1
+        self.by_state[1].add(to_be_current)
+
+        to_be_current.state = 1
 
         if to_be_current in self.by_state.get(1): # redundant but just in case anything went super wrong:
-            to_be_current.event_state = 1
             self.play_event_msg("start_msg", to_be_current)
             #if hasattr(to_be_current, "start_msg") and getattr(to_be_current, "start_msg"): ## 'get' here excludes if null, which in this case is what I want.
             #    print(to_be_current.start_msg)
@@ -666,7 +821,7 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
             self.by_state[1].remove(event_to_end)
             self.by_state[2].add(event_to_end)
             if event_to_end in self.by_state[2]: # redundant but just in case anything went super wrong:
-                event_to_end.event_state = 2
+                event_to_end.state = 2
 
             if event_to_end.limits_travel:
                 no_limits = True
@@ -686,6 +841,12 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
 
 # The following all assume that all events only act on unique items (eg an item won't be hidden by multiple events (or if they are, cannot be revealed by any old one of them. Going with it to keep it simple for now.))
     ##NOTE: Absolutely this can be done using the new category entry in effect_attrs instead of going through it manually each time. Implement that.
+            """
+            if effect_attrs[effect].get("on_event_start"):
+            #print(f"effect_attrs[effect]['on_event_start']: {effect_attrs[effect]['on_event_start']}")
+            for k, v in effect_attrs[effect]["on_event_start"].items():
+                setattr(event_item, k, v)
+                """
             print(f"event to end: hidden items:: {event_to_end.hidden_items}")
             if event_to_end.hidden_items:
                 pop_me = set()
@@ -732,6 +893,8 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
 
             print("Need a section here that removes itemInstances from events.items. Or maybe not, if one day it'd be useful to know that this is the coin you gave to the witch in exchange for your left eye or smth")
 
+
+            # Need to add the removal of .event from items, if relevant. Depends if an event can run again. Need to formalise that.
             self.play_event_msg(msg_type="end", event=event_to_end)
 
             if trigger:
@@ -761,81 +924,83 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
     def is_event_trigger(self, noun_inst, noun_loc, reason = None):
         logging_fn()
 
-        print(f"start of event_trigger:\nnoun inst: {noun_inst}, noun_loc: {noun_loc}, reason: {reason}.")
+        #print(f"start of is_event_trigger:\nnoun inst: {noun_inst}, noun_loc: {noun_loc}, reason: {reason}.")
         def check_triggers(event, noun, reason):
-            print(f"start of check_triggers: event: {event}, noun: {noun}, reason: {reason}")
+            #print(f"start of check_triggers: event: {event}, noun: {noun}, reason: {reason}")
     # Reason == str containing the key phrase of the trig.trigger. eg 'added_to_inv'
             if event.end_triggers:
                 print(f"event.end_triggers: {event.end_triggers}")
                 for trig in event.end_triggers:
                     print(f"For trig in event.end_triggers: {trig}")
-                    print(f"VARS: {vars(trig)}")
+                    #print(f"VARS: {vars(trig)}")
                     if hasattr(trig, "constraint_tracking"):
                         print("Whether the event ends or not depends on this constraint. Maybe it should be checked earlier, I feel like I do this check in item_interactions. Needs to be one or the other.")
                         exit()
                     #print(f"TRIG: {trig}, vars: {vars(trig)}")
-                    if trig.is_item_trigger:
-                        print("trig is item trigger")
-                        if trig.item_inst == noun:
-                            print("item inst == noun")
-                            if reason in trig.triggers:
-                                if trig.item_inst_loc and trig.item_inst_loc != noun_loc:
-                                    continue # fail if the fail should have a location but doesn't. Doesn't apply to any current ones, but if you have to read a book under a specific tree, this would apply.
+                    if trig.is_item_trigger and trig.item_inst == noun:
+                        print("item inst == noun")
+                        print(f"REASON: {reason}, type: {type(reason)}")
+                        print(f"trigger acts: {trig.triggers}")
+                        if isinstance(reason, str) and reason in trig.triggers:
+                            if trig.item_inst_loc and trig.item_inst_loc != noun_loc:
+                                continue # fail if the fail should have a location but doesn't. Doesn't apply to any current ones, but if you have to read a book under a specific tree, this would apply.
+                            print("ENDING EVENT VIA IS_EVENT_TRIGGER")
+                            self.end_event(event, trig, noun_loc)
+                            return
 
-                                self.end_event(event, trig, noun_loc)
-                                break
+                        elif isinstance(reason, tuple):
+                            print(f"REASON TUPLE: {reason}, len: {len(reason)}") # will it always need to go to inner? Not sure.
+                            for inner in reason:
+                                k, v = inner
+                                for condition in trig.triggers:
+                                    if trigger_acts.get(condition) and trigger_acts[condition].get(k) == v:
+                                        print(f"Condition [{k}: {v}] met for {noun_inst}. Will end event now.")
+                                        self.end_event(event, trig, noun_loc)
+                                        return
                         else:
+                            print(f"Could not parse {reason}, type: {type(reason)}")
+                    else:
+                        if trig.is_item_trigger:
                             print(f"item inst {trig.item_inst} =! noun {noun}")
 #events.no_item_restriction[self.item_inst.name].add(event) # eventsRegistry holds instance name to event (this instance name gets managed by this event)
 #event.no_item_restriction[self.item_inst.name].add(self.item_inst) #the eventInstance holds (this item name goes to these itemInstances)
-        print(f"Events.no_item_restriction: {events.no_item_restriction}")
-        if events.no_item_restriction.get(noun_inst.name):
-            print(f"events.no_item_restriction gets noun_inst.name: {noun_inst.name}")
-            existing_event = False
-            event_name = None
-            for event in events.no_item_restriction[noun_inst.name]:
-                print(f"event in no_item_rest: {event}")
-                event_name = event.name # assume only one event per name, will work for now.
-                if event.no_item_restriction[noun_inst.name] == noun_inst:
-                    existing_event = True
-                    print(f"Item is part of an existing event: {event}")
-                    print("Do anything involving item triggers here (eg if dropping it fails the event, that will happen here.)")
-                    check_triggers(event, noun=noun_inst, reason=reason)
-                    return
-
-            if not existing_event:
-                print("an unrestricted noun needs an event made.")
-                event, event_entry = self.add_event(event_name)
-                add_items_to_events(event=event, noun_inst=noun_inst)
-                self.start_event(event_name = event.name, event = event)
-                print(f"Event has now been created [{event}]. No need to check for triggers as no event will have an event start and finish in the same item interaction. I assume.")
+        if events.generate_events_from_itemname.get(noun_inst.name):
+            if hasattr(noun_inst, "event") and getattr(noun_inst, "event"):
+                print(f"This {noun_inst} already has an event tied to it: {noun_inst.event}")
+                check_triggers(noun_inst.event, noun=noun_inst, reason=reason)
                 return
 
-        print(f"events.items_to_events: {events.items_to_events}")
+            existing_event = False
+
+            event_name = events.generate_events_from_itemname[noun_inst.name]
+
+            intake_event = registrar.by_name.get(event_name)
+
+
+            if intake_event and hasattr(intake_event, "start_trigger") and intake_event.start_trigger.get("item_trigger"):
+                if intake_event.start_trigger["item_trigger"].get("match_item_by_name_only"):
+                    #print(f"Reason item is in this check? {reason}")
+                    if hasattr(intake_event, "required_condition"):
+                        if isinstance(reason, str):
+                            if reason in intake_event.required_condition:
+                                #print("The reason is correct, the event should be started.")
+                                event = register_generated_event(event_name, noun_inst)
+                                self.start_event(event_name = event.name, event = event)
+                                #print("Finished adding event")
+                                return
+
+            if event.no_item_restriction[noun_inst.name] == noun_inst:
+                print(f"Item is part of an existing event: {event}")
+                print("Do anything involving item triggers here (eg if dropping it fails the event, that will happen here.)")
+                check_triggers(event, noun=noun_inst, reason=reason)
+                return
+
         if events.items_to_events.get(noun_inst):
             print(f"noun inst is in items_to_events: {events.items_to_events.get(noun_inst)}")
             event = events.items_to_events[noun_inst]
             print(f"Event: {event}")
             if event.state == 1:
                 check_triggers(event, noun_inst, reason)
-
-            #pausing that for now, it seems far too messy.
-
-            # Really need to test how this part works, I'm not sure if it will at all. But it's nearly 4am so I should sleep.
-            #if events.no_item_restriction.get(event.name) and events.no_item_restriction[event.name].get(noun_inst.name):
-            #    event = events.get_event_triggers(event_dict, event.name, trigger_check=noun_inst) # will create new event if there is none
-            #    if event.state == 1: # means the event already started before the prev line, so is not new/does not need items added.
-            #        continue
-            #    add_items_to_events(event = event, noun_inst=noun_inst)
-
-            #assert isinstance(event, eventInstance), "printing if this is not an instance"
-
-            #if event.event_state != 1:
-            #    ## Events that are started (ie those by triggers in no_item_restriction) should be dealt with above.
-            #    continue
-            #for item in event.keys:
-
-
 
     """
     What else do I need here.
@@ -844,10 +1009,6 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
     Well I don't need a global trigger check, because the trigger itself should trigger it.
     Maybe though, have an ongoing 'upcoming triggers' dict, of just potential event triggers exclusively. So nothing from past events, no later-stage triggers, etc, just the start-trigger for any future events that don't have other prerequisites and the current-stage trigger for any current triggers. Then if an item/scene trigger happens, we check against this dict, not against all triggers in the trigger defs. Yeah I like that I think.
     """
-
-    #def set_potential_triggers(self):
-    #    for event in events.by_name:
-
 
 events = eventRegistry()
 
@@ -858,15 +1019,11 @@ class eventIntake:
 #'end_trigger': {'timed_trigger': {'time_unit': 'days', 'full_duration': 3, 'constraint_tracking': 0, 'trigger_item_is_start_trigger': True, 'trigger_outcome': 'success'}, 'item_trigger': {'trigger_item': 'moss', 'trigger': ['item_removed_from_inv'], 'trigger_outcome': 'failure'}}
         self.time_unit = attr["end_trigger"]["timed_trigger"]["time_unit"]
         self.full_duration = attr["end_trigger"]["timed_trigger"]["full_duration"]
-        self.duration_tracking = 0
-
         self.persistent_condition = attr["end_trigger"]["timed_trigger"]["persistent_condition"] # This is here so if it's just a thing that starts and continues on without interruption or reliance on something continuing, you can just omit that section.
-        if self.persistent_condition:
-            # timer stops if this happens (don't know whether it picks up again if conditions are met again, not sure yet.)
-            self.condition_item = attr["end_trigger"]["timed_trigger"]["condition_item"]
-            if self.condition_item:
-                self.condition_item_is_start_trigger = attr["end_trigger"]["timed_trigger"]["condition_item_is_start_trigger"]
-            self.required_condition = attr["end_trigger"]["timed_trigger"]["required_condition"]
+
+        self.required_condition = attr["end_trigger"]["timed_trigger"]["required_condition"]
+        self.condition_item_is_start_trigger = attr["end_trigger"]["timed_trigger"]["condition_item_is_start_trigger"]
+
 
     def __init__(self, event_name, attr):
 
@@ -908,19 +1065,26 @@ class eventIntake:
             for effect in attr.get("effects"):
                 if effect_attrs.get(effect):
                     for entry in attr["effects"][effect]:
+
         # =   attr["effects"]["hidden_items"]["0"]"iron key"
                         self.item_names.add(attr["effects"][effect][entry].get("item_name"))
                         self.item_name_to_loc[attr["effects"][effect][entry].get("item_name")] = attr["effects"][effect][entry].get("item_location")
                         getattr(self, effect).add(attr["effects"][effect][entry].get("item_name"))
+                        print(f"self.effect `{effect}` just had an item added: {getattr(self, effect)}")
 
                 else:
                     setattr(self, effect, attr["effects"][effect])
+                    if effect == "limit_travel":
+                        self.limit_travel = True
+                        if attr["effects"]["limit_travel"].get("cannot_leave"):
+                            self.travel_limited_to = attr["effects"]["limit_travel"]["cannot_leave"]
 
         self.messages = attr.get("messages")
 
         if self.is_generated_event:
             if self.start_trigger_is_item:
                 self.match_item_to_name_only = attr["start_trigger"]["item_trigger"].get("match_item_by_name_only")
+                #events.generate_event_from_item[attr["start_trigger"]["item_trigger"]["item_name"]] = self
                 # Means location etc doesn't matter in this case, only that the item name matches start trigger.
             self.can_repeat_forever = attr.get("can_repeat_forever")
 
@@ -976,13 +1140,13 @@ def add_items_to_events(event = None, noun_inst = None):
         else:
             event_name = event.name
 
-        events.get_event_triggers(event_name = event_name, event = event, trigger_check = noun)
+        events.get_event_triggers(event, event_name, trigger_check = noun)
         events.get_event_item_names(event)
         assign_event_keys(event)
 
     else:
         for event in events.events:
-            events.get_event_triggers(event = event) # each loop done separately so event_item_names gets the complete dataset from the previous.
+            events.get_event_triggers(event) # each loop done separately so event_item_names gets the complete dataset from the previous.
 
         for event in events.events:
             events.get_event_item_names(event)
@@ -998,8 +1162,9 @@ class eventRegistrar:
 
         self.events = set()
         self.by_name = dict()
-        self.generated_event_by_itemname = dict()
+        self.generate_events_from_itemname = dict()
         self.start_trigger_is_item = dict()
+        #generate_event_from_item
 
         #self.generated_events = set() # really should just be collections made from those event types. This is a bad idea.
         #self.timed_events = set() # really should just be collections made from those event types. This is a bad idea.
@@ -1021,14 +1186,13 @@ class eventRegistrar:
 
         if event.is_generated_event:
             if event.start_trigger_is_item:
-                self.generated_event_by_itemname[event.start_trigger["item_trigger"]["trigger_item"]] = event.name
+                #self.generate_events_from_itemname[event.start_trigger["item_trigger"]["trigger_item"]] = event.name
+                events.generate_events_from_itemname[event.start_trigger["item_trigger"]["trigger_item"]] = event.name
 
         if event.start_trigger_is_item:
             self.start_trigger_is_item[event] = event.start_trigger["item_trigger"]["trigger_item"]
 
-        if not self.by_name.get(event.name):
-            self.by_name[event.name] = set()
-        self.by_name[event.name].add(event)
+        self.by_name[event.name] = event #one to one match of name to entry, because this is just the basis, no instances etc.
 
         #print(f"EVENT IN INTAKE: {event}\n{vars(event)}")
         #exit()
@@ -1036,6 +1200,19 @@ class eventRegistrar:
         return event, attr
 
 registrar = eventRegistrar()
+
+def register_generated_event(event_name, noun):
+    if not event_dict.get(event_name):
+        print(f"Cannot generate event `{event_name}` as {event_name} is not in the event defs file.")
+        exit()
+
+    intake_event, _ = registrar.add_to_intake(event_name, event_dict[event_name])
+    event_inst, event_entry = events.add_event(intake_event.name, vars(intake_event))
+    print(f"About to get item instances for {event_inst}, using {noun}")
+    events.get_all_item_instances(event_inst, event_entry, noun)
+    add_items_to_events(event_inst, noun)
+    return event_inst
+
 
 def initialise_eventRegistry():
 
@@ -1045,7 +1222,6 @@ def initialise_eventRegistry():
     So at this point - it has the item  names for all triggers/effects, but no instances.
     """
 
-
     for event in registrar.events:
         if not getattr(event, "is_generated_event"):
             event_inst, event_entry = events.add_event(event.name, vars(event))
@@ -1053,23 +1229,17 @@ def initialise_eventRegistry():
             events.get_all_item_instances(event_inst, event_entry)
             ## NOTE: Should not add the instances to effects/etc, we need to go through those in add_items_to_events after anyway, no? So should just add them then, when we're already going through them to prep the triggers.
 
-    print("Finished getting item instances")
-    for event in events.events:
-        print(f"event vars: {vars(event)}\n\n")
-    exit()
+
+
+    #for event in registrar.events:
+    #    if getattr(event, "is_generated_event"):
+    #        event_inst, event_entry = events.add_event(event.name, vars(event))
+    #    else:
     add_items_to_events()
+
             #print(f"Started current event: {event_inst}\nvars: {vars(event_inst)}")
 
 if __name__ == "__main__":
-
-    #for event_name in event_dict:
-    #    registrar.add_to_intake(event_name, event_dict[event_name])
-
-    #print(f"Registrar events: {registrar.events}")
-    #print("For event in registrar events: \n")
-    #for event in registrar.events:
-    #    print(f"EVENT NAME: {event.name}")
-        #print(f"VARS: {vars(event)}\n")
 
     run_full = True#False
 
@@ -1083,5 +1253,5 @@ if __name__ == "__main__":
             #print(f"Travel is limited: {(events.travel_is_limited)}")
             print(events.check_movement_limits())
 
-        add_items_to_events(None)
+        #add_items_to_events(None)
 

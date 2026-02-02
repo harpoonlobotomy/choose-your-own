@@ -5,8 +5,7 @@
         {"item_trigger": {
             "trigger_item": "local map",
             "trigger_location": "north work shed",
-            "trigger": ["item_in_inv"],
-            "flags_on_event_start": {}}
+            "trigger": ["item_in_inv"]}
     },
     "effects": {
         "hidden_items": {
@@ -26,14 +25,10 @@
             "trigger_item": "padlock",
             "trigger_location": "north graveyard",
             "trigger": ["item_broken", "item_unlocked"],
-            "flags_on_event_start": {
-                "can_pick_up": false,
+            "on_event_start": {
                 "requires_key": "iron key",
                 "key_is_placed_elsewhere": {
                     "item_in_event": "reveal_iron_key"}
-                },
-            "flags_on_event_end": {
-                "can_pick_up": true
                 }
         }
     },
@@ -43,13 +38,11 @@
                 "item_name": "padlock", "item_location": "north graveyard"}},
         "locked_items": {
             "0": {
-                "item_name": "gate", "item_location": "north graveyard",
-                "while_event": {
-                    "is_locked": true, "is_closed": true},
-                "flags_on_event_end": {
-                    "is_locked": false, "is_closed": false}}},
-        "limit_travel":
-            {"cannot_leave": ["work shed", "graveyard"]}
+                "item_name": "gate", "item_location": "north graveyard"},
+            "1": {
+                "item_name": "padlock", "item_location": "north graveyard"}},
+        "limit_travel": {
+            "cannot_leave": ["work shed", "graveyard"]}
                 },
     "messages": {
         "start_msg": "",
@@ -71,15 +64,20 @@
         },
     "end_trigger": {
         "timed_trigger": {
-            "time_unit": "days",
+            "time_unit": "day",
             "full_duration": 3,
-            "duration_tracking": 0,
             "persistent_condition": true,
-            "condition_item": "moss",
             "required_condition": {"item_in_inv": "moss"},
-            "condition_item_is_start_trigger": true
-            }
+            "condition_item_is_start_trigger": true,
+            "end_type": "success"
+            },
+        "item_trigger": {
+            "trigger_item": "moss",
+            "trigger_location": null,
+            "trigger": ["item_not_in_inv"],
+            "end_type": "failure"}
         },
+    "messages": {"start_msg": "You pick up the moss, and feel it squish a little between your fingers.", "end_msg": "After a few days, you realise the moss you've been carrying around has tried out. Damn. Or maybe you wanted some dry moss...?", "failure_msg": "You put down the still-damp moss."},
     "can_repeat_forever": true
 
   }

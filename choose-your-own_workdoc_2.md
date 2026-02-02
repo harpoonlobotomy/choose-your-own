@@ -3253,3 +3253,72 @@ Okay changing event_defs effects to:
             "0": {
 
 because otherwise I can only affect 1 item per effect-type.
+
+
+6.50pm
+Haven't tested (or set up, for that matter) the day-tracking yet, but the generated events seem to be working. drying moss starts when you pick the moss up, it runs through the event generation, triggers etc. All seems working.
+
+Though now I do need to figure out a way to have the 'moss' item be like... three pieces of moss, secretly. So it just says 'decorated by clumps of moss' until all of them are gone. Not sure yet, haven't allowed for that before. Will try.
+
+Also:
+
+The moss is now in your inventory.
+events.generate_events_from_itemname: {'moss': 'moss_dries'}
+This <ItemInstance moss (49985fa4-d287-4a45-b88c-ad09f2c0d1a3)> already has an event tied to it: <eventInstance moss_dries (ff8914dc-a12c-45ec-af64-77bf7c626c92, event state: 1>
+This needs to follow a different path to check if any triggers were met. For right now, ignore.
+
+
+Currently, if you drop the moss then pick it up again, it runs into this path because the old event still exists. idk if I want to end the event immediately if it leaves the inventory (simplest) or if it being dropped starts a new counter (so it only ends the event if out of inv for x time.) Former is certainly easier.
+
+
+Okay:
+
+Trigger: <triggerInstance 858cb72b-a73c-4ed0-a974-527aa7d45e97 for event moss_dries, event state: future/not started, Trigger item: moss>
+Trigger: <timedTrigger 9ea96af9-8205-4b25-8b1b-0b19783b7d67 for event moss_dries, event state: future/not started, None>
+
+So, event state is not updating properly
+
+
+8.17pm
+More work on it. Getting there.
+Changed how event defs works a little so I can have multiple triggers per start/end 'trigger' section. Split the timed trigger into parts - one trigger will deal with the time part, while another one manages the 'if this is not in inventory' part. Should work more easily.
+
+Okay, got that working, but now I need different end messages. Right now if you drop it, it just says 'the moss dried out after a few days', when I dropped it immediately. success/failure states for messages, I think.
+
+
+NOTE: The 'drop moss' thing should only apply if the item isn't inside something I'm carrying, either. Right now I think if I put the moss in a jar it'll still fail.
+
+Hm. Well I tried to test it:
+
+[[  put moss in glass jar  ]]
+
+inst.contained_in (move_item): <ItemInstance glass jar (0a723d5a-90ca-4e80-b9b7-39471774ef47)>
+Failed parser: <ItemInstance glass jar (0a723d5a-90ca-4e80-b9b7-39471774ef47)>
+
+Need to look into that later...
+
+
+8.32pm
+Okay, found it.
+
+    inst.contained_in = new_container
+    print(f"inst.contained_in (move_item): {inst.contained_in}")
+    print(f"SELF BY CONTAINER: {self.by_container}")
+    self.by_container[new_container].add(inst)
+    print(f"self.by_container[new_container]: {self.by_container[new_container]}")
+    exit()
+
+==
+
+SELF BY CONTAINER: {}
+
+For some reason self.by_container isn't populating properly. Will look into it later.
+
+Also vs code is slooooooooooow af at the moment. I have to wait while I type. Wonder if I've put way too much into memory at this point.
+Ah yeah, vs code's using 1,696mb and 2% cpu. That's like, 5 chrome tabs.
+
+Code.exe	19444	"C:\Users\Gabriel\AppData\Local\Programs\Microsoft VS Code\Code.exe" c:\Users\Gabriel\.vscode\extensions\ms-python.vscode-pylance-2025.10.4\dist\server.bundle.js
+
+Most of it is from this. Only about 50mb is the actual scripts. Which is still too much tbh.
+
+Anywho. Need a rest for a bit. Will fix containers tomorrow, not sure how/when those broke.

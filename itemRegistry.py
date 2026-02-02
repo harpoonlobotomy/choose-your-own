@@ -645,8 +645,12 @@ class itemRegistry:
                 new_container.children.add(inst) # Added this, it wasn't adding items as children to containers.
                 inst.contained_in = new_container
                 print(f"inst.contained_in (move_item): {inst.contained_in}")
+                print(f"SELF BY CONTAINER: {self.by_container}")
                 self.by_container[new_container].add(inst)
+                print(f"self.by_container[new_container]: {self.by_container[new_container]}")
+                exit()
                 return_text.append((f"Added [{inst}] to new container [{new_container}]", inst, new_container))
+                print(f"return text: {return_text}")
 
             if return_text:
                 return return_text

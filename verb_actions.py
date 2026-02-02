@@ -55,55 +55,60 @@ def set_noun_attr(*values, noun):
     trigger_actions=None
     trigger_done=False
 
-    print(f"Values: {values}")
-    print(f"Noun: {noun}")
-    print(f"noun.vars: {vars(noun)}")
-    print(f"Noun.event:")
-    print(noun.event)
-    print("^^ noun event ^^ ")
+    #print(f"Values: {values}")
+    #print(f"Noun: {noun}")
+    #print(f"noun.vars: {vars(noun)}")
+    #print(f"Noun.event:")
+    #print(noun.event)
+    #print("^^ noun event ^^ ")
     if hasattr(noun, "event") and getattr(noun, "event"):
         event = getattr(noun, "event")
-        print(f"event = getattr(noun, 'event'): {event} ")
-        print(f"Has event: {event}")
+        #print(f"event = getattr(noun, 'event'): {event} ")
+        #print(f"Has event: {event}")
         from eventRegistry import events
 
+        events.is_event_trigger(noun, noun.location, values)
         #event = events.event_by_name(noun.event) ## this needs to change...
-        print(f"Event by name: {event}")
-        if event:
-            print(f"EVENT VARS: {vars(event)}")
-            if event.end_triggers:
-                for trigger in event.end_triggers:
-                    if trigger.is_item_trigger:
-                        if trigger.item_inst == noun:
-                            trigger_actions = trigger.triggers
-                            print(f"trigger_actions: {trigger_actions}")
-
-                            for item_val in values:
-                                print(f"Values: {values}")
-                                print(f"item_val in values: {item_val}")
-                                item, val = item_val
-                                print(f"item: {item}, val: {val}")
-                                if trigger_actions and item in trigger_actions:
-                                    pass#print(f"[Event trigger: {noun}, {event}, {end_trigger}:{item}/{val}]")
-                                elif trigger_actions and "item_unlocked" in trigger_actions: ## need a dict or something that converts trigger-name to relevant item/val requirements.
-                                    if item == "is_locked" and val == False:
-                                        events.end_event(event)
-                                        trigger_done=True
-
-                                elif trigger_actions and "item_in_inv" in trigger_actions:
-                                    from set_up_game import game
-                                    if noun in game.inventory:
-                                        events.end_event(event)
-                                        trigger_done=True
-
-        if trigger_done:
-            if event.end_trigger["item_trigger"].get("item_flags"):
-                if event.end_trigger["item_trigger"]["item_flags"].get("flags_on_event_end"):
-                    for flag in event.end_trigger["item_trigger"]["item_flags"]["flags_on_event_end"]:
-                        setattr(noun, flag, event.end_trigger["item_trigger"]["item_flags"]["flags_on_event_end"][flag])
-
-        setattr(noun, item, val)
-        noun.event = None # Once it's served its purpose, stop it being an event obj. TODO add a proper function here to remove it from anywhere it's stored. Need to formalise the language for that first though. This works for now as the padlock can now be picked up.
+        #print(f"Event by name: {event}")
+        #if event:
+        #    #print(f"EVENT VARS: {vars(event)}")
+        #    if event.end_triggers:
+        #        for trigger in event.end_triggers:
+        #            if trigger.is_item_trigger:
+        #                if trigger.item_inst == noun:
+        #                    trigger_actions = trigger.triggers
+        #                    print(f"trigger_actions: {trigger_actions}")
+#
+        #                    for item_val in values:
+        #                        print(f"Values: {values}")
+        #                        print(f"item_val in values: {item_val}")
+        #                        item, val = item_val
+        #                        print(f"item: {item}, val: {val}")
+        #                        if trigger_actions and item in trigger_actions:
+        #                            pass#print(f"[Event trigger: {noun}, {event}, {end_trigger}:{item}/{val}]")
+        #                        elif trigger_actions and "item_unlocked" in trigger_actions: ## need a dict or something that converts trigger-name to relevant item/val requirements.
+        #                            if item == "is_locked" and val == False:
+        #                                events.end_event(event)
+        #                                trigger_done=True
+#
+        #                        elif trigger_actions and "item_in_inv" in trigger_actions:
+        #                            from set_up_game import game
+        #                            if noun in game.inventory:
+        #                                events.end_event(event)
+        #                                trigger_done=True
+#
+        #if trigger_done:
+        #    if event.end_trigger["item_trigger"].get("item_flags"):
+        #        if event.end_trigger["item_trigger"]["item_flags"].get("flags_on_event_end"):
+        #            for flag in event.end_trigger["item_trigger"]["item_flags"]["flags_on_event_end"]:
+        #                setattr(noun, flag, event.end_trigger["item_trigger"]["item_flags"]["flags_on_event_end"][flag])
+#
+        for item_val in values:
+            print(f"Values: {values}")
+            print(f"item_val in values: {item_val}")
+            item, val = item_val
+            setattr(noun, item, val)
+        #noun.event = None # Once it's served its purpose, stop it being an event obj. TODO add a proper function here to remove it from anywhere it's stored. Need to formalise the language for that first though. This works for now as the padlock can now be picked up.
 
 
 def is_loc_current_loc(location=None, cardinal=None):
@@ -1407,12 +1412,11 @@ def drop(format_tuple, input_dict):
 
             elif reason_val == 3:
                 print(f"You can't drop the {assign_colour(noun_1)}; you'd need to get it out of the {assign_colour(container)} first.")
+                return
 
             else:
                 print(f"You can't drop the {assign_colour(noun_1)}; you can't drop something you aren't carrying.")
-            return
-
-        print(f"Cannot process {input_dict} in def drop(); 4 long but direction str is not suitable.")
+                return
 
     elif len(input_dict) == 4:
         dir_or_sem = get_dir_or_sem_if_singular(input_dict)
@@ -1431,12 +1435,17 @@ def drop(format_tuple, input_dict):
                     registry.move_item(noun_1, new_container=get_noun(input_dict, 2))
                     #move_a_to_b(a=item_to_place, b=container_or_location, action=action_word, direction=direction)
                     item_interactions.add_item_to_loc()
-                    return
 
-            print(f"Couldn't move {noun_1.name} because {meaning}")
+            else:
+                print(f"Couldn't move {noun_1.name} because {meaning}")
         else:
             print(f"Cannot process {input_dict} in def drop(); 4 long but direction str is not suitable.")
             return
+
+    if noun_1 not in game.inventory:
+        from eventRegistry import events
+        events.is_event_trigger(noun_1, noun_1.location, reason = "item_not_in_inv")
+        return
 
     print(f"Cannot process {input_dict} in def drop() End of function, unresolved.")
 
