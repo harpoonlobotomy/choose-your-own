@@ -3,11 +3,20 @@
         "starts_current":true,
         "end_trigger":
         {"item_trigger": {
-            "trigger_item": "local map", "trigger_location": "north work shed", "trigger": ["item_in_inv"], "flags_on_event_start": {}
-        }
-        },
-        "effects": {"hide_item": {"item_name": "iron key", "item_loc": "north work shed"}},
-        "messages": {"start_msg": null, "end_msg": "As you pick up the regional map, an iron key falls from the folded paper and lands on the desk with a heavy thwack.", "held_msg": null}
+            "trigger_item": "local map",
+            "trigger_location": "north work shed",
+            "trigger": ["item_in_inv"],
+            "flags_on_event_start": {}}
+    },
+    "effects": {
+        "hidden_items": {
+            "0": {
+                "item_name": "iron key",
+                "item_location": "north work shed"}}},
+    "messages": {
+        "start_msg": null,
+        "end_msg": "As you pick up the regional map, an iron key falls from the folded paper and lands on the desk with a heavy thwack.",
+        "held_msg": null}
     },
 
     "graveyard_gate_opens": {
@@ -18,7 +27,10 @@
             "trigger_location": "north graveyard",
             "trigger": ["item_broken", "item_unlocked"],
             "flags_on_event_start": {
-                "can_pick_up": false, "requires_key": "iron key", "key_is_placed_elsewhere": {"item_in_event": "reveal_iron_key"}
+                "can_pick_up": false,
+                "requires_key": "iron key",
+                "key_is_placed_elsewhere": {
+                    "item_in_event": "reveal_iron_key"}
                 },
             "flags_on_event_end": {
                 "can_pick_up": true
@@ -26,33 +38,32 @@
         }
     },
     "effects":
-        {"hold_item":
-            {"item_name": "padlock", "item_loc": "north graveyard"},
-        "limit_travel":
-            {"cannot_leave": ["work shed", "graveyard"]},
-        "lock_item":
-            {"item_name": "gate", "item_loc": "north graveyard",
+        {"held_items": {
+            "0": {
+                "item_name": "padlock", "item_location": "north graveyard"}},
+        "locked_items": {
+            "0": {
+                "item_name": "gate", "item_location": "north graveyard",
                 "while_event": {
                     "is_locked": true, "is_closed": true},
                 "flags_on_event_end": {
                     "is_locked": false, "is_closed": false}}},
+        "limit_travel":
+            {"cannot_leave": ["work shed", "graveyard"]}
+                },
     "messages": {
         "start_msg": "",
         "end_msg": "As the padlock falls to the ground and the chain unravells, the graveyard gate creaks open.\n\n You see beyond the threshold of the graveyard, a variety of locations to explore.\n\n [Look at your map to see where else you can go.]\n",
         "held_msg": "Until the gate's unlocked, you don't see a way out of here."}
   },
-  "mermaid_grotto_appears": {
-    "start_trigger": {
-      "item_trigger":{
-          "trigger_item": "ocean crown", "trigger_location": null,
-          "trigger": ["item_in_inv"]
-      }
-    }
-  },
   "moss_dries": {
+
+      "is_generated_event": true,
+      "is_timed_event": true,
+
       "start_trigger": {
           "item_trigger": {
-              "no_item_restriction": true,
+              "match_item_by_name_only": true,
               "trigger_item": "moss",
               "trigger_location": null,
               "trigger": ["item_in_inv"]
@@ -62,19 +73,14 @@
         "timed_trigger": {
             "time_unit": "days",
             "full_duration": 3,
-            "constraint_tracking": 0,
-            "trigger_item": "moss",
-            "trigger_item_is_start_trigger": true,
-            "trigger_outcome": "success"
-            },
-        "item_trigger": {
-            "trigger_item": "moss",
-            "trigger": ["item_removed_from_inv"],
-            "trigger_outcome": "failure"
+            "duration_tracking": 0,
+            "persistent_condition": true,
+            "condition_item": "moss",
+            "required_condition": {"item_in_inv": "moss"},
+            "condition_item_is_start_trigger": true
             }
         },
-    "can_repeat":
-        {"repeats": "until_success"}
+    "can_repeat_forever": true
 
   }
 }

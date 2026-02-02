@@ -3222,3 +3222,34 @@ So, only moss is in item restrictions. That's correct, the map (what I'm looking
 Oh ffs. I had a != instead of a ==.
 
 Well now it gets into def check_triggers(), but doesn't get any further. Still, it's something.
+
+
+12.34pm 2/2/26
+
+Working on event triggers again/still. Last set of changes broke hidden/locked etc items
+
+Okay, so the issue is I made two separate paths for ending events via trigger. One, picking up the item, goes through is_event_trigger. The other goes through set_noun_attr, which bypasses is_event_trigger entirely and goes through the process itself and then triggers end_event directly.
+
+So I need to change that. Set_noun_attr should just check:
+
+is the noun in events.items (the set of all event=related items)
+or is the noun_name in events.no_item_restriction.
+
+If not either of these, then we can stop looking.
+
+Alternatively, we can rely on
+hasattr(noun, "event"), because itemInst should have the .event attr assigned when they're assigned to an event,
+and events.no_item_restriction for generated events.
+
+
+Honestly I'm not even sure where/when the item instances are being assigned right now. God I made this process a mess.
+
+
+1.11pm
+Okay changing event_defs effects to:
+
+    "effects": {
+        "hide_items": {
+            "0": {
+
+because otherwise I can only affect 1 item per effect-type.
