@@ -44,7 +44,7 @@ class ItemInstance:
     Represents a single item in the game world or player inventory.
     """
     def set_hidden(self): # so the noun won't be considered for picking up etc outside of whatever un-hiddening act I come up with.
-
+        # I don't know if I need this anymore? Probably keep it for now though...
         self.held_verb_actions = self.verb_actions
         self.verb_actions = set()
 
@@ -156,8 +156,11 @@ class ItemInstance:
 ###
         if "container" in self.item_type:
             self.verb_actions.add("is_container")
+            registry.by_container[self] = set()
             if hasattr(self, "starting_children"):
                 registry.new_parents.add(self.id)
+
+        #if
 
         if hasattr(self, "is_hidden") and self.is_hidden:
             self.set_hidden()
@@ -205,7 +208,7 @@ class itemRegistry:
         self.new_parents = set() ## new_parents, ID is added to all containers. Then after initial generation, force a parent/child check.
         self.child_parent = {} # just for storing the parings, for comparing child/parents directly when midway through the generation to keep things straight.
 
-        self.contained_in_temp = set() # not sure what this one was even for...
+        self.contained_in_temp = set() # This was for items that will be contained in something (by inst.contained_in) but not registered yet in case the container itself hasn't been inited yet. so was probably intending to add a loop at the end to put all the contained objs in their containers once everything was instanced.
 
         self.event_items = {}
         self.keys = set()
@@ -271,7 +274,10 @@ class itemRegistry:
             registry.generate_children_for_parent(parent=inst)
 
         if hasattr(inst, "contained_in") and inst.contained_in != None:
-            self.contained_in_temp.add(inst)
+            print(f"HASATTR CONTAINED_IN: {inst.contained_in}")
+            self.contained_in_temp.add(inst) # What on earth was this 'temp' for? is this why I had no containers for a while?
+            # Was I thinking of replacing it with 'parents/children' entirely?
+            # OH, I think I was going to add things to containers separately so they all had proper instances, otherwise if a child was made before a parent it might break things.
 
         #f hasattr(inst, "event"):
         #   for key in ("event_key", "event_item"):
@@ -611,6 +617,7 @@ class itemRegistry:
 
     def move_item(self, inst:ItemInstance, location:cardinalInstance=None, new_container:ItemInstance=None, old_container:ItemInstance=None)->list:
         logging_fn()
+        from misc_utilities import assign_colour
 
         ## REMOVE FROM ORIGINAL LOCATION ##
         old_loc = inst.location
@@ -648,11 +655,12 @@ class itemRegistry:
                 print(f"SELF BY CONTAINER: {self.by_container}")
                 self.by_container[new_container].add(inst)
                 print(f"self.by_container[new_container]: {self.by_container[new_container]}")
-                exit()
                 return_text.append((f"Added [{inst}] to new container [{new_container}]", inst, new_container))
-                print(f"return text: {return_text}")
+                print(f"Added {assign_colour(inst)} to {assign_colour(new_container)}.")
+
 
             if return_text:
+
                 return return_text
 
     def move_from_container_to_inv(self, inst:ItemInstance, inventory:list, parent:ItemInstance=None) -> tuple[list,list]:
@@ -1156,6 +1164,25 @@ def get_loc_items(loc=None, cardinal=None):
     if registry.new_parents and registry.new_parents != None:
         registry.generate_children_for_parent()
 
+def add_items_to_containers():
+
+    print(f"Adding items to containers:")
+    print(f"REGISTRY.contained_in_temp\n\n{registry.contained_in_temp}")
+    for inst in registry.contained_in_temp:
+        print(f"inst in contained_in temp: {inst}")
+        if isinstance(inst.contained_in, str):
+            print(f"inst.contained_in is a str: {inst.contained_in}")
+            containers = registry.instances_by_name(inst.contained_in)
+            print(f"Containers by that name: {containers}")
+            for cont in containers:
+                print(f"cont in containers: {cont}")
+                if hasattr(registry.by_container, cont):
+                    container = getattr(registry.by_container, cont)
+                    print(f"getattr registry.by_container, cont: {container}")
+
+
+
+
 def initialise_itemRegistry():
 
     registry.complete_location_dict()
@@ -1164,6 +1191,9 @@ def initialise_itemRegistry():
     init_item_dict()
 
     get_loc_items()
+    print("About to add items to containers:")
+    add_items_to_containers()
+    #exit()
 
     plural_word_dict = {}
 

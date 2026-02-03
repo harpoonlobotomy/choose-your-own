@@ -3322,3 +3322,61 @@ Code.exe	19444	"C:\Users\Gabriel\AppData\Local\Programs\Microsoft VS Code\Code.e
 Most of it is from this. Only about 50mb is the actual scripts. Which is still too much tbh.
 
 Anywho. Need a rest for a bit. Will fix containers tomorrow, not sure how/when those broke.
+
+
+10.05am 3/2/26
+
+So, got the containers basically working again, apparently somewhere along the line I just deleted the line that adds anything to registry.to_container. Worked immediately once i put it back in.
+
+New oddity:
+
+#   You look at the glass jar.
+#   Child dried flowers is present in parent glass jar.
+#   A glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.
+#
+#   The glass jar contains:
+#     moss
+
+Now the moss is correct, I was testing by putting the moss in the jar. But why no flowers...?
+
+
+---
+
+Okay:
+                for child in inst.starting_children:
+                    if child in inst.children:
+                        print(f"Child {child.name} is present in parent {inst.name}.")
+So the flowers were found because they're children, but the moss was found because it's inside the container.
+
+Now while I use the two interchangeably colloquially, in this  case they're different things. 'Children' are included in the item description, and are parented by default on init. The item descrip depends on their presence/absence. (Also note: I should do an item_desc like description for items, not just loc_items, so I can adapt it beyond just the binary 'has children'/'has no children' I have now.)  Items that are not children but are just in the container aren't currently added to the description, just the list below it.
+
+Really, it should all go in the item description, like it does with items. Hm.
+
+Just something generic for general items that aren't parent-specific, a 'Inside the {container} you see [items].', only printed when there are contents, else description_no_children prints instead. Should be easy enough to put into place. Better than 'flowers are mentioned in the description but not listed in the item list, moss is in the item list but not the description.
+
+tbh i like the item list though. Maybe I'll make it optional, once it actually includes all contents of course.
+
+
+Yeah I think the child/container thing is what messed me up. I changed it in item_defs too, so 'started_contained_in' becomes 'is_child'. Hm.
+
+If I'm going to reformat it I really need to get it down to one specific thing. I mean obviously items that are listed as already in the container are starting in the container. Eh.
+
+Guess I've learned a bit from doing the Events because that's just silly now.
+
+
+Oh no, wait. That's from item_definitions.py, which I don't... think I'm using anymore?
+
+Wish there was a way to check project-wide if a thing was used. It's a pain having to go through each script and check. Like how in VS projects you can see how often something is used /overall/. Would love that for this.
+
+Okay so to update to what the /actual/ data is:
+Children are not marked as children in item_defs, which is correct, they shouldn't be. Not all dried flowers are automatically children of glass jar.
+
+
+Okay re-redescribing - the container in items_main (the actual items defs document) does list children under the items. That should really be in loc_data. going to just add it in loc data items and create a flag for 'is in container named x in this location'.
+
+
+Oh riiiight. The whole 'generate children for parent' thing I set up. That's why it's like that. Okay.
+
+#   Well... I can still use most of that. Just need to redirect it to loc_data items for combinations of 'is_in_container: "glass jar" and "is_container": True.
+
+Okay I also have all the requires_key data in item_defs too. That's really not good. Surely keys and such should all be per item, /unless/ there's an item archetype that always uses the same item (all 'green lock with floral flourishes' require 'old copper key' or something.) In general though it's probably more likely not all scrolls have a key inside of them.
