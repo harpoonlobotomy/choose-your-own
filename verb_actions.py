@@ -49,69 +49,19 @@ def get_current_loc():
     cardinal = locRegistry.current
     return location, cardinal
 
-def set_noun_attr(*values, noun):
+def set_noun_attr(*values, noun:ItemInstance):
     logging_fn()
 
-    trigger_actions=None
-    trigger_done=False
-
-    print(f"Values: {values}")
-    print(f"Noun: {noun}")
-    #print(f"noun.vars: {vars(noun)}")
     if hasattr(noun, "event") and getattr(noun, "event"):
-        print(f"NOUN {noun} HAS EVENT: {noun.event}")
-    #print(f"Noun.event:")
-    #print(noun.event)
-    #print("^^ noun event ^^ ")
-    if hasattr(noun, "event") and getattr(noun, "event"):
-        if hasattr(noun, "is_event_key"):
-            print("hasattr noun.is_event_key")
-            event = getattr(noun, "event")
-            print(f"Noun {noun} has an event: {event} ")
-            #print(f"Has event: {event}")
+        if hasattr(noun, "is_event_key") and noun.is_event_key:
             from eventRegistry import events
-
             events.is_event_trigger(noun, noun.location, values)
-        #event = events.event_by_name(noun.event) ## this needs to change...
-        #print(f"Event by name: {event}")
-        #if event:
-        #    #print(f"EVENT VARS: {vars(event)}")
-        #    if event.end_triggers:
-        #        for trigger in event.end_triggers:
-        #            if trigger.is_item_trigger:
-        #                if trigger.item_inst == noun:
-        #                    trigger_actions = trigger.triggers
-        #                    print(f"trigger_actions: {trigger_actions}")
-#
-        #                    for item_val in values:
-        #                        print(f"Values: {values}")
-        #                        print(f"item_val in values: {item_val}")
-        #                        item, val = item_val
-        #                        print(f"item: {item}, val: {val}")
-        #                        if trigger_actions and item in trigger_actions:
-        #                            pass#print(f"[Event trigger: {noun}, {event}, {end_trigger}:{item}/{val}]")
-        #                        elif trigger_actions and "item_unlocked" in trigger_actions: ## need a dict or something that converts trigger-name to relevant item/val requirements.
-        #                            if item == "is_locked" and val == False:
-        #                                events.end_event(event)
-        #                                trigger_done=True
-#
-        #                        elif trigger_actions and "item_in_inv" in trigger_actions:
-        #                            from set_up_game import game
-        #                            if noun in game.inventory:
-        #                                events.end_event(event)
-        #                                trigger_done=True
-#
-        #if trigger_done:
-        #    if event.end_trigger["item_trigger"].get("item_flags"):
-        #        if event.end_trigger["item_trigger"]["item_flags"].get("flags_on_event_end"):
-        #            for flag in event.end_trigger["item_trigger"]["item_flags"]["flags_on_event_end"]:
-        #                setattr(noun, flag, event.end_trigger["item_trigger"]["item_flags"]["flags_on_event_end"][flag])
-#
-        for item_val in values:
-            print(f"Values: {values}")
-            print(f"item_val in values: {item_val}")
-            item, val = item_val
-            setattr(noun, item, val)
+
+    for item_val in values:
+        #print(f"Values: {values}")
+        #print(f"item_val in values: {item_val}")
+        item, val = item_val
+        setattr(noun, item, val)
         #noun.event = None # Once it's served its purpose, stop it being an event obj. TODO add a proper function here to remove it from anywhere it's stored. Need to formalise the language for that first though. This works for now as the padlock can now be picked up.
 
 
@@ -917,10 +867,7 @@ def open_item(format_tuple, input_dict):
             if len(format_tuple) < 3:
                 print(f"{assign_colour(noun_inst)} is locked; you have to unlock it before it'll open.")
         elif is_closed:
-            #print(f"noun.is_open: {noun_inst.is_open}")
-            print(f"Noun {noun_inst} is closed, sending to set_noun_attr")
             set_noun_attr(("is_open", True), noun=noun_inst)
-            #noun_inst.is_open = True
             print(f"You open the {assign_colour(noun_inst)}.")
             #print(f"noun.is_open: {noun_inst.is_open}")
     else:
@@ -1018,10 +965,9 @@ def open_close(format_tuple, input_dict):
 #            if verb_inst.name in ("close", "lock"):
 #                print(f"The {noun_inst["instance"].name} is already closed.")
 #                return
-            print(f"Noun {noun_inst} is closed, sending to set_noun_attr")
+            #print(f"Noun {noun_inst} is closed, sending to set_noun_attr")
             set_noun_attr(("is_open", True), noun=noun_inst)
             print(f"You open the {assign_colour(noun_inst)}")
-            noun_inst.is_open = True
             noun_inst.is_locked = False
             print_children_in_container(noun_inst)
             return

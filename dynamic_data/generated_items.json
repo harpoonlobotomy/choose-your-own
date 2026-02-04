@@ -305,12 +305,12 @@
     "is_hidden": false,
     "can_combine": null,
     "combine_with": "DVD",
-    "can_examine": false,
-    "breakable": false,
     "can_be_charged": true,
     "is_charged": false,
     "takes_batteries": false,
-    "has_batteries": false
+    "has_batteries": false,
+    "can_examine": false,
+    "breakable": false
   },
   "window": {
     "nicename": "a window",

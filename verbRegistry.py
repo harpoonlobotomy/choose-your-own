@@ -501,6 +501,9 @@ class Parser:
 
         for i, token in enumerate(tokens):
             options = Parser.token_role_options(token)
+            if len(tokens) == 1 and not token.kind:
+                return None, None
+            #if not options:
             if len(tokens) in (1, 2):
                 if list(token.kind)[0] in ("location", "direction"):
                     instance = Parser.get_viable_verb(token, force_location=True)
@@ -508,6 +511,7 @@ class Parser:
                 if list(token.kind)[0] == "cardinal":
                     instance = Parser.get_viable_verb(token, force_location=True)
                     verb_instances.append({i:instance})
+
             if "verb" in options:
                 instance = Parser.get_viable_verb(token)
                 verb_instances.append({i:instance})
@@ -529,8 +533,8 @@ class Parser:
 
         if not verb_instances:
             if not meta_instances:
-                print("No verb_instance or meta_instance found in get_sequences_from_tokens. Returning None.")
-                print(f"TOKENS: {tokens}")
+                #print("No verb_instance or meta_instance found in get_sequences_from_tokens. Returning None.")
+                #print(f"TOKENS: {tokens}")
                 return None, None
 
         #print(f"verb instances: {verb_instances}")
@@ -642,7 +646,7 @@ class Parser:
 
         tokens = self.tokenise(input_str, nouns_list, locations, directions, cardinals, membrane)
 
-        print(f"Tokens: {tokens}")
+        #print(f"Tokens: {tokens}")
         if isinstance(tokens, tuple):
             word_str, part2 = tokens
             #print(f"part 1: {word_str}, part2: {part2}")
@@ -652,7 +656,8 @@ class Parser:
         sequences, verb_instances = self.get_sequences_from_tokens(tokens)
 
         if not sequences:
-            print(f"No viable sequences found for {input_str}.")
+            MOVE_UP = "\033[A"
+            print(f"{MOVE_UP}\033[1;31m[ Couldn't find anything to do with the input `{input_str}`, sorry. ]\033[0m")
             clean_parts = []
             token_parts = [i.kind for i in tokens if i.kind != "null"]
             for parts in token_parts:

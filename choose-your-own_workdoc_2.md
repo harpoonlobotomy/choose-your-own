@@ -3603,3 +3603,20 @@ okay, works now. the scroll is opened, the key appears.
 
 4.23pm
 Ah. Now I see why I broke the items into items vs keys - now, when i pick up the old gold key, it triggers the event check, even though it was an item created by the event and will never trigger anything. Okay. I need to put 'event.keys' back into play and we only check /those/. item.event is useful, but should also have item.is_event_key - any item tied to an event gets item.event, but those who are connected to a trigger get item.is_event_key. So, the scroll does have both (until the event is done, at which point the is_event_key flag is removed so it doesn't keep trying over and over (unless the event is ongoing/repeatable/etc), but the key only ever gets item.event, which we don't run through trigger_check on alone.)
+
+
+Okay. Going to fix parenting.
+
+containers get .starting_children and .children. Starting children is only ever the initial children in loc_data. Children is whatever items it's holding.
+
+7.02pm
+Okay. Refixed children I think, and travel limits are working again.
+
+7.25 Really need to redo the open/close functions in verb_actions. They work, but so very needlessly messy.
+
+
+7.59
+so - iron key appears, but is not unhidden when map event ends. an in, appears in the printed irem list, but attrs say is)hidden = true, and IU can't pick it up.,
+bleh
+
+Okay but, the 'you see a few scattered objects' print /doesn't/ include the key. So specifically, the description text needs to be checking is_hidden attr, which clearly it isn't yet. That's fixable. But, the key /should/ be unhidden now, as the event just ended. Will work on it tomorrow, too tired for now.

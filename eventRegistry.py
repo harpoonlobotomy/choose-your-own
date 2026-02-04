@@ -76,6 +76,7 @@ class eventInstance:
         self.start_triggers = set() # just to make sure these are here so other things can be more solid.
         self.end_triggers = set()
         self.items = set()
+        self.event_keys = set()
         self.trigger_items = set() ## TODO implement this
         # Was going to use this, but am just using init_items directly, makes more sense.
         #self.generate_on_start = set() # set of item names to generate on start, for events that have items 'appear' when they run (eg scroll has key, key 'falls out of scroll' at current loc.)
@@ -107,14 +108,17 @@ class eventInstance:
         #if attr.get("immediate_action") and attr["immediate_action"].get("item_trigger") and attr["immediate_action"]["item_trigger"].get("on_event"):
             self.on_event = attr["on_event"] # Surely this is unnecessary, should be added by the item in attr, right?
 
-        if attr.get("effects") and attr["effects"].get("limit_travel"):
+        if attr.get("limit_travel"):
             self.limits_travel = True
 
-            if attr["effects"]["limit_travel"].get("cannot_leave"):
-                if not hasattr(self, "travel_limited_to"):
-                    self.travel_limited_to = set()
-                for location in attr["effects"]["limit_travel"].get("cannot_leave"):
-                    self.travel_limited_to.add(location)
+        #if attr.get("effects") and attr["effects"].get("limit_travel"):
+        #    self.limits_travel = True
+
+#        #    if attr["effects"]["limit_travel"].get("cannot_leave"):
+        #        if not hasattr(self, "travel_limited_to"):
+        #            self.travel_limited_to = set()
+        #        for location in attr["effects"]["limit_travel"].get("cannot_leave"):
+        #            self.travel_limited_to.add(location)
 
     def __repr__(self):
         return f"<eventInstance {self.name} ({self.id}, event state: {self.state}>"#, all attributes: {self.attr})>"
@@ -383,7 +387,6 @@ class eventRegistry:
     def add_event(self, event_name, event_attr):
 
         event = eventInstance(event_name, event_attr)
-        print(f"Adding event: {event_name} // {event}")
         self.events.add(event)
         self.by_id[event.id] = event
         if not self.by_name.get(event.name):
@@ -393,8 +396,12 @@ class eventRegistry:
         if hasattr(event, "starts_current") and getattr(event, "starts_current"):
             self.by_state[1].add(event)
             event.state = 1 # (current event)
-            if event.limits_travel:
-                self.travel_is_limited = True
+
+        if event.limits_travel:
+            print(f"EVENT LIMITS TRAVEL IN INSTANCE: {event.limits_travel}")
+            self.travel_is_limited = True
+            if hasattr(self, "travel_limited_to"):
+                print(self.travel_limited_to)
 
         else:
             #print(f"Event not starts_current: {event}")
@@ -413,12 +420,6 @@ class eventRegistry:
 
         if not hasattr(event, "item_name_to_loc"):
             print(f"No item_name_to_loc dict for {event}\n")
-
-        print(f"EVENT:{event}, noun: {noun}")
-
-        # Need to add a thing here for generated events to apply the newly found noun inst to the event directly.
-
-
 
         if noun and noun.name not in event.item_names:
             event.item_names.add(noun.name)
@@ -446,42 +447,9 @@ class eventRegistry:
 
             if not instance:
                 if event_entry:
-                    print(f"EVENT ENTRY: \n{event_entry}")
+                    print(f"EVENT ENTRY: \n{event_entry}, no instance found")
                 loc_items = registry.get_item_by_location(item_loc)
                 print(f"No instance found by location for {item}")
-
-        #print(f"registrar.start_trigger_is_item: \n{registrar.start_trigger_is_item}")
-   #     for evnt, data in registrar.start_trigger_is_item.items():
-   #         print(f"evnt: {evnt}, data: {data}")
-   #         #print(f"evnt: {evnt}, evnt type: {type(evnt)}, data: {data}")
-   #         if evnt.name == event.name:
-   #             print(f"Start trigger is item: {event}, {data}")
-# TODO The above should be used in set triggers etc, not here.
-
-
-        #if registrar.start_trigger_is_item.get(event):
-            #print(f"registrar.start_trigger_is_item.get(event): {registrar.start_trigger_is_item.get(event)}")
-        """
-        remove_dict = {}
-        add_dict = {}
-        for effect in ("hidden_items", "held_items", "locked_items"):
-            for item in getattr(event, effect):
-                if item_name_to_inst.get(item):
-                    print(f"{effect} item: {item}")
-                    remove_dict.setdefault(effect, set()).add(item)
-                    add_dict.setdefault(effect, set()).add(item_name_to_inst.get(item))
-
-            if remove_dict.get(effect):
-                for item in remove_dict[effect]:
-                    print(f"Current {effect}: {getattr(event, effect)}")
-                    getattr(event, effect).add(item_name_to_inst.get(item))
-                    getattr(event, effect).remove(item)
-                print(f"Updated {effect}: {getattr(event, effect)}")
-        """
-        #for trigger in ("start_trigger")
-
-
-
 
         missing = list(i for i in event.item_names if i not in event.item_name_to_inst)
         if missing:
@@ -489,14 +457,6 @@ class eventRegistry:
                 for item in missing:
                     event.generate_on_start.add(item)
             print(f"Missing instances: [[{missing}]]")
-        #exit()
-
-
-        """
-EVENT VARS: {'name': 'reveal_iron_key', 'id': '3f2fea7b-b681-49f1-ac1d-2068557dbfb7', 'state': 1, 'triggers': set(), 'start_triggers': set(), 'end_triggers': set(), 'items': set(), 'msgs': {'start_msg': None, 'end_msg': 'As you pick up the regional map, an iron key falls from the folded paper and lands on the desk with a heavy thwack.', 'held_msg': None}, 'limits_travel': False, 'held_items': set(), 'hidden_items': {'iron key'}, 'locked_items': set(), 'start_trigger_location': None, 'end_trigger_location': None, 'no_item_restriction': {}, 'constraint_tracking': {}, 'timed_triggers': set(), 'attr': {'starts_current': True, 'end_trigger': {'item_trigger': {'trigger_item': 'local map', 'trigger_location': 'north work shed', 'trigger': ['item_in_inv'], 'flags_on_event_start': {}}}, 'effects': {'hide_item': {'item_name': 'iron key', 'item_location': 'north work shed'}}, 'messages': {'start_msg': None, 'end_msg': 'As you pick up the regional map, an iron key falls from the folded paper and lands on the desk with a heavy thwack.', 'held_msg': None}}, 'start_trigger_is_item': False, 'end_trigger_is_item': True, 'item_names': {'local map', 'iron
-key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': True, 'start_trigger': None, 'end_trigger': 'local map', 'effects': {'hide_item': {'item_name': 'iron key', 'item_location': 'north work shed'}}, 'messages': {'start_msg': None, 'end_msg': 'As you pick up the regional map, an iron key falls from the folded paper and lands on the desk with a heavy thwack.', 'held_msg': None}, 'event_state': 1}
-
-        """
 
     def get_event_by_noun(self, event_name, noun_inst):
 
@@ -506,7 +466,6 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
             if noun_inst in event.items:
                 noun_inst.event = event
                 return event
-
         return
 
 
@@ -529,13 +488,10 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
 
     def get_event_triggers(self, event, event_name = None, trigger_check = None):
         logging_fn()
-        print(f"GET EVENT TRIGGERS IS RUNNING for {event}")
-        #event_dict = load_json()
 
         from env_data import locRegistry as loc
         from itemRegistry import registry
 
-        #print(f"event name: {event_name}, event: {event}, trigger_check: {trigger_check}")
         if event:
             if isinstance(event, eventInstance):
                 if not event_name:
@@ -556,15 +512,9 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
                 event = event_name
                 event_name = event.name
 
-        #event_entry = event_dict.get(event_name)
-        #print(f"EVENT ENTRY: {event_entry}")
-            """
-        print(f"EVENT VARS: {vars}")
-        if hasattr(event, "start_trigger_is_item" and getattr(event, "start_trigger_is_item")):
-            print(f"Event {event} has a start trigger item: {event.name}")
-            """
-        if event.is_generated_event:
-            print(f"{event} is a generated event, no pre-defined instances here.")
+        #
+        #if event.is_generated_event:
+        #    print(f"{event} is a generated event, no pre-defined instances here.")
 
         for trigger in ("start_trigger", "end_trigger", "immediate_action"):
             trigger_dict = {}
@@ -624,7 +574,7 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
                     })
 
                 if trig_data.get("item_trigger"):
-                    event.trigger_items.add(trigger_item)
+                    event.event_keys.add(trigger_item)
                     event.triggers.add(Trigger(trigger_dict, event))
 
                 if trig_data.get("timed_trigger"):
@@ -643,7 +593,7 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
                     print(f"Trig data timed trigger: {trig_data["timed_trigger"]}")
                     trigger_dict["trigger_model"] = "timed_trigger"
                     trigger_dict["timed_trigger"] = trig_data["timed_trigger"]
-                    event.trigger_items.add(trigger_item)
+                    event.event_keys.add(trigger_item)
                     event.triggers.add(timedTrigger(trigger_dict, event))
                     print(f"EVENT TRIGGERS: {event.triggers}")
 
@@ -706,20 +656,13 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
 
         def get_items_inner(event):
 
-            #if event.trigger_items:
-            #    print(f"Event trigger items: {event.trigger_items}")
-            #    for item in event.trigger_items:
-            #        print(f"Item in event.trigger_items: {item}, type; {type(item)}")
-
             for item in event.items:
                 #print(f"ITEM IN EVENT ITEMS: {item}")
                 if isinstance(item, ItemInstance):
                     events.item_names[item.name] = item
                     setattr(item, "event", event) # TODO: Doing this way too often, need to find the single choke point they all pass through no matter where they're added from.
-                    if event.trigger_items and item in event.trigger_items:
-                        print(f"Item in event.trigger_items: {item}, type; {type(item)}, event: {event}")
+                    if event.event_keys and item in event.event_keys:
                         item.is_event_key = True
-
                 else:
                     print(f"This item does not have an instance: {item} (in event {event.name})")
 
@@ -788,7 +731,6 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
     def play_event_msg(self, msg_type="held", event=None, print_txt=True):
         logging_fn()
 
-        #print(f"msg_type: [[ {msg_type} ]]")
 
         def print_current(event, state_type="held", print_text=False):
 
@@ -807,28 +749,26 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
         if "_msg" in msg_type:
             msg_type = msg_type.replace("_msg", "")
 
+
         if msg_type == "held":
 
             if self.travel_is_limited:
                 if event == None:
                     event = self.held_at.get("held_by")
 
-                return print_current(event, state_type="held", print_text=print_txt)
+                return print_current(event, state_type=msg_type, end_type=end_type, print_text=print_txt)
 
         if not event:
             print("Need to define event for start/end messages.")
             return ""
 
-        if msg_type == "start":
-            return print_current(event, state_type="start", print_text=print_txt)
-
-        if msg_type == "end":
-            if not event:
-                print("Need to define event for start/end messages.")
-                return ""
-
         end_type = event.end_type
-        return print_current(event, state_type=end_type, print_text=print_txt)
+        if msg_type in ("start", "end"):
+            if msg_type == "end":
+                if end_type and end_type == "failure":
+                    msg_type = "failure"
+
+        return print_current(event, state_type=msg_type, print_text=print_txt)
 
     def do_immediate_actions(self, event, trig):
 
@@ -980,69 +920,42 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
             for k, v in effect_attrs[effect]["on_event_start"].items():
                 setattr(event_item, k, v)
                 """
-            print(f"event to end: hidden items:: {event_to_end.hidden_items}")
-            if event_to_end.hidden_items:
-                pop_me = set()
-                for item in event_to_end.hidden_items:
-                    setattr(item, "is_hidden", False)
-                    setattr(item, "can_pick_up", True)
-                    pop_me.add(item)
-                    print_desc_again = True
+            #print(f"event to end: hidden items:: {event_to_end.hidden_items}")
+            for item_set in ("hidden_items", "held_items", "locked_items"):
+                if getattr(event_to_end, item_set):
+                    pop_me = set()
+                    for item in getattr(event_to_end, item_set):
+                        if effect_attrs.get(item_set):
+                            for k, v in effect_attrs[item_set].items():
+                                setattr(item, k, v)
+                        pop_me.add(item)
+                        if item_set == "hidden_items": # NOTE: use this to make it print the description again after an end, so if something was meant to suddenly appear, use this (even if it wasn't technically hiding)
+                            print_desc_again = True
 
-                if pop_me:
-                    for item in pop_me:
-                        if item not in event_to_end.hidden_items:
-                            print(f"Cannot remove {item} from event_to_end.hidden_items as it's not there.")
-                        else:
-                            event_to_end.hidden_items.remove(item)
-
-            print(f"event to end: held items:: {event_to_end.held_items}")
-            if event_to_end.held_items:
-                pop_me = set()
-                for item in event_to_end.held_items:
-                    setattr(item, "can_pick_up", True)
-                    pop_me.add(item)
-
-                if pop_me:
-                    for item in pop_me:
-                        if item not in event_to_end.held_items:
-                            print(f"Cannot remove {item} from event_to_end.held_items as it's not there.")
-                        else:
-                            event_to_end.held_items.remove(item)
-
-            print(f"event to end: locked items:: {event_to_end.locked_items}")
-            if event_to_end.locked_items:
-                pop_me = set()
-                for item in event_to_end.locked_items:
-                    setattr(item, "is_locked", False)
-                    pop_me.add(item)
-
-                if pop_me:
-                    for item in pop_me:
-                        if item not in event_to_end.locked_items:
-                            print(f"Cannot remove {item} from event_to_end.locked_items as it's not there.")
-                        else:
-                            event_to_end.locked_items.remove(item)
-
+                    if pop_me:
+                        for item in pop_me:
+                            if item not in getattr(event_to_end, item_set):
+                                print(f"Cannot remove {item} from {event_to_end.name}.{item_set} as it's not there.")
+                            else:
+                                getattr(event_to_end, item_set).remove(item)
 
             print("Need a section here that removes itemInstances from events.items. Or maybe not, if one day it'd be useful to know that this is the coin you gave to the witch in exchange for your left eye or smth")
 
             #    'failure_msg'
 
 
-            print(f"MESSAGES: {event_to_end.msgs}")
-            print(f"VARS EVENT: {vars(event_to_end)}")
-            if hasattr(event_to_end, "end_type"):
+            #print(f"MESSAGES: {event_to_end.msgs}")
+            #print(f"VARS EVENT: {vars(event_to_end)}")
+            if hasattr(event_to_end, "end_type") and event_to_end.end_type == "failure":
                 print(event_to_end.end_type)
             # Need to add the removal of .event from items, if relevant. Depends if an event can run again. Need to formalise that.
-                if event_to_end.end_type == "failure":
-                    if hasattr(event_to_end, "messages"):
+                    #if hasattr(event_to_end, "messages"):
                         #failure = event_to_end.msgs.get("failure_msg")
-                        self.play_event_msg(msg_type="failure", event=event_to_end, print_txt=True)
+                self.play_event_msg(msg_type="failure", event=event_to_end, print_txt=True)
 
-                else:
-                    print("")
-                    self.play_event_msg(msg_type="end", event=event_to_end, print_txt=True)
+            else:
+                print("")
+                self.play_event_msg(msg_type="end", event=event_to_end, print_txt=True)
 
             if trigger:
                 trigger.state = 0
@@ -1278,8 +1191,10 @@ class eventIntake:
                     setattr(self, effect, attr["effects"][effect])
                     if effect == "limit_travel":
                         self.limit_travel = True
+                        print(f"LIMIT TRUE FOR {self.name}")
                         if attr["effects"]["limit_travel"].get("cannot_leave"):
                             self.travel_limited_to = attr["effects"]["limit_travel"]["cannot_leave"]
+                            print(f"LIMIT TRUE FOR {self.name} for locations {self.travel_limited_to}")
 
         self.messages = attr.get("messages")
 
@@ -1434,18 +1349,20 @@ def initialise_eventRegistry():
 
     for event in registrar.events:
         if not getattr(event, "is_generated_event"):
+            print(f"EVENT VARS: {vars(event)}")
             event_inst, event_entry = events.add_event(event.name, vars(event))
             #print(f"About to get item instances for {event_inst}")
             events.get_all_item_instances(event_inst, event_entry)
             ## NOTE: Should not add the instances to effects/etc, we need to go through those in add_items_to_events after anyway, no? So should just add them then, when we're already going through them to prep the triggers.
 
+    # blocked out so it doesn't do the work twice, is invoked in initialise_all
+    #add_items_to_events()
 
 
     #for event in registrar.events:
     #    if getattr(event, "is_generated_event"):
     #        event_inst, event_entry = events.add_event(event.name, vars(event))
     #    else:
-    add_items_to_events()
 
             #print(f"Started current event: {event_inst}\nvars: {vars(event_inst)}")
 

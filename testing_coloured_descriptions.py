@@ -44,7 +44,7 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
             location = "city hotel room"
         if loc_dict[location].get(cardinal) and loc_dict[location][cardinal].get("item_desc"):
             long_dict = loc_dict[location][cardinal]["item_desc"]
-            #no_starting_items = long_dict.get("no_starting_items")
+            no_starting_items = long_dict.get("no_starting_items")
             #no_items_text = long_dict.get("no_items")
             local_items = itemRegistry.registry.get_item_by_location(f"{location} {cardinal}")
             for item in long_dict:
@@ -77,9 +77,11 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
 
             if len(long_desc) == 1 and no_items_text:
                 if local_items:
-                    long_desc.append(no_starting_items)
+                    if no_starting_items:
+                        long_desc.append(no_starting_items)
                     for loc_item in local_items:
-                        long_desc.append(loc_item)
+                        print(f"loc_item: {loc_item}")
+                        long_desc.append(assign_colour(loc_item, nicename=True))
 
                 else:
                     long_desc.append(no_items_text)
