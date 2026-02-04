@@ -137,21 +137,12 @@
   "scroll": {
     "nicename": "an old scroll",
     "description": "An old parchment scroll, seemingly abandoned at a hidden shrine.",
-    "item_type": "{'books_paper', 'can_pick_up', 'container'}",
+    "item_type": "{'books_paper', 'can_pick_up'}",
     "alt_names": {},
     "is_hidden": false,
     "is_open": false,
     "can_be_opened": true,
     "can_be_closed": true,
-    "can_be_locked": true,
-    "is_locked": true,
-    "requires_key": false,
-    "starting_children": [
-      "old gold key"
-    ],
-    "container_limits": "small_flat_things",
-    "name_no_children": null,
-    "description_no_children": null,
     "can_pick_up": true,
     "item_size": "smaller_than_basketball",
     "print_on_investigate": true,

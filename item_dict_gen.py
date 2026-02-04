@@ -325,6 +325,9 @@ def init_item_dict():
         with open(json_to_edit, 'w') as file:
             json.dump(generator.item_defs, file, indent=2)
 
+    return generator.item_defs
+
+
 if __name__ == "__main__":
     #NOTE: REMOVE THIS LATER. Once it's instated within the initialisation process.
     #     ***************************************

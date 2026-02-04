@@ -181,7 +181,7 @@ combined_wordphrases = { # maybe something like this, instead of the hardcoded e
 verb_defs_dict = {
     f"attributes": {"alt_words": ["att"], "allowed_null": None, "formats": [verb_noun]},
     ## NOTE: Allowed_null is not used at present. All nulls are treated as equal, and all sem/loc/dirs are treated as viable in all cases. Will need to change this later but for now it works alright.
-    "meta": {"alt_words": [], "allowed_null": None, "formats": [meta_noun, meta_loc, meta_car]},
+    "meta": {"alt_words": [], "allowed_null": None, "formats": [meta, meta_noun, meta_loc, meta_car]},
     "go": {"alt_words":["go to", "approach", "head", "travel"], "allowed_null": None, "formats": [loc_only, loc_car, car_loc, verb_car_loc, verb_loc_car, dir_only, car_only, verb_only, verb_loc, verb_dir, verb_dir_loc, verb_dir_noun, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car, verb_noun_noun]},
 #   ,making 'move' its own verb because it needs to route to both 'push' and 'go'. # Turns out I already had one but used it terribly and still had alt_words directing actions away. So now it's here.
     "move": {"alt_words": ["shift"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun, loc_only, loc_car, car_loc, verb_car_loc, verb_loc_car, dir_only, car_only, verb_only, verb_loc, verb_dir, verb_dir_loc, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car]},

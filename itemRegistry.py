@@ -122,6 +122,8 @@ class ItemInstance:
         self.starting_location:dict = attr.get("starting_location") # currently is styr
         self.verb_actions = set()
         self.location:cardinalInstance = None
+        self.event = None
+        self.is_event_key = False
 
         if attr.get("exceptions"):
             if attr["exceptions"].get("starting_location"):
@@ -215,20 +217,27 @@ class itemRegistry:
 
         self.locks_keys = {}
 
-        import json
-        json_primary = "dynamic_data/items_main.json" # may break things
-        with open(json_primary, 'r') as file:
-            item_defs = json.load(file)
-
-        self.item_defs = item_defs
+        #removed item_defs from here, because we should be using the generator's item defs.
+        #import json
+        #json_primary = "dynamic_data/items_main.json" # may break things
+        #with open(json_primary, 'r') as file:
+        #    item_defs = json.load(file)
+#
+        self.item_defs = {}#item_defs
 
     # -------------------------
     # Creation / deletion
     # -------------------------
 
-    def init_single(self, item_name, item_entry):
+    def init_single(self, item_name, item_entry = None):
         #print(f"[init_single] ITEM NAME: {item_name}")
         #print(f"[init_single] ITEM ENTRY: {item_entry}")
+        if not item_entry:
+            if self.item_defs.get(item_name):
+                item_entry = self.item_defs[item_name]
+            else:
+                print(f"No item entry provided for `{item_name}` and no entry found in registry.item_defs. Cannot build without knowing what it is.")
+                exit()
         inst = ItemInstance(item_name, item_entry)
         all_items_generated.add(inst)
         self.instances.add(inst)
@@ -287,6 +296,8 @@ class itemRegistry:
 
         if hasattr(inst, "is_key"):
             self.keys.add(inst)
+
+        self.instances.add(inst)
 
         return inst
 
@@ -1036,7 +1047,6 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, part
 
     inst = registry.init_single(item_name, new_item_dict)
     all_item_names_generated.append((inst, "new_item_from_str"))
-    registry.instances.add(inst)
     registry.temp_items.add(inst)
 
     print(f"\nend of new_item_from_str for {inst}")
@@ -1186,7 +1196,7 @@ def initialise_itemRegistry():
     registry.complete_location_dict()
 
     from item_dict_gen import init_item_dict
-    init_item_dict()
+    registry.item_defs = init_item_dict()
 
     get_loc_items()
     print("About to add items to containers:")

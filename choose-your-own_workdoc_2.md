@@ -3488,3 +3488,118 @@ For trig in event.end_triggers: <triggerInstance 1e61ce24-5d22-476c-bb01-f4992e6
 Update this, the second event trigger should have the same instance. I assume I had in there to ignore items that already have events or smth?
 
 Okay, got event failures working (ie dropping the moss while it's still wet. Updated description works now.) will test tomorrow to see how I want to do the time-keeping portion.
+
+
+1.38pm 4/2/26
+Not sure when 'meta' as a sole command broke. Hm.
+Oh, but 'edit' works. Okay...
+And ironically get_viable_verb makes 'edit' to the word 'meta' . I guess when I made meta a verbalike it broke things. No idea.
+
+I mean 'meta' is a viable format on its own so it shouldn't be failing. Need to look in to it...
+Ooh. 'meta' wasn't an allowed format for the verb 'meta'. lmao
+
+Okay, got meta events working. But this is odd:
+All events:
+['effects', 'reveal_iron_key', 'scroll_drops_key', 'graveyard_gate_opens']
+
+Why is 'effects' an event...??
+
+Okay, fixed. Had an issue in the JSON.
+
+Now, next thing.
+
+        "effects": {
+            "held_items": {
+                "0": {
+                    "item_name": "old gold key"}},
+Now I don't have 'old gold key' placed at the location where it's hidden. It's 'inside' the scroll and falls out.
+Need to decide if/when to generate it automatically if I haven't put in in loc_data. Because that would be handy - being able to just say 'these things are hidden by this event', and generate them when necessary. Also, because what if you take the scroll away and open it elsewhere? The items shouldn't magically appear back in the shrine.
+So am going to add a thing for 'generate item if in missing'.
+(missing = list(i for i in event.item_names if i not in event.item_name_to_inst))
+BUT only generate when the event runs. Which works I think, because we only start the open scroll event when the scroll opens, it doesn't run on startup I think.
+
+Okay, no, we add items initially so we know that the scroll is tied to a future event.
+So in that case, going to add a set to the event, so that when it starts, if it has 'items_to_generate', it generates them on start at current_loc. That should work.
+
+Huh. I only add instances to registry.instances in one place, but I generate them in many. That's not ideal...
+Have moved self.instances.add(inst) to within init_single (which is how all item instances are generated) so self.instances should be a complete list. Not by_name though, because I also used that as a check to see where things were being added from. TODO Will sort out registry.by_name shortly.
+
+Why is exit() blue in vs code, now? It used to be yellow (as in, a function/method), but it's been blue for a while. I wish it was yellow again.
+on mouseover:
+    (variable) def exit(code: _ExitCode = None) -> NoReturn
+And there, exit is yellow, like it should be. Bleh.
+I think it changed when I realised i could use strings inside the () to print exit messages, and it suddenly started being a variable. Bleh.
+
+
+2.48pm
+okay so am partway through sorting out the immediate events and the attributes involved.
+
+Notes:
+Was able to unlock the padlock with the iron key, and it printed all the event metadata, but didn't print the end message. And though I was able to take the padlock and leave the graveyard, the gate description when looked at still said it was held closed.
+
+At the shrine, no items listed in the scene descriptions, but when I looked at the scroll, the key was inside.
+
+Hm.
+Now it's not even finding the scroll on event init:
+
+EVENT:<eventInstance scroll_drops_key (c08986ac-0668-438e-9da2-c093a4246de6, event state: 2>, noun: None
+No instance found by location for scroll
+No instance found by location for old gold key
+Missing instances: [[['scroll', 'old gold key']]]
+
+Oh, just figured out why I was able to go to the shrine even though the gate still said it was closed - travel limits are broken.
+
+
+
+"""
+If I meta shrine,
+Location item data:
+
+Editing scroll
+`scroll`: `{'description': '', 'is_hidden': False, 'is_container': True, 'container_limits': 4}`
+
+So it's in loc data. But not an instance, it seems?
+
+But no, because there /is/ a scroll in the north shrine, even before the item starts. I'm very confused.
+"""
+(So maybe it's just not being shown. Actually that makes sense, I turned the item lists off, but never finished the 'list items in description' part I meant to, apparently..)
+
+Okay. So, today:
+    fix travel limiter
+    fix end-of-event (message print, gate unlock/open, travel enabled)
+    Add local items to description prints (or reenable local item list print)
+
+lmao now it's saying the scroll is locked?
+[[  open scroll  ]]
+
+You cannot open a locked scroll.
+Okay.
+
+
+3.24pm
+Well at least one problem solved - it wasn't finding the scroll because I'd written 'trigger item location' instead of 'trigger location'. Oops.
+
+Also, the scroll is giving the default description ("you see nothing special"), but the item def has a description ("An old parchment scroll, seemingly abandoned at a hidden shrine.", that should be printed.)
+
+
+3.54pm
+Oh this is odd, glad I caught it.
+
+
+open scroll
+Before input_parser
+Tokens: [Token(idx=0, text='open', kind={'verb'}, canonical='open'), Token(idx=1, text='scroll', kind={'noun'}, canonical='scroll')]
+After input_parser
+[[  open scroll  ]]ances
+
+Failed parser: 'ItemInstance' object has no attribute 'enter_location'
+
+Now I was in north graveyard, and so the scroll should be completely unfindable. Fixed that one already now though.
+
+Need a straightforward flag for 'is immediate action event', but this is fine for now.
+
+okay, works now. the scroll is opened, the key appears.
+
+
+4.23pm
+Ah. Now I see why I broke the items into items vs keys - now, when i pick up the old gold key, it triggers the event check, even though it was an item created by the event and will never trigger anything. Okay. I need to put 'event.keys' back into play and we only check /those/. item.event is useful, but should also have item.is_event_key - any item tied to an event gets item.event, but those who are connected to a trigger get item.is_event_key. So, the scroll does have both (until the event is done, at which point the is_event_key flag is removed so it doesn't keep trying over and over (unless the event is ongoing/repeatable/etc), but the key only ever gets item.event, which we don't run through trigger_check on alone.)

@@ -55,19 +55,23 @@ def set_noun_attr(*values, noun):
     trigger_actions=None
     trigger_done=False
 
-    #print(f"Values: {values}")
-    #print(f"Noun: {noun}")
+    print(f"Values: {values}")
+    print(f"Noun: {noun}")
     #print(f"noun.vars: {vars(noun)}")
+    if hasattr(noun, "event") and getattr(noun, "event"):
+        print(f"NOUN {noun} HAS EVENT: {noun.event}")
     #print(f"Noun.event:")
     #print(noun.event)
     #print("^^ noun event ^^ ")
     if hasattr(noun, "event") and getattr(noun, "event"):
-        event = getattr(noun, "event")
-        #print(f"event = getattr(noun, 'event'): {event} ")
-        #print(f"Has event: {event}")
-        from eventRegistry import events
+        if hasattr(noun, "is_event_key"):
+            print("hasattr noun.is_event_key")
+            event = getattr(noun, "event")
+            print(f"Noun {noun} has an event: {event} ")
+            #print(f"Has event: {event}")
+            from eventRegistry import events
 
-        events.is_event_trigger(noun, noun.location, values)
+            events.is_event_trigger(noun, noun.location, values)
         #event = events.event_by_name(noun.event) ## this needs to change...
         #print(f"Event by name: {event}")
         #if event:
@@ -248,7 +252,7 @@ def check_lock_open_state(noun_inst, verb_inst):
 
 def can_interact(noun_inst): # succeeds if accessible
 
-    _, _, reason_val, _ = registry.check_item_is_accessible(noun_inst)
+    _, _, reason_val, meaning = registry.check_item_is_accessible(noun_inst)
     if reason_val in (0, 3, 4, 5, 8):
         return 1, reason_val
     else:
@@ -900,9 +904,11 @@ def open_item(format_tuple, input_dict):
             if hasattr(noun, "is_key"):
                 lock_unlock(format_tuple, input_dict, do_open=True)
                 return
+
     if hasattr(noun, "is_transition_obj"):
         noun_inst = noun
 
+    accessible, _ = can_interact(noun_inst)
     inst, container, reason_val, meaning = registry.check_item_is_accessible(noun_inst)
     if reason_val in (0, 3, 4, 5):
         is_closed, is_locked, locked_and_have_key = check_lock_open_state(noun_inst=noun_inst, verb_inst = verb_entry["instance"])
@@ -912,7 +918,9 @@ def open_item(format_tuple, input_dict):
                 print(f"{assign_colour(noun_inst)} is locked; you have to unlock it before it'll open.")
         elif is_closed:
             #print(f"noun.is_open: {noun_inst.is_open}")
-            noun_inst.is_open = True
+            print(f"Noun {noun_inst} is closed, sending to set_noun_attr")
+            set_noun_attr(("is_open", True), noun=noun_inst)
+            #noun_inst.is_open = True
             print(f"You open the {assign_colour(noun_inst)}.")
             #print(f"noun.is_open: {noun_inst.is_open}")
     else:
@@ -1010,6 +1018,8 @@ def open_close(format_tuple, input_dict):
 #            if verb_inst.name in ("close", "lock"):
 #                print(f"The {noun_inst["instance"].name} is already closed.")
 #                return
+            print(f"Noun {noun_inst} is closed, sending to set_noun_attr")
+            set_noun_attr(("is_open", True), noun=noun_inst)
             print(f"You open the {assign_colour(noun_inst)}")
             noun_inst.is_open = True
             noun_inst.is_locked = False
@@ -1076,10 +1086,12 @@ def simple_open_close(format_tuple, input_dict):
                     return
                 #print(f"noun_inst.is_open now: {noun_inst.is_open}")
                 _, _, reason_val, meaning  = registry.check_item_is_accessible(noun_inst)
-                if reason_val in (0, 5) or (reason_val == 6 and hasattr(noun_inst, "is_transition_obj") and noun_inst.enter_location == loc.current.place):
-
+                if reason_val in (0, 5) or (reason_val == 6 and hasattr(noun_inst, "is_transition_obj") and (hasattr(noun_inst, "enter_location") and noun_inst.enter_location == loc.current.place)):
+# NOTE: This is where 'open x' goes to. I have far too many routes for opening/closing items. CULL THEM.
+                    print(f"Noun {noun_inst} is closed, sending to set_noun_attr")
                     print(f"You open the {assign_colour(noun_inst)}.")
-                    noun_inst.is_open = True
+                    set_noun_attr(("is_open", True), noun=noun_inst)
+                    #noun_inst.is_open = True
                     #print(f"noun_inst.is_open now: {noun_inst.is_open}")
                     return
 
@@ -1394,7 +1406,7 @@ def drop(format_tuple, input_dict):
             if reason_val == 5:
                 registry.drop(noun_1, game.inventory)
                 print(f"Dropped the {assign_colour(noun_1)} onto the ground here at the {assign_colour(loc.current, card_type='ern_name')}")
-                
+
 
             elif reason_val == 3:
                 print(f"You can't drop the {assign_colour(noun_1)}; you'd need to get it out of the {assign_colour(container)} first.")

@@ -10,6 +10,55 @@ def yes_test(string=""):
     if test in ("y", "yes"):
         return 1
 
+def select_event():
+
+    event = None
+    from eventRegistry import events
+    print("All events: ")
+    print_yellow(list(events.by_name), invert=True)
+    while not event:
+        test = input("\nType name of the event you want to edit: ")
+        if test == "":
+            print("Returning to menu.")
+            return
+        for event_name, inst in events.by_name.items():
+            if test == event_name:
+                event = inst
+
+    print(f"What do you want to view for `{event_name}`?")
+    options = {
+        1: "Event triggers",
+        2: "Event items",
+        3: "Hidden/held/event-locked items",
+        4: "Time data (if event is Timed)",
+        5: "Other"
+    }
+    event_options = []
+    for key, value in options.items():
+        event_options.append(f"{str(key)}: {value}\n)")
+    #print(event_options)
+    test = input(event_options)
+    if test == "":
+        print("Returning to menu.")
+        return
+    if len(test) == 1:
+        try:
+            val = int(test)
+            if val:
+                result = options.get(val)
+                if not result:
+                    print(f"Could not find option for {val}.")
+                    return
+                print(f"Getting `{result}`")
+        except Exception as e:
+            print(f"Failed to get result: {e}")
+
+
+
+
+
+
+
 def select_noun(noun_name=None):
 
     noun_instance = None
@@ -520,14 +569,16 @@ def meta_control(input_format, noun=None, location=None, cardinal=None):
     print("\n")
     while True:
         print("\nWhat do you want to do?\n")
-        test = input("\n1: See/edit an item\n2: See/edit a location\n3: See/edit an event\n4: Add temp location data to main loc_data file\n5: Other\nAnything else: Leave meta control\n\n")
+        test = input("\n1: See/edit an item\n2: See/edit a location\n3: Get event details\n4: Add temp location data to main loc_data file\n5: Other\nAnything else: Leave meta control\n\n")
         if test in ("1", "2", "3", "5"):
             if test == "1":
                 edit_noun(select_noun())
             elif test == "2":
                 edit_location(select_location())
             elif test == "3":
+                select_event()
                 print("Not implemented yet.")
+            elif test == "4":
                 add_temp_to_loc_data()
             elif test == "5":
                 print("Going to do_other")

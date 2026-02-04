@@ -4,4 +4,4 @@
 enable_tui: bool = False
 run_tests = False# True
 white_bg = True
-print_items_in_area = False
+print_items_in_area = True

@@ -120,12 +120,7 @@
             "generic": "The shrine itself is fragile looking, with candles still not burnt down entirely."},
       "short_desc": "A wooden shrine, with aged fabric flags and various trinkets",
       "items": {
-        "scroll": {
-            "description": "",
-            "is_hidden": false,
-            "is_container": true,
-            "container_limits": 4
-        }
+        "scroll": {}
       }
     },
     "east": {

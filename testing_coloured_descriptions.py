@@ -58,7 +58,7 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                      no_starting_items = long_dict["no_starting_items"]
                 else:
                     if item:
-                        print(f"Item: {item} // type: {type(item)}")
+                        #print(f"Item: {item} // type: {type(item)}")
                         #itemRegistry.registry.
                         if itemRegistry.registry.instances_by_name(item):
                             #print(f"Local items: {local_items}")

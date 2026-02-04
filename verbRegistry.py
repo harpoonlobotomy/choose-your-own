@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 #import generate_locations
+from logger import logging_fn
 from printing import print_green, print_red
 from verb_actions import get_current_loc
 
@@ -557,6 +558,9 @@ class Parser:
                                 viable_sequences.append(seq)
                             elif set(seq) == verb.kind and seq not in viable_sequences:
                                 viable_sequences.append(seq)
+                            elif isinstance(seq, list) and len(seq) == 1: ## Added to allow 'meta' to work. Not sure why it was needed, though.
+                                if seq[0] in verb.kind:
+                                    viable_sequences.append(seq)
 
                     if not viable_sequences:
                         meta = meta_instances[0]
@@ -628,6 +632,7 @@ class Parser:
 
 
     def input_parser(self, input_str):
+        logging_fn()
         from verb_membrane import membrane
 
         nouns_list = membrane.nouns_list
@@ -637,7 +642,7 @@ class Parser:
 
         tokens = self.tokenise(input_str, nouns_list, locations, directions, cardinals, membrane)
 
-        #print(f"Tokens: {tokens}")
+        print(f"Tokens: {tokens}")
         if isinstance(tokens, tuple):
             word_str, part2 = tokens
             #print(f"part 1: {word_str}, part2: {part2}")
@@ -647,7 +652,7 @@ class Parser:
         sequences, verb_instances = self.get_sequences_from_tokens(tokens)
 
         if not sequences:
-            #print(f"No viable sequences found for {input_str}.")
+            print(f"No viable sequences found for {input_str}.")
             clean_parts = []
             token_parts = [i.kind for i in tokens if i.kind != "null"]
             for parts in token_parts:

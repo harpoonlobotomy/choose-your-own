@@ -1,5 +1,5 @@
 {
-    "reveal_iron_key": {
+ "reveal_iron_key": {
         "starts_current":true,
         "end_trigger":
         {"item_trigger": {
@@ -17,7 +17,7 @@
         "held_msg": null}
     },
 
-    "graveyard_gate_opens": {
+"graveyard_gate_opens": {
     "starts_current":true,
     "end_trigger":
         {"item_trigger": {
@@ -79,22 +79,22 @@
 
     "can_repeat_forever": true},
 
-    "scroll_drops_key": {
-        "is_quick_event": true,
-        "starts_current": false,
-        "immediate_action": {
-            "item_trigger": {
-                "trigger_item": "scroll",
-                "trigger_item_location": "north shrine",
-                "triggered_by": ["item_opened"]}
-            }
-        },
-        "effects": {
-            "held_items": {
-                "0": {
-                    "item_name": "old gold key"}},
-            "hidden_items": {
-                "0": {
-                    "item_name": "old gold key"}}
+"scroll_drops_key": {
+    "is_quick_event": true,
+    "repeats": false,
+    "starts_current": false,
+    "immediate_action": {
+        "item_trigger": {
+            "trigger_item": "scroll",
+            "trigger_location": "north shrine",
+            "triggered_by": ["item_opened"]
+        }
+    },
+    "effects": {
+        "init_items": {
+            "0": {"item_name": "old gold key"}}},
+    "messages": {
+        "start_msg": "As the scroll rolls open in your hands, a small, tarnished gold key falls from it."
     }
+  }
 }
