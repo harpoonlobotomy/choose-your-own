@@ -3380,3 +3380,111 @@ Oh riiiight. The whole 'generate children for parent' thing I set up. That's why
 #   Well... I can still use most of that. Just need to redirect it to loc_data items for combinations of 'is_in_container: "glass jar" and "is_container": True.
 
 Okay I also have all the requires_key data in item_defs too. That's really not good. Surely keys and such should all be per item, /unless/ there's an item archetype that always uses the same item (all 'green lock with floral flourishes' require 'old copper key' or something.) In general though it's probably more likely not all scrolls have a key inside of them.
+
+
+Have removed all long_desc entries from loc_data, now they're all just in item_desc[generic]. If there are extra items or if all items can be removed, those follow. But if prev it was in long_desc, now it's in item_desc generic.
+
+
+Where on earth is the dict that says the container size:str?
+Oh it's in item_definitions.py. I really need to see if that's actually used anywhere or if it's just pure reference, in which case the data it holds can can probably go elsewhere...
+
+Okay so get_item_defs(item_name=None) isn't used anywhere according to ctrl-click. So will remove it. NOTE: if instances suddenly break, try putting it back.
+
+so, edit_item_defs and test_class both use the item definitions from item_definitions.py. But nothing I'm actually currently using. So mark that to delete later.
+
+
+11.35am:
+Contemplating making the 'key falls out of the scroll when you open it' an event, rather than a weird container interaction (because I don't want the scroll to be a container otherwise). But, contrary to other events, I want it to start and end in the same 'turn' - triggers when the scroll is opened, unhides the key, prints the end message, and ends. Might need to add a different route in is_event_trigger for that, the current setup will just start it then return immediately.
+
+2.41pm
+I need to edit this:
+"description": "a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers."
+to be something like item_desc.
+
+3.16pm
+Also just remembered I need to make there be multiple pieces of moss.
+For now, added `"has_multiple_instances": 3`, will make it work later.
+
+4.37pm
+Have changed the event def for moss:
+    "end_trigger": {
+        "timed_trigger": {
+            "time_unit": "day",
+            "full_duration": 3,
+            "persistent_condition": true,
+            "end_type": "success"},
+
+        "item_trigger": {
+            "trigger_item": "moss",
+            "trigger_location": null,
+            "triggered_by": ["item_not_in_inv"],
+            "end_type": "failure"}
+
+No longer gives item data for the timed end trigger; I don't want that one triggering when the moss is dropped. Two separate triggers.
+
+
+Added self.end_type to event_intake, will implement it to the instances later.
+
+
+-------
+
+The moss is now in your inventory.
+Failed parser: cannot access local variable 'event' where it is not associated with a value
+
+NOTE:
+[[  look at inventory  ]]
+should work. Currently it does nothing.
+
+Fixed the issue with the moss event. Seems to work now at least basically. Still need to fix the jar's parenting (or starting_children/containers overall, really) but it's something.
+
+4.36pm
+Okay so I'm thinking of using inst.children for item-is-container-for, and starting_children for the specific items a container starts with. I think it's simple enough.
+
+4.40pm
+so it works now. Need to change the 'no_starting_children' thing, because this:
+`A glass jar, now empty aside from some bits of debris.`
+doesn't work when it's followed by
+    `The glass jar contains:`
+        `moss`
+
+
+5.16pm
+You're facing east. You see a variety of headstones, most quite worn, and not much else. It's quite empty here...
+
+This doesn't really work when there /are/ items there. counting only the initial items (in item_desc) isn't ideal.
+
+-------
+
+You're in a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+The entrance gates are to the north. To the east sit a variety of headstones, to the south stands a mausoleum, and to the west is what looks like a work shed of some kind.
+
+You're facing east. You see a variety of headstones, most quite worn, and not much else. It's quite empty here...
+
+
+take flowers
+Before input_parser
+After input_parser
+[[  take dried flowers  ]]
+
+The dried flowers are now in your inventory.
+
+I can  pick the flowers up even though they're not mentioned, so they are local...
+
+Okay yeah, so it takes the names of the items in items_desc, and if those are missing it prints no_items. So I need to add a tangent to that, that if there are visible items in the area they get listed, and the 'no_items' only plays when there are actually no items.
+
+
+Why don't I just make the inventory an item. Just make it a container, right? Wouldn't have to bother with any meta rubbish. Just format it differently maybe.
+
+
+NOTE:
+
+For trig in event.end_triggers: <timedTrigger 1c692712-fdef-4511-99c6-b16d26933392 for event moss_dries, event state: current/ongoing, Trigger item: <ItemInstance moss (53c718f2-a01b-49e9-99d4-48ba692a2794)>>
+item inst == noun
+REASON: item_not_in_inv, type: <class 'str'>
+trigger acts: {'item_in_inv'}
+Could not parse item_not_in_inv, type: <class 'str'>
+For trig in event.end_triggers: <triggerInstance 1e61ce24-5d22-476c-bb01-f4992e6c84d8 for event moss_dries, event state: current/ongoing, Trigger item: moss>
+
+Update this, the second event trigger should have the same instance. I assume I had in there to ignore items that already have events or smth?
+
+Okay, got event failures working (ie dropping the moss while it's still wet. Updated description works now.) will test tomorrow to see how I want to do the time-keeping portion.

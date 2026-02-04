@@ -44,7 +44,9 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
             location = "city hotel room"
         if loc_dict[location].get(cardinal) and loc_dict[location][cardinal].get("item_desc"):
             long_dict = loc_dict[location][cardinal]["item_desc"]
-            no_items_text = long_dict.get("no_items")
+            #no_starting_items = long_dict.get("no_starting_items")
+            #no_items_text = long_dict.get("no_items")
+            local_items = itemRegistry.registry.get_item_by_location(f"{location} {cardinal}")
             for item in long_dict:
                 if item == "generic":
                     start = long_dict[item]
@@ -52,11 +54,13 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                     long_desc.append(start)
                 elif item == "no_items":
                     no_items_text = long_dict[item]
+                elif item == "no_starting_items":
+                     no_starting_items = long_dict["no_starting_items"]
                 else:
                     if item:
-                        #print(f"Item: {item}")
+                        print(f"Item: {item} // type: {type(item)}")
+                        #itemRegistry.registry.
                         if itemRegistry.registry.instances_by_name(item):
-                            local_items = itemRegistry.registry.get_item_by_location(f"{location} {cardinal}")
                             #print(f"Local items: {local_items}")
                             if local_items:
                                 for inst in itemRegistry.registry.instances_by_name(item):
@@ -70,8 +74,15 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
 
                                             long_desc.append(test)
 
+
             if len(long_desc) == 1 and no_items_text:
-                long_desc.append(no_items_text)
+                if local_items:
+                    long_desc.append(no_starting_items)
+                    for loc_item in local_items:
+                        long_desc.append(loc_item)
+
+                else:
+                    long_desc.append(no_items_text)
         else:
             if loc_dict[location].get(cardinal) and loc_dict[location][cardinal].get("long_desc"):
                 long_desc.append(loc_dict[location][cardinal].get("long_desc"))

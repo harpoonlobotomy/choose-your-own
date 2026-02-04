@@ -8,6 +8,7 @@ from env_data import cardinalInstance, locRegistry as loc
 from misc_utilities import assign_colour
 from logger import logging_fn
 from printing import print_green
+import verb_actions
 
 def look_at(response):
     print("[LOOK_AT] in item interactions.")
@@ -46,12 +47,13 @@ def look_at_item(item_inst): ## this is just using everything from registry. Sho
 
             print(f"You look at the {assign_colour(item_inst)}{extra}")
             print(assign_colour(registry.describe(item_inst, caps=True), colour="description"))
-            children = registry.instances_by_container(item_inst)
-            if children:
-                print(f"\nThe {assign_colour(item_inst)} contains:")
-                from misc_utilities import col_list
-                children = ", ".join(col_list(children))
-                print(f"  {children}")
+            verb_actions.print_children_in_container(item_inst)
+            #children = registry.instances_by_container(item_inst)
+            #if children:
+            #    print(f"\nThe {assign_colour(item_inst)} contains:")
+            #    from misc_utilities import col_list
+            #    children = ", ".join(col_list(children))
+            #    print(f"  {children}")
 
             from set_up_game import game
             if item_inst == game.map_item:

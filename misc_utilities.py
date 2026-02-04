@@ -336,7 +336,7 @@ def separate_loot(child_input=None, parent_input=None, inventory=[]): ## should 
 ### COLOUR ASSIGNMENT
 
 def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=False, not_bold=False, caps=False, card_type = None):
-    logging_fn()
+    #logging_fn()
     from tui.colours import Colours
 
 #    if item is a list, run it through col_list. Might be recursive as hell though. idk. Need to figure how how/when col_list is used first.

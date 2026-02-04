@@ -234,33 +234,15 @@ def check_lock_open_state(noun_inst, verb_inst):
 
     is_closed = is_locked = locked_have_key = False
 
-    inst, container, reason_val, meaning = registry.check_item_is_accessible(noun_inst) ## checks if the item is accessible, not if it itself is locked. It only checks the lock/key for the containing obj.
-    #print(f"MEANING for {noun_inst} ({reason_val}): {meaning}")
-    #print(f"reason val: {reason_val}")
-    if reason_val in (0, 3, 4, 5, 8): # all 'not closed/locked container options
-        if hasattr(noun_inst, "is_open"):
-            if noun_inst.is_open == False:
-                is_closed = True
-        if hasattr(noun_inst, "is_locked"):
-            if noun_inst.is_locked == True: # why the hell was this 'false'? Bah.
-                is_locked = True
-    elif reason_val == 1:
+    #if reason_val in (0, 3, 4, 5, 8): # all 'not closed/locked container options
+    if hasattr(noun_inst, "is_open") and not noun_inst.is_open:
         is_closed = True
-    elif reason_val == 2:
-        #is_locked = True
-        if hasattr(noun_inst, "is_locked") and noun_inst.is_locked:
-            #print(f"IS_LOCKED: `{noun_inst.is_locked}`")
-            if hasattr(noun_inst, "needs_key"):
-                key_inst = None
-                #print(f"key: `{noun_inst.needs_key}`")
-                inst, container, reason_val, meaning = registry.check_item_is_accessible(noun_inst.needs_key)
-                #print(f"MEANING (is locked, is not open): {meaning}")
-                #if container and isinstance(container, ItemInstance) and container.name == noun_inst.needs_key:
-                #    key_inst = container ## Not sure what this was meant to be doing. I'm too tired to be doing this.
-                if reason_val in (0, 3, 4, 5):
-                    locked_have_key = True
-                else:
-                    is_locked = True
+    if hasattr(noun_inst, "is_locked") and noun_inst.is_locked:
+        is_locked = True
+        if hasattr(noun_inst, "needs_key"):
+            inst, container, reason_val, meaning = registry.check_item_is_accessible(noun_inst.needs_key)
+            if reason_val in (0, 3, 4, 5):
+                locked_have_key = True
 
     return is_closed, is_locked, locked_have_key
 
@@ -946,12 +928,15 @@ def close(format_tuple, input_dict):
     print(f"Cannot process {input_dict} in def close() End of function, unresolved. (Function not yet written)")
 
 def print_children_in_container(noun_inst):
-    children = registry.instances_by_container(noun_inst)
+
+    children = set()
+    if hasattr(noun_inst, "children"):
+        children = noun_inst.children
+
     if children:
         print(f"\nThe {assign_colour(noun_inst)} contains:")
         children = ", ".join(col_list(children))
         print(f"  {children}")
-
 
 
 def open_close(format_tuple, input_dict):
@@ -1409,6 +1394,7 @@ def drop(format_tuple, input_dict):
             if reason_val == 5:
                 registry.drop(noun_1, game.inventory)
                 print(f"Dropped the {assign_colour(noun_1)} onto the ground here at the {assign_colour(loc.current, card_type='ern_name')}")
+                
 
             elif reason_val == 3:
                 print(f"You can't drop the {assign_colour(noun_1)}; you'd need to get it out of the {assign_colour(container)} first.")

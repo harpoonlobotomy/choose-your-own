@@ -17,7 +17,7 @@ print("Item registry is being run right now.")
 type_defaults = {
     "standard": {},
     "static": {"can_examine": False, "breakable": False},
-    "all_items": {"starting_location": None, "current_loc": None, "alt_names": {}, "is_hidden": False},
+    #"all_items": {"starting_location": None, "current_loc": None, "alt_names": {}, "is_hidden": False},
     "container": {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False, 'starting_children': None, 'container_limits': 4, "name_no_children": None, "description_no_children": None},
     "key": {"is_key": True},
     "can_pick_up": {"can_pick_up": True, "item_size": 0, "started_contained_in": None, "contained_in": None},
@@ -114,7 +114,7 @@ class ItemInstance:
             setattr(self, attribute, attr[attribute])
 
         self.name:str = definition_key
-        self.nicename:str = attr.get("name")
+        self.nicename:str = attr.get("nicename")
         self.is_transition_obj = False
         self.item_type = self.clean_item_types(attr["item_type"])
         self.colour = None
@@ -382,6 +382,7 @@ class itemRegistry:
 
                 if len(instance_children) == len(parent.starting_children):
                     parent.starting_children = instance_children
+                    parent.children = set(instance_children)
                     registry.new_parents.remove(parent.id)
                 else:
                     if (len(instance_children) + len(registry.child_parent) == len(parent.starting_children)) or (len(parent.starting_children) == instance_count):
@@ -548,13 +549,12 @@ class itemRegistry:
             if container:
                 if container in inventory_list:
                     confirmed_container = container
-                    if confirmed_container:
-                        if (hasattr(confirmed_container, "is_closed") and getattr(confirmed_container, "is_closed")):
-                            reason = 1
-                        elif (hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked")):
-                            reason = 2
-                        else:
-                            reason = 3
+                    if (hasattr(confirmed_container, "is_closed") and getattr(confirmed_container, "is_closed")):
+                        reason = 1
+                    elif (hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked")):
+                        reason = 2
+                    else:
+                        reason = 3
                 else:
                     confirmed_container = in_local_items_list(container, local_items_list)
                     if confirmed_container:
@@ -595,15 +595,14 @@ class itemRegistry:
 
             return None, confirmed_container, reason, meaning
 
-        if not isinstance(inst, ItemInstance):
-            if isinstance(inst, str) and inst != None:
-                named_instances = self.instances_by_name(inst)
-                if named_instances:
-                    for item in named_instances:
-                        confirmed_inst, confirmed_container, reason_val, meaning = run_check(item)
+        #if not isinstance(inst, ItemInstance):
+        #    if isinstance(inst, str) and inst != None:
+        #        named_instances = self.instances_by_name(inst)
+        #        if named_instances:
+        #            for item in named_instances:
+        #                confirmed_inst, confirmed_container, reason_val, meaning = run_check(item)
 
-        else:
-            confirmed_inst, confirmed_container, reason_val, meaning = run_check(inst)
+        confirmed_inst, confirmed_container, reason_val, meaning = run_check(inst)
 
         if confirmed_inst != None:
             return confirmed_inst, confirmed_container, reason_val, meaning
@@ -635,6 +634,7 @@ class itemRegistry:
             if not self.by_location.get(location):
                 self.by_location[location] = set()
             self.by_location[location].add(inst)
+            print(f"inst.location: {inst.location}")
 
         if old_container or new_container or hasattr(inst, "contained_in"):
             return_text = []
@@ -647,20 +647,17 @@ class itemRegistry:
                     parent.children.remove(inst)
                     inst.contained_in = None
                     return_text.append((f"Item `[{inst}]` removed from old container `[{parent}]`", inst, parent))
+                    print(f"Removed {assign_colour(inst)} from {assign_colour(parent)}.")
 
             if new_container:
                 new_container.children.add(inst) # Added this, it wasn't adding items as children to containers.
                 inst.contained_in = new_container
-                print(f"inst.contained_in (move_item): {inst.contained_in}")
-                print(f"SELF BY CONTAINER: {self.by_container}")
-                self.by_container[new_container].add(inst)
-                print(f"self.by_container[new_container]: {self.by_container[new_container]}")
+
                 return_text.append((f"Added [{inst}] to new container [{new_container}]", inst, new_container))
                 print(f"Added {assign_colour(inst)} to {assign_colour(new_container)}.")
 
 
             if return_text:
-
                 return return_text
 
     def move_from_container_to_inv(self, inst:ItemInstance, inventory:list, parent:ItemInstance=None) -> tuple[list,list]:
@@ -1019,6 +1016,7 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, part
         loc_cardinal = "graveyard north"
 
     if partial_dict and isinstance(partial_dict, dict):
+        print("elif partial_dict.get('name'): Not sure this'll work any more now I've renamed it to 'nicename'.")
         if partial_dict.get(item_name):
             new_item_dict = partial_dict[item_name]
         elif partial_dict.get("name"):

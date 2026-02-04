@@ -235,7 +235,7 @@ class placeRegistry:
 
 
     def by_cardinal_str(self, cardinal_str:str|dict, loc=None) -> cardinalInstance:
-        logging_fn()
+        #logging_fn()
         if isinstance(cardinal_str, dict):
             loc, cardinal_str = next(iter(cardinal_str.items()))
         elif isinstance(cardinal_str, str):

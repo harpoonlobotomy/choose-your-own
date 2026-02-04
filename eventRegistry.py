@@ -254,7 +254,7 @@ class Trigger:
 
     def __init__(self, trigger_dict, event:eventInstance):
 
-        #print(f"TRIGGER DICT: {trigger_dict}")
+        print(f"TRIGGER DICT: {trigger_dict}")
         """
 TRIGGER DICT: {'event': <eventInstance graveyard_gate_opens (27df1d29-6d80-4329-b955-77f39de45be5, event state: 1>,
 'trigger_model': 'item_trigger',
@@ -404,6 +404,8 @@ class eventRegistry:
 
         if not hasattr(event, "item_name_to_loc"):
             print(f"No item_name_to_loc dict for {event}\n")
+
+        print(f"EVENT:{event}, noun: {noun}")
 
         # Need to add a thing here for generated events to apply the newly found noun inst to the event directly.
 
@@ -556,7 +558,7 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
                                     break
                             # Assumes that an item of that name will be correct by default. Not ideal. Should probably check it has the event tag, but here we're ruling those /out/ instead of prioritising them. TODO: Will work on this later.
 
-                    trigger_actions = trig_data["item_trigger"]["trigger"]
+                    trigger_actions = trig_data["item_trigger"]["triggered_by"]
 
 
                     item_flags_on_start = trig_data["item_trigger"].get("on_event_start")
@@ -568,6 +570,7 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
 
                 trigger_dict.update({
                     "event": event,
+                    "end_type": trig_data["item_trigger"].get("end_type"),
                     "trigger_model": "item_trigger",
                     "trigger_type": trigger,
                     "trigger_item": trigger_item,
@@ -645,7 +648,7 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
     def get_event_item_names(self, event):
         logging_fn()
 
-        print(f"Get event item names: EVENT:: {event}, type: {type(event)}")
+        #print(f"Get event item names: EVENT:: {event}, type: {type(event)}")
 
         def get_items_inner(event):
             for item in event.items:
@@ -721,9 +724,12 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
     def play_event_msg(self, msg_type="held", event=None, print_txt=True):
         logging_fn()
 
+        print(f"msg_type: [[ {msg_type} ]]")
+
         def print_current(event, state_type="held", print_text=False):
 
             if not event.msgs:
+                print(f"NO EVENT MESGS: {event}")
                 return
             if event.msgs.get(f"{state_type}_msg"):
                 msg = event.msgs[f"{state_type}_msg"]
@@ -757,7 +763,8 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
                 print("Need to define event for start/end messages.")
                 return ""
 
-            return print_current(event, state_type="end", print_text=print_txt)
+        end_type = event.end_type
+        return print_current(event, state_type=end_type, print_text=print_txt)
 
 
     def start_event(self, event_name:str, event:eventInstance=None):
@@ -891,11 +898,25 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
                         else:
                             event_to_end.locked_items.remove(item)
 
+
             print("Need a section here that removes itemInstances from events.items. Or maybe not, if one day it'd be useful to know that this is the coin you gave to the witch in exchange for your left eye or smth")
 
+            #    'failure_msg'
 
+
+            print(f"MESSAGES: {event_to_end.msgs}")
+            print(f"VARS EVENT: {vars(event_to_end)}")
+            if hasattr(event_to_end, "end_type"):
+                print(event_to_end.end_type)
             # Need to add the removal of .event from items, if relevant. Depends if an event can run again. Need to formalise that.
-            self.play_event_msg(msg_type="end", event=event_to_end)
+                if event_to_end.end_type == "failure":
+                    if hasattr(event_to_end, "messages"):
+                        #failure = event_to_end.msgs.get("failure_msg")
+                        self.play_event_msg(msg_type="failure", event=event_to_end, print_txt=True)
+
+                else:
+                    print("")
+                    self.play_event_msg(msg_type="end", event=event_to_end, print_txt=True)
 
             if trigger:
                 trigger.state = 0
@@ -941,12 +962,17 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
                         print("item inst == noun")
                         print(f"REASON: {reason}, type: {type(reason)}")
                         print(f"trigger acts: {trig.triggers}")
-                        if isinstance(reason, str) and reason in trig.triggers:
-                            if trig.item_inst_loc and trig.item_inst_loc != noun_loc:
-                                continue # fail if the fail should have a location but doesn't. Doesn't apply to any current ones, but if you have to read a book under a specific tree, this would apply.
-                            print("ENDING EVENT VIA IS_EVENT_TRIGGER")
-                            self.end_event(event, trig, noun_loc)
-                            return
+                        if isinstance(reason, str):
+                            print("reason is str")
+                            for thing in trig.triggers:
+                                print(f"THInG: {thing}")
+                            if reason in trig.triggers:
+                                print(f"reason in trig.triggers: {trig.triggers}")
+                                if hasattr(trig, "item_inst_loc") and getattr(trig, "item_inst_loc") != None and trig.item_inst_loc != noun_loc:
+                                    continue # fail if the fail should have a location but doesn't. Doesn't apply to any current ones, but if you have to read a book under a specific tree, this would apply.
+                                print("ENDING EVENT VIA IS_EVENT_TRIGGER")
+                                self.end_event(event, trig, noun_loc)
+                                return
 
                         elif isinstance(reason, tuple):
                             print(f"REASON TUPLE: {reason}, len: {len(reason)}") # will it always need to go to inner? Not sure.
@@ -976,13 +1002,14 @@ key'}, 'is_generated_event': None, 'is_timed_event': None, 'starts_current': Tru
 
             intake_event = registrar.by_name.get(event_name)
 
-
             if intake_event and hasattr(intake_event, "start_trigger") and intake_event.start_trigger.get("item_trigger"):
                 if intake_event.start_trigger["item_trigger"].get("match_item_by_name_only"):
-                    #print(f"Reason item is in this check? {reason}")
-                    if hasattr(intake_event, "required_condition"):
+                    print(f"Reason item is in this check? {reason}")
+                    print(f"INTAKE EVENT: \n{vars(intake_event)}")
+                    if intake_event.start_trigger["item_trigger"].get("triggered_by"):
+                        print(f"intake_event.triggered_by: {intake_event.start_trigger["item_trigger"].get("triggered_by"):}")
                         if isinstance(reason, str):
-                            if reason in intake_event.required_condition:
+                            if reason in intake_event.start_trigger["item_trigger"].get("triggered_by"):
                                 #print("The reason is correct, the event should be started.")
                                 event = register_generated_event(event_name, noun_inst)
                                 self.start_event(event_name = event.name, event = event)
@@ -1021,10 +1048,6 @@ class eventIntake:
         self.full_duration = attr["end_trigger"]["timed_trigger"]["full_duration"]
         self.persistent_condition = attr["end_trigger"]["timed_trigger"]["persistent_condition"] # This is here so if it's just a thing that starts and continues on without interruption or reliance on something continuing, you can just omit that section.
 
-        self.required_condition = attr["end_trigger"]["timed_trigger"]["required_condition"]
-        self.condition_item_is_start_trigger = attr["end_trigger"]["timed_trigger"]["condition_item_is_start_trigger"]
-
-
     def __init__(self, event_name, attr):
 
         self.name = event_name
@@ -1042,23 +1065,42 @@ class eventIntake:
 
         self.starts_current = attr.get("starts_current")
         self.start_trigger = attr.get("start_trigger")
-        if self.start_trigger:
-            if attr["start_trigger"].get("item_trigger"):
-                self.start_trigger_is_item = True
-                #self.start_trigger = attr["start_trigger"]["item_trigger"].get("trigger_item")
-                self.item_names.add(attr["start_trigger"]["item_trigger"].get("trigger_item"))
-                if attr["start_trigger"]["item_trigger"].get("trigger_location"):
-                    self.item_name_to_loc[attr["start_trigger"]["item_trigger"]["trigger_item"]] = attr["start_trigger"]["item_trigger"]["trigger_location"]
-
         self.end_trigger = attr.get("end_trigger")
+
+        for trig in ("start_trigger", "end_trigger"):
+            if attr.get(trig):
+                if attr[trig].get("item_trigger"):
+                    #if attr[trig].get("end_type"):
+                    #    self.end_type "failure"}
+                    setattr(self, f"{trig}_is_item", True)
+                    self.item_names.add(attr[trig]["item_trigger"].get("trigger_item"))
+                    if attr[trig]["item_trigger"].get("trigger_location"):
+                        self.item_name_to_loc[attr[trig]["item_trigger"]["trigger_item"]] = attr[trig]["item_trigger"]["trigger_location"]
+                    if attr[trig]["item_trigger"].get("print_description_plain"):
+                        self.print_description_plain = True
+                    else:
+                        self.print_description_plain = False
+
+        #if self.start_trigger:
+        #    if attr["start_trigger"].get("item_trigger"):
+        #        self.start_trigger_is_item = True
+        #        #self.start_trigger = attr["start_trigger"]["item_trigger"].get("trigger_item")
+        #        self.item_names.add(attr["start_trigger"]["item_trigger"].get("trigger_item"))
+        #        if attr["start_trigger"]["item_trigger"].get("trigger_location"):
+        #            self.item_name_to_loc[attr["start_trigger"]["item_trigger"]["trigger_item"]] = attr["start_trigger"]["item_trigger"]["trigger_location"]
+#
+#
+        #self.end_trigger = attr.get("end_trigger")
         if self.end_trigger:
             if attr["end_trigger"].get("item_trigger"):
-                self.end_trigger_is_item = True
-                #self.end_trigger = attr["end_trigger"]["item_trigger"].get("trigger_item")
-                # turning the above off, because if I don't have that data here, I have to get it from the event_dict again, which is silly.
-                self.item_names.add(attr["end_trigger"]["item_trigger"].get("trigger_item"))
-                if attr["end_trigger"]["item_trigger"].get("trigger_location"):
-                    self.item_name_to_loc[attr["end_trigger"]["item_trigger"].get("trigger_item")] = attr["end_trigger"]["item_trigger"]["trigger_location"]
+        #        self.end_trigger_is_item = True
+        #        #self.end_trigger = attr["end_trigger"]["item_trigger"].get("trigger_item")
+        #        # turning the above off, because if I don't have that data here, I have to get it from the event_dict again, which is silly.
+        #        self.item_names.add(attr["end_trigger"]["item_trigger"].get("trigger_item"))
+        #        if attr["end_trigger"]["item_trigger"].get("trigger_location"):
+        #            self.item_name_to_loc[attr["end_trigger"]["item_trigger"].get("trigger_item")] = attr["end_trigger"]["item_trigger"]["trigger_location"]
+#
+                self.end_type = (attr["end_trigger"]["item_trigger"].get("end_type") if attr["end_trigger"]["item_trigger"].get("end_type") != None else "success")
 
         #self.effects = attr.get("effects")
         if attr.get("effects"):
@@ -1071,7 +1113,6 @@ class eventIntake:
                         self.item_name_to_loc[attr["effects"][effect][entry].get("item_name")] = attr["effects"][effect][entry].get("item_location")
                         getattr(self, effect).add(attr["effects"][effect][entry].get("item_name"))
                         print(f"self.effect `{effect}` just had an item added: {getattr(self, effect)}")
-
                 else:
                     setattr(self, effect, attr["effects"][effect])
                     if effect == "limit_travel":

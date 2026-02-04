@@ -4,9 +4,9 @@
       "hotel room"
     ],
     "north": {
-      "item_desc": {},
+      "item_desc": {
+            "generic": "The bed looks nice enough - nothing fancy, but not a disaster either. Two pillows, a spare blanket at the foot of the bed. There's a small bedside drawer to each side, and a painting above the bed."},
       "short_desc": "There's a queen-size bed, simple but clean looking,",
-      "long_desc": "The bed looks nice enough - nothing fancy, but not a disaster either. Two pillows, a spare blanket at the foot of the bed. There's a small bedside drawer to each side, and a painting above the bed.",
       "items": {
         "": {
           "description": null,
@@ -15,21 +15,21 @@
       }
     },
     "east": {
-      "item_desc": {},
+      "item_desc": {
+            "generic": "Against the wall is a large television, sitting between two decent sized windows overlooking the city. The curtains are drawn."},
       "short_desc": "a television and two decent sized windows overlooking the city",
-      "long_desc": "Against the wall is a large television, sitting between two decent sized windows overlooking the city. The curtains are drawn.",
       "items": {}
     },
     "south": {
-      "item_desc": {},
+      "item_desc": {
+            "generic": "There's a door, lightly sun-yellowed. Nondescript; fair to assume it's a bathroom door."},
       "short_desc": "a door, likely to a bathroom",
-      "long_desc": "There's a door, lightly sun-yellowed. Nondescript; fair to assume it's a bathroom door.",
       "items": {}
     },
     "west": {
-      "item_desc": {},
+      "item_desc": {
+            "generic": "There's a standard hotel room door, with the fire escape route poster on the back and an empty coat hook."},
       "short_desc": "the door out of the room, likely to the hallway",
-      "long_desc": "There's a standard hotel room door, with the fire escape route poster on the back and an empty coat hook.",
       "items": {}
     },
     "descrip": "You're in a 'budget' PPPhotel roomEEE; small but pleasant enough, at least to sleep in. The sound of traffic tells you you're a couple of floors up at least, and the carpet is well-trod"
@@ -86,14 +86,11 @@
         "generic": "You see a variety of headstones, most quite worn, and ",
         "moss": "decorated by clumps of [[]]",
         "glass jar": "a [[]] being used as a vase in front of one of the headstones, with some dried flowers left long ago",
+        "no_starting_items": "not too much else - ",
         "no_items": "not much else. It's quite empty here..."
       },
       "short_desc": "sit a variety of headstones",
       "items": {
-        "": {
-          "description": null,
-          "is_hidden": false
-        },
         "desiccated skeleton": {
           "description": null,
           "is_hidden": true
@@ -111,56 +108,36 @@
         "work shed": "a [[]] of some kind, with a wooden door that looks like it was barricaded until recently"},
       "short_desc": "is what looks like a work shed of some kind",
       "items": {
-        "work shed": {"item_type": ["loc_exterior", "wall", "static"]}, "wooden door": {"enter_location": "work shed", "exit_to_location": "graveyard", "item_type": ["wall", "can_open", "static", "transition", "is_door"]}}
+        "work shed": {"item_type": ["loc_exterior", "wall", "static"]},
+        "wooden door": {"enter_location": "work shed", "exit_to_location": "graveyard", "item_type": ["wall", "can_open", "static", "transition", "is_door"]}}
     },
     "descrip": "You're in a rather poorly kept PPPgraveyardEEE - smaller than you might have expected given the scale of the gate and fences"
-  },
-  "pile of rocks": {
-    "alt_names": [],
-    "north": {
-      "item_desc": {},
-      "short_desc": "The",
-      "long_desc": "You",
-      "items": {}
-    },
-    "east": {
-      "item_desc": {},
-      "short_desc": "a",
-      "long_desc": "You",
-      "items": {}
-    },
-    "south": {
-      "item_desc": {},
-      "short_desc": "a",
-      "long_desc": "There",
-      "items": {}
-    },
-    "west": {
-      "item_desc": {},
-      "short_desc": "what",
-      "long_desc": "There",
-      "items": {}
-    },
-    "descrip": "PPPPile of rocksEEE."
   },
   "shrine": {
     "alt_names": [],
     "north": {
-      "item_desc": {},
+      "item_desc": {
+            "generic": "The shrine itself is fragile looking, with candles still not burnt down entirely."},
       "short_desc": "A wooden shrine, with aged fabric flags and various trinkets",
-      "long_desc": "The shrine itself is fragile looking, with candles still not burnt down entirely.",
-      "items": {}
+      "items": {
+        "scroll": {
+            "description": "",
+            "is_hidden": false,
+            "is_container": true,
+            "container_limits": 4
+        }
+      }
     },
     "east": {
-      "item_desc": {},
+      "item_desc": {
+        "generic": "The underhang's east wall is damp with spray from the waterfall outside, but otherwise unremarkable"},
       "short_desc": "a small 'interior' wall of the underhang",
-      "long_desc": "The underhang's east wall is damp with spray from the waterfall outside, but otherwise unremarkable",
       "items": {}
     },
     "south": {
-      "item_desc": {},
+      "item_desc": {
+            "generic": "The sky and fields beyond; nothing much to do here except leave."},
       "short_desc": "open air",
-      "long_desc": "The sky and fields beyond; nothing much to do here except leave.",
       "items": {}
     },
     "descrip": "Sheltered from the rain you see a small PPPshrineEEE, built into the underhang of a cliff face."
@@ -168,27 +145,27 @@
   "church": {
     "alt_names": [],
     "north": {
-      "item_desc": {},
+      "item_desc": {
+            "generic": ""},
       "short_desc": "",
-      "long_desc": "",
       "items": {}
     },
     "east": {
-      "item_desc": {},
+      "item_desc": {
+            "generic": ""},
       "short_desc": "",
-      "long_desc": "",
       "items": {}
     },
     "south": {
-      "item_desc": {},
+      "item_desc": {
+            "generic": ""},
       "short_desc": "",
-      "long_desc": "",
       "items": {}
     },
     "west": {
-      "item_desc": {},
+      "item_desc": {
+            "generic": ""},
       "short_desc": "",
-      "long_desc": "",
       "items": {}
     },
     "descrip": "It's a PPPchurchEEE."
@@ -209,13 +186,12 @@
         "iron key": {
           "description": "An old iron key, pitted on the surface but still appears functional.",
           "is_key_to": "padlock",
+          "lock_in_same_event": true,
           "is_hidden": true,
-          "event": {
-            "event_name": "graveyard_gate_opens",
-            "event_item": true}
-            }
+          "event": "graveyard_gate_opens"
         }
-      },
+      }
+    },
     "descrip": "Around you, you see the interior of a rather run-down looking PPPwork shedEEE, previously boarded up but seemingly, not anymore."
-    }
+  }
 }

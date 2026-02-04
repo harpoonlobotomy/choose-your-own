@@ -22,5 +22,5 @@ def initialise_all():
 
     import eventRegistry
     eventRegistry.initialise_eventRegistry()
-    eventRegistry.add_items_to_events(event_data)
+    eventRegistry.add_items_to_events()
     #time.sleep(.5)
