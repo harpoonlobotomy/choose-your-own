@@ -38,14 +38,16 @@ def look_at_item(item_inst): ## this is just using everything from registry. Sho
             print(f"You can't see that right now.")
         else:
             if reason_val == 2:
-                extra = " in your inventory."
+                extra = " in your inventory:"
             else:
-                extra = "."
+                extra = ":"
             if reason_val == 8:
                 turn_around(item_inst.location)
                 return
 
+
             print(f"You look at the {assign_colour(item_inst)}{extra}")
+            
             print(assign_colour(registry.describe(item_inst, caps=True), colour="description"))
             verb_actions.print_children_in_container(item_inst)
             #children = registry.instances_by_container(item_inst)

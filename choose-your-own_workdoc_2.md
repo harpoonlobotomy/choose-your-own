@@ -3620,3 +3620,36 @@ so - iron key appears, but is not unhidden when map event ends. an in, appears i
 bleh
 
 Okay but, the 'you see a few scattered objects' print /doesn't/ include the key. So specifically, the description text needs to be checking is_hidden attr, which clearly it isn't yet. That's fixable. But, the key /should/ be unhidden now, as the event just ended. Will work on it tomorrow, too tired for now.
+
+3.27pm 5/2/26
+Also, I need to formalise whether I write 'graveyard east' or 'east graveyard'. I have things mostly set up to take the input both ways, but there should be a standard form for the ref files.
+
+All the location files go loc>card obviously, so I think it should just be that. All the refs go place>card, so that should be the default. by_cardinal_str will work either way, but it checks place>card first.
+
+3.37pm
+Hm.
+
+You're in a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+The entrance gates are to the north. To the east sit a variety of headstones, to the south stands a mausoleum, and to the west is what looks like a work shed of some kind.
+
+You're facing east. You see a variety of headstones, most quite worn, and decorated by clumps of moss.
+
+You see a few scattered objects in this area:
+   glass jar, moss
+
+'look east' only gets the moss, not the jar. 'look around' gets both.
+Both correctly exclude the skeleton as its hidden, but I don't know why the glass jar is excluded from the long_desc description.
+
+Hmm. So the moss ins in local items but the glass jar isn't
+
+local_items and not hidden:
+<ItemInstance glass jar (49a08bc3-4748-45d3-ac5d-c197b702eca5)>
+
+and then, item in registry by name:
+
+ITEM IN LONG_DICT: glass jar
+a [[]] being used as a vase in front of one of the headstones, with some dried flowers left long ago
+Item glass jar in registry and local_items
+inst in registry by name: <ItemInstance glass jar (49a08bc3-4748-45d3-ac5d-c197b702eca5)>
+
+And yet, if inst in local_items: fails.

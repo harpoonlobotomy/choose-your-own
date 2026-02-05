@@ -76,7 +76,7 @@
   },
   "glass jar": {
     "nicename": "a glass jar with flowers",
-    "description": "a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.",
+    "description": "a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers",
     "item_type": "{'can_pick_up', 'container'}",
     "alt_names": {},
     "is_hidden": false,
@@ -91,6 +91,7 @@
     ],
     "container_limits": "smaller_than_apple",
     "name_no_children": "an empty glass jar",
+    "description_any_children": "a glass jar, holding ",
     "description_no_children": "a glass jar, now empty aside from some bits of debris.",
     "can_pick_up": true,
     "item_size": "smaller_than_basketball"

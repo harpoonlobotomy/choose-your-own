@@ -754,8 +754,19 @@ class itemRegistry:
                     else:
                         all_children = False
             #children = self.instances_by_container(inst)
-            if not all_children:
-            #if not children:
+            #if not all_children:
+            if inst.children:
+                long_desc = []
+                from testing_coloured_descriptions import compile_long_desc
+                from misc_utilities import assign_colour
+                if hasattr(inst, "description_any_children"):
+                    long_desc.append(inst.description_any_children)
+                for child in inst.children:
+                    long_desc.append(assign_colour(child, nicename=True))
+
+                description = compile_long_desc(long_desc)
+
+            else:
                 if hasattr(inst, "description_no_children") and inst.description_no_children != None:
                     description = inst.description_no_children # works now. If it's a container with no children, it prints this instead.
                 # still need to make it non-binary but that can happen later. This'll do for now.
