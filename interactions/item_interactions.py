@@ -116,10 +116,12 @@ def add_item_to_loc(item_instance, location=None):
 ### Now a whole bunch of functions for parsing out open/close actions.
 #Kinda wish this was a class of lil functions. Might be an idea? idk. I'm used to classes holding data sets, not functions. Will have to look into it.
 
-def is_loc_ext(noun:ItemInstance) -> str|None:
+def is_loc_ext(noun:ItemInstance, return_trans_obj=False) -> str|None:
 
     if hasattr(noun, "is_loc_exterior") and hasattr(noun, "transition_objs"):
         for trans_obj in noun.transition_objs:
+            if return_trans_obj:
+                return trans_obj
             return f"You can't enter the {assign_colour(noun)}, but maybe the {assign_colour(trans_obj)}?"
 
     return None

@@ -63,7 +63,7 @@ class VerbRegistry:
 
     def __init__(self):
 
-        self.verbs = {}      # id -> VerbInstance
+        self.verbs = {}      # name -> VerbInstance
         self.meta_verbs = {}
         self.all_meta_verbs = {}
         self.by_format = {}        # format -> set of verbs
@@ -270,6 +270,7 @@ class Parser:
 
             else:
                 canonical = None
+
                 if word in verbs.all_meta_verbs:
                     if word not in verbs.meta_verbs:
                         for key_word in verbs.meta_verbs:
@@ -314,8 +315,15 @@ class Parser:
                         kinds.add("null")
                         canonical = word
                         continue
-                    kinds.add("verb")
-                    canonical = word
+
+                    if word in verbs.split_verbs and verbs.split_verbs.get(word) and parts[1] in verbs.split_verbs[word]:
+                        canonical = verbs.split_verbs[word]
+                        kinds.add("verb")
+                        omit_next += 1
+
+                    else:
+                        kinds.add("verb")
+                        canonical = word
 
                 if word in verbs.adjectives:
                     if null_adjectives:
@@ -441,6 +449,7 @@ class Parser:
             return list(kinds)
 
     def get_viable_verb(token, force_location=False):
+        #print(f"GET VIABLE VERB: {token}")
         word = token.text
         if force_location:
             word="go"
@@ -493,7 +502,6 @@ class Parser:
         return reformed_dict, sequence
 
     def get_sequences_from_tokens(tokens) -> list:
-
         sequences = [[]]
         verb_instances = []
         meta_instances = []
@@ -504,6 +512,9 @@ class Parser:
             if len(tokens) == 1 and not token.kind:
                 return None, None
             #if not options:
+            if not token.kind: # for things like 'waste time', which just don't give a kind to 'waste'.
+                continue
+
             if len(tokens) in (1, 2):
                 if list(token.kind)[0] in ("location", "direction"):
                     instance = Parser.get_viable_verb(token, force_location=True)
@@ -725,3 +736,14 @@ def initialise_verbRegistry():
             for word in attr.get("null_words"):
                 if word.lower() != None:
                     verbs.list_null_words.add(word)
+
+    split_dict = {}
+    for word in verbs.all_verbs:
+        if " " in word:
+            parts = word.split(" ")
+            split_dict[parts[0]] = {verbs.verbs.get(word)}
+
+    if split_dict:
+        verbs.split_verbs = split_dict
+
+

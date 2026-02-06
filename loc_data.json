@@ -63,20 +63,14 @@
     "north": {
       "item_desc": {
         "generic": "There's a dark fence blocking the horizon, prominently featuring ",
-        "gate": "a heavy wrought-iron [[]] - standing strong but run-down",
-        "padlock": "an old dark-metal [[]] on a chain, holding the gate closed"
+        "gate": "a heavy wrought-iron [[]] - standing strong but run-down<<, and slightly ajar>>",
+        "padlock": "an old dark-metal [[]] fffon a chain, holding the gate closedfff<< hanging loosely on a chain>>"
       },
       "items": {
         "padlock": {
-          "event_key": true,
-          "event": "graveyard_gate_opens",
           "is_locked": true,
           "requires_key": "iron key",
           "key_is_placed_elsewhere": true
-        },
-        "gate": {
-          "event_item": true,
-          "event": "graveyard_gate_opens"
         }
       },
       "short_desc": "The entrance gates are"
@@ -109,7 +103,7 @@
       "short_desc": "is what looks like a work shed of some kind",
       "items": {
         "work shed": {"item_type": ["loc_exterior", "wall", "static"]},
-        "wooden door": {"enter_location": "work shed", "exit_to_location": "graveyard", "item_type": ["wall", "can_open", "static", "transition", "is_door"]}}
+        "wooden door": {"enter_location": "work shed", "exit_to_location": "graveyard", "item_type": ["wall", "can_open", "static", "transition", "is_door"], "not_in_loc_desc": true}}
     },
     "descrip": "You're in a rather poorly kept PPPgraveyardEEE - smaller than you might have expected given the scale of the gate and fences"
   },
@@ -171,7 +165,7 @@
     "north": {
       "item_desc": {
         "generic": "A simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's ",
-        "local map": "a yellowed [[]], showing the region surrounding the graveyard",
+        "local map": "a yellowed [[]] showing the region surrounding the graveyard",
         "iron key": "an old [[]], mottled with age",
         "no_items": "not much of any real interest."
       },

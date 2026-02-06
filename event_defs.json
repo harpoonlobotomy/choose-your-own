@@ -5,7 +5,7 @@
         {"item_trigger": {
             "trigger_item": "local map",
             "trigger_location": "north work shed",
-            "triggered_by": ["item_in_inv"]}},
+            "triggered_by": ["item_in_inv", "item_is_read", "item_opened"]}},
     "effects": {
         "hidden_items": {
             "0": {

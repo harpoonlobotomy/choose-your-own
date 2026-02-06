@@ -638,11 +638,18 @@ def look(format_tuple=None, input_dict=None):
                 turn_cardinal(intended_direction, turning=False)
 
         elif noun:
-            item_interactions.look_at_item(noun)
+            if hasattr(noun, "description_detailed"):
+                read(format_tuple, input_dict)
+            else:
+                item_interactions.look_at_item(noun)
 
     elif len(format_tuple) == 3:
+
         if noun and format_tuple[1] == "direction":
-            item_interactions.look_at_item(noun)
+            if hasattr(noun, "description_detailed"):
+                read(format_tuple, input_dict)
+            else:
+                item_interactions.look_at_item(noun)
         elif format_tuple[2] == "cardinal" and format_tuple[1] == "direction":
             turn_cardinal(inst_from_idx(input_dict[2], "cardinal"), turning = False)
 
@@ -670,17 +677,35 @@ def read(format_tuple, input_dict):
         if noun_inst.description_detailed.get("is_tested"):
             from rolling import roll_risk
             outcome = roll_risk()
+            print(f"Outcome: {outcome}")
             if outcome > 1:
                 test = noun_inst.description_detailed.get("crit")
+                if not test:
+                    test = noun_inst.description_detailed.get(1)
+                    #NOTE: have not accounted for various degrees of success here. Need to.
                 print(assign_colour(test, "b_yellow"))
             else:
                 test = noun_inst.description_detailed.get("failure")
+                if not test:
+                    test = noun_inst.description_detailed.get(4)
                 print(assign_colour(test, "b_yellow"))
         else:
             to_print = noun_inst.description_detailed.get("print_str")
             print(assign_colour(to_print, "b_yellow"))
+        print("")
+
+        if hasattr(noun_inst, "can_pick_up") and hasattr(noun_inst, "location") and noun_inst.location != None:
+            take(format_tuple, input_dict)
+        else:
+            if hasattr(noun_inst, "event"):
+                from eventRegistry import events
+                events.is_event_trigger(noun_inst, noun_inst.location, "item_is_read") # just check, in case it's a street sign or something that you can't pick up but might still be a trigger. Unlikely but silly to exclude it arbitrarily.
+
     else:
-        print(f"It seems like you can't read the {assign_colour(noun_inst)}")
+        look(format_tuple, input_dict)
+        #print(f"It seems like you can't read the {assign_colour(noun_inst)}") # just look at it instead of saying this.
+        return
+
 
 def eat(format_tuple, input_dict):
     logging_fn()
@@ -987,7 +1012,7 @@ def simple_open_close(format_tuple, input_dict):
     verb_inst = get_verb(input_dict)
     noun_inst = get_noun(input_dict)
 
-    if len(format_tuple) > 2:
+    if len(format_tuple) > 3:
         use_item_w_item(format_tuple, input_dict)
         return
 
@@ -1003,8 +1028,14 @@ def simple_open_close(format_tuple, input_dict):
 
     outcome = is_loc_ext(noun_inst)
     if outcome:
-        print(outcome)
-        return
+        if get_noun(input_dict, 2):
+            noun_inst_2 = get_noun(input_dict, 2) # pleased with this bit. Makes 'open work shed door' work cleanly without having to adjust the parser.
+            test = is_loc_ext(noun_inst, return_trans_obj=True)
+            if test == noun_inst_2:
+                noun_inst = noun_inst_2
+        else:
+            print(outcome)
+            return
 
     if not hasattr(noun_inst, "is_open"):
         print(f"You can't open the {assign_colour(noun_inst)}.")
@@ -1339,7 +1370,7 @@ def drop(format_tuple, input_dict):
                 return
 
             else:
-                print(f"You can't drop the {assign_colour(noun_1)}; you can't drop something you aren't carrying.")
+                print(f"You can't drop the {assign_colour(noun_1)}; you aren't holding it.")
                 return
 
     elif len(input_dict) == 4:
@@ -1367,9 +1398,10 @@ def drop(format_tuple, input_dict):
             return
 
     if noun_1 not in game.inventory:
-        from eventRegistry import events
-        events.is_event_trigger(noun_1, noun_1.location, reason = "item_not_in_inv")
-        return
+        if hasattr(noun_1, "event"):
+            from eventRegistry import events
+            events.is_event_trigger(noun_1, noun_1.location, reason = "item_not_in_inv")
+            return
 
     print(f"Cannot process {input_dict} in def drop() End of function, unresolved.")
 
@@ -1423,7 +1455,22 @@ def use_item(format_tuple, input_dict):
     if len(format_tuple) == 4:
         use_item_w_item(format_tuple, input_dict)
         return
+
+    noun = get_noun(input_dict)
+    if "map" in noun.name:
+        print("Here, we have some process to open a map. No idea how to do that yet...")
+        print("I mean I could just open an image I guess. Eh.")
+        from config import map_file
+        from PIL import Image
+        img = Image.open(map_file)
+        img.show
+
+
     print(f"Cannot process {input_dict} in def use_item() End of function, unresolved. (Function not yet written)")
+
+def wait(format_tuple, input_dict):
+    print("Future wait function, for spending time-portions doing a simple activity or nothing. Might be used at some point...?")
+
 
 def enter(format_tuple, input_dict, noun=None):
     logging_fn()
@@ -1480,7 +1527,7 @@ def enter(format_tuple, input_dict, noun=None):
 
 
 
-def router(viable_format, inst_dict):
+def router(viable_format, inst_dict, input_str=None):
     logging_fn()
 
     verb_inst = None
@@ -1489,7 +1536,15 @@ def router(viable_format, inst_dict):
         for data in v.values():
             quick_list.append(data["str_name"])
     MOVE_UP = "\033[A"
-    print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {" ".join(quick_list)}  ]]\033[0m\n') ## TODO put this back on when the testing's done.
+
+    from config import print_input_str
+
+    if print_input_str and input_str:
+        print(f'{MOVE_UP}\n\033[1;32m[[  {input_str}  ]]\033[0m\n')
+
+    else: #print processed str
+        print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {" ".join(quick_list)}  ]]\033[0m\n')
+
     #print(f"Dict for output: {inst_dict}")
 
     for data in inst_dict.values():
@@ -1531,7 +1586,9 @@ def router(viable_format, inst_dict):
         "throw": throw,
         "push": push,
         "drop": drop,
-        "set": set_action
+        "set": set_action,
+
+        "time": wait
     }
 
     if isinstance(verb_inst, str):

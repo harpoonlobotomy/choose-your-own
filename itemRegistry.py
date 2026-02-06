@@ -1,4 +1,5 @@
 
+import random
 import uuid
 
 from env_data import cardinalInstance, placeInstance
@@ -21,7 +22,7 @@ type_defaults = {
     "container": {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False, 'starting_children': None, 'container_limits': 4, "name_no_children": None, "name_any_children": None, "description_no_children": None, "description_any_children": None},
     "key": {"is_key": True},
     "can_pick_up": {"can_pick_up": True, "item_size": 0, "started_contained_in": None, "contained_in": None},
-    "event": {"event": None, "event_type": "item_triggered", "event_key": None, "event_item": None},
+    "event": {"event": None, "event_type": "item_triggered", "is_event_key": None},
     "trigger": {"trigger_type": "plot_advance", "trigger_target": None, "is_exhausted": False},
     "flooring": {"is_horizontal_surface": True},
     "wall": {"is_vertical_surface": True},
@@ -37,6 +38,28 @@ type_defaults = {
 
     #{"special_traits: set("dirty", "wet", "panacea", "dupe", "weird", "can_combine")}, # aka random attr storage I'm not using yet
     #"exterior": {"is_interior": False} ## Can be set scene-wide, so 'all parts of 'graveyard east' are exterior unless otherwise mentioned'. (I say 'can', I mean 'will be when I set it up')
+}
+
+plant_type = ["tuber", "legume", "arctic carrot"]
+
+detail_data = { #moved this from item_definitions.
+
+# failure = <10, success = 10-19, crit = 20.
+"paper_scrap_details": {"is_tested": True, "failure": "The last three digits are 487, but the rest are illegible.", "success": "It takes you a moment, but the number on the paper is `07148 718 487'. No name, though.", "crit": "The number is `07148 718 487. Looking closely, you can see a watermark on the paper, barely visible - `Vista Continental West`. Do you know that name?"},
+
+"scroll_details": {"is_tested": True, "failure": "Unrolling the scroll, pieces of it fall to dust in your hands.", "crit": "You carefully unroll the scroll, and see a complex drawing on the surface - you've seen something like it in a book somewhere..."},
+
+"puzzle_mag_details": {"is_tested":False, "print_str": "A puzzle magazine. Looks like someone had a bit of a go at one of the Sudoku pages but gave up. Could be a nice way to wait out a couple of hours if you ever wanted to."},
+
+"fashion_mag_details": {"is_tested":False, "print_str": "A glamourous fashion magazine, looks like it's a couple of years old. Not much immediate value to it, but if you wanted to kill some time it'd probably be servicable enough."},
+
+"gardening_mag_details": {"is_tested":False, "print_str": f"A gardening magazine, featuring the latest popular varieties of {random.choice(plant_type)} and a particularly opinionated think-piece on the Organic vs Not debate. Could be a decent way to wait out a couple of hours if you ever wanted to."},
+
+"mail_order_catalogue_details": {"is_tested":False, "print_str": "A mail order catalogue, with the reciever's address sticker ripped off. Clothes, homegoods, toys, gadgets - could be a nice way to wait out a couple of hours if you ever wanted to."},
+
+"local_map_details": {"is_tested":False, "print_str": "A dated but pretty detailed map of the local area. Could be good for finding new places to go should you have a destination in mind."},
+
+"damp_newspaper": {"is_tested":True, 1: "Despite your best efforts, the newspaper is practically disintegrating in your hands. You make out something about an event in ballroom, but nothing beyond that..", 3: "After carefully dabbing off as much of the mucky water and debris as you can, you find the front page is a story about the swearing in of a new regional governor, apparenly fraught with controversy.", 4: "Something about a named official and a contraversy from years ago where a young man went missing in suspicious circumstances."} ## no idea where this would go, but I need some placeholder text so here it is.
 }
 
 class ItemInstance:
@@ -148,12 +171,10 @@ class ItemInstance:
         if "print_on_investigate" in attr:
             self.verb_actions.add("print_on_investigate")
 
-            from item_definitions import detail_data
             details = self.name + "_details"
             details = details.replace(" ", "_")
-            details_data = detail_data.get(details)
 
-            self.description_detailed = details_data
+            self.description_detailed = detail_data.get(details)
 
         if "container" in self.item_type:
             self.verb_actions.add("is_container")
@@ -277,13 +298,6 @@ class itemRegistry:
         if hasattr(inst, "starting_children") and getattr(inst, "starting_children"):
             self.new_parents.add(inst.id)
             registry.generate_children_for_parent(parent=inst)
-
-
-        #f hasattr(inst, "event"):
-        #   for key in ("event_key", "event_item"):
-        #       if not hasattr(inst, key):
-        #           setattr(inst, key, None)
-        #   self.event_items[inst.name] = {"event_name": inst.event, "event_key": inst.event_key, "event_item": inst.event_item, "item": inst}
 
         if hasattr(inst, "is_key"):
             self.keys.add(inst)
@@ -421,8 +435,6 @@ class itemRegistry:
 
 
     def clean_relationships(self):
-
-        target_flags = ("contained_in", "requires_key", "event_key", "trigger_target")
 
         def cleaning_loop():
 
@@ -629,7 +641,6 @@ class itemRegistry:
             if not self.by_location.get(location):
                 self.by_location[location] = set()
             self.by_location[location].add(inst)
-            print(f"inst.location: {inst.location}")
 
         if old_container or new_container or hasattr(inst, "contained_in"):
             return_text = []

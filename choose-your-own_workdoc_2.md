@@ -3732,3 +3732,31 @@ There's a simple desk, hazily lit by the window over it to the north.
 You're facing north. A simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's secateurs.
 
 So why aren't the secateurs there from the start? Should be. I've messed up in the location descriptions again somewhere.
+
+Okay, fixed that again now.
+
+Also added "not_in_loc_desc": true, for items that are in a scene, not hidden, but should be excluded from scene descriptions (ie in this case, the work shed and door).
+
+Also just realised I still have event data in item_defs.
+
+    "event_ended_desc": "Heavy wrought iron bars with little decoration, now slightly ajar.",
+    "event": "graveyard_gate_opens",
+    "event_type": "item_triggered",
+    "event_key": null,
+    "event_item": true,
+
+Now I don't even use event_key and event_item anymore (they're not is_event_key and 'event_item' is simply 'an item that hasattr(item, "event")). event_ended_desc I might move to event defs. Would be okay for it to still be in item defs if it's an item that will always have that event description though. So in this case I might leave it, although the name 'gate' is not ideal.
+I could set something more unique like event_name as the definition key perhaps. Not sure how it'd be referred to in the input though.
+
+Hm.
+      "item_desc": {
+        "generic": "There's a dark fence blocking the horizon, prominently featuring ",
+        "gate": "a heavy wrought-iron [[]] - standing strong but run-down ",
+        "padlock": "an old dark-metal [[]] on a chain, holding the gate closed"
+      },
+thinking about what if I want to change that item description for gate, so it explicitly states it's open now.
+
+maybe
+    "gate": "a heavy wrought-iron [[]] - standing strong but run-down <<and slightly ajar>>",
+
+

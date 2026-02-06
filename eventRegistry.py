@@ -661,7 +661,7 @@ class eventRegistry:
                 if isinstance(item, ItemInstance):
                     events.item_names[item.name] = item
                     setattr(item, "event", event) # TODO: Doing this way too often, need to find the single choke point they all pass through no matter where they're added from.
-                    if event.event_keys and item in event.event_keys:
+                    if hasattr(event, "event_keys") and item in event.event_keys:
                         item.is_event_key = True
                 else:
                     print(f"This item does not have an instance: {item} (in event {event.name})")
@@ -770,7 +770,7 @@ class eventRegistry:
 
         return print_current(event, state_type=msg_type, print_text=print_txt)
 
-    def do_immediate_actions(self, event, trig):
+    def do_immediate_actions(self, event:eventInstance, trig):
 
         # To do immediate actions for immediate_action events. Will streamline this later maybe but this should do for now.
         if hasattr(event, "init_items") and event.init_items:
@@ -922,24 +922,18 @@ class eventRegistry:
                 """
             #print(f"event to end: hidden items:: {event_to_end.hidden_items}")
             for item_set in ("hidden_items", "held_items", "locked_items"):
-                print(f"ITEM SET: {item_set}")
                 if getattr(event_to_end, item_set):
                     pop_me = set()
                     for item in getattr(event_to_end, item_set):
-                        print(f"ITEM: {item}")
                         if effect_attrs.get(item_set) and effect_attrs[item_set].get("on_event_end"):
                             for k, v in effect_attrs[item_set]["on_event_end"].items():
-                                print(f"K: {k}, V: {v}")
                                 setattr(item, k, v)
-                                print(f"After setattr: getattr(item, k): {getattr(item, k)}")
-                                if hasattr(item, "is_hidden"):
-                                    print(f"ITEM IS HIDDEN? `{item.is_hidden}`")
 
-                        else:
-                            print(f"No entry in effect_attrs for {item_set}")
+                        #else:
+                            #print(f"No entry in effect_attrs for {item_set}")
                         pop_me.add(item)
                         if item_set == "hidden_items": # NOTE: use this to make it print the description again after an end, so if something was meant to suddenly appear, use this (even if it wasn't technically hiding)
-                            print("Will print desc again.")
+                            #print("Will print desc again.")
                             print_desc_again = True
 
                     if pop_me:
@@ -948,12 +942,12 @@ class eventRegistry:
                                 print(f"Cannot remove {item} from {event_to_end.name}.{item_set} as it's not there.")
                             else:
                                 getattr(event_to_end, item_set).remove(item)
-                else:
-                    print(f"No items found for if getattr({event_to_end}, {item_set})")
+                                if hasattr(item, "is_event_key"):
+                                    item.is_event_key = False # assuming each event key is only used once, which is true for now. Later may need alternate setups.
 
-            print("Need a section here that removes itemInstances from events.items. Or maybe not, if one day it'd be useful to know that this is the coin you gave to the witch in exchange for your left eye or smth")
-
-            #    'failure_msg'
+            for item in event_to_end.items:
+                if hasattr(item, "is_event_key"):
+                    item.is_event_key = False
 
 
             #print(f"MESSAGES: {event_to_end.msgs}")
@@ -993,38 +987,38 @@ class eventRegistry:
         #return allowed_locations
         return allowed_locations_by_loc
 
-    def is_event_trigger(self, noun_inst, noun_loc, reason = None):
+    def is_event_trigger(self, noun_inst, noun_loc, reason = None) -> (int|None):
         logging_fn()
 
         #print(f"start of is_event_trigger:\nnoun inst: {noun_inst}, noun_loc: {noun_loc}, reason: {reason}.")
-        def check_triggers(event, noun, reason):
+        def check_triggers(event:eventInstance, noun:ItemInstance, reason) -> (int|None):
             #print(f"start of check_triggers: event: {event}, noun: {noun}, reason: {reason}")
     # Reason == str containing the key phrase of the trig.trigger. eg 'added_to_inv'
             #print(f"check_triggers\nEVENT VARS: {vars(event)}\nreason: {reason}")
             if event.end_triggers:
-                print(f"event.end_triggers: {event.end_triggers}")
+                #print(f"event.end_triggers: {event.end_triggers}")
                 for trig in event.end_triggers:
-                    print(f"For trig in event.end_triggers: {trig}")
+                    #print(f"For trig in event.end_triggers: {trig}")
                     #print(f"VARS: {vars(trig)}")
                     if hasattr(trig, "constraint_tracking"):
                         print("Whether the event ends or not depends on this constraint. Maybe it should be checked earlier, I feel like I do this check in item_interactions. Needs to be one or the other.")
                         exit()
                     #print(f"TRIG: {trig}, vars: {vars(trig)}")
                     if trig.is_item_trigger and trig.item_inst == noun:
-                        print("item inst == noun")
-                        print(f"REASON: {reason}, type: {type(reason)}")
-                        print(f"trigger acts: {trig.triggers}")
+                        #print("item inst == noun")
+                        #print(f"REASON: {reason}, type: {type(reason)}")
+                        #print(f"trigger acts: {trig.triggers}")
                         if isinstance(reason, str):
-                            print("reason is str")
-                            for thing in trig.triggers:
-                                print(f"THInG: {thing}")
+                            #print("reason is str")
+                            #for thing in trig.triggers:
+                            #    print(f"THInG: {thing}")
                             if reason in trig.triggers:
-                                print(f"reason in trig.triggers: {trig.triggers}")
+                                #print(f"reason in trig.triggers: {trig.triggers}")
                                 if hasattr(trig, "item_inst_loc") and getattr(trig, "item_inst_loc") != None and trig.item_inst_loc != noun_loc:
                                     continue # fail if the fail should have a location but doesn't. Doesn't apply to any current ones, but if you have to read a book under a specific tree, this would apply.
-                                print("ENDING EVENT VIA IS_EVENT_TRIGGER")
+                                #print("ENDING EVENT VIA IS_EVENT_TRIGGER")
                                 self.end_event(event, trig, noun_loc)
-                                return
+                                return 1
 
                         elif isinstance(reason, tuple):
                             print(f"REASON TUPLE: {reason}, len: {len(reason)}") # will it always need to go to inner? Not sure.
@@ -1034,7 +1028,7 @@ class eventRegistry:
                                     if trigger_acts.get(condition) and trigger_acts[condition].get(k) == v:
                                         print(f"Condition [{k}: {v}] met for {noun_inst}. Will end event now.")
                                         self.end_event(event, trig, noun_loc)
-                                        return
+                                        return 1
                         else:
                             print(f"Could not parse {reason}, type: {type(reason)}")
                     else:
@@ -1050,8 +1044,9 @@ class eventRegistry:
 
                         if isinstance(reason, str):
                             if reason in trig.triggers:
+                                reason = tuple((reason))
                                 print(f"Reason is in trig.triggers: {reason}")
-                        elif isinstance(reason, tuple):
+                        if isinstance(reason, tuple):
                             print(f"REASON TUPLE: {reason}, len: {len(reason)}") # will it always need to go to inner? Not sure.
                             for inner in reason:
                                 k, v = inner
@@ -1061,16 +1056,17 @@ class eventRegistry:
                                             print(f"Is an immediate action event: {event}")
                                             done = self.do_immediate_actions(event, trig)
                                             if done:
-                                                return
+                                                return 1
 
                                         print(f"Condition [{k}: {v}] met for {noun_inst}. Will start event now.")
                                         self.start_event(event_name = event.name, event = event)
-                                        return
-        if noun_inst.event:
+                                        return 1
 
-            print(f"This {noun_inst} already has an event tied to it: {noun_inst.event}")
-            check_triggers(noun_inst.event, noun=noun_inst, reason=reason)
-            return
+        if noun_inst.event and hasattr(noun_inst, "is_event_key") and noun_inst.is_event_key:
+
+            #print(f"This {noun_inst} already has an event tied to it: {noun_inst.event}")
+            outcome = check_triggers(noun_inst.event, noun=noun_inst, reason=reason)
+            return outcome
 
         if events.generate_events_from_itemname.get(noun_inst.name):
             existing_event = False
@@ -1099,12 +1095,13 @@ class eventRegistry:
                 check_triggers(event, noun=noun_inst, reason=reason)
                 return
 
-        if events.items_to_events.get(noun_inst):
-            print(f"noun inst is in items_to_events: {events.items_to_events.get(noun_inst)}")
-            event = events.items_to_events[noun_inst]
-            print(f"Event: {event}")
-            if event.state == 1:
-                check_triggers(event, noun_inst, reason)
+        #if events.items_to_events.get(noun_inst): # turning this part off, should just be testing the noun, not this reverse check afterwards too.
+        #    print(f"noun inst is in items_to_events: {events.items_to_events.get(noun_inst)}")
+        #    event = events.items_to_events[noun_inst]
+        #    print(f"Event: {event}")
+        #    if event.state == 1:
+        #        outcome = check_triggers(event, noun_inst, reason)
+        #        return outcome
 
     """
     What else do I need here.

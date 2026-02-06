@@ -1,4 +1,5 @@
 
+import re
 from env_data import placeInstance
 import itemRegistry
 from misc_utilities import assign_colour
@@ -48,11 +49,10 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
             local_items = itemRegistry.registry.get_item_by_location(f"{location} {cardinal}")
             if local_items:
                 local_items = list(i for i in local_items if not (hasattr(i, "is_hidden") and getattr(i, "is_hidden")))
+                local_items = list(i for i in local_items if not (hasattr(i, "not_in_loc_desc") and getattr(i, "not_in_loc_desc")))
                 #for thing in local_items:
                 #    print(f"{thing}: {(thing.is_hidden if hasattr(thing, "is_hidden") else "No is_hidden attr.")} ")
             for item in long_dict:
-                inst_children = None
-                #print(f"ITEM IN LONG_DICT: {item}\n{long_dict[item]}")
                 if item == "generic":
                     start = long_dict[item]
                     long_desc.append(start)
@@ -68,36 +68,47 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                                 if inst in local_items:
                                     if "[[]]" in long_dict[item]:
                                         long_parts = long_dict[item].split("[[]]")
+                                        if "fff" in long_parts[1]:
+                                            if hasattr(inst, "event") and inst.event.state in (0, 1):
+                                                long_parts[1] = long_parts[1].replace("fff", "")
+                                            else:
+                                                split_parts = re.split("fff.+fff", long_parts[1])
+                                                long_parts[1] = split_parts[1]
+
+                                        if "<<" in long_parts[1]:
+                                            if hasattr(inst, "event") and inst.event.state == 2:
+                                                long_parts[1] = long_parts[1].replace("<<", "")
+                                                long_parts[1] = long_parts[1].replace(">>", "")
+                                            else:
+                                                split_parts = re.split("<<.+>>", long_parts[1])
+                                                long_parts[1] = split_parts[0]
+                                                if "fff" in long_parts[1]:
+                                                    long_parts[1] = long_parts[1].replace("fff","")
+
+
                                         test = long_parts[0] + assign_colour(inst) + long_parts[1]
                                         long_desc.append(test)
                                     else:
                                         print(f"No [[]] in this description so it's excluded: {long_dict[item]}.")
-            #                        if hasattr(inst, "children"):
-            #                            inst_children = inst.children # no children here, only for item descriptions.
-#
-            #if inst_children:
-            #    for child in inst_children:
-            #        if not (hasattr(child, "is_hidden") and child.is_hidden):
-            #            print(f"CHILD: {child}")
-            #            long_desc.append(assign_colour(child, nicename=True))
-            #        else:
-            #            print(f"HIDDEN CHILD: {child}")
-
-
 
             if len(long_desc) == 1 and no_items_text:
                 if local_items:
                     if no_starting_items:
                         long_desc.append(no_starting_items)
                     for loc_item in local_items:
-                        print(f"loc_item: {loc_item}")
-                        long_desc.append(assign_colour(loc_item, nicename=True))
-
+                        if not long_dict.get(loc_item):
+                        #    print("pass, assume already included.")
+                        #else:
+                        #    print(f"loc_item: {loc_item}")
+                            long_desc.append(assign_colour(loc_item, nicename=True))
                 else:
                     long_desc.append(no_items_text)
-        else:
-            if loc_dict[location].get(cardinal) and loc_dict[location][cardinal].get("long_desc"):
-                long_desc.append(loc_dict[location][cardinal].get("long_desc"))
+
+            else:
+                if local_items:
+                    for loc_item in local_items:
+                        if not long_dict.get(loc_item.name):
+                            long_desc.append(assign_colour(loc_item, nicename=True))
 
     return long_desc
 

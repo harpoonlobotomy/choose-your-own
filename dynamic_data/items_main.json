@@ -28,19 +28,17 @@
     "event_ended_desc": "Heavy wrought iron bars with little decoration, now slightly ajar.",
     "event": "graveyard_gate_opens",
     "event_type": "item_triggered",
-    "event_key": null,
     "is_open": false,
     "can_be_opened": true,
     "can_be_closed": true,
     "can_be_locked": true,
     "is_locked": true,
-    "requires_key": false,
-    "event_item": true
+    "requires_key": false
   },
   "desiccated skeleton": {
     "nicename": "a desiccated skeleton",
     "description": "A sunbleached skeleton, with most of its bones present.",
-    "item_type": "{'container', 'static', 'event', 'fragile'}",
+    "item_type": "{'container', 'static', 'fragile'}",
     "is_open": false,
     "can_be_opened": true,
     "can_be_closed": true,
@@ -55,13 +53,9 @@
     "is_hidden": true,
     "can_examine": false,
     "breakable": false,
-    "event": null,
-    "event_type": "item_triggered",
-    "event_key": null,
     "broken_name": null,
     "flammable": false,
-    "can_break": true,
-    "event_item": null
+    "can_break": true
   },
   "moss": {
     "nicename": "a few moss clumps",
@@ -582,14 +576,12 @@
     "is_hidden": false,
     "event": null,
     "event_type": "item_triggered",
-    "event_key": null,
     "is_open": false,
     "can_be_opened": true,
     "can_be_closed": true,
     "can_be_locked": true,
     "is_locked": true,
-    "requires_key": false,
-    "event_item": null
+    "requires_key": false
   },
   "locked box": {
     "nicename": "locked box",
@@ -749,7 +741,7 @@
     "item_size": 0
   },
   "secateurs": {
-    "nicename": "secateurs",
+    "nicename": "a pair of secateurs",
     "item_type": "{'can_pick_up'}",
     "can_pick_up": true,
     "item_size": 0,
@@ -758,19 +750,15 @@
   },
   "local map": {
     "nicename": "local map",
-    "item_type": "{'can_pick_up', 'fragile', 'event', 'books_paper'}",
+    "item_type": "{'can_pick_up', 'fragile', 'books_paper'}",
     "can_pick_up": true,
     "item_size": 0,
     "broken_name": null,
     "flammable": false,
     "can_break": true,
-    "event": null,
-    "event_type": "item_triggered",
-    "event_key": null,
-    "event_item": null,
     "print_on_investigate": true,
     "can_read": true,
-    "description": "a yellowed [[]], showing the region surrounding the graveyard."
+    "description": "a yellowed [[]] showing the region surrounding the graveyard."
   },
 "work shed": {
     "nicename": "work shed",
