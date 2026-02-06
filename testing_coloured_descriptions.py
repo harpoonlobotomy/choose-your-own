@@ -10,10 +10,8 @@ print_test_descriptions = False
 def format_descrip(d_type="area_descrip", description="", location = None, cardinal = None):
     long_desc = []
 
-    import json
-
-    loc_items_json = "loc_data.json"
-    with open(loc_items_json, 'r') as loc_items_file:
+    import json, config
+    with open(config.loc_data, 'r') as loc_items_file:
         loc_dict = json.load(loc_items_file)
 
     if d_type == "area_descrip":
@@ -137,9 +135,8 @@ def init_loc_descriptions(place=None):
     location_description = {}
     compiled_cardinals = {}
 
-    import json
-    loc_items_json = "loc_data.json"
-    with open(loc_items_json, 'r') as loc_items_file:
+    import json, config
+    with open(config.loc_data, 'r') as loc_items_file:
         loc_dict = json.load(loc_items_file)
 
     for location in loc_dict:

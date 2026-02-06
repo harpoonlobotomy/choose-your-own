@@ -120,7 +120,7 @@ def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
     logging_fn()
 
     location = None
-    from item_definitions import container_limit_sizes
+    from itemRegistry import container_limit_sizes
    ## This is the terminus of any 'move a to b' type action. a must be an item instance, b may be an item instance (container-type) or a location.
     if not direction:
         if action == "dropping" or action == "you dropped the":
@@ -208,7 +208,7 @@ def check_lock_open_state(noun_inst):
     if hasattr(noun_inst, "is_locked") and noun_inst.is_locked:
         is_locked = True
         if hasattr(noun_inst, "needs_key"):
-            interactable, _, _ = can_interact(noun_inst.needs_key)
+            interactable, _, _ = can_interact(noun_inst.requires_key)
             if interactable:
                 locked_have_key = True
 
@@ -474,27 +474,19 @@ def meta(format_tuple, input_dict):
     if meta_verb == "help":
         print_yellow("Type words to progress, 'i' for 'inventory', 'd' to describe the environment, 'settings' for settings, 'show visited' to see where you've been this run: - that's about it.")
         return
-    elif meta_verb == "settings":
-        from choose_a_path_tui_vers import init_settings
-        init_settings(manual=True)
-        return
     elif meta_verb == "describe":
         look(("verb", "sem"), None)
         return
     elif meta_verb == "inventory":
         generate_clean_inventory(will_print=True, coloured=True)
         return
-    elif meta_verb == "godmode":
-        from choose_a_path_tui_vers import god_mode
-        god_mode()
-        return
     elif meta_verb == "quit":
         exit("Okay, quitting the game. Goodbye!\n\n")
         return
-    elif meta_verb == "update_json":
-        from testclass import add_confirms
-        add_confirms()
-        return
+    #elif meta_verb == "update_json": # testClass is gone, need to add this elsewhere.
+    #    from testclass import add_confirms
+    #    add_confirms()
+    #    return
     else:
         from interactions.meta_commands import meta_control
 
@@ -514,37 +506,22 @@ def go(format_tuple, input_dict): ## move to a location/cardinal/inside
 
     if (direction_entry and direction_entry["str_name"] in to_words and len(format_tuple) < 5) or (not direction_entry and len(format_tuple) < 4) or (direction_entry and not cardinal_entry and not location_entry):
         if location_entry and not cardinal_entry:
-            #print(f"Location entry, no card: {location_entry}")
-            #print(f"location vars: \n{vars(location_entry["instance"])}")
+
             if location_entry["instance"] == loc.currentPlace:
                 if input_dict[0].get("verb") and input_dict[0]["verb"]["str_name"] == "leave":
                     if hasattr(loc.current.place, "entry_item"):
-                        #print(f"loc.current has entry item: {loc.current.place.entry_item}")
                         if enter(format_tuple, input_dict, noun=loc.current.place.entry_item):
                             return
-
-                        #for item in loc.current.entry_item:
-                        #    if item.get("exit_to_location"):
-                        #        print(f"Go through the {item} to leave {loc.current}")
-                    #else:
-                       # print(f"No entry item for loc.current. Vars: {vars(loc.current.place)}")
 
                     print("You can't leave without a new destination in mind. Where do you want to go?")
                     return
 
             if hasattr(location_entry["instance"], "entry_item"):
-                #print(location_entry["instance"].entry_item)
+
                 if not get_noun(input_dict):
                     input_dict[len(format_tuple)] = {}
                     input_dict[len(format_tuple)]["noun"] = ({"instance": location_entry["instance"].entry_item, "str_name": location_entry["instance"].entry_item.name})
-                    #print(f"input_dict: {input_dict}")
 
-                #for cardinal in location_entry["instance"].cardinals:
-                #    card = location_entry["instance"].cardinals.get(cardinal)
-                #    if hasattr(card, "loc_exterior_items") or hasattr(card, "transition_objs"):
-                #        new_relocate(new_cardinal=card)
-                #        return
-                #print("enter location via go")
                 enter(format_tuple, input_dict) # Anything that needs you to go through a door goes via enter.
                 return
             new_relocate(new_location=location_entry["instance"])
@@ -576,7 +553,6 @@ def go(format_tuple, input_dict): ## move to a location/cardinal/inside
 
         elif location_entry and cardinal_entry:
 
-            #print("has location and cardinal")
             new_relocate(new_location=location_entry["instance"], new_cardinal = cardinal_entry["instance"])
             return
 
@@ -602,15 +578,6 @@ def go(format_tuple, input_dict): ## move to a location/cardinal/inside
     else:
         print(f"Cannot process {input_dict} in def go() End of function, unresolved. (Function not yet written)")
         traceback_fn()
-
-
-
-
-def leave(format_tuple, input_dict):
-    logging_fn()
-    #verb_only, verb_loc = go
-    # verb_noun_dir_noun = movw item to container/surface
-    print(f"Cannot process {input_dict} in def leave() End of function, unresolved. (Function not yet written)")
 
 
 def look(format_tuple=None, input_dict=None):
@@ -692,7 +659,10 @@ def read(format_tuple, input_dict):
         else:
             to_print = noun_inst.description_detailed.get("print_str")
             print(assign_colour(to_print, "b_yellow"))
-        print("")
+
+        if hasattr(noun_inst, "is_map"):
+            from interactions.item_interactions import show_map
+            show_map(noun_inst)
 
         if hasattr(noun_inst, "can_pick_up") and hasattr(noun_inst, "location") and noun_inst.location != None:
             take(format_tuple, input_dict)
@@ -749,33 +719,8 @@ def burn(format_tuple, input_dict):
     logging_fn()
     print("burn FUNCTION")
 
-    # for all burn items = require fire source, noun1 must be flammable.
-    # verb_noun == burn item
-    # verb_noun_sem_noun == noun2 must be flammable
-    # verb_noun_dir_loc as 'burn item' but with location needlessly added.
-
-        #print(f"Verb name is in noun list: {verb_inst.name}")
-    #print(f"Noun for checking: {noun}")
-    #formats_for_verb = verb_inst.formats
-    #print(f"Formats for verb: {formats_for_verb}")
-    #noun_actions = noun_inst[0].verb_actions
-    #print(f"{noun}: {noun_actions}")
-    #viable_verbs = set()
-    #for act in noun_actions:
-    #    #print(f"Act: {act}")
-    #    for action in flag_actions[act]:
-    #        viable_verbs.add(action)
-    #print(f"Viable verbs: {viable_verbs}")
-#
-    #verb_name = set()
-    #verb_name.add(verb_inst.name)
-    #match = viable_verbs.intersection(verb_name)
-    #if match:
-    #    print(f"match: {match}")
-
-
-    #glass jar: {'is_container', 'can_pick_up'}
     print(f"Cannot process {input_dict} in def burn() End of function, unresolved. (Function not yet written)")
+
 
 def break_item(format_tuple, input_dict):
     logging_fn()
@@ -874,14 +819,6 @@ def lock_unlock(format_tuple, input_dict, do_open=False):
         print("verbname == lock, don't know why I'm here.")
     print(f"Cannot process {input_dict} in def lock() End of function, unresolved. (Function not yet written, should use open_close variant instead)")
 
-def close(format_tuple, input_dict):
-    logging_fn()
-
-
-    ## Use same checks for lock and unlock maybe? Not sure.
-    #verb_noun == lock if noun does not require key to lock (padlock etc)
-    # verb_noun_sem_noun lock noun w noun2 if noun2 is correct key and in inventory
-    print(f"Cannot process {input_dict} in def close() End of function, unresolved. (Function not yet written)")
 
 def print_children_in_container(noun_inst):
 
@@ -901,15 +838,12 @@ def open_close(format_tuple, input_dict):
     noun_inst = get_noun(input_dict)
 
     if get_noun(input_dict, 2):
-
         return
-        if hasattr(option, "is_open"):
-            noun_inst = option # if one of the nouns mentioned can be opened, assume we mean to open that one.
 
     verb_inst = get_verb(input_dict)
 
     inst, container, reason_val, meaning = registry.check_item_is_accessible(noun_inst)
-    if reason_val not in (0, 3, 4, 5):
+    if reason_val not in interactable_codes:
         print(f"{noun_inst.name} isn't accessible, you can't interact with it.")
         print(f"[{meaning}]")
         return
@@ -919,27 +853,26 @@ def open_close(format_tuple, input_dict):
     if verb_inst.name == "open":
         if hasattr(noun_inst, "is_locked") and noun_inst.is_locked:
             print(f"You cannot open a locked {assign_colour(noun_inst.name)}.")
-            return # not perfect because it returns even if you couldn't have accessed the door to check, but works for the moment while I'm testing the events. TODO Fix this later
+            return
 
-## I think part of the issue is that the check_lock_open_state tries to combine both 'is this a thinkg I could access to try to unlock' with 'is this is a thing I can unlock'. I need to separate them out. a) is this a thing I can access, return. b) if so, is this a thing I can unlock.
     is_closed, is_locked, locked_and_have_key = check_lock_open_state(noun_inst)
 
-    print("is_closed, is_locked, locked_and_have_key : ", is_closed, is_locked, locked_and_have_key)
-    if verb_inst.name in ("close", "lock"):
+    print(f"is_closed: {is_closed}, is_locked: {is_locked}, locked_and_have_key : {locked_and_have_key}")
 
+    if verb_inst.name in ("close", "lock"):
         if verb_inst.name == "close":
             if not is_closed:
                 print(f"You closed the {assign_colour(noun_inst)}")
                 noun_inst.is_open = False
+            else:
+                print(f"The {assign_colour(noun_inst)} is already closed.")
 
         elif verb_inst.name == "lock":
             if not is_closed:
                 print(f"You need to close the {noun_inst.name} first.")
             else:
                 if not is_locked and not locked_and_have_key:
-    ### TODO fix this whole bit, it's a senseless mess for no reason. It's not this complicated...
-                    # need to check if it needs a key to lock (some may only need a key to unlock)
-                    #noun_inst.is_open = False
+
                     if hasattr(noun_inst, "needs_key_to_lock"):
                         key_inst = noun_inst.needs_key_to_lock
                         noun_count = format_tuple.count("noun")
@@ -1458,13 +1391,9 @@ def use_item(format_tuple, input_dict):
 
     noun = get_noun(input_dict)
     if "map" in noun.name:
-        print("Here, we have some process to open a map. No idea how to do that yet...")
-        print("I mean I could just open an image I guess. Eh.")
-        from config import map_file
-        from PIL import Image
-        img = Image.open(map_file)
-        img.show
-
+        from interactions.item_interactions import show_map
+        show_map(noun)
+        return
 
     print(f"Cannot process {input_dict} in def use_item() End of function, unresolved. (Function not yet written)")
 

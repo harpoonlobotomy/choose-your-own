@@ -186,7 +186,8 @@ def edit_noun(noun):
                 print(f"The updated attributes for {noun.name}: ")
                 pprint(vars(noun))
 
-            main_json = r"dynamic_data\items_main.json"
+            import config
+            main_json = config.item_data
             generated_json = r"dynamic_data\generated_items.json"
 
             test=input("Do you want update this item in generated_items or items_main?\n")

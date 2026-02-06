@@ -5,9 +5,8 @@
 #from locations import places
 
 from logger import logging_fn, traceback_fn
-import json
-loc_data_json = "loc_data.json"
-with open(loc_data_json, 'r') as loc_data_file:
+import json, config
+with open(config.loc_data, 'r') as loc_data_file:
     loc_dict = json.load(loc_data_file)
 
 cardinals_list = ["north", "south", "east", "west"]

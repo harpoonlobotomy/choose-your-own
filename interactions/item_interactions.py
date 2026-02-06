@@ -23,10 +23,20 @@ def instance_name_in_inventory(inst_name:str)->ItemInstance:
             if entry in game.inventory:
                 return entry
 
-    #print(f"Did not find entry for {inst_name}")
+def show_map(noun):
+    #bring the noun in here in case there are multiple maps later.
+    print()
+    print_green("<     This is where we show a map image in some kinda way.     >", invert=True)
+    print("Here, we have some process to open a map. No idea how to do that yet...")
+    print("I mean I could just open an image I guess. Eh.")
+    from config import map_file
+    #from PIL import Image
+    #with Image.open(map_file) as img:
+    #    img.show
+    import os
+    os.startfile(map_file)
 
 def look_at_item(item_inst): ## this is just using everything from registry. Should really just be in registry....
-
 
     if isinstance(item_inst, ItemInstance):
 
@@ -36,30 +46,28 @@ def look_at_item(item_inst): ## this is just using everything from registry. Sho
         if reason_val not in (0, 5, 8):
             print(f"You can't see that right now.")
         else:
-            if reason_val == 2:
-                extra = " in your inventory:"
-            else:
-                extra = ":"
             if reason_val == 8:
                 turn_around(item_inst.location)
                 return
 
+            if reason_val == 2:
+                extra = " in your inventory:"
+            else:
+                extra = ":"
 
             print(f"You look at the {assign_colour(item_inst)}{extra}")
 
             print(assign_colour(registry.describe(item_inst, caps=True), colour="description"))
             verb_actions.print_children_in_container(item_inst)
-            #children = registry.instances_by_container(item_inst)
-            #if children:
-            #    print(f"\nThe {assign_colour(item_inst)} contains:")
-            #    from misc_utilities import col_list
-            #    children = ", ".join(col_list(children))
-            #    print(f"  {children}")
 
-            from set_up_game import game
-            if item_inst == game.map_item:
-                print()
-                print_green("<     This is where we show a map image in some kinda way.     >", invert=True)
+            #print(f"game.map_item id: {game.map_item.id}")
+            #print(f"item_inst id: {item_inst.id}")
+            if hasattr(item_inst, "is_map"):
+            #from set_up_game import game
+            #if item_inst == game.map_item:
+                print("item inst is map")
+                show_map(item_inst)
+
 
 def set_attr_by_loc(attr = "is_hidden", val = "False", location=None, items=None):
     logging_fn()

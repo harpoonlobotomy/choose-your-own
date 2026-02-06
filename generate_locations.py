@@ -2,10 +2,8 @@ CARDINALS = ["north", "east", "south", "west"]
 
 def edit_location_json():
 
-    import json
-    loc_items_json = "loc_data.json"
-
-    with open(loc_items_json, 'r') as loc_items_file:
+    import json, config
+    with open(config.loc_data, 'r') as loc_items_file:
         loc_items = json.load(loc_items_file)
 
     edited_dict = {}
@@ -32,9 +30,9 @@ def edit_location_json():
 
             edited_dict[place]["alt_names"] = (loc_items[place].get("alt_names") if loc_items[place].get("alt_names") != None else [])
 
-        with open(loc_items_json, 'w') as loc_items_file:
+        with open(config.loc_data, 'w') as loc_items_file:
             json.dump(edited_dict, loc_items_file, indent=2)
-        print(f"Written to {loc_items_json}")
+        print(f"Written to {config.loc_data}")
 
 
 def edit_descriptions_in_cardinal(card, loc_dict_entry, name):
@@ -214,9 +212,8 @@ def generate_new_location(loc_name:None):
 
     change_loc_data(new_loc_dict[loc_name], loc_name, int(cardinal_no))
 
-    import json
-    loc_data_json = "loc_data.json"
-    with open(loc_data_json, 'r') as loc_data_file:
+    import json, config
+    with open(config.loc_data, 'r') as loc_data_file:
         loc_dict = json.load(loc_data_file)
 
     if loc_dict.get(loc_name):
@@ -228,7 +225,7 @@ def generate_new_location(loc_name:None):
     else:
         loc_dict[loc_name] = new_loc_dict[loc_name]
 
-    with open(loc_data_json, 'w') as file:
+    with open(config.loc_data, 'w') as file:
         json.dump(loc_dict, file, indent=2)
 
     from env_data import add_new_loc

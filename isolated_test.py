@@ -176,13 +176,17 @@ def run():
         print("What's your name?")
         while  playernm == "":
             playernm = do_input()
+
     global game
     game = set_up(weirdness=True, bad_language=True, player_name=playernm)
 
     map_items = registry.instances_by_name("local map")
+    print(f"MAP ITEMS: {map_items}")
     if map_items:
         for map in map_items:
             game.map_item = map
+            setattr(map, "is_map", True)
+            print(f"game.map_items: {game.map_item}")
             break
     if not test_mode:
         print("[[ Type 'help' for controls and options. ]]")

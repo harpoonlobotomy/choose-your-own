@@ -13,6 +13,23 @@ all_items_generated = set()
 
 CARDINALS = ["north", "east", "south", "west"]
 
+####### CONTAINER LIMIT CATEGORIES ############
+
+SMALL_FLAT_THINGS = "small_flat_things"
+A_FEW_MARBLES = 'a_few_marbles'
+SMALLER_THAN_APPLE = 'smaller_than_apple'
+PALM_SIZED = 'palm_sized'
+SMALLER_THAN_BASKETBALL = 'smaller_than_basketball'
+BIGGER_THAN_BASKETBALL = 'bigger_than_basketball'
+
+container_limit_sizes = {
+    SMALL_FLAT_THINGS: 1,
+    A_FEW_MARBLES: 2,
+    SMALLER_THAN_APPLE: 3,
+    PALM_SIZED: 4,
+    SMALLER_THAN_BASKETBALL: 5,
+    BIGGER_THAN_BASKETBALL: 6
+}
 print("Item registry is being run right now.")
 
 type_defaults = {
@@ -1108,8 +1125,8 @@ def get_loc_items(loc=None, cardinal=None):
     from item_dict_gen import generator, excluded_itemnames
     import json
 
-    loc_data_json = "loc_data.json"
-    with open(loc_data_json, 'r') as file:
+    import config
+    with open(config.loc_data, 'r') as file:
         loc_dict = json.load(file)
 
     loc_items_dict = {}

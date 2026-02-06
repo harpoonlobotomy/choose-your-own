@@ -120,11 +120,11 @@ def item_def_from_str(item_name:str, item_dict=None):
 
 
 import json
-json_primary = "dynamic_data/items_main.json" # may break things
+json_primary = "ref_files/items_main.json" # may break things
 with open(json_primary, 'r') as file:
     item_defs = json.load(file)
 
-json_to_edit = "dynamic_data/generated_items.json"
+json_to_edit = "ref_files/generated_items.json"
 #with open(json_to_edit, 'r') as file:
 #    gen_items = json.load(file)
 gen_items = {} # not currently using the actual file, just for temp storage.
@@ -245,10 +245,8 @@ def get_items_from_card(loc, cardinal, loc_data):
 
 def get_loc_items_dict(loc=None, cardinal=None):
 
-    import json
-
-    loc_data_json = "loc_data.json"
-    with open(loc_data_json, 'r') as file:
+    import json, config
+    with open(config.loc_data, 'r') as file:
         loc_dict = json.load(file)
 
     def get_cardinal_items(loc, cardinal):

@@ -27,9 +27,8 @@ event_state_by_int = {
 }
 
 def load_json():
-    import json
-    event_data = "event_defs.json"
-    with open(event_data, 'r') as loc_data_file:
+    import json, config
+    with open(config.event_data, 'r') as loc_data_file:
         event_dict = json.load(loc_data_file)
     return event_dict
 
@@ -368,21 +367,15 @@ class eventRegistry:
         self.start_triggers = dict() #self.start_trigger_is_item
 
         self.items_to_events = dict() # just every item attached to an event, for now. Won't keep this but it'll be convenient for testing the general shape of things.
-        self.no_item_restriction = {} # no I was right the first time. noun_name: event_name. Then check if noun in events by that name. Makes way more sense. Don't check all events then all items, check if the item is viable before events are even considered.
+        self.no_item_restriction = {}
+
         self.generate_events_from_itemname = {}
-        # Actual way of doing it: event_name:item_name # event NAME, so it can start a new event when the item is encountered.
-        # dict: item_name: event (assuming item_trigger) May only allow one event per item, though could make it a set. Though actually it's already checking all events when items are encountered, so really should just do it in that same pass. Okay.#
+
         self.timed_triggers = set()
         self.condition_items = set()
 
         for state in event_states.values():
-            self.by_state[state] = set() ## really don't need these and the current/past/future. Will probably use this alone instead, it'll be easier to set up the direction.
-
-
-
-                    #if event_dict[event][trigger]["item_trigger"].get("trigger_location"):
-                        #event event_dict[event][trigger]["item_trigger"]["trigger_location"]:
-        # so braindead right now. Maybe I just ignore the whole trigger_location thing in this case because you can only pick up an item from its start location.
+            self.by_state[state] = set()
 
     def add_event(self, event_name, event_attr):
 
@@ -398,10 +391,7 @@ class eventRegistry:
             event.state = 1 # (current event)
 
         if event.limits_travel:
-            print(f"EVENT LIMITS TRAVEL IN INSTANCE: {event.limits_travel}")
             self.travel_is_limited = True
-            if hasattr(self, "travel_limited_to"):
-                print(self.travel_limited_to)
 
         else:
             #print(f"Event not starts_current: {event}")
@@ -413,8 +403,8 @@ class eventRegistry:
 
         return event, event_attr
 
-    def get_all_item_instances(self, event:eventInstance, event_entry, noun=None):
 
+    def get_all_item_instances(self, event:eventInstance, event_entry, noun=None):
         from itemRegistry import registry
         event.item_name_to_inst = {}
 
@@ -423,7 +413,6 @@ class eventRegistry:
 
         if noun and noun.name not in event.item_names:
             event.item_names.add(noun.name)
-
 
         for item in event.item_names:
             if event.item_name_to_inst.get(item) and not noun:
@@ -990,28 +979,17 @@ class eventRegistry:
     def is_event_trigger(self, noun_inst, noun_loc, reason = None) -> (int|None):
         logging_fn()
 
-        #print(f"start of is_event_trigger:\nnoun inst: {noun_inst}, noun_loc: {noun_loc}, reason: {reason}.")
+
         def check_triggers(event:eventInstance, noun:ItemInstance, reason) -> (int|None):
-            #print(f"start of check_triggers: event: {event}, noun: {noun}, reason: {reason}")
-    # Reason == str containing the key phrase of the trig.trigger. eg 'added_to_inv'
-            #print(f"check_triggers\nEVENT VARS: {vars(event)}\nreason: {reason}")
+
             if event.end_triggers:
-                #print(f"event.end_triggers: {event.end_triggers}")
                 for trig in event.end_triggers:
-                    #print(f"For trig in event.end_triggers: {trig}")
-                    #print(f"VARS: {vars(trig)}")
                     if hasattr(trig, "constraint_tracking"):
                         print("Whether the event ends or not depends on this constraint. Maybe it should be checked earlier, I feel like I do this check in item_interactions. Needs to be one or the other.")
                         exit()
-                    #print(f"TRIG: {trig}, vars: {vars(trig)}")
+
                     if trig.is_item_trigger and trig.item_inst == noun:
-                        #print("item inst == noun")
-                        #print(f"REASON: {reason}, type: {type(reason)}")
-                        #print(f"trigger acts: {trig.triggers}")
                         if isinstance(reason, str):
-                            #print("reason is str")
-                            #for thing in trig.triggers:
-                            #    print(f"THInG: {thing}")
                             if reason in trig.triggers:
                                 #print(f"reason in trig.triggers: {trig.triggers}")
                                 if hasattr(trig, "item_inst_loc") and getattr(trig, "item_inst_loc") != None and trig.item_inst_loc != noun_loc:
@@ -1021,12 +999,12 @@ class eventRegistry:
                                 return 1
 
                         elif isinstance(reason, tuple):
-                            print(f"REASON TUPLE: {reason}, len: {len(reason)}") # will it always need to go to inner? Not sure.
+                            #print(f"REASON TUPLE: {reason}, len: {len(reason)}") # will it always need to go to inner? Not sure.
                             for inner in reason:
                                 k, v = inner
                                 for condition in trig.triggers:
                                     if trigger_acts.get(condition) and trigger_acts[condition].get(k) == v:
-                                        print(f"Condition [{k}: {v}] met for {noun_inst}. Will end event now.")
+                                        #print(f"Condition [{k}: {v}] met for {noun_inst}. Will end event now.")
                                         self.end_event(event, trig, noun_loc)
                                         return 1
                         else:
@@ -1200,10 +1178,10 @@ class eventIntake:
                     setattr(self, effect, attr["effects"][effect])
                     if effect == "limit_travel":
                         self.limit_travel = True
-                        print(f"LIMIT TRUE FOR {self.name}")
+                        #print(f"LIMIT TRUE FOR {self.name}")
                         if attr["effects"]["limit_travel"].get("cannot_leave"):
                             self.travel_limited_to = attr["effects"]["limit_travel"]["cannot_leave"]
-                            print(f"LIMIT TRUE FOR {self.name} for locations {self.travel_limited_to}")
+                            #print(f"LIMIT TRUE FOR {self.name} for locations {self.travel_limited_to}")
 
         self.messages = attr.get("messages")
 
@@ -1358,22 +1336,10 @@ def initialise_eventRegistry():
 
     for event in registrar.events:
         if not getattr(event, "is_generated_event"):
-            print(f"EVENT VARS: {vars(event)}")
             event_inst, event_entry = events.add_event(event.name, vars(event))
             #print(f"About to get item instances for {event_inst}")
             events.get_all_item_instances(event_inst, event_entry)
-            ## NOTE: Should not add the instances to effects/etc, we need to go through those in add_items_to_events after anyway, no? So should just add them then, when we're already going through them to prep the triggers.
 
-    # blocked out so it doesn't do the work twice, is invoked in initialise_all
-    #add_items_to_events()
-
-
-    #for event in registrar.events:
-    #    if getattr(event, "is_generated_event"):
-    #        event_inst, event_entry = events.add_event(event.name, vars(event))
-    #    else:
-
-            #print(f"Started current event: {event_inst}\nvars: {vars(event_inst)}")
 
 if __name__ == "__main__":
 
@@ -1388,6 +1354,3 @@ if __name__ == "__main__":
         if events.travel_is_limited:
             #print(f"Travel is limited: {(events.travel_is_limited)}")
             print(events.check_movement_limits())
-
-        #add_items_to_events(None)
-

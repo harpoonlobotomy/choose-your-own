@@ -268,13 +268,13 @@ def run_membrane(input_str=None):
 
         try:
             from verbRegistry import Parser
-            print("Before input_parser")
+            #print("Before input_parser")
             viable_format, dict_from_parser = Parser.input_parser(Parser, input_str)
-            print("After input_parser")
+            #print("After input_parser")
             if not viable_format:
                 return None
             inst_dict = get_noun_instances(dict_from_parser, viable_format)
-            print("after get_noun_instances")
+            #print("after get_noun_instances")
             if to_json:
                 input_outcome_dict[(str(i) + " " + input_str)] = inst_dict
                 import json
@@ -308,14 +308,14 @@ def run_membrane(input_str=None):
             print(f"Failed parser: {e}")
 
     #from config import run_tests
-    run_tests = True
+    run_tests = False#True
     if run_tests:
         print("run tests on")
         from time import sleep
         test_inputs = test_input_list#["get scroll", "open scroll", "go to east graveyard", "get glass jar", "put glass jar in scroll", "put scroll in glass jar"]
         for i, input_str in enumerate(test_inputs):
             #input_outcome_dict[str(i, input_str)] = None
-            print_yellow(f"#    input str: `{input_str}`")
+            #print_yellow(f"#    input str: `{input_str}`")
             loop(input_str)
 
             sleep(.05)
