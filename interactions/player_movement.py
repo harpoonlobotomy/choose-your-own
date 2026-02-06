@@ -107,7 +107,6 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
 
     if events.travel_is_limited and not (to_loc and to_loc == loc.current.place):
         allowed_locations = events.check_movement_limits()
-
         if not allowed_locations.get(to_loc.name):
             holding_event = list(allowed_locations[loc.current.place.name])[0]
             msg = events.play_event_msg("held", holding_event, print_txt=False)

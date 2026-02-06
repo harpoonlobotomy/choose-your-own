@@ -3167,3 +3167,596 @@ Okay so --- how about a trigger subclass. Each event gets trigger instances, and
 Have set up the trigger class. It's still not fully implemented and I need to streamline attribute alignment for items etc, but it works.
 
 Hopefully have fixed the direction/location entry. Still got the issue of it sending me out of the shed immediately once but /think/ I fixed it since then.
+
+10.00pm
+
+unlock padlock with key
+<ItemInstance padlock (648656a5-05bb-40e3-9f17-a81977a9c65c)> and <ItemInstance iron key (510a67a0-9057-4175-827e-7a96819358ff)> are not a pairing. Key: None, lock: None
+Cannot process {0: {'verb': {'instance': <verbInstance unlock (aeb869ea-7269-4ce0-8e09-c41247409c07)>, 'str_name': 'unlock'}}, 1: {'noun': {'instance': <ItemInstance padlock (648656a5-05bb-40e3-9f17-a81977a9c65c)>, 'str_name': 'padlock'}}, 2: {'sem': {'instance': None, 'str_name': 'with'}}, 3: {'noun': {'instance': <ItemInstance iron key (510a67a0-9057-4175-827e-7a96819358ff)>, 'str_name': 'iron key'}}} in def lock() End of function, unresolved. (Function not yet written, should use open_close variant instead)
+
+For some reason, didn't find the key correctly. I thought I fixed it before, hopefully I didn't re-break it messing around with the commit earlier.
+
+10.24pm
+Dammit I did go backwards some.
+
+[[  look at wooden door  ]]
+
+You can't see that right now.
+
+Can't see the door from inside. Fuuuuuck.
+
+Also it's not printing the right descriptions. It's still taking item descriptions from loc_data when it should be taking it from item_defs where possible, when describing the item itself. F me.
+
+10.46pm Well I couldn't figure out exactly where it was overwriting the location descriptions. For now have just removed the description from the [loc][card][item] that I want it to use the item_defs description for, which I guess is just a better way of doing it. use item_desc for location descriptions, loc_data [item][description] for localised item descriptions, and item_defs for generic item descriptions. Makes perfect sense.
+
+1.23am 1/2/26
+Need to formalise breakability/flammability.
+
+Need a scale of damage types/strengths, and relative weaknesses. So you can 'break' a fabric object with a knife, but can't break an iron padlock with one. I want to padlock to be breakable, but with something like a tire iron, not just any old thing. (and equally, the padlock would be able to break something like a glass dome.)
+
+
+7.46am
+Well technically it /works/ in terms of running, but the current trigger setup doesn't actually trigger (ie picking up the map.)
+
+The event is assigned to the key correctly:
+ 'event': <eventInstance reveal_iron_key (2f6a6af0-a493-4e5a-9f4d-3386a2273634, event state: 1>,
+
+ as is the location and the padlock instance.
+
+ The map is also assigned to the right event
+ 'event': <eventInstance reveal_iron_key (2f6a6af0-a493-4e5a-9f4d-3386a2273634, event state: 1>,
+
+So it's likely a trigger failure. Need to check where it fails exactly.
+
+9.39am
+Had a break for an hour or so. Back to testing for a little bit now.
+
+Added some prints to def is_event_trigger()
+#   The local map is now in your inventory.
+#   start of event_trigger:
+#   noun inst: <ItemInstance local map (64a6944e-45d8-45cf-92d4-def71b1bc3cc)>, noun_loc: <cardinalInstance north work shed (160c01fa-9fff-4828-b2b8-67839ca0a101)>, reason: item_in_inv.
+#   Events.no_item_restriction: {'moss': {<eventInstance moss_dries (c8a2a57c-0899-4bbc-95c9-be7c2e35802c, event state: 2>}}
+
+So, only moss is in item restrictions. That's correct, the map (what I'm looking for) isn't in that group.
+
+Oh ffs. I had a != instead of a ==.
+
+Well now it gets into def check_triggers(), but doesn't get any further. Still, it's something.
+
+
+12.34pm 2/2/26
+
+Working on event triggers again/still. Last set of changes broke hidden/locked etc items
+
+Okay, so the issue is I made two separate paths for ending events via trigger. One, picking up the item, goes through is_event_trigger. The other goes through set_noun_attr, which bypasses is_event_trigger entirely and goes through the process itself and then triggers end_event directly.
+
+So I need to change that. Set_noun_attr should just check:
+
+is the noun in events.items (the set of all event=related items)
+or is the noun_name in events.no_item_restriction.
+
+If not either of these, then we can stop looking.
+
+Alternatively, we can rely on
+hasattr(noun, "event"), because itemInst should have the .event attr assigned when they're assigned to an event,
+and events.no_item_restriction for generated events.
+
+
+Honestly I'm not even sure where/when the item instances are being assigned right now. God I made this process a mess.
+
+
+1.11pm
+Okay changing event_defs effects to:
+
+    "effects": {
+        "hide_items": {
+            "0": {
+
+because otherwise I can only affect 1 item per effect-type.
+
+
+6.50pm
+Haven't tested (or set up, for that matter) the day-tracking yet, but the generated events seem to be working. drying moss starts when you pick the moss up, it runs through the event generation, triggers etc. All seems working.
+
+Though now I do need to figure out a way to have the 'moss' item be like... three pieces of moss, secretly. So it just says 'decorated by clumps of moss' until all of them are gone. Not sure yet, haven't allowed for that before. Will try.
+
+Also:
+
+The moss is now in your inventory.
+events.generate_events_from_itemname: {'moss': 'moss_dries'}
+This <ItemInstance moss (49985fa4-d287-4a45-b88c-ad09f2c0d1a3)> already has an event tied to it: <eventInstance moss_dries (ff8914dc-a12c-45ec-af64-77bf7c626c92, event state: 1>
+This needs to follow a different path to check if any triggers were met. For right now, ignore.
+
+
+Currently, if you drop the moss then pick it up again, it runs into this path because the old event still exists. idk if I want to end the event immediately if it leaves the inventory (simplest) or if it being dropped starts a new counter (so it only ends the event if out of inv for x time.) Former is certainly easier.
+
+
+Okay:
+
+Trigger: <triggerInstance 858cb72b-a73c-4ed0-a974-527aa7d45e97 for event moss_dries, event state: future/not started, Trigger item: moss>
+Trigger: <timedTrigger 9ea96af9-8205-4b25-8b1b-0b19783b7d67 for event moss_dries, event state: future/not started, None>
+
+So, event state is not updating properly
+
+
+8.17pm
+More work on it. Getting there.
+Changed how event defs works a little so I can have multiple triggers per start/end 'trigger' section. Split the timed trigger into parts - one trigger will deal with the time part, while another one manages the 'if this is not in inventory' part. Should work more easily.
+
+Okay, got that working, but now I need different end messages. Right now if you drop it, it just says 'the moss dried out after a few days', when I dropped it immediately. success/failure states for messages, I think.
+
+
+NOTE: The 'drop moss' thing should only apply if the item isn't inside something I'm carrying, either. Right now I think if I put the moss in a jar it'll still fail.
+
+Hm. Well I tried to test it:
+
+[[  put moss in glass jar  ]]
+
+inst.contained_in (move_item): <ItemInstance glass jar (0a723d5a-90ca-4e80-b9b7-39471774ef47)>
+Failed parser: <ItemInstance glass jar (0a723d5a-90ca-4e80-b9b7-39471774ef47)>
+
+Need to look into that later...
+
+
+8.32pm
+Okay, found it.
+
+    inst.contained_in = new_container
+    print(f"inst.contained_in (move_item): {inst.contained_in}")
+    print(f"SELF BY CONTAINER: {self.by_container}")
+    self.by_container[new_container].add(inst)
+    print(f"self.by_container[new_container]: {self.by_container[new_container]}")
+    exit()
+
+==
+
+SELF BY CONTAINER: {}
+
+For some reason self.by_container isn't populating properly. Will look into it later.
+
+Also vs code is slooooooooooow af at the moment. I have to wait while I type. Wonder if I've put way too much into memory at this point.
+Ah yeah, vs code's using 1,696mb and 2% cpu. That's like, 5 chrome tabs.
+
+Code.exe	19444	"C:\Users\Gabriel\AppData\Local\Programs\Microsoft VS Code\Code.exe" c:\Users\Gabriel\.vscode\extensions\ms-python.vscode-pylance-2025.10.4\dist\server.bundle.js
+
+Most of it is from this. Only about 50mb is the actual scripts. Which is still too much tbh.
+
+Anywho. Need a rest for a bit. Will fix containers tomorrow, not sure how/when those broke.
+
+
+10.05am 3/2/26
+
+So, got the containers basically working again, apparently somewhere along the line I just deleted the line that adds anything to registry.to_container. Worked immediately once i put it back in.
+
+New oddity:
+
+#   You look at the glass jar.
+#   Child dried flowers is present in parent glass jar.
+#   A glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.
+#
+#   The glass jar contains:
+#     moss
+
+Now the moss is correct, I was testing by putting the moss in the jar. But why no flowers...?
+
+
+---
+
+Okay:
+                for child in inst.starting_children:
+                    if child in inst.children:
+                        print(f"Child {child.name} is present in parent {inst.name}.")
+So the flowers were found because they're children, but the moss was found because it's inside the container.
+
+Now while I use the two interchangeably colloquially, in this  case they're different things. 'Children' are included in the item description, and are parented by default on init. The item descrip depends on their presence/absence. (Also note: I should do an item_desc like description for items, not just loc_items, so I can adapt it beyond just the binary 'has children'/'has no children' I have now.)  Items that are not children but are just in the container aren't currently added to the description, just the list below it.
+
+Really, it should all go in the item description, like it does with items. Hm.
+
+Just something generic for general items that aren't parent-specific, a 'Inside the {container} you see [items].', only printed when there are contents, else description_no_children prints instead. Should be easy enough to put into place. Better than 'flowers are mentioned in the description but not listed in the item list, moss is in the item list but not the description.
+
+tbh i like the item list though. Maybe I'll make it optional, once it actually includes all contents of course.
+
+
+Yeah I think the child/container thing is what messed me up. I changed it in item_defs too, so 'started_contained_in' becomes 'is_child'. Hm.
+
+If I'm going to reformat it I really need to get it down to one specific thing. I mean obviously items that are listed as already in the container are starting in the container. Eh.
+
+Guess I've learned a bit from doing the Events because that's just silly now.
+
+
+Oh no, wait. That's from item_definitions.py, which I don't... think I'm using anymore?
+
+Wish there was a way to check project-wide if a thing was used. It's a pain having to go through each script and check. Like how in VS projects you can see how often something is used /overall/. Would love that for this.
+
+Okay so to update to what the /actual/ data is:
+Children are not marked as children in item_defs, which is correct, they shouldn't be. Not all dried flowers are automatically children of glass jar.
+
+
+Okay re-redescribing - the container in items_main (the actual items defs document) does list children under the items. That should really be in loc_data. going to just add it in loc data items and create a flag for 'is in container named x in this location'.
+
+
+Oh riiiight. The whole 'generate children for parent' thing I set up. That's why it's like that. Okay.
+
+#   Well... I can still use most of that. Just need to redirect it to loc_data items for combinations of 'is_in_container: "glass jar" and "is_container": True.
+
+Okay I also have all the requires_key data in item_defs too. That's really not good. Surely keys and such should all be per item, /unless/ there's an item archetype that always uses the same item (all 'green lock with floral flourishes' require 'old copper key' or something.) In general though it's probably more likely not all scrolls have a key inside of them.
+
+
+Have removed all long_desc entries from loc_data, now they're all just in item_desc[generic]. If there are extra items or if all items can be removed, those follow. But if prev it was in long_desc, now it's in item_desc generic.
+
+
+Where on earth is the dict that says the container size:str?
+Oh it's in item_definitions.py. I really need to see if that's actually used anywhere or if it's just pure reference, in which case the data it holds can can probably go elsewhere...
+
+Okay so get_item_defs(item_name=None) isn't used anywhere according to ctrl-click. So will remove it. NOTE: if instances suddenly break, try putting it back.
+
+so, edit_item_defs and test_class both use the item definitions from item_definitions.py. But nothing I'm actually currently using. So mark that to delete later.
+
+
+11.35am:
+Contemplating making the 'key falls out of the scroll when you open it' an event, rather than a weird container interaction (because I don't want the scroll to be a container otherwise). But, contrary to other events, I want it to start and end in the same 'turn' - triggers when the scroll is opened, unhides the key, prints the end message, and ends. Might need to add a different route in is_event_trigger for that, the current setup will just start it then return immediately.
+
+2.41pm
+I need to edit this:
+"description": "a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers."
+to be something like item_desc.
+
+3.16pm
+Also just remembered I need to make there be multiple pieces of moss.
+For now, added `"has_multiple_instances": 3`, will make it work later.
+
+4.37pm
+Have changed the event def for moss:
+    "end_trigger": {
+        "timed_trigger": {
+            "time_unit": "day",
+            "full_duration": 3,
+            "persistent_condition": true,
+            "end_type": "success"},
+
+        "item_trigger": {
+            "trigger_item": "moss",
+            "trigger_location": null,
+            "triggered_by": ["item_not_in_inv"],
+            "end_type": "failure"}
+
+No longer gives item data for the timed end trigger; I don't want that one triggering when the moss is dropped. Two separate triggers.
+
+
+Added self.end_type to event_intake, will implement it to the instances later.
+
+
+-------
+
+The moss is now in your inventory.
+Failed parser: cannot access local variable 'event' where it is not associated with a value
+
+NOTE:
+[[  look at inventory  ]]
+should work. Currently it does nothing.
+
+Fixed the issue with the moss event. Seems to work now at least basically. Still need to fix the jar's parenting (or starting_children/containers overall, really) but it's something.
+
+4.36pm
+Okay so I'm thinking of using inst.children for item-is-container-for, and starting_children for the specific items a container starts with. I think it's simple enough.
+
+4.40pm
+so it works now. Need to change the 'no_starting_children' thing, because this:
+`A glass jar, now empty aside from some bits of debris.`
+doesn't work when it's followed by
+    `The glass jar contains:`
+        `moss`
+
+
+5.16pm
+You're facing east. You see a variety of headstones, most quite worn, and not much else. It's quite empty here...
+
+This doesn't really work when there /are/ items there. counting only the initial items (in item_desc) isn't ideal.
+
+-------
+
+You're in a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+The entrance gates are to the north. To the east sit a variety of headstones, to the south stands a mausoleum, and to the west is what looks like a work shed of some kind.
+
+You're facing east. You see a variety of headstones, most quite worn, and not much else. It's quite empty here...
+
+
+take flowers
+Before input_parser
+After input_parser
+[[  take dried flowers  ]]
+
+The dried flowers are now in your inventory.
+
+I can  pick the flowers up even though they're not mentioned, so they are local...
+
+Okay yeah, so it takes the names of the items in items_desc, and if those are missing it prints no_items. So I need to add a tangent to that, that if there are visible items in the area they get listed, and the 'no_items' only plays when there are actually no items.
+
+
+Why don't I just make the inventory an item. Just make it a container, right? Wouldn't have to bother with any meta rubbish. Just format it differently maybe.
+
+
+NOTE:
+
+For trig in event.end_triggers: <timedTrigger 1c692712-fdef-4511-99c6-b16d26933392 for event moss_dries, event state: current/ongoing, Trigger item: <ItemInstance moss (53c718f2-a01b-49e9-99d4-48ba692a2794)>>
+item inst == noun
+REASON: item_not_in_inv, type: <class 'str'>
+trigger acts: {'item_in_inv'}
+Could not parse item_not_in_inv, type: <class 'str'>
+For trig in event.end_triggers: <triggerInstance 1e61ce24-5d22-476c-bb01-f4992e6c84d8 for event moss_dries, event state: current/ongoing, Trigger item: moss>
+
+Update this, the second event trigger should have the same instance. I assume I had in there to ignore items that already have events or smth?
+
+Okay, got event failures working (ie dropping the moss while it's still wet. Updated description works now.) will test tomorrow to see how I want to do the time-keeping portion.
+
+
+1.38pm 4/2/26
+Not sure when 'meta' as a sole command broke. Hm.
+Oh, but 'edit' works. Okay...
+And ironically get_viable_verb makes 'edit' to the word 'meta' . I guess when I made meta a verbalike it broke things. No idea.
+
+I mean 'meta' is a viable format on its own so it shouldn't be failing. Need to look in to it...
+Ooh. 'meta' wasn't an allowed format for the verb 'meta'. lmao
+
+Okay, got meta events working. But this is odd:
+All events:
+['effects', 'reveal_iron_key', 'scroll_drops_key', 'graveyard_gate_opens']
+
+Why is 'effects' an event...??
+
+Okay, fixed. Had an issue in the JSON.
+
+Now, next thing.
+
+        "effects": {
+            "held_items": {
+                "0": {
+                    "item_name": "old gold key"}},
+Now I don't have 'old gold key' placed at the location where it's hidden. It's 'inside' the scroll and falls out.
+Need to decide if/when to generate it automatically if I haven't put in in loc_data. Because that would be handy - being able to just say 'these things are hidden by this event', and generate them when necessary. Also, because what if you take the scroll away and open it elsewhere? The items shouldn't magically appear back in the shrine.
+So am going to add a thing for 'generate item if in missing'.
+(missing = list(i for i in event.item_names if i not in event.item_name_to_inst))
+BUT only generate when the event runs. Which works I think, because we only start the open scroll event when the scroll opens, it doesn't run on startup I think.
+
+Okay, no, we add items initially so we know that the scroll is tied to a future event.
+So in that case, going to add a set to the event, so that when it starts, if it has 'items_to_generate', it generates them on start at current_loc. That should work.
+
+Huh. I only add instances to registry.instances in one place, but I generate them in many. That's not ideal...
+Have moved self.instances.add(inst) to within init_single (which is how all item instances are generated) so self.instances should be a complete list. Not by_name though, because I also used that as a check to see where things were being added from. TODO Will sort out registry.by_name shortly.
+
+Why is exit() blue in vs code, now? It used to be yellow (as in, a function/method), but it's been blue for a while. I wish it was yellow again.
+on mouseover:
+    (variable) def exit(code: _ExitCode = None) -> NoReturn
+And there, exit is yellow, like it should be. Bleh.
+I think it changed when I realised i could use strings inside the () to print exit messages, and it suddenly started being a variable. Bleh.
+
+
+2.48pm
+okay so am partway through sorting out the immediate events and the attributes involved.
+
+Notes:
+Was able to unlock the padlock with the iron key, and it printed all the event metadata, but didn't print the end message. And though I was able to take the padlock and leave the graveyard, the gate description when looked at still said it was held closed.
+
+At the shrine, no items listed in the scene descriptions, but when I looked at the scroll, the key was inside.
+
+Hm.
+Now it's not even finding the scroll on event init:
+
+EVENT:<eventInstance scroll_drops_key (c08986ac-0668-438e-9da2-c093a4246de6, event state: 2>, noun: None
+No instance found by location for scroll
+No instance found by location for old gold key
+Missing instances: [[['scroll', 'old gold key']]]
+
+Oh, just figured out why I was able to go to the shrine even though the gate still said it was closed - travel limits are broken.
+
+
+
+"""
+If I meta shrine,
+Location item data:
+
+Editing scroll
+`scroll`: `{'description': '', 'is_hidden': False, 'is_container': True, 'container_limits': 4}`
+
+So it's in loc data. But not an instance, it seems?
+
+But no, because there /is/ a scroll in the north shrine, even before the item starts. I'm very confused.
+"""
+(So maybe it's just not being shown. Actually that makes sense, I turned the item lists off, but never finished the 'list items in description' part I meant to, apparently..)
+
+Okay. So, today:
+    fix travel limiter
+    fix end-of-event (message print, gate unlock/open, travel enabled)
+    Add local items to description prints (or reenable local item list print)
+
+lmao now it's saying the scroll is locked?
+[[  open scroll  ]]
+
+You cannot open a locked scroll.
+Okay.
+
+
+3.24pm
+Well at least one problem solved - it wasn't finding the scroll because I'd written 'trigger item location' instead of 'trigger location'. Oops.
+
+Also, the scroll is giving the default description ("you see nothing special"), but the item def has a description ("An old parchment scroll, seemingly abandoned at a hidden shrine.", that should be printed.)
+
+
+3.54pm
+Oh this is odd, glad I caught it.
+
+
+open scroll
+Before input_parser
+Tokens: [Token(idx=0, text='open', kind={'verb'}, canonical='open'), Token(idx=1, text='scroll', kind={'noun'}, canonical='scroll')]
+After input_parser
+[[  open scroll  ]]ances
+
+Failed parser: 'ItemInstance' object has no attribute 'enter_location'
+
+Now I was in north graveyard, and so the scroll should be completely unfindable. Fixed that one already now though.
+
+Need a straightforward flag for 'is immediate action event', but this is fine for now.
+
+okay, works now. the scroll is opened, the key appears.
+
+
+4.23pm
+Ah. Now I see why I broke the items into items vs keys - now, when i pick up the old gold key, it triggers the event check, even though it was an item created by the event and will never trigger anything. Okay. I need to put 'event.keys' back into play and we only check /those/. item.event is useful, but should also have item.is_event_key - any item tied to an event gets item.event, but those who are connected to a trigger get item.is_event_key. So, the scroll does have both (until the event is done, at which point the is_event_key flag is removed so it doesn't keep trying over and over (unless the event is ongoing/repeatable/etc), but the key only ever gets item.event, which we don't run through trigger_check on alone.)
+
+
+Okay. Going to fix parenting.
+
+containers get .starting_children and .children. Starting children is only ever the initial children in loc_data. Children is whatever items it's holding.
+
+7.02pm
+Okay. Refixed children I think, and travel limits are working again.
+
+7.25 Really need to redo the open/close functions in verb_actions. They work, but so very needlessly messy.
+
+
+7.59
+so - iron key appears, but is not unhidden when map event ends. an in, appears in the printed irem list, but attrs say is)hidden = true, and IU can't pick it up.,
+bleh
+
+Okay but, the 'you see a few scattered objects' print /doesn't/ include the key. So specifically, the description text needs to be checking is_hidden attr, which clearly it isn't yet. That's fixable. But, the key /should/ be unhidden now, as the event just ended. Will work on it tomorrow, too tired for now.
+
+3.27pm 5/2/26
+Also, I need to formalise whether I write 'graveyard east' or 'east graveyard'. I have things mostly set up to take the input both ways, but there should be a standard form for the ref files.
+
+All the location files go loc>card obviously, so I think it should just be that. All the refs go place>card, so that should be the default. by_cardinal_str will work either way, but it checks place>card first.
+
+3.37pm
+Hm.
+
+You're in a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+The entrance gates are to the north. To the east sit a variety of headstones, to the south stands a mausoleum, and to the west is what looks like a work shed of some kind.
+
+You're facing east. You see a variety of headstones, most quite worn, and decorated by clumps of moss.
+
+You see a few scattered objects in this area:
+   glass jar, moss
+
+'look east' only gets the moss, not the jar. 'look around' gets both.
+Both correctly exclude the skeleton as its hidden, but I don't know why the glass jar is excluded from the long_desc description.
+
+Hmm. So the moss ins in local items but the glass jar isn't
+
+local_items and not hidden:
+<ItemInstance glass jar (49a08bc3-4748-45d3-ac5d-c197b702eca5)>
+
+and then, item in registry by name:
+
+ITEM IN LONG_DICT: glass jar
+a [[]] being used as a vase in front of one of the headstones, with some dried flowers left long ago
+Item glass jar in registry and local_items
+inst in registry by name: <ItemInstance glass jar (49a08bc3-4748-45d3-ac5d-c197b702eca5)>
+
+And yet, if inst in local_items: fails.
+
+
+Okay, that's done. Item descriptions work nicely now.
+
+
+Next:
+
+
+[[  put paperclip in glass jar  ]]
+
+Added paperclip to glass jar.
+
+
+[[  put paperclip in glass jar  ]]
+
+glass jar is already in <ItemInstance paperclip (3148f9a5-8510-4a62-bf0c-613c786b0b6c)>
+
+
+[[  inventory  ]]
+
+severed tentacle
+fashion mag
+paperclip
+glass jar
+
+Can't put a paperclip in the jar because there already is one. I need to be able to direct these things more easily. 'If I say 'put x in y', assume I don't mean the 'x' taht 's already in 'y' if there's another 'x' available.
+
+
+Though first I'm going to fix all the 'open x' functions.
+
+'simple_open_close' was a good idea but it's messy as fuck and basically redundant, and I should just use 'open_close'.
+
+
+1.47pm, 6.2.26
+
+going to add
+ hasattr(noun_inst, "is_transition_obj") and (hasattr(noun_inst, "enter_location") and noun_inst.enter_location == loc.current.place))
+
+to check_item_is_accessible, so I have a code for 'is not local but treat it as such'.
+
+
+oh I already did that apparently, that's what reason_val 8 is for.
+
+Working on open etc.
+
+I have cleaned up simple_open_close, which is exclusively for len(format_tuple) == 2, open/close operations. Feels sensible enough to get those out the way. All open/close verbs go through this, and are redirected to def open_close if they're longer than len 2.
+
+I'm tempted to route lock_unlock through this too.
+
+
+Anyway.
+
+4.33pm
+Just testing the game, and the key is, once again, not properly revealed after the event ends. Fml.
+ 'is_hidden': True,
+ still set. (meta key is such a useful command, glad I put that in.)
+
+Okay, fixed it. I'd added the on_item_start and on_item_end to effect_attrs and not updated it, so it was tryin to set 'is_hidden' to the full on_item_end/on_item_start dict and failing silently.
+
+
+Now:
+
+
+You're facing north. A simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's an old iron key, mottled with age.
+
+[[  take iron key  ]]
+
+The iron key is now in your inventory.
+
+[[  look around  ]]
+
+loc_item: <ItemInstance secateurs (afdfb681-9472-4aa4-9ed0-3e226bf02c22)>
+
+Around you, you see the interior of a rather run-down looking work shed, previously boarded up but seemingly, not anymore.
+There's a simple desk, hazily lit by the window over it to the north.
+
+You're facing north. A simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's secateurs.
+
+So why aren't the secateurs there from the start? Should be. I've messed up in the location descriptions again somewhere.
+
+Okay, fixed that again now.
+
+Also added "not_in_loc_desc": true, for items that are in a scene, not hidden, but should be excluded from scene descriptions (ie in this case, the work shed and door).
+
+Also just realised I still have event data in item_defs.
+
+    "event_ended_desc": "Heavy wrought iron bars with little decoration, now slightly ajar.",
+    "event": "graveyard_gate_opens",
+    "event_type": "item_triggered",
+    "event_key": null,
+    "event_item": true,
+
+Now I don't even use event_key and event_item anymore (they're not is_event_key and 'event_item' is simply 'an item that hasattr(item, "event")). event_ended_desc I might move to event defs. Would be okay for it to still be in item defs if it's an item that will always have that event description though. So in this case I might leave it, although the name 'gate' is not ideal.
+I could set something more unique like event_name as the definition key perhaps. Not sure how it'd be referred to in the input though.
+
+Hm.
+      "item_desc": {
+        "generic": "There's a dark fence blocking the horizon, prominently featuring ",
+        "gate": "a heavy wrought-iron [[]] - standing strong but run-down ",
+        "padlock": "an old dark-metal [[]] on a chain, holding the gate closed"
+      },
+thinking about what if I want to change that item description for gate, so it explicitly states it's open now.
+
+maybe
+    "gate": "a heavy wrought-iron [[]] - standing strong but run-down <<and slightly ajar>>",
+
+

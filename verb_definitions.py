@@ -83,6 +83,7 @@ formats = {
 
     ### SINGLE NOUNS ###
     "verb_noun": (verb, noun), # drop paperclip
+    "verb_sem_noun": (verb, sem, noun), # 'look at watch'
     "verb_dir_noun": (verb, direction, noun), # 'look at watch'
     "verb_noun_dir": (verb, noun, direction), # throw ball up
     "verb_noun_dir_loc": (verb, noun, direction, location), # drop paperclip at graveyard
@@ -142,6 +143,7 @@ verb_dir_car_loc = formats["verb_dir_car_loc"]
 verb_dir_loc_car = formats["verb_dir_loc_car"]
 verb_dir_loc = formats["verb_dir_loc"]
 verb_dir_noun = formats["verb_dir_noun"]
+verb_sem_noun = formats["verb_sem_noun"] # wait with book
 verb_noun_dir = formats["verb_noun_dir"] # [enter] [work shed] [door]
 
 verb_noun_noun = formats["verb_noun_noun"]
@@ -161,7 +163,7 @@ combined_wordphrases = { # maybe something like this, instead of the hardcoded e
     "up" : ["pick"], # reversed the directions
     "open" : ["pry", "break"], ## a way to apply the key verb-name then check against that instead? Instead of listing all variations of a key phrase here.
     "from" : ["away"],
-    "on": ["down"]
+    "on": ["down"],
 }
 #What about something like 'away from', eg 'move papers away from fire'. Need a mechanism to check #if 'away', is next part 'fire', and treat 'away from' as its own direction.
 # I know it's sprawling but it'll keep things viable without having to add a hundred options for each /noun/ if they're added at the verb le
@@ -181,7 +183,7 @@ combined_wordphrases = { # maybe something like this, instead of the hardcoded e
 verb_defs_dict = {
     f"attributes": {"alt_words": ["att"], "allowed_null": None, "formats": [verb_noun]},
     ## NOTE: Allowed_null is not used at present. All nulls are treated as equal, and all sem/loc/dirs are treated as viable in all cases. Will need to change this later but for now it works alright.
-    "meta": {"alt_words": [], "allowed_null": None, "formats": [meta_noun, meta_loc, meta_car]},
+    "meta": {"alt_words": [], "allowed_null": None, "formats": [meta, meta_noun, meta_loc, meta_car]},
     "go": {"alt_words":["go to", "approach", "head", "travel"], "allowed_null": None, "formats": [loc_only, loc_car, car_loc, verb_car_loc, verb_loc_car, dir_only, car_only, verb_only, verb_loc, verb_dir, verb_dir_loc, verb_dir_noun, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car, verb_noun_noun]},
 #   ,making 'move' its own verb because it needs to route to both 'push' and 'go'. # Turns out I already had one but used it terribly and still had alt_words directing actions away. So now it's here.
     "move": {"alt_words": ["shift"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun, loc_only, loc_car, car_loc, verb_car_loc, verb_loc_car, dir_only, car_only, verb_only, verb_loc, verb_dir, verb_dir_loc, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car]},
@@ -206,7 +208,8 @@ verb_defs_dict = {
     "look": {"alt_words": ["watch", "observe", "investigate", "examine"], "allowed_null": ["at", "to"],  "formats": [verb_only, verb_noun, verb_dir, verb_sem, verb_loc, verb_dir_meta, verb_noun_sem_noun, verb_noun_dir_noun, verb_dir_noun, verb_dir_noun_sem_noun, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car]}, # look, look at book, look at book with magnifying glass
     "set": {"alt_words": [""], "allowed_null": None, "formats": [verb_noun_dir, verb_noun_sem_noun, verb_noun], "distinction": {"second_noun":"fire", "new_verb":"burn", "else_verb":"put"}}, ## not implemented, just an idea. 'if fire is the second noun, the correct verb to use is 'burn', else the verb is 'put'. So 'set' is not its own thing, just a membrane/signpost.
     "clean": {"alt_words": ["wipe"], "allowed_null": None, "formats": [verb_noun, verb_loc, verb_noun_sem_noun]},
-    "enter": {"alt_words": [], "allowed_null": None, "formats": [verb_loc, verb_dir_loc, verb_noun, verb_dir_noun, verb_noun_noun]}
+    "enter": {"alt_words": [], "allowed_null": None, "formats": [verb_loc, verb_dir_loc, verb_noun, verb_dir_noun, verb_noun_noun]},
+    "time": {"alt_words": ["wait", "waste time", "spend time"], "allowed_null": None, "formats": [verb_only, verb_dir, verb_sem_noun]}
     }
 
 ## also, how to deal with something like 'set paper on fire'

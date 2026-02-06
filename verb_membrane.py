@@ -216,6 +216,7 @@ test_input_list = ["take the paperclip", "pick up the glass jar", "put the paper
 
 test_input_list = ["go west", "go north", "go to shed", "go north", "go to work shed", "go north", "go to shed door", "go to work shed door", "open door", "close door", "open shed door", "close shed door", "go into shed", "open door", "go into work shed", "go into work shed", "leave shed", "inventory", "drop mag", "take mag", "drop mag at church", "go into work shed", "open work shed door", "open door", "go into shed", "take map", "take key", "go to north graveyard", "use key on padlock", "lock padlock with key", "unlock padlock with key", "take padlock"]
 
+test_input_list = ["logging_args", "go west", "open door", "enter shed", "take map", "take key", "go to north graveyard", "unlock padlock with key", "pick up padlock", "open gate"]
 
 import json
 class UserEncoder(json.JSONEncoder):
@@ -267,13 +268,13 @@ def run_membrane(input_str=None):
 
         try:
             from verbRegistry import Parser
-            #print("Before input_parser")
+            print("Before input_parser")
             viable_format, dict_from_parser = Parser.input_parser(Parser, input_str)
-            #print("After input_parser")
+            print("After input_parser")
             if not viable_format:
                 return None
             inst_dict = get_noun_instances(dict_from_parser, viable_format)
-            #print("after get_noun_instances")
+            print("after get_noun_instances")
             if to_json:
                 input_outcome_dict[(str(i) + " " + input_str)] = inst_dict
                 import json
@@ -307,7 +308,7 @@ def run_membrane(input_str=None):
             print(f"Failed parser: {e}")
 
     #from config import run_tests
-    run_tests = False#True
+    run_tests = True
     if run_tests:
         print("run tests on")
         from time import sleep
@@ -315,7 +316,7 @@ def run_membrane(input_str=None):
         for i, input_str in enumerate(test_inputs):
             #input_outcome_dict[str(i, input_str)] = None
             print_yellow(f"#    input str: `{input_str}`")
-            loop(input_str, i)
+            loop(input_str)
 
             sleep(.05)
 

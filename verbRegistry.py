@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 #import generate_locations
+from logger import logging_fn
 from printing import print_green, print_red
 from verb_actions import get_current_loc
 
@@ -62,7 +63,7 @@ class VerbRegistry:
 
     def __init__(self):
 
-        self.verbs = {}      # id -> VerbInstance
+        self.verbs = {}      # name -> VerbInstance
         self.meta_verbs = {}
         self.all_meta_verbs = {}
         self.by_format = {}        # format -> set of verbs
@@ -269,6 +270,7 @@ class Parser:
 
             else:
                 canonical = None
+
                 if word in verbs.all_meta_verbs:
                     if word not in verbs.meta_verbs:
                         for key_word in verbs.meta_verbs:
@@ -313,8 +315,15 @@ class Parser:
                         kinds.add("null")
                         canonical = word
                         continue
-                    kinds.add("verb")
-                    canonical = word
+
+                    if word in verbs.split_verbs and verbs.split_verbs.get(word) and parts[1] in verbs.split_verbs[word]:
+                        canonical = verbs.split_verbs[word]
+                        kinds.add("verb")
+                        omit_next += 1
+
+                    else:
+                        kinds.add("verb")
+                        canonical = word
 
                 if word in verbs.adjectives:
                     if null_adjectives:
@@ -440,6 +449,7 @@ class Parser:
             return list(kinds)
 
     def get_viable_verb(token, force_location=False):
+        #print(f"GET VIABLE VERB: {token}")
         word = token.text
         if force_location:
             word="go"
@@ -492,7 +502,6 @@ class Parser:
         return reformed_dict, sequence
 
     def get_sequences_from_tokens(tokens) -> list:
-
         sequences = [[]]
         verb_instances = []
         meta_instances = []
@@ -500,6 +509,12 @@ class Parser:
 
         for i, token in enumerate(tokens):
             options = Parser.token_role_options(token)
+            if len(tokens) == 1 and not token.kind:
+                return None, None
+            #if not options:
+            if not token.kind: # for things like 'waste time', which just don't give a kind to 'waste'.
+                continue
+
             if len(tokens) in (1, 2):
                 if list(token.kind)[0] in ("location", "direction"):
                     instance = Parser.get_viable_verb(token, force_location=True)
@@ -507,6 +522,7 @@ class Parser:
                 if list(token.kind)[0] == "cardinal":
                     instance = Parser.get_viable_verb(token, force_location=True)
                     verb_instances.append({i:instance})
+
             if "verb" in options:
                 instance = Parser.get_viable_verb(token)
                 verb_instances.append({i:instance})
@@ -528,8 +544,8 @@ class Parser:
 
         if not verb_instances:
             if not meta_instances:
-                print("No verb_instance or meta_instance found in get_sequences_from_tokens. Returning None.")
-                print(f"TOKENS: {tokens}")
+                #print("No verb_instance or meta_instance found in get_sequences_from_tokens. Returning None.")
+                #print(f"TOKENS: {tokens}")
                 return None, None
 
         #print(f"verb instances: {verb_instances}")
@@ -557,6 +573,9 @@ class Parser:
                                 viable_sequences.append(seq)
                             elif set(seq) == verb.kind and seq not in viable_sequences:
                                 viable_sequences.append(seq)
+                            elif isinstance(seq, list) and len(seq) == 1: ## Added to allow 'meta' to work. Not sure why it was needed, though.
+                                if seq[0] in verb.kind:
+                                    viable_sequences.append(seq)
 
                     if not viable_sequences:
                         meta = meta_instances[0]
@@ -628,6 +647,7 @@ class Parser:
 
 
     def input_parser(self, input_str):
+        logging_fn()
         from verb_membrane import membrane
 
         nouns_list = membrane.nouns_list
@@ -647,7 +667,8 @@ class Parser:
         sequences, verb_instances = self.get_sequences_from_tokens(tokens)
 
         if not sequences:
-            #print(f"No viable sequences found for {input_str}.")
+            MOVE_UP = "\033[A"
+            print(f"{MOVE_UP}\033[1;31m[ Couldn't find anything to do with the input `{input_str}`, sorry. ]\033[0m")
             clean_parts = []
             token_parts = [i.kind for i in tokens if i.kind != "null"]
             for parts in token_parts:
@@ -715,3 +736,14 @@ def initialise_verbRegistry():
             for word in attr.get("null_words"):
                 if word.lower() != None:
                     verbs.list_null_words.add(word)
+
+    split_dict = {}
+    for word in verbs.all_verbs:
+        if " " in word:
+            parts = word.split(" ")
+            split_dict[parts[0]] = {verbs.verbs.get(word)}
+
+    if split_dict:
+        verbs.split_verbs = split_dict
+
+

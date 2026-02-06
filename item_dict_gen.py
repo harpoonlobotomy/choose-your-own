@@ -4,7 +4,7 @@ import printing
 from env_data import locRegistry as loc
 
 CARDINALS = ["north", "east", "south", "west"]
-excluded_itemnames = ["generic", "no_items"]
+excluded_itemnames = ["generic", "no_items", "no_starting_items"]
 
 global loc_items_dict
 loc_items_dict = {}
@@ -208,16 +208,18 @@ def get_items_from_card(loc, cardinal, loc_data):
 
     if loc_data.get("item_desc"):
         for item in loc_data["item_desc"]:
+            if item == "" or item in excluded_itemnames:
+                continue
             # Assume only one. If multiple, need to figure something else out.
             desc_items[item] = loc_data["item_desc"]
 
     if loc_data.get("items"):
         for item in loc_data["items"]:
+            if item == "" or item in excluded_itemnames:
+                continue
             other_items[item] = loc_data["items"]
 
     for item in other_items:
-        if item == "" or item in excluded_itemnames:
-            continue
         if item in desc_items:
             if item in added:
                 print("This item was already added, but there's another one. I can't deal with this.")
@@ -227,8 +229,9 @@ def get_items_from_card(loc, cardinal, loc_data):
             item_desc = desc_items[item].get(item)
             item_attr = other_items[item].get(item)
 
-            if item_desc:
+            if item_desc and not item_attr.get("description"):
                 item_attr["description"] = item_desc
+
             loc_items_dict[loc][cardinal][item] = item_attr
         else:
             loc_items_dict[loc][cardinal][item] = other_items[item].get(item)
@@ -321,6 +324,9 @@ def init_item_dict():
         serialise_item_defs()
         with open(json_to_edit, 'w') as file:
             json.dump(generator.item_defs, file, indent=2)
+
+    return generator.item_defs
+
 
 if __name__ == "__main__":
     #NOTE: REMOVE THIS LATER. Once it's instated within the initialisation process.

@@ -1,4 +1,5 @@
 
+import re
 from env_data import placeInstance
 import itemRegistry
 from misc_utilities import assign_colour
@@ -44,37 +45,70 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
             location = "city hotel room"
         if loc_dict[location].get(cardinal) and loc_dict[location][cardinal].get("item_desc"):
             long_dict = loc_dict[location][cardinal]["item_desc"]
-            no_items_text = long_dict.get("no_items")
+            no_starting_items = long_dict.get("no_starting_items")
+            local_items = itemRegistry.registry.get_item_by_location(f"{location} {cardinal}")
+            if local_items:
+                local_items = list(i for i in local_items if not (hasattr(i, "is_hidden") and getattr(i, "is_hidden")))
+                local_items = list(i for i in local_items if not (hasattr(i, "not_in_loc_desc") and getattr(i, "not_in_loc_desc")))
+                #for thing in local_items:
+                #    print(f"{thing}: {(thing.is_hidden if hasattr(thing, "is_hidden") else "No is_hidden attr.")} ")
             for item in long_dict:
                 if item == "generic":
                     start = long_dict[item]
-                    #print(f"generic: {start}")
                     long_desc.append(start)
                 elif item == "no_items":
                     no_items_text = long_dict[item]
+                elif item == "no_starting_items":
+                     no_starting_items = long_dict["no_starting_items"]
                 else:
                     if item:
-                        #print(f"Item: {item}")
-                        if itemRegistry.registry.instances_by_name(item):
-                            local_items = itemRegistry.registry.get_item_by_location(f"{location} {cardinal}")
-                            #print(f"Local items: {local_items}")
-                            if local_items:
-                                for inst in itemRegistry.registry.instances_by_name(item):
-                                    if inst in local_items:
-                                        #print(f"inst in local items: {inst}")
-                                        if hasattr(inst, "is_hidden") and inst.is_hidden:
-                                            continue
-                                        if "[[]]" in long_dict[item]:
-                                            long_parts = long_dict[item].split("[[]]")
-                                            test = long_parts[0] + assign_colour(inst) + long_parts[1]
+                        if itemRegistry.registry.instances_by_name(item) and local_items:
+                            #print(f"Item {item} in registry and local_items")
+                            for inst in itemRegistry.registry.instances_by_name(item):
+                                if inst in local_items:
+                                    if "[[]]" in long_dict[item]:
+                                        long_parts = long_dict[item].split("[[]]")
+                                        if "fff" in long_parts[1]:
+                                            if hasattr(inst, "event") and inst.event.state in (0, 1):
+                                                long_parts[1] = long_parts[1].replace("fff", "")
+                                            else:
+                                                split_parts = re.split("fff.+fff", long_parts[1])
+                                                long_parts[1] = split_parts[1]
 
-                                            long_desc.append(test)
+                                        if "<<" in long_parts[1]:
+                                            if hasattr(inst, "event") and inst.event.state == 2:
+                                                long_parts[1] = long_parts[1].replace("<<", "")
+                                                long_parts[1] = long_parts[1].replace(">>", "")
+                                            else:
+                                                split_parts = re.split("<<.+>>", long_parts[1])
+                                                long_parts[1] = split_parts[0]
+                                                if "fff" in long_parts[1]:
+                                                    long_parts[1] = long_parts[1].replace("fff","")
+
+
+                                        test = long_parts[0] + assign_colour(inst) + long_parts[1]
+                                        long_desc.append(test)
+                                    else:
+                                        print(f"No [[]] in this description so it's excluded: {long_dict[item]}.")
 
             if len(long_desc) == 1 and no_items_text:
-                long_desc.append(no_items_text)
-        else:
-            if loc_dict[location].get(cardinal) and loc_dict[location][cardinal].get("long_desc"):
-                long_desc.append(loc_dict[location][cardinal].get("long_desc"))
+                if local_items:
+                    if no_starting_items:
+                        long_desc.append(no_starting_items)
+                    for loc_item in local_items:
+                        if not long_dict.get(loc_item):
+                        #    print("pass, assume already included.")
+                        #else:
+                        #    print(f"loc_item: {loc_item}")
+                            long_desc.append(assign_colour(loc_item, nicename=True))
+                else:
+                    long_desc.append(no_items_text)
+
+            else:
+                if local_items:
+                    for loc_item in local_items:
+                        if not long_dict.get(loc_item.name):
+                            long_desc.append(assign_colour(loc_item, nicename=True))
 
     return long_desc
 
@@ -82,6 +116,20 @@ def generate_overview(location):
 
     format_descrip(d_type="area_descrip", description="", location = location, cardinal = None)
 
+def compile_long_desc(long_desc):
+    if len(long_desc) == 1:
+        item_description = long_desc[0]
+    elif len(long_desc) == 2:
+        item_description = (f"{long_desc[0]}{long_desc[1]}")
+    else:
+        item_description = (f"{long_desc[0]}{', '.join(long_desc[1:-1])}, and {long_desc[-1]}")
+
+    #new_desc = f"You're facing {assign_colour(cardinal)}. " + item_description
+    new_desc = item_description
+    if not new_desc.endswith("."):
+        new_desc = new_desc + "."
+
+    return new_desc
 
 def init_loc_descriptions(place=None):
 
@@ -144,21 +192,8 @@ def init_loc_descriptions(place=None):
                 long_desc = format_descrip(d_type="item_desc", location=location, cardinal=cardinal)
 
                 if long_desc:
-                    if len(long_desc) == 1:
-                        item_description = long_desc[0]
-                    elif len(long_desc) == 2:
-                        item_description = (f"{long_desc[0]}{long_desc[1]}")
-                    else:
-                        item_description = (f"{long_desc[0]}{', '.join(long_desc[1:-1])}, and {long_desc[-1]}")
-
-                    #new_desc = f"You're facing {assign_colour(cardinal)}. " + item_description
-                    new_desc = item_description
-                    if not new_desc.endswith("."):
-                        new_desc = new_desc + "."
+                    new_desc = compile_long_desc(long_desc)
                     compiled_cardinals[location][cardinal] = new_desc
-
-                else:
-                    compiled_cardinals[location][cardinal] = loc_dict[location][cardinal].get("long_desc")
 
         output = " ".join(output)
         output = str(area_descrip + "\n" + output)

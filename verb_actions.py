@@ -2,11 +2,10 @@
 ### Interface between item_actions and the verbs.
 
 #import time
-from asyncio import events
 from calendar import c
 from time import sleep
 from logger import logging_fn, traceback_fn
-from env_data import cardinalInstance, locRegistry as loc, placeInstance, placeRegistry
+from env_data import cardinalInstance, locRegistry as loc, placeInstance
 from interactions import item_interactions
 from interactions.player_movement import new_relocate, turn_around
 from itemRegistry import ItemInstance, registry
@@ -14,6 +13,12 @@ from misc_utilities import assign_colour, col_list, generate_clean_inventory, is
 from printing import print_yellow
 from set_up_game import game
 from verb_definitions import directions, semantics, formats
+
+can_open_codes = [0,5,8]
+can_pickup_codes = [0,3,4]
+in_container_codes = [3,4]
+can_lookat_codes = [0,3,4,5,8]
+interactable_codes = [0,3,4,5,8]
 
 movable_objects = ["put", "take", "combine", "separate", "throw", "push", "drop", "set", "move"]
 
@@ -50,47 +55,20 @@ def get_current_loc():
     cardinal = locRegistry.current
     return location, cardinal
 
-def set_noun_attr(*values, noun):
-    end_trigger=None
-    trigger_done=False
-    ##check noun for event ties before applying attr changes.
-    if hasattr(noun, "event") and noun.event != None:
-        #print(f"Noun {noun} has event ties. Do things here.")
-        from eventRegistry import events
+def set_noun_attr(*values, noun:ItemInstance):
+    logging_fn()
 
-        event = events.event_by_name(noun.event)
-        if event:
-            #print(f"EVENT VARS: {vars(event)}")
-            if event.end_triggers:
-                for trigger in event.end_triggers:
-                    if trigger.is_item_trigger:
-                        if trigger.item_inst == noun:
-                            end_trigger = trigger.triggers
+    if hasattr(noun, "event") and getattr(noun, "event"):
+        if hasattr(noun, "is_event_key") and noun.is_event_key:
+            from eventRegistry import events
+            events.is_event_trigger(noun, noun.location, values)
 
-                            for item_val in values:
-                                item, val = item_val
-                                if end_trigger and item in end_trigger:
-                                    pass#print(f"[Event trigger: {noun}, {event}, {end_trigger}:{item}/{val}]")
-                                elif end_trigger and "item_unlocked" in end_trigger: ## need a dict or something that converts trigger-name to relevant item/val requirements.
-                                    if item == "is_locked" and val == False:
-                                        #print(f"[Event trigger: lock unlocked: {noun}, {event}, {end_trigger}:{item}/{val}]")
-                                        events.end_event(event)
-                                        trigger_done=True
-
-                                elif end_trigger and "item_in_inv" in end_trigger:
-                                    from set_up_game import game
-                                    if noun in game.inventory:
-                                        events.end_event(event)
-                                        trigger_done=True
-
-        if trigger_done:
-            if event.end_trigger["item_trigger"].get("item_flags"):
-                if event.end_trigger["item_trigger"]["item_flags"].get("flags_on_event_end"):
-                    for flag in event.end_trigger["item_trigger"]["item_flags"]["flags_on_event_end"]:
-                        setattr(noun, flag, event.end_trigger["item_trigger"]["item_flags"]["flags_on_event_end"][flag])
-
+    for item_val in values:
+        #print(f"Values: {values}")
+        #print(f"item_val in values: {item_val}")
+        item, val = item_val
         setattr(noun, item, val)
-        noun.event = None # Once it's served its purpose, stop it being an event obj. TODO add a proper function here to remove it from anywhere it's stored. Need to formalise the language for that first though. This works for now as the padlock can now be picked up.
+        #noun.event = None # Once it's served its purpose, stop it being an event obj. TODO add a proper function here to remove it from anywhere it's stored. Need to formalise the language for that first though. This works for now as the padlock can now be picked up.
 
 
 def is_loc_current_loc(location=None, cardinal=None):
@@ -109,7 +87,6 @@ def get_transition_noun(noun, format_tuple, input_dict):
     local_items_list = registry.get_item_by_location(loc.current)
     if hasattr(noun, "is_loc_exterior"):
         if hasattr(noun, "transition_objs"):
-            #print(f"noun {noun} is loc ext has transition objects: {noun.transition_objs}")
             if isinstance(noun.transition_objs, ItemInstance):
                 noun = noun.transition_objs
                 return noun
@@ -121,15 +98,10 @@ def get_transition_noun(noun, format_tuple, input_dict):
                 else:
                     print(f"More than one transition object for {noun}. Can't deal with this yet. Exiting.")
                     exit()
-                    #if enter(format_tuple, input_dict, noun=noun):
-                    #    return
     if not noun:
-        #print("No noun found, finding from location.")
         if get_location(input_dict):
             location = get_location(input_dict)
-            #print(f"Location in input_dict: {location}")
             if hasattr(location, "entry_item"):
-                #print(f"location has transition objects: {location.entry_item}")
                 loc_item = location.entry_item
                 if isinstance(loc_item, str):
                     for loc_item in local_items_list:
@@ -217,48 +189,30 @@ def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
             print(f"Failed to move `{a}` to `{b}`.")
             print(f"Reason: `{b}` is not the current location.")
 
-def check_lock_open_state(noun_inst, verb_inst):
+def can_interact(noun_inst): # succeeds if accessible
+
+    _, _, reason_val, meaning = registry.check_item_is_accessible(noun_inst)
+    if reason_val in interactable_codes:
+        return 1, reason_val, meaning
+    else:
+        return 0, reason_val, meaning
+
+def check_lock_open_state(noun_inst):
     logging_fn()
 
     is_closed = is_locked = locked_have_key = False
 
-    inst, container, reason_val, meaning = registry.check_item_is_accessible(noun_inst) ## checks if the item is accessible, not if it itself is locked. It only checks the lock/key for the containing obj.
-    #print(f"MEANING for {noun_inst} ({reason_val}): {meaning}")
-    #print(f"reason val: {reason_val}")
-    if reason_val in (0, 3, 4, 5, 8): # all 'not closed/locked container options
-        if hasattr(noun_inst, "is_open"):
-            if noun_inst.is_open == False:
-                is_closed = True
-        if hasattr(noun_inst, "is_locked"):
-            if noun_inst.is_locked == True: # why the hell was this 'false'? Bah.
-                is_locked = True
-    elif reason_val == 1:
+    #if reason_val in (0, 3, 4, 5, 8): # all 'not closed/locked container options
+    if hasattr(noun_inst, "is_open") and not noun_inst.is_open:
         is_closed = True
-    elif reason_val == 2:
-        #is_locked = True
-        if hasattr(noun_inst, "is_locked") and noun_inst.is_locked:
-            #print(f"IS_LOCKED: `{noun_inst.is_locked}`")
-            if hasattr(noun_inst, "needs_key"):
-                key_inst = None
-                #print(f"key: `{noun_inst.needs_key}`")
-                inst, container, reason_val, meaning = registry.check_item_is_accessible(noun_inst.needs_key)
-                #print(f"MEANING (is locked, is not open): {meaning}")
-                #if container and isinstance(container, ItemInstance) and container.name == noun_inst.needs_key:
-                #    key_inst = container ## Not sure what this was meant to be doing. I'm too tired to be doing this.
-                if reason_val in (0, 3, 4, 5):
-                    locked_have_key = True
-                else:
-                    is_locked = True
+    if hasattr(noun_inst, "is_locked") and noun_inst.is_locked:
+        is_locked = True
+        if hasattr(noun_inst, "needs_key"):
+            interactable, _, _ = can_interact(noun_inst.needs_key)
+            if interactable:
+                locked_have_key = True
 
     return is_closed, is_locked, locked_have_key
-
-def can_interact(noun_inst): # succeeds if accessible
-
-    _, _, reason_val, _ = registry.check_item_is_accessible(noun_inst)
-    if reason_val in (0, 3, 4, 5, 8):
-        return 1, reason_val
-    else:
-        return 0, reason_val
 
 def get_entries_from_dict(input_dict):
     logging_fn()
@@ -328,10 +282,8 @@ def get_location(input_dict:dict) -> ItemInstance:
 def get_verb(input_dict:dict) -> ItemInstance:
     logging_fn()
     if input_dict[0].get("verb"):
-        #print(f"{input_dict[0]} is a verb, confirmed in get_verb")
         return list(input_dict[0].values())[0]["instance"] # works as long as verb is always first
 
-    #print(f"get_verb failed to find the verb instance: {input_dict}")
 
 def get_noun(input_dict:dict, x_noun:int=None, get_str=False) -> ItemInstance:
     logging_fn()
@@ -478,20 +430,13 @@ def turn_cardinal(prospective_cardinal, turning = True):
             if test:
                 prospective_cardinal = test
 
-    #if isinstance(prospective_cardinal, str):
-    #    prospective_cardinal = loc.by_cardinal_str(prospective_cardinal)
-
     from interactions.player_movement import check_loc_card
-    #print(f"PROSPECTIVE CARDINAL: {prospective_cardinal}")
     to_loc, to_card, is_same_loc, is_same_card = check_loc_card(location=None, cardinal=prospective_cardinal)
-    #bool_test, _, _ = is_loc_current_loc(None, prospective_cardinal)
     from env_data import get_loc_descriptions
 
     if not is_same_card:
     #if not bool_test:
-        #print(f"Is not the same card\nto_card.cardinal_data: {to_card.cardinal_data}")
         if not to_card.cardinal_data:
-            #print("to_card has no cardinal_data")
             if hasattr(to_card.place, "missing_cardinal"):
                 print(assign_colour(to_card.place.missing_cardinal, "event_msg"))
 
@@ -506,12 +451,6 @@ def turn_cardinal(prospective_cardinal, turning = True):
         else:
             turn_around(to_card)
     else:
-        #if loc.current.cardinal_data:
-        #    print("loc current cardinal data is here.")
-        #    get_loc_descriptions(place=loc.currentPlace)
-        #    print(loc.current)
-        #    print(loc.current.description)
-        #    return
         if turning:
             print(f"You're already facing the {assign_colour(loc.current, card_type="ern_name")}.\n")
         else:
@@ -580,7 +519,7 @@ def go(format_tuple, input_dict): ## move to a location/cardinal/inside
             if location_entry["instance"] == loc.currentPlace:
                 if input_dict[0].get("verb") and input_dict[0]["verb"]["str_name"] == "leave":
                     if hasattr(loc.current.place, "entry_item"):
-                        print(f"loc.current has entry item: {loc.current.place.entry_item}")
+                        #print(f"loc.current has entry item: {loc.current.place.entry_item}")
                         if enter(format_tuple, input_dict, noun=loc.current.place.entry_item):
                             return
 
@@ -594,18 +533,18 @@ def go(format_tuple, input_dict): ## move to a location/cardinal/inside
                     return
 
             if hasattr(location_entry["instance"], "entry_item"):
-                print(location_entry["instance"].entry_item)
+                #print(location_entry["instance"].entry_item)
                 if not get_noun(input_dict):
                     input_dict[len(format_tuple)] = {}
                     input_dict[len(format_tuple)]["noun"] = ({"instance": location_entry["instance"].entry_item, "str_name": location_entry["instance"].entry_item.name})
-                    print(f"input_dict: {input_dict}")
+                    #print(f"input_dict: {input_dict}")
 
                 #for cardinal in location_entry["instance"].cardinals:
                 #    card = location_entry["instance"].cardinals.get(cardinal)
                 #    if hasattr(card, "loc_exterior_items") or hasattr(card, "transition_objs"):
                 #        new_relocate(new_cardinal=card)
                 #        return
-                print("enter location via go")
+                #print("enter location via go")
                 enter(format_tuple, input_dict) # Anything that needs you to go through a door goes via enter.
                 return
             new_relocate(new_location=location_entry["instance"])
@@ -699,11 +638,18 @@ def look(format_tuple=None, input_dict=None):
                 turn_cardinal(intended_direction, turning=False)
 
         elif noun:
-            item_interactions.look_at_item(noun)
+            if hasattr(noun, "description_detailed"):
+                read(format_tuple, input_dict)
+            else:
+                item_interactions.look_at_item(noun)
 
     elif len(format_tuple) == 3:
+
         if noun and format_tuple[1] == "direction":
-            item_interactions.look_at_item(noun)
+            if hasattr(noun, "description_detailed"):
+                read(format_tuple, input_dict)
+            else:
+                item_interactions.look_at_item(noun)
         elif format_tuple[2] == "cardinal" and format_tuple[1] == "direction":
             turn_cardinal(inst_from_idx(input_dict[2], "cardinal"), turning = False)
 
@@ -731,17 +677,35 @@ def read(format_tuple, input_dict):
         if noun_inst.description_detailed.get("is_tested"):
             from rolling import roll_risk
             outcome = roll_risk()
+            print(f"Outcome: {outcome}")
             if outcome > 1:
                 test = noun_inst.description_detailed.get("crit")
+                if not test:
+                    test = noun_inst.description_detailed.get(1)
+                    #NOTE: have not accounted for various degrees of success here. Need to.
                 print(assign_colour(test, "b_yellow"))
             else:
                 test = noun_inst.description_detailed.get("failure")
+                if not test:
+                    test = noun_inst.description_detailed.get(4)
                 print(assign_colour(test, "b_yellow"))
         else:
             to_print = noun_inst.description_detailed.get("print_str")
             print(assign_colour(to_print, "b_yellow"))
+        print("")
+
+        if hasattr(noun_inst, "can_pick_up") and hasattr(noun_inst, "location") and noun_inst.location != None:
+            take(format_tuple, input_dict)
+        else:
+            if hasattr(noun_inst, "event"):
+                from eventRegistry import events
+                events.is_event_trigger(noun_inst, noun_inst.location, "item_is_read") # just check, in case it's a street sign or something that you can't pick up but might still be a trigger. Unlikely but silly to exclude it arbitrarily.
+
     else:
-        print(f"It seems like you can't read the {assign_colour(noun_inst)}")
+        look(format_tuple, input_dict)
+        #print(f"It seems like you can't read the {assign_colour(noun_inst)}") # just look at it instead of saying this.
+        return
+
 
 def eat(format_tuple, input_dict):
     logging_fn()
@@ -784,6 +748,7 @@ def clean(format_tuple, input_dict):
 def burn(format_tuple, input_dict):
     logging_fn()
     print("burn FUNCTION")
+
     # for all burn items = require fire source, noun1 must be flammable.
     # verb_noun == burn item
     # verb_noun_sem_noun == noun2 must be flammable
@@ -815,6 +780,21 @@ def burn(format_tuple, input_dict):
 def break_item(format_tuple, input_dict):
     logging_fn()
     print("break_item FUNCTION")
+
+    noun = get_noun(input_dict)
+    noun_2 = get_noun(input_dict, 2)
+
+    if hasattr(noun, "can_break"):
+        if not noun_2:
+            print(f"What do you want to break the {assign_colour(noun)} with?")
+
+    if noun_2:
+        dir_or_sem = get_dir_or_sem_if_singular(input_dict)
+        if dir_or_sem in ("with", "using", "on"):
+            if hasattr(noun_2, "can_break"):
+                print("Chance to break either object. Need to implement a breakability scale, so I can test which item breaks. Need to formalise the break/flammable setup overall.")
+
+
     # verb_noun == break item (if it's fragile enough)
     # verb_noun_sem_noun == break item with item2
     pass
@@ -825,15 +805,9 @@ def break_item(format_tuple, input_dict):
 def check_key_lock_pairing(noun_1, noun_2):
     logging_fn()
     if hasattr(noun_1, "is_key"):
-        #print(f"{noun_1} is_key")
         if hasattr(noun_2, "requires_key"):
-            #print(f"{noun_2} requires_key")
-            #if isinstance(noun_2.requires_key, str):
             if noun_1 == noun_2.requires_key:
-                #print(f"{noun_1.name} is the key required by {noun_2.name}")
                 return 1
-            #else:
-                #print(f"{noun_1.name} is not the key required by {noun_2.name}: {noun_2.requires_key}")
     return 0
 
 
@@ -851,11 +825,11 @@ def lock_unlock(format_tuple, input_dict, do_open=False):
         if format_tuple.count("noun") == 2:
             #print("format tuple has 2 nouns")
             noun_1 = get_noun(input_dict)
-            accessible_1, _ = can_interact(noun_1)
+            accessible_1, _, _ = can_interact(noun_1)
             noun_2 = get_noun(input_dict, 2)
-            accessible_2, _ = can_interact(noun_2)
+            accessible_2, _, _ = can_interact(noun_2)
             if accessible_1 and accessible_2:
-                #print(f"{noun_1} and {noun_2} are both accessible.")
+                #rint(f"{noun_1} and {noun_2} are both accessible.")
                 success = check_key_lock_pairing(noun_1, noun_2)
                 if success:
                     #print(f"Key {noun_1} is accessible and will open lock {noun_2}")
@@ -885,8 +859,9 @@ def lock_unlock(format_tuple, input_dict, do_open=False):
                         return
 
                 else:
-                    print(f"{noun_1} and {noun_2} are not a pairing. Key: {key}, lock: {lock}")
-
+                    print(f"You can't open the {assign_colour(noun_1)} with {assign_colour(noun_2)}")
+                    #print(f"{noun_1} and {noun_2} are not a pairing. Key: {key}, lock: {lock}")
+                    #print(f"VARS: {vars(noun_1)}\n Noun 2 vars: {vars(noun_2)}")
 
             else:
                 print(f"{noun_1} and/or {noun_2} are not accessible: 1: {accessible_1}, 2: {accessible_2}")
@@ -899,35 +874,6 @@ def lock_unlock(format_tuple, input_dict, do_open=False):
         print("verbname == lock, don't know why I'm here.")
     print(f"Cannot process {input_dict} in def lock() End of function, unresolved. (Function not yet written, should use open_close variant instead)")
 
-def open_item(format_tuple, input_dict):
-    logging_fn()
-
-    verb_entry, noun_entry, _, _, _, _ = get_entries_from_dict(input_dict)
-
-    noun_inst = noun_entry["instance"]
-    if get_noun(input_dict, 2):
-        for noun in (noun_inst, get_noun(input_dict, 2)):
-            if hasattr(noun, "is_key"):
-                lock_unlock(format_tuple, input_dict, do_open=True)
-                return
-    if hasattr(noun, "is_transition_obj"):
-        noun_inst = noun
-
-    inst, container, reason_val, meaning = registry.check_item_is_accessible(noun_inst)
-    if reason_val in (0, 3, 4, 5):
-        is_closed, is_locked, locked_and_have_key = check_lock_open_state(noun_inst=noun_inst, verb_inst = verb_entry["instance"])
-
-        if is_locked or locked_and_have_key:
-            if len(format_tuple) < 3:
-                print(f"{assign_colour(noun_inst)} is locked; you have to unlock it before it'll open.")
-        elif is_closed:
-            #print(f"noun.is_open: {noun_inst.is_open}")
-            noun_inst.is_open = True
-            print(f"You open the {assign_colour(noun_inst)}.")
-            #print(f"noun.is_open: {noun_inst.is_open}")
-    else:
-        print(f"You can't open the {assign_colour(noun_inst)} right now.")
-
 def close(format_tuple, input_dict):
     logging_fn()
 
@@ -938,12 +884,15 @@ def close(format_tuple, input_dict):
     print(f"Cannot process {input_dict} in def close() End of function, unresolved. (Function not yet written)")
 
 def print_children_in_container(noun_inst):
-    children = registry.instances_by_container(noun_inst)
+
+    children = set()
+    if hasattr(noun_inst, "children"):
+        children = noun_inst.children
+
     if children:
         print(f"\nThe {assign_colour(noun_inst)} contains:")
         children = ", ".join(col_list(children))
         print(f"  {children}")
-
 
 
 def open_close(format_tuple, input_dict):
@@ -952,11 +901,10 @@ def open_close(format_tuple, input_dict):
     noun_inst = get_noun(input_dict)
 
     if get_noun(input_dict, 2):
-        for option in noun_inst, get_noun(input_dict, 2):
-            open_item(format_tuple, input_dict)
-            return
-            if hasattr(option, "is_open"):
-                noun_inst = option # if one of the nouns mentioned can be opened, assume we mean to open that one.
+
+        return
+        if hasattr(option, "is_open"):
+            noun_inst = option # if one of the nouns mentioned can be opened, assume we mean to open that one.
 
     verb_inst = get_verb(input_dict)
 
@@ -974,7 +922,7 @@ def open_close(format_tuple, input_dict):
             return # not perfect because it returns even if you couldn't have accessed the door to check, but works for the moment while I'm testing the events. TODO Fix this later
 
 ## I think part of the issue is that the check_lock_open_state tries to combine both 'is this a thinkg I could access to try to unlock' with 'is this is a thing I can unlock'. I need to separate them out. a) is this a thing I can access, return. b) if so, is this a thing I can unlock.
-    is_closed, is_locked, locked_and_have_key = check_lock_open_state(noun_inst, verb_inst)
+    is_closed, is_locked, locked_and_have_key = check_lock_open_state(noun_inst)
 
     print("is_closed, is_locked, locked_and_have_key : ", is_closed, is_locked, locked_and_have_key)
     if verb_inst.name in ("close", "lock"):
@@ -1017,8 +965,9 @@ def open_close(format_tuple, input_dict):
 #            if verb_inst.name in ("close", "lock"):
 #                print(f"The {noun_inst["instance"].name} is already closed.")
 #                return
+            #print(f"Noun {noun_inst} is closed, sending to set_noun_attr")
+            set_noun_attr(("is_open", True), noun=noun_inst)
             print(f"You open the {assign_colour(noun_inst)}")
-            noun_inst.is_open = True
             noun_inst.is_locked = False
             print_children_in_container(noun_inst)
             return
@@ -1060,65 +1009,78 @@ def open_close(format_tuple, input_dict):
 def simple_open_close(format_tuple, input_dict):
     logging_fn()
 
-    if len(format_tuple) > 2:
-        open_close(format_tuple, input_dict)
-        return
     verb_inst = get_verb(input_dict)
     noun_inst = get_noun(input_dict)
 
-    if verb_inst.name == "open":
-        if hasattr(noun_inst, "is_loc_exterior"):
-            if hasattr(noun_inst, "is_loc_exterior"):
-               noun = noun_inst.transition_objs
+    if len(format_tuple) > 3:
+        use_item_w_item(format_tuple, input_dict)
+        return
 
-            if isinstance(noun, ItemInstance):
-                noun_inst = noun
-        if hasattr(noun_inst, "is_open"):
-            if noun_inst.is_open == True:
-                print(f"{assign_colour(noun_inst)} is already open.")
-                return
-            if noun_inst.is_open == False:
-                if hasattr(noun_inst, "is_locked") and noun_inst.is_locked == True:
-                    open_close(format_tuple, input_dict)
-                    return
-                #print(f"noun_inst.is_open now: {noun_inst.is_open}")
-                _, _, reason_val, meaning  = registry.check_item_is_accessible(noun_inst)
-                if reason_val in (0, 5) or (reason_val == 6 and hasattr(noun_inst, "is_transition_obj") and noun_inst.enter_location == loc.current.place):
+    interactable, val, meaning = can_interact(noun_inst) # succeeds if accessible
+    if not interactable:
+        if val == 6:
+            print(f"You can't open something you aren't nearby to...")
+            return
+        print(f"You can't do that right now.\n[{noun_inst} / {meaning}]")
+        return
 
-                    print(f"You open the {assign_colour(noun_inst)}.")
-                    noun_inst.is_open = True
-                    #print(f"noun_inst.is_open now: {noun_inst.is_open}")
-                    return
+    from interactions.item_interactions import is_loc_ext
 
-                if reason_val == 6:
-                    print(f"You can't open something you aren't nearby to...")
-                    return
-                else:
-                    print(f"Cannot open {noun_inst.name} because {meaning}.")
-                    return
+    outcome = is_loc_ext(noun_inst)
+    if outcome:
+        if get_noun(input_dict, 2):
+            noun_inst_2 = get_noun(input_dict, 2) # pleased with this bit. Makes 'open work shed door' work cleanly without having to adjust the parser.
+            test = is_loc_ext(noun_inst, return_trans_obj=True)
+            if test == noun_inst_2:
+                noun_inst = noun_inst_2
         else:
-            if hasattr(noun_inst, "is_loc_exterior"):
-                if hasattr(noun_inst, "transition_objs"):
-                    for trans_obj in noun_inst.transition_objs:
-                        print(f"You can't enter the {assign_colour(noun_inst)}, but maybe the {assign_colour(trans_obj)}?")
-                        return
-            print(f"{assign_colour(noun_inst)} cannot be opened; this is odd. Potentially. Or maybe a totally normal thing.")
-    else:
+            print(outcome)
+            return
+
+    if not hasattr(noun_inst, "is_open"):
+        print(f"You can't open the {assign_colour(noun_inst)}.")
+        return
+
+    if verb_inst.name == "open":
+            #print(f"meaning: {meaning}")
         if noun_inst.is_open == True:
-            print(f"You close the {assign_colour(noun_inst)}.")
-            #print(f"noun_inst.is_open now: {noun_inst.is_open}")
-            noun_inst.is_open = False
-            #print(f"noun_inst.is_open now: {noun_inst.is_open}")
+            print(f"{assign_colour(noun_inst)} is already open.")
             return
+
+        if hasattr(noun_inst, "is_locked") and noun_inst.is_locked == True:
+            print(f"You can't open a locked {assign_colour(noun_inst)}.")
+            #open_close(format_tuple, input_dict)
+            return
+
+        if val in can_open_codes:
+            print(f"You open the {assign_colour(noun_inst)}.")
+            set_noun_attr(("is_open", True), noun=noun_inst)
+            return
+       # _, confirmed_container, reason_val, meaning  = registry.check_item_is_accessible(noun_inst)
+
+        if val in in_container_codes and hasattr(noun_inst, "contained_in"):#confirmed_container:
+            print(f"You need to remove the {assign_colour(noun_inst)} from the {assign_colour(noun_inst.contained_in)} it's in, first.")
+            return
+
+        else:
+            print(f"Cannot open {noun_inst.name} because {meaning}.")
+            return
+        #print(f"reason_val: {reason_val}, meaning: {meaning}")
+
+    else:
         if noun_inst.is_open == False:
-            if hasattr(noun_inst, "is_locked") and noun_inst.is_locked == True:
-                open_close(format_tuple, input_dict)
-                return
-            print(f"{assign_colour(noun_inst)} is already closed.")
+            # cancelling the next lines because if it's closed and I'm saying 'close', why are we going into locked processes?
+            #if hasattr(noun_inst, "is_locked") and noun_inst.is_locked == True:
+            #    open_close(format_tuple, input_dict)
+            #    return
+            print(f"The {assign_colour(noun_inst)} is already closed.")
             return
 
-    print(f"Cannot process {input_dict} in def simple_open_close() End of function, unresolved.")
-
+        print(f"You close the {assign_colour(noun_inst)}.")
+        #print(f"noun_inst.is_open now: {noun_inst.is_open}")
+        noun_inst.is_open = False
+        #print(f"noun_inst.is_open now: {noun_inst.is_open}")
+        return
 
 def combine(format_tuple, input_dict):
     logging_fn()
@@ -1277,7 +1239,7 @@ def take(format_tuple, input_dict):
     if added_to_inv:
         #print(f"{assign_colour(noun_inst)} is now in your inventory.") # original
         print(f"The {assign_colour(noun_inst)} {is_plural_noun(noun_inst)} now in your inventory.")
-        events.is_event_trigger(noun_inst, noun_loc)
+        events.is_event_trigger(noun_inst, noun_loc, reason = "item_in_inv")
         return
 
 def put(format_tuple, input_dict, location=None):
@@ -1402,14 +1364,14 @@ def drop(format_tuple, input_dict):
                 registry.drop(noun_1, game.inventory)
                 print(f"Dropped the {assign_colour(noun_1)} onto the ground here at the {assign_colour(loc.current, card_type='ern_name')}")
 
+
             elif reason_val == 3:
                 print(f"You can't drop the {assign_colour(noun_1)}; you'd need to get it out of the {assign_colour(container)} first.")
+                return
 
             else:
-                print(f"You can't drop the {assign_colour(noun_1)}; you can't drop something you aren't carrying.")
-            return
-
-        print(f"Cannot process {input_dict} in def drop(); 4 long but direction str is not suitable.")
+                print(f"You can't drop the {assign_colour(noun_1)}; you aren't holding it.")
+                return
 
     elif len(input_dict) == 4:
         dir_or_sem = get_dir_or_sem_if_singular(input_dict)
@@ -1428,11 +1390,17 @@ def drop(format_tuple, input_dict):
                     registry.move_item(noun_1, new_container=get_noun(input_dict, 2))
                     #move_a_to_b(a=item_to_place, b=container_or_location, action=action_word, direction=direction)
                     item_interactions.add_item_to_loc()
-                    return
 
-            print(f"Couldn't move {noun_1.name} because {meaning}")
+            else:
+                print(f"Couldn't move {noun_1.name} because {meaning}")
         else:
             print(f"Cannot process {input_dict} in def drop(); 4 long but direction str is not suitable.")
+            return
+
+    if noun_1 not in game.inventory:
+        if hasattr(noun_1, "event"):
+            from eventRegistry import events
+            events.is_event_trigger(noun_1, noun_1.location, reason = "item_not_in_inv")
             return
 
     print(f"Cannot process {input_dict} in def drop() End of function, unresolved.")
@@ -1453,39 +1421,31 @@ def use_item_w_item(format_tuple, input_dict):
     #print(f"Format list: {format_tuple}")
     #print(f"Length format list: {len(format_tuple)}")
     ## use x on y
-    verb_entry, noun_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
-    if format_tuple == (('verb', 'noun', 'direction', 'noun')):
-        if verb_entry["str_name"] == "use" and ((direction_entry and direction_entry["str_name"] == "on") or (semantic_entry and semantic_entry["str_name"] == "with")):
-            # need to figure out the best way to divert from here to lock_unlock, so we don't repeat it over an over.
-            # Maybe just if one of the nouns == is_key?
-            actor_noun = get_noun(input_dict)
-            target_noun = get_noun(input_dict, 2)
+    _, noun_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
+    dir_or_sem = get_dir_or_sem_if_singular(input_dict)
+
+    verb = get_verb(input_dict)
+    actor_noun = get_noun(input_dict)
+    target_noun = get_noun(input_dict, 2)
+    if not target_noun:
+        print(f"No second noun: {format_tuple} should not be in use_item_w_item function. Check routing.")
+        return
+
+    if format_tuple == (('verb', 'noun', 'direction', 'noun')) or format_tuple == (('verb', 'noun', 'sem', 'noun')):
+        if verb.name in ("use", "unlock", "lock") and dir_or_sem and dir_or_sem in  ("on", "using", "with"):
+
             for noun in (actor_noun, target_noun):
-                if hasattr(noun, "is_key"):
+                if hasattr(noun, "is_key") or hasattr(noun, "requires_key"):
                     lock_unlock(format_tuple, input_dict)
                     return
-            print(f"Apparently neither {actor_noun} or {target_noun} are is_key?")
-            if hasattr(target_noun, "requires_key"):
-                key_is_accessible=False
-                if actor_noun == target_noun.requires_key:
-                    _, container, reason_val, meaning = registry.check_item_is_accessible(actor_noun)
-                    print(f"meaning: {meaning}")
-                    if reason_val in (0, 3, 4, 5, 8):
-                        key_is_accessible=True
-                    _, container, reason_val, meaning = registry.check_item_is_accessible(target_noun)
-                    print(f"meaning: {meaning}")
-                    if reason_val in (0, 3, 4, 5, 8):
-                        if key_is_accessible:
-                            print("You use the key to open the lock.")
-                            print("Though it does't actually do it yet, I'm just testing. This whole thing needs rewriting.")
-                            target_noun.is_locked=False
-                            return
+            if verb.name in ("lock", "unlock"):
+                print(f"Cannot {verb.name}.")
+                return
 
-            closed, locked, locked_have_key = check_lock_open_state(actor_noun, verb_entry["instance"])
-            print(f"Actor-noun: {actor_noun}, target-noun: {target_noun}. Closed: {closed}, locked: {locked}, locked and have key: {locked_have_key}")
-            if locked_have_key:
-                if noun_entry["instance"].name == input_dict[3]["verb"]["instance"].children:
-                    print(f"input_dict[3]['verb']['instance']: {input_dict[3]['verb']['instance']} == child")
+            print(f"You want to {verb.name} {actor_noun} {dir_or_sem} {target_noun}; I'm not sure what that means.")
+            return
+
+        print(f"Not sure how to deal with {format_tuple}")
 
     print(f"Cannot process {input_dict} in def use_item_w_item() End of function, unresolved. (Function partially written but doesn't do anything.)")
 
@@ -1495,7 +1455,22 @@ def use_item(format_tuple, input_dict):
     if len(format_tuple) == 4:
         use_item_w_item(format_tuple, input_dict)
         return
+
+    noun = get_noun(input_dict)
+    if "map" in noun.name:
+        print("Here, we have some process to open a map. No idea how to do that yet...")
+        print("I mean I could just open an image I guess. Eh.")
+        from config import map_file
+        from PIL import Image
+        img = Image.open(map_file)
+        img.show
+
+
     print(f"Cannot process {input_dict} in def use_item() End of function, unresolved. (Function not yet written)")
+
+def wait(format_tuple, input_dict):
+    print("Future wait function, for spending time-portions doing a simple activity or nothing. Might be used at some point...?")
+
 
 def enter(format_tuple, input_dict, noun=None):
     logging_fn()
@@ -1552,7 +1527,7 @@ def enter(format_tuple, input_dict, noun=None):
 
 
 
-def router(viable_format, inst_dict):
+def router(viable_format, inst_dict, input_str=None):
     logging_fn()
 
     verb_inst = None
@@ -1561,7 +1536,15 @@ def router(viable_format, inst_dict):
         for data in v.values():
             quick_list.append(data["str_name"])
     MOVE_UP = "\033[A"
-    #print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {" ".join(quick_list)}  ]]\033[0m\n') ## TODO put this back on when the testing's done.
+
+    from config import print_input_str
+
+    if print_input_str and input_str:
+        print(f'{MOVE_UP}\n\033[1;32m[[  {input_str}  ]]\033[0m\n')
+
+    else: #print processed str
+        print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {" ".join(quick_list)}  ]]\033[0m\n')
+
     #print(f"Dict for output: {inst_dict}")
 
     for data in inst_dict.values():
@@ -1603,7 +1586,9 @@ def router(viable_format, inst_dict):
         "throw": throw,
         "push": push,
         "drop": drop,
-        "set": set_action
+        "set": set_action,
+
+        "time": wait
     }
 
     if isinstance(verb_inst, str):

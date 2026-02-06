@@ -1,13 +1,13 @@
 #item_interactions.py
 
-#Instinctively I want a new script for item interactions, that I can send to from membrane. But isn't that what the itemRegistry is for?
-#It kinda is...
+
 from interactions.player_movement import turn_around
 from itemRegistry import ItemInstance, registry
 from env_data import cardinalInstance, locRegistry as loc
 from misc_utilities import assign_colour
 from logger import logging_fn
 from printing import print_green
+import verb_actions
 
 def look_at(response):
     print("[LOOK_AT] in item interactions.")
@@ -37,21 +37,24 @@ def look_at_item(item_inst): ## this is just using everything from registry. Sho
             print(f"You can't see that right now.")
         else:
             if reason_val == 2:
-                extra = " in your inventory."
+                extra = " in your inventory:"
             else:
-                extra = "."
+                extra = ":"
             if reason_val == 8:
                 turn_around(item_inst.location)
                 return
 
+
             print(f"You look at the {assign_colour(item_inst)}{extra}")
+
             print(assign_colour(registry.describe(item_inst, caps=True), colour="description"))
-            children = registry.instances_by_container(item_inst)
-            if children:
-                print(f"\nThe {assign_colour(item_inst)} contains:")
-                from misc_utilities import col_list
-                children = ", ".join(col_list(children))
-                print(f"  {children}")
+            verb_actions.print_children_in_container(item_inst)
+            #children = registry.instances_by_container(item_inst)
+            #if children:
+            #    print(f"\nThe {assign_colour(item_inst)} contains:")
+            #    from misc_utilities import col_list
+            #    children = ", ".join(col_list(children))
+            #    print(f"  {children}")
 
             from set_up_game import game
             if item_inst == game.map_item:
@@ -110,5 +113,17 @@ def add_item_to_loc(item_instance, location=None):
         exit("add_item_to_location needs a cardinalInstance.")
 
 
+### Now a whole bunch of functions for parsing out open/close actions.
+#Kinda wish this was a class of lil functions. Might be an idea? idk. I'm used to classes holding data sets, not functions. Will have to look into it.
+
+def is_loc_ext(noun:ItemInstance, return_trans_obj=False) -> str|None:
+
+    if hasattr(noun, "is_loc_exterior") and hasattr(noun, "transition_objs"):
+        for trans_obj in noun.transition_objs:
+            if return_trans_obj:
+                return trans_obj
+            return f"You can't enter the {assign_colour(noun)}, but maybe the {assign_colour(trans_obj)}?"
+
+    return None
 
 #container, reason_val = registry.check_item_is_accessible(noun_inst)

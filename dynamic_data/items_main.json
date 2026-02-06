@@ -1,9 +1,8 @@
 {
   "padlock": {
-    "name": "padlock",
     "nicename": "a padlock",
     "description": "An old dark-metal padlock.",
-    "item_type": "{'can_pick_up', 'fragile', 'all_items', 'can_open'}",
+    "item_type": "{'can_pick_up', 'fragile', 'can_open'}",
     "can_pick_up": true,
     "item_size": 0,
     "broken_name": "broken padlock",
@@ -19,10 +18,9 @@
     "is_locked": true
   },
   "gate": {
-    "name": "gate",
     "nicename": "a gate",
     "description": "Heavy wrought iron bars with little decoration, held closed with a padlock on a heavy chain.",
-    "item_type": "{'static', 'all_items', 'event', 'can_open'}",
+    "item_type": "{'static', 'event', 'can_open'}",
     "can_examine": false,
     "breakable": false,
     "alt_names": {},
@@ -30,20 +28,17 @@
     "event_ended_desc": "Heavy wrought iron bars with little decoration, now slightly ajar.",
     "event": "graveyard_gate_opens",
     "event_type": "item_triggered",
-    "event_key": null,
     "is_open": false,
     "can_be_opened": true,
     "can_be_closed": true,
     "can_be_locked": true,
     "is_locked": true,
-    "requires_key": false,
-    "event_item": true
+    "requires_key": false
   },
   "desiccated skeleton": {
-    "name": "desiccated skeleton",
     "nicename": "a desiccated skeleton",
     "description": "A sunbleached skeleton, with most of its bones present.",
-    "item_type": "{'container', 'all_items', 'static', 'event', 'fragile'}",
+    "item_type": "{'container', 'static', 'fragile'}",
     "is_open": false,
     "can_be_opened": true,
     "can_be_closed": true,
@@ -58,28 +53,27 @@
     "is_hidden": true,
     "can_examine": false,
     "breakable": false,
-    "event": null,
-    "event_type": "item_triggered",
-    "event_key": null,
     "broken_name": null,
     "flammable": false,
-    "can_break": true,
-    "event_item": null
+    "can_break": true
   },
   "moss": {
-    "name": "a few moss clumps",
+    "nicename": "a few moss clumps",
     "description": "a few clumps of mostly green moss.",
-    "item_type": "{'can_pick_up', 'all_items'}",
+    "item_type": "{'can_pick_up'}",
     "alt_names": {},
     "is_hidden": false,
     "can_pick_up": true,
     "item_size": "a_few_marbles",
-    "special_traits": "After 3 ingame days, after being picked up and kept in inventory, will dry. If dry, no longer suitable for commerce with bridge goblin."
+    "special_traits": "After 3 ingame days, after being picked up and kept in inventory, will dry. If dry, no longer suitable for commerce with bridge goblin.",
+    "has_multiple_instances": 3
   },
   "glass jar": {
-    "name": "a glass jar with flowers",
-    "description": "a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.",
-    "item_type": "{'can_pick_up', 'container', 'all_items'}",
+    "nicename": "a glass jar with flowers",
+    "description": "a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers",
+    "description_any_children": "a glass jar, holding ",
+    "description_no_children": "a glass jar, now empty aside from some bits of debris.",
+    "item_type": "{'can_pick_up', 'container'}",
     "alt_names": {},
     "is_hidden": false,
     "is_open": true,
@@ -93,12 +87,12 @@
     ],
     "container_limits": "smaller_than_apple",
     "name_no_children": "an empty glass jar",
-    "description_no_children": "a glass jar, now empty aside from some bits of debris.",
+    "name_any_children": "a glass jar",
     "can_pick_up": true,
     "item_size": "smaller_than_basketball"
   },
   "iron key": {
-    "name": "iron key",
+    "nicename": "an iron key",
     "item_type": "{'key', 'can_pick_up'}",
     "is_key": true,
     "can_pick_up": true,
@@ -108,8 +102,8 @@
     "is_hidden": false
   },
   "gold key": {
-    "name": "a gold key",
-    "item_type": "{'key', 'can_pick_up', 'all_items'}",
+    "nicename": "a gold key",
+    "item_type": "{'key', 'can_pick_up'}",
     "is_key": true,
     "can_pick_up": true,
     "item_size": "small_flat_things",
@@ -118,8 +112,8 @@
     "is_hidden": false
   },
   "stone ground": {
-    "name": "stone ground",
-    "item_type": "{'all_items', 'static', 'flooring'}",
+    "nicename": "stone ground",
+    "item_type": "{'static', 'flooring'}",
     "can_examine": false,
     "breakable": false,
     "is_horizontal_surface": true,
@@ -128,8 +122,8 @@
     "is_hidden": false
   },
   "earring": {
-    "name": "earring",
-    "item_type": "{'all_items', 'can_pick_up'}",
+    "nicename": "earring",
+    "item_type": "{'can_pick_up'}",
     "can_pick_up": true,
     "item_size": 0,
     "description": "a single silver earring with a small blue stone dangling from a short chain",
@@ -137,23 +131,14 @@
     "is_hidden": false
   },
   "scroll": {
-    "name": "an old scroll",
+    "nicename": "an old scroll",
     "description": "An old parchment scroll, seemingly abandoned at a hidden shrine.",
-    "item_type": "{'books_paper', 'can_pick_up', 'container', 'all_items'}",
+    "item_type": "{'books_paper', 'can_pick_up'}",
     "alt_names": {},
     "is_hidden": false,
     "is_open": false,
     "can_be_opened": true,
     "can_be_closed": true,
-    "can_be_locked": true,
-    "is_locked": true,
-    "requires_key": false,
-    "starting_children": [
-      "old gold key"
-    ],
-    "container_limits": "small_flat_things",
-    "name_no_children": null,
-    "description_no_children": null,
     "can_pick_up": true,
     "item_size": "smaller_than_basketball",
     "print_on_investigate": true,
@@ -161,9 +146,9 @@
     "can_read": true
   },
   "ivory pot": {
-    "name": "an ivory-coloured jar",
+    "nicename": "an ivory-coloured jar",
     "description": "A tall scratched ivory pot; no label, and a cork stopper held in place with a fine but strong-looking wire tied around the neck.",
-    "item_type": "{'can_pick_up', 'container', 'all_items'}",
+    "item_type": "{'can_pick_up', 'container'}",
     "alt_names": {},
     "is_hidden": false,
     "is_open": false,
@@ -181,9 +166,9 @@
     "key": "wire cutters"
   },
   "metal pot": {
-    "name": "a metal pot",
+    "nicename": "a metal pot",
     "description": "A stout metal pot, which would be called a pot if I wasn't testing how it deals with two jars; it seems to be dug into the earth, and stuck fast. It has a flat, plate-like lid, with a small gold lock holding it closed.",
-    "item_type": "{'can_pick_up', 'container', 'all_items'}",
+    "item_type": "{'can_pick_up', 'container'}",
     "alt_names": {},
     "is_hidden": false,
     "is_open": false,
@@ -203,9 +188,9 @@
     "key": "old gold key"
   },
   "wire cutters": {
-    "name": "a pair of wire cutters",
+    "nicename": "a pair of wire cutters",
     "description": "A slightly rusted pair of wire cutters. They look like they'll still work, though.",
-    "item_type": "{'can_pick_up', 'key', 'all_items'}",
+    "item_type": "{'can_pick_up', 'key'}",
     "alt_names": {},
     "is_hidden": false,
     "is_key": true,
@@ -213,18 +198,18 @@
     "item_size": "palm_sized"
   },
   "watch": {
-    "name": "a gold watch",
+    "nicename": "a gold watch",
     "description": "A scratched gold watch.",
-    "item_type": "{'can_pick_up', 'all_items'}",
+    "item_type": "{'can_pick_up'}",
     "alt_names": {},
     "is_hidden": false,
     "can_pick_up": true,
     "item_size": "smaller_than_apple"
   },
   "dried flowers": {
-    "name": "some dried flowers",
+    "nicename": "some dried flowers",
     "description": "a bunch of old flowers, brittle and pale; certainly not as vibrant as you imagine they once were.",
-    "item_type": "{'can_pick_up', 'fragile', 'all_items'}",
+    "item_type": "{'can_pick_up', 'fragile'}",
     "alt_names": {},
     "is_hidden": false,
     "can_pick_up": true,
@@ -234,9 +219,9 @@
     "can_break": true
   },
   "headstone": {
-    "name": "a carved headstone",
+    "nicename": "a carved headstone",
     "description": "a simple stone headstone, engraved with the name `J.W. Harstott`.",
-    "item_type": "{'all_items'}",
+    "item_type": "{'static'}",
     "alt_names": [
       "gravestone"
     ],
@@ -244,9 +229,9 @@
     "dirty": null
   },
   "TV set": {
-    "name": "a television set",
+    "nicename": "a television set",
     "description": "A decent looking TV set, probably a few years old but appears to be well kept. Currently turned off. This model has a built-in DVD player.",
-    "item_type": "{'all_items'}",
+    "item_type": "{'static', 'electronics'}",
     "alt_names": [
       "television",
       "tv set",
@@ -257,9 +242,9 @@
     "combine_with": "DVD"
   },
   "window": {
-    "name": "a window",
+    "nicename": "a window",
     "description": "a window, facing out of the hotel room and down over the street below. Currently closed.",
-    "item_type": "{'can_open', 'all_items'}",
+    "item_type": "{'can_open'}",
     "alt_names": {},
     "is_hidden": false,
     "is_open": false,
@@ -270,18 +255,18 @@
     "requires_key": false
   },
   "carved stick": {
-    "name": "a spiral-carved stick",
+    "nicename": "a spiral-carved stick",
     "description": "a stick, around 3 feet long, with tight spirals carved around the length except for a 'handle' at the thicker end.",
-    "item_type": "{'can_pick_up', 'all_items'}",
+    "item_type": "{'can_pick_up'}",
     "alt_names": {},
     "is_hidden": false,
     "can_pick_up": true,
     "item_size": "bigger_than_basketball"
   },
   "paperclip": {
-    "name": "a paperclip",
+    "nicename": "a paperclip",
     "description": "a humble paperclip.",
-    "item_type": "{'can_pick_up', 'all_items'}",
+    "item_type": "{'can_pick_up'}",
     "alt_names": {},
     "is_hidden": false,
     "can_pick_up": true,
@@ -289,9 +274,9 @@
     "loot_type": "starting"
   },
   "puzzle mag": {
-    "name": "a puzzle magazine",
+    "nicename": "a puzzle magazine",
     "description": "It's a puzzle magazine",
-    "item_type": "{'books_paper', 'can_pick_up', 'all_items'}",
+    "item_type": "{'books_paper', 'can_pick_up'}",
     "alt_names": {},
     "is_hidden": false,
     "can_pick_up": true,
@@ -302,9 +287,9 @@
     "loot_type": "magazine"
   },
   "fashion mag": {
-    "name": "a fashion magazine",
+    "nicename": "a fashion magazine",
     "description": "It's a fashion magazine",
-    "item_type": "{'books_paper', 'can_pick_up', 'all_items'}",
+    "item_type": "{'books_paper', 'can_pick_up'}",
     "alt_names": {},
     "is_hidden": false,
     "can_pick_up": true,
@@ -315,9 +300,9 @@
     "loot_type": "magazine"
   },
   "gardening mag": {
-    "name": "a gardening magazine",
+    "nicename": "a gardening magazine",
     "description": "It's a gardening magazine",
-    "item_type": "{'books_paper', 'can_pick_up', 'all_items'}",
+    "item_type": "{'books_paper', 'can_pick_up'}",
     "alt_names": {},
     "is_hidden": false,
     "can_pick_up": true,
@@ -328,9 +313,9 @@
     "loot_type": "magazine"
   },
   "mail order catalogue": {
-    "name": "a mail order catalogue",
+    "nicename": "a mail order catalogue",
     "description": "It's a mail order catalogue",
-    "item_type": "{'books_paper', 'can_pick_up', 'all_items'}",
+    "item_type": "{'books_paper', 'can_pick_up'}",
     "alt_names": {},
     "is_hidden": false,
     "can_pick_up": true,
@@ -341,9 +326,9 @@
     "loot_type": "magazine"
   },
   "car keys": {
-    "name": "a set of car keys",
+    "nicename": "a set of car keys",
     "description": "It's a car keys",
-    "item_type": "{'can_pick_up', 'electronics', 'all_items'}",
+    "item_type": "{'can_pick_up', 'electronics'}",
     "alt_names": {},
     "is_hidden": false,
     "can_pick_up": true,
@@ -360,9 +345,9 @@
     "loot_type": "starting"
   },
   "fish food": {
-    "name": "a jar of fish food",
+    "nicename": "a jar of fish food",
     "description": "It's a fish food",
-    "item_type": "{'can_pick_up', 'all_items', 'food_drink}",
+    "item_type": "{'can_pick_up', 'food_drink}",
     "alt_names": {},
     "is_hidden": false,
     "can_pick_up": true,
@@ -378,9 +363,9 @@
     "effect": null
   },
   "anxiety meds": {
-    "name": "a bottle of anxiety meds",
+    "nicename": "a bottle of anxiety meds",
     "description": "It's a anxiety meds",
-    "item_type": "{'food_drink', 'can_pick_up', 'all_items'}",
+    "item_type": "{'food_drink', 'can_pick_up'}",
     "alt_names": {},
     "is_hidden": false,
     "can_pick_up": true,
@@ -392,9 +377,9 @@
     "loot_type": "starting"
   },
   "regional map": {
-    "name": "a regional map",
+    "nicename": "a regional map",
     "description": "It's a regional map",
-    "item_type": "{'books_paper', 'can_pick_up', 'all_items'}",
+    "item_type": "{'books_paper', 'can_pick_up'}",
     "alt_names": {},
     "is_hidden": false,
     "can_pick_up": true,
@@ -406,9 +391,9 @@
     "loot_type": "starting"
   },
   "unlabelled cream": {
-    "name": "an unlabelled cream",
+    "nicename": "an unlabelled cream",
     "description": "It's a unlabelled cream",
-    "item_type": "{'can_pick_up', 'all_items'}",
+    "item_type": "{'can_pick_up'}",
     "alt_names": {},
     "is_hidden": false,
     "can_pick_up": true,
@@ -416,9 +401,9 @@
     "loot_type": "starting"
   },
   "batteries": {
-    "name": "a set of batteries",
+    "nicename": "a set of batteries",
     "description": "It's a batteries",
-    "item_type": "{'can_pick_up', 'all_items'}",
+    "item_type": "{'can_pick_up'}",
     "alt_names": {},
     "is_hidden": false,
     "can_pick_up": true,
@@ -429,9 +414,9 @@
     ]
   },
   "costume jewellery": {
-    "name": "a bit of costume jewellery",
+    "nicename": "a bit of costume jewellery",
     "description": "Pretty but probably not too expensive. Gold metal with dark red gems.",
-    "item_type": "{'can_pick_up', 'all_items'}",
+    "item_type": "{'can_pick_up'}",
     "alt_names": {},
     "is_hidden": false,
     "can_pick_up": true,
@@ -439,9 +424,9 @@
     "loot_type": "minor_loot"
   },
   "plastic bag": {
-    "name": "a sturdy plastic bag",
+    "nicename": "a sturdy plastic bag",
     "description": "a used plastic bag from a grocery store. No holes, at least.",
-    "item_type": "{'can_pick_up', 'fragile', 'container', 'all_items'}",
+    "item_type": "{'can_pick_up', 'fragile', 'container'}",
     "alt_names": {},
     "is_hidden": false,
     "is_open": false,
@@ -462,9 +447,9 @@
     "loot_type": "minor_loot"
   },
   "pretty rock": {
-    "name": "a pretty rock",
+    "nicename": "a pretty rock",
     "description": "A particularly pretty rock. A nice blue colour and slightly rough texture, pleasant to hold.",
-    "item_type": "{'can_pick_up', 'all_items'}",
+    "item_type": "{'can_pick_up'}",
     "alt_names": {},
     "is_hidden": false,
     "can_pick_up": true,
@@ -472,9 +457,9 @@
     "loot_type": "minor_loot"
   },
   "damp newspaper": {
-    "name": "a damp newspaper",
+    "nicename": "a damp newspaper",
     "description": "A damp newspaper from about a week ago.",
-    "item_type": "{'books_paper', 'can_pick_up', 'fragile', 'all_items'}",
+    "item_type": "{'books_paper', 'can_pick_up', 'fragile'}",
     "alt_names": {},
     "is_hidden": false,
     "can_pick_up": true,
@@ -487,9 +472,9 @@
     "loot_type": "minor_loot"
   },
   "5 pound note": {
-    "name": "5 pound note",
+    "nicename": "5 pound note",
     "description": "A small amount of legal tender. Could be useful if you find a shop.",
-    "item_type": "{'can_pick_up', 'fragile', 'all_items'}",
+    "item_type": "{'can_pick_up', 'fragile'}",
     "alt_names": {},
     "is_hidden": false,
     "can_pick_up": true,
@@ -500,9 +485,9 @@
     "loot_type": "medium_loot"
   },
   "paper scrap with number": {
-    "name": "a scrap of paper with a number written on it",
+    "nicename": "a scrap of paper with a number written on it",
     "description": "A small scrap of torn, off-white paper with a hand-scrawled phone number written on it.",
-    "item_type": "{'books_paper', 'can_pick_up', 'fragile', 'all_items'}",
+    "item_type": "{'books_paper', 'can_pick_up', 'fragile'}",
     "alt_names": {},
     "is_hidden": false,
     "can_pick_up": true,
@@ -515,9 +500,9 @@
     "loot_type": "medium_loot"
   },
   "mobile phone": {
-    "name": "a mobile phone",
+    "nicename": "a mobile phone",
     "description": "A mobile phone. You don't think it's yours. Doesn't seem to have a charge.",
-    "item_type": "{'can_pick_up', 'electronics', 'container', 'all_items'}",
+    "item_type": "{'can_pick_up', 'electronics', 'container'}",
     "alt_names": {},
     "is_hidden": false,
     "is_open": false,
@@ -540,9 +525,9 @@
     "loot_type": "great_loot"
   },
   "wallet": {
-    "name": "a wallet, with cash",
+    "nicename": "a wallet, with cash",
     "description": "A worn leather wallet with around 30 pound inside. No identification or cards.",
-    "item_type": "{'can_pick_up', 'container', 'all_items'}",
+    "item_type": "{'can_pick_up', 'container'}",
     "alt_names": {},
     "is_hidden": false,
     "is_open": false,
@@ -560,9 +545,9 @@
     "loot_type": "great_loot"
   },
   "the exact thing": {
-    "name": "the exact thing you've been needing",
+    "nicename": "the exact thing you've been needing",
     "description": "It's the exact thing you need for the thing you need it for. But only once.",
-    "item_type": "{'can_pick_up', 'all_items'}",
+    "item_type": "{'can_pick_up'}",
     "alt_names": {},
     "is_hidden": false,
     "can_pick_up": true,
@@ -571,9 +556,9 @@
     "loot_type": "special_loot"
   },
   "severed tentacle": {
-    "name": "a severed tentacle",
+    "nicename": "a severed tentacle",
     "description": "It's a severed tentacle",
-    "item_type": "{'can_pick_up', 'all_items'}",
+    "item_type": "{'can_pick_up'}",
     "alt_names": {},
     "is_hidden": false,
     "can_pick_up": true,
@@ -582,28 +567,26 @@
     "loot_type": "weird"
   },
   "cabinet": {
-    "name": "cabinet",
+    "nicename": "cabinet",
     "description": "A cabinet with something weird about it.",
-    "item_type": "{'event', 'static', 'all_items', 'can_open'}",
+    "item_type": "{'event', 'static', 'can_open'}",
     "can_examine": true,
     "breakable": true,
     "alt_names": {},
     "is_hidden": false,
     "event": null,
     "event_type": "item_triggered",
-    "event_key": null,
     "is_open": false,
     "can_be_opened": true,
     "can_be_closed": true,
     "can_be_locked": true,
     "is_locked": true,
-    "requires_key": false,
-    "event_item": null
+    "requires_key": false
   },
   "locked box": {
-    "name": "locked box",
+    "nicename": "locked box",
     "description": "It's a box. Boxy box.",
-    "item_type": "{'can_pick_up', 'container', 'all_items'}",
+    "item_type": "{'can_pick_up', 'container'}",
     "alt_names": {},
     "is_hidden": false,
     "is_open": false,
@@ -620,10 +603,9 @@
     "item_size": 0
   },
   "grave": {
-    "name": "a fresh grave",
+    "nicename": "a fresh grave",
     "description": "a recently filled grave.",
-    "nicename": "a grave",
-    "item_type": "{'static', 'all_items', 'container'}",
+    "item_type": "{'static', 'container'}",
     "alt_names": {},
     "is_hidden": false,
     "can_examine": false,
@@ -640,10 +622,9 @@
     "description_no_children": null
   },
   "raven": {
-    "name": "raven",
     "nicename": "a raven",
     "description": "A raven, sleek and black. You're pretty sure it knows your secrets.",
-    "item_type": "{'can_pick_up', 'food_drink', 'all_items', 'can_speak'}",
+    "item_type": "{'can_pick_up', 'food_drink', 'can_speak'}",
     "alt_names": {},
     "is_hidden": false,
     "can_examine": false,
@@ -658,40 +639,36 @@
     "speaks_common": true
   },
   "rocking chair": {
-    "name": "a wooden rocking chair",
+    "nicename": "a wooden rocking chair",
     "description": "a simple but well-made rocking chair.",
-    "nicename": "rocking chair",
-    "item_type": "{'static', 'all_items'}",
+    "item_type": "{'static'}",
     "alt_names": {},
     "is_hidden": false,
     "can_examine": false,
     "breakable": false
   },
   "merry-go-round": {
-    "name": "a merry-go-round",
+    "nicename": "a merry-go-round",
     "description": "a sweet if slightly outdated merry-go-round, horsed in-tact with and with most of its paint.",
-    "nicename": "merry-go-round",
-    "item_type": "{'static', 'all_items'}",
+    "item_type": "{'static'}",
     "alt_names": {},
     "is_hidden": false,
     "can_examine": false,
     "breakable": false
   },
   "birdbath": {
-    "name": "a stone birdbath",
+    "nicename": "a stone birdbath",
     "description": "a stone birdbath, dark green algae stuck firm to the basin.",
-    "nicename": "birdbath",
-    "item_type": "{'static', 'all_items'}",
+    "item_type": "{'static'}",
     "alt_names": {},
     "is_hidden": false,
     "can_examine": false,
     "breakable": false
   },
   "comb": {
-    "name": "comb",
     "nicename": "a comb",
     "description": "A simple plastic comb, made matte by the environment and time.",
-    "item_type": "{'static', 'all_items', 'fragile'}",
+    "item_type": "{'static', 'fragile'}",
     "can_examine": false,
     "breakable": false,
     "alt_names": {},
@@ -701,20 +678,18 @@
     "can_break": true
   },
   "trident": {
-    "name": "trident",
     "nicename": "a trident",
     "description": "a rather impressive trident, starp points and a fine filigree on the handle.",
-    "item_type": "{'static', 'all_items'}",
+    "item_type": "{'static'}",
     "can_examine": false,
     "breakable": false,
     "alt_names": {},
     "is_hidden": false
   },
   "ornate silver key": {
-    "name": "ornate silver key",
-    "nicename": "a ornate silver key",
+    "nicename": "an ornate silver key",
     "description": "an ornate silver key with small `VI` pressed into the head.",
-    "item_type": "{'key', 'all_items', 'can_pick_up'}",
+    "item_type": "{'key', 'can_pick_up'}",
     "is_key": true,
     "alt_names": {},
     "is_hidden": false,
@@ -722,10 +697,9 @@
     "item_size": 0
   },
   "mummified mouse": {
-    "name": "mummified mouse",
     "nicename": "a mummified mouse",
     "description": "The tiny, dried body of a long-dead mouse, curled up. You could think it was sleeping if it wasn't so frail and stiff.",
-    "item_type": "{'fragile', 'can_pick_up', 'all_items', 'food_drink'}",
+    "item_type": "{'fragile', 'can_pick_up', 'food_drink'}",
     "broken_name": null,
     "flammable": true,
     "can_break": true,
@@ -739,10 +713,9 @@
     "effect": null
   },
   "grandfather clock": {
-    "name": "grandfather clock",
     "nicename": "a grandfather clock",
     "description": "An antique-looking grandfather clock, silent. Maybe it's in need of a wind. ",
-    "item_type": "{'container', 'all_items', 'static'}",
+    "item_type": "{'container', 'static'}",
     "alt_names": {},
     "is_hidden": false,
     "can_examine": false,
@@ -761,14 +734,14 @@
     "description_no_children": null
   },
   "old gold key": {
-    "name": "old gold key",
+    "nicename": "old gold key",
     "item_type": "{'key', 'can_pick_up'}",
     "is_key": true,
     "can_pick_up": true,
     "item_size": 0
   },
   "secateurs": {
-    "name": "secateurs",
+    "nicename": "a pair of secateurs",
     "item_type": "{'can_pick_up'}",
     "can_pick_up": true,
     "item_size": 0,
@@ -776,32 +749,28 @@
     "is_hidden": false
   },
   "local map": {
-    "name": "local map",
-    "item_type": "{'can_pick_up', 'fragile', 'event', 'books_paper'}",
+    "nicename": "local map",
+    "item_type": "{'can_pick_up', 'fragile', 'books_paper'}",
     "can_pick_up": true,
     "item_size": 0,
     "broken_name": null,
     "flammable": false,
     "can_break": true,
-    "event": null,
-    "event_type": "item_triggered",
-    "event_key": null,
-    "event_item": null,
     "print_on_investigate": true,
     "can_read": true,
-    "description": "a yellowed [[]], showing the region surrounding the graveyard."
+    "description": "a yellowed [[]] showing the region surrounding the graveyard."
   },
 "work shed": {
-    "name": "work shed",
+    "nicename": "work shed",
     "item_type": "{'wall', 'static'}",
     "is_vertical_surface": true,
     "can_examine": false,
     "breakable": false,
-    "description": "a simple shed, with wood panelled walls"
+    "description": "a simple shed, with wood panelled walls and a simple wooden door."
   },
   "wooden door": {
     "alt_names": ["shed doorway", "shed door"],
-    "name": "shed door",
+    "nicename": "shed door",
     "item_type": "{'wall', 'can_open', 'static'}",
     "is_vertical_surface": true,
     "is_open": false,

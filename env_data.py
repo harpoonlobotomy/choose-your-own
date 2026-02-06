@@ -79,6 +79,7 @@ class placeInstance:
         self.visited = False
         self.first_weather = None
         self.description = None#loc_dict.get(name, {}).get("descrip")
+        self.overview = None
         #print(f"self.description: {self.description}\n")
         self.current_loc = None
         self.colour = None ## assign like items on first
@@ -93,20 +94,7 @@ class placeInstance:
 
         for attr in ("inside", "electricity", "nature"):
             value = loc_dict[name].get(attr)
-            setattr(self, attr, value) # might work?
-
-
-
-    #def set_scene_descrip(self, name, loc):
-    #    ## place.set_scene_descrip(name, place) ## <- calls here
-    #    if loc_dict[name].get("descrip"):
-    #        from misc_utilities import assign_colour
-    #    ## I need to amend this for whether each part exists or not...
-    #        if self.cardinals.get("west").short_desc != None: # hardcoded for the moment. TODO: Make this dynamic. Or I guess account for any missing version? But better if it's dynamic. Maybe a check for how many parts there are and then generate based on that?
-    #            self.overview = f"{loc_dict[name]["descrip"]}.{"\033[0m"} \n{self.cardinals["north"].short_desc} to the {assign_colour("north")}. To the {assign_colour("east")} is {self.cardinals["east"].short_desc}, to the {assign_colour("south")} is {self.cardinals["south"].short_desc}, and to the {assign_colour("west")} is {self.cardinals["west"].short_desc}."
-    #        else:
-    #            self.overview = f"{loc_dict[name]["descrip"]}.{"\033[0m"} \n{self.cardinals["north"].short_desc} to the {assign_colour("north")}. To the {assign_colour("east")} is {self.cardinals["east"].short_desc}, and to the {assign_colour("south")} is {self.cardinals["south"].short_desc}."
-    #        return self.overview
+            setattr(self, attr, value)
 
     def visit(self):
         self.visited = True
@@ -235,7 +223,7 @@ class placeRegistry:
 
 
     def by_cardinal_str(self, cardinal_str:str|dict, loc=None) -> cardinalInstance:
-        logging_fn()
+        #logging_fn()
         if isinstance(cardinal_str, dict):
             loc, cardinal_str = next(iter(cardinal_str.items()))
         elif isinstance(cardinal_str, str):
@@ -254,17 +242,6 @@ class placeRegistry:
         cardinal_inst = locRegistry.cardinals[loc][cardinal_str]
         return cardinal_inst
 
-    #def get_card_inst_from_strings(self, location): ## by_cardinal_str instead! I don't think anything else called this.
-#
-    #    if not isinstance(location, cardinalInstance):
-    #        location_str, card_str = next(iter(location.items())) # strings from dict
-    #        place = self.place_by_name(location_str)
-    #        cardinal_inst = self.by_cardinal_str(cardinal_str=card_str, loc=place)
-    #    else:
-    #        cardinal_inst = location
-#
-    #    return cardinal_inst
-
 
 locRegistry = placeRegistry()
 
@@ -281,12 +258,7 @@ def add_new_loc(name, reset_current=True):
     #print(f"loc_dict[name]::::: {loc_dict[name]}")
 
     locRegistry.cardinals[place] = locRegistry.add_cardinals(place)
-    ## add cardinals to place instance so it's directly referable.
-    #cardinals_dict = {}
-    #for card in cardinals_list:
-    #    cardinal_inst = cardinalInstance(card, place)
-    #    cardinals_dict[card] = cardinal_inst
-    #place.cardinals=cardinals_dict
+
     if reset_current:
         locRegistry.set_current(place)
     return place
@@ -315,7 +287,7 @@ def initialise_placeRegistry():
                             place.transition_objs[item]["exit_to_location"] = loc_inst
 
                 target_place = enter_location
-                if not hasattr(target_place, "transition_obj"):
+                if not hasattr(target_place, "transition_objs"):
                     target_place.transition_objs = dict()
 
                     target_place.transition_objs[item] = {}
@@ -326,18 +298,10 @@ def initialise_placeRegistry():
                     print(f"Target place transition objects: {target_place.transition_objs}")
 
 
-
-
-
-
-
-
-        #place.set_scene_descrip(name, place)
-
-def get_descriptions(place):
+def get_descriptions(place:placeInstance):
 
     from testing_coloured_descriptions import loc_descriptions
-    description_dict = loc_descriptions(place) ## now for now I might do this once and reuse it, but practically, we want to regenerate it at each call in case something's changed. For now just implementation is a fine goal.
+    description_dict = loc_descriptions(place)
     place.overview = description_dict.get(place.name).get("overview")
     if not isinstance(place.overview, str):
         place.overview = list(place.overview)[0]
@@ -352,15 +316,12 @@ def get_descriptions(place):
         if locRegistry.cardinals[place].get(card) and isinstance(locRegistry.cardinals[place].get(card), cardinalInstance):
             card_inst = locRegistry.cardinals[place].get(card)
             card_inst.description = description_dict[place.name].get(card)
-            #print(f"Card inst description {place.name}, {card}: {card_inst.description}")
-            #print(f"VARS: \n{vars(card_inst)}\n\n")
-            #print(f"PLACE VARS: {vars(place)}")
+
 
 def get_loc_descriptions(place=None):
 
     if place == None:
         for place in locRegistry.places:
-            #print(f"PLACE IN PLACES : {place}")
             get_descriptions(place)
             return
     if place and isinstance(place, cardinalInstance):
@@ -372,19 +333,8 @@ def get_loc_descriptions(place=None):
         get_descriptions(place)
 
 
-
-
 if "__main__" == __name__:
 
     initialise_placeRegistry()
     get_loc_descriptions()
     locRegistry.set_current("graveyard")
-    #place = locRegistry.place_by_name("graveyard")
-
-    #place_cardinals = locRegistry.cardinals[place]
-
-    #print(place_cardinals["east"].place_name)
-    #place = place_cardinals["east"].place
-    #print(place.name)
-    #print("place.cardinals['north'].long_desc: ", place.cardinals["north"].long_desc)
-    #print(place.overview)

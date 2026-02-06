@@ -336,7 +336,7 @@ def separate_loot(child_input=None, parent_input=None, inventory=[]): ## should 
 ### COLOUR ASSIGNMENT
 
 def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=False, not_bold=False, caps=False, card_type = None):
-    logging_fn()
+    #logging_fn()
     from tui.colours import Colours
 
 #    if item is a list, run it through col_list. Might be recursive as hell though. idk. Need to figure how how/when col_list is used first.
@@ -391,6 +391,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
         item=item[0] #arbitrarily take the first one.
 
     def check_instance_col(item):
+
         from itemRegistry import registry
         if isinstance(item, ItemInstance|placeInstance|cardinalInstance):
             entry = item
@@ -423,6 +424,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
 
     elif isinstance(item, str) or isinstance(item, ItemInstance|placeInstance|cardinalInstance):
         from itemRegistry import registry
+
         if isinstance(item, str):
 
             plain_name, val = check_name(item)
@@ -438,7 +440,12 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
                     #colour = item.colour
 
         if isinstance(item, ItemInstance|placeInstance|cardinalInstance): # changing to elif breaks non-instance colours entirely.
+            if nicename:
+                held_name = item.nicename
             colour, item, bld = check_instance_col(item)
+            if nicename:
+                item = held_name
+
 
         elif isinstance(colour, (int, float)):
             colour=int(colour)%len(cardinals)
@@ -447,8 +454,8 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
             colour=cardinal_cols[colour]
             bld=True
 
-    if nicename:
-        item=nicename
+    #if nicename:
+    #    item=nicename # can't remember what this was used for
     if switch:
         item=switch_the(item)
     if caps:
