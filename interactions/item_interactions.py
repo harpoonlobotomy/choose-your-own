@@ -1,7 +1,6 @@
 #item_interactions.py
 
-#Instinctively I want a new script for item interactions, that I can send to from membrane. But isn't that what the itemRegistry is for?
-#It kinda is...
+
 from interactions.player_movement import turn_around
 from itemRegistry import ItemInstance, registry
 from env_data import cardinalInstance, locRegistry as loc
@@ -47,7 +46,7 @@ def look_at_item(item_inst): ## this is just using everything from registry. Sho
 
 
             print(f"You look at the {assign_colour(item_inst)}{extra}")
-            
+
             print(assign_colour(registry.describe(item_inst, caps=True), colour="description"))
             verb_actions.print_children_in_container(item_inst)
             #children = registry.instances_by_container(item_inst)
@@ -114,5 +113,15 @@ def add_item_to_loc(item_instance, location=None):
         exit("add_item_to_location needs a cardinalInstance.")
 
 
+### Now a whole bunch of functions for parsing out open/close actions.
+#Kinda wish this was a class of lil functions. Might be an idea? idk. I'm used to classes holding data sets, not functions. Will have to look into it.
+
+def is_loc_ext(noun:ItemInstance) -> str|None:
+
+    if hasattr(noun, "is_loc_exterior") and hasattr(noun, "transition_objs"):
+        for trans_obj in noun.transition_objs:
+            return f"You can't enter the {assign_colour(noun)}, but maybe the {assign_colour(trans_obj)}?"
+
+    return None
 
 #container, reason_val = registry.check_item_is_accessible(noun_inst)

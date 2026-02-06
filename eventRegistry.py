@@ -922,14 +922,24 @@ class eventRegistry:
                 """
             #print(f"event to end: hidden items:: {event_to_end.hidden_items}")
             for item_set in ("hidden_items", "held_items", "locked_items"):
+                print(f"ITEM SET: {item_set}")
                 if getattr(event_to_end, item_set):
                     pop_me = set()
                     for item in getattr(event_to_end, item_set):
-                        if effect_attrs.get(item_set):
-                            for k, v in effect_attrs[item_set].items():
+                        print(f"ITEM: {item}")
+                        if effect_attrs.get(item_set) and effect_attrs[item_set].get("on_event_end"):
+                            for k, v in effect_attrs[item_set]["on_event_end"].items():
+                                print(f"K: {k}, V: {v}")
                                 setattr(item, k, v)
+                                print(f"After setattr: getattr(item, k): {getattr(item, k)}")
+                                if hasattr(item, "is_hidden"):
+                                    print(f"ITEM IS HIDDEN? `{item.is_hidden}`")
+
+                        else:
+                            print(f"No entry in effect_attrs for {item_set}")
                         pop_me.add(item)
                         if item_set == "hidden_items": # NOTE: use this to make it print the description again after an end, so if something was meant to suddenly appear, use this (even if it wasn't technically hiding)
+                            print("Will print desc again.")
                             print_desc_again = True
 
                     if pop_me:
@@ -938,6 +948,8 @@ class eventRegistry:
                                 print(f"Cannot remove {item} from {event_to_end.name}.{item_set} as it's not there.")
                             else:
                                 getattr(event_to_end, item_set).remove(item)
+                else:
+                    print(f"No items found for if getattr({event_to_end}, {item_set})")
 
             print("Need a section here that removes itemInstances from events.items. Or maybe not, if one day it'd be useful to know that this is the coin you gave to the witch in exchange for your left eye or smth")
 

@@ -63,7 +63,7 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                 else:
                     if item:
                         if itemRegistry.registry.instances_by_name(item) and local_items:
-                            print(f"Item {item} in registry and local_items")
+                            #print(f"Item {item} in registry and local_items")
                             for inst in itemRegistry.registry.instances_by_name(item):
                                 if inst in local_items:
                                     if "[[]]" in long_dict[item]:

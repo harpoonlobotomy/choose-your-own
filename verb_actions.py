@@ -14,6 +14,12 @@ from printing import print_yellow
 from set_up_game import game
 from verb_definitions import directions, semantics, formats
 
+can_open_codes = [0,5,8]
+can_pickup_codes = [0,3,4]
+in_container_codes = [3,4]
+can_lookat_codes = [0,3,4,5,8]
+interactable_codes = [0,3,4,5,8]
+
 movable_objects = ["put", "take", "combine", "separate", "throw", "push", "drop", "set", "move"]
 
 flag_actions = {
@@ -183,7 +189,15 @@ def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
             print(f"Failed to move `{a}` to `{b}`.")
             print(f"Reason: `{b}` is not the current location.")
 
-def check_lock_open_state(noun_inst, verb_inst):
+def can_interact(noun_inst): # succeeds if accessible
+
+    _, _, reason_val, meaning = registry.check_item_is_accessible(noun_inst)
+    if reason_val in interactable_codes:
+        return 1, reason_val, meaning
+    else:
+        return 0, reason_val, meaning
+
+def check_lock_open_state(noun_inst):
     logging_fn()
 
     is_closed = is_locked = locked_have_key = False
@@ -194,19 +208,11 @@ def check_lock_open_state(noun_inst, verb_inst):
     if hasattr(noun_inst, "is_locked") and noun_inst.is_locked:
         is_locked = True
         if hasattr(noun_inst, "needs_key"):
-            inst, container, reason_val, meaning = registry.check_item_is_accessible(noun_inst.needs_key)
-            if reason_val in (0, 3, 4, 5):
+            interactable, _, _ = can_interact(noun_inst.needs_key)
+            if interactable:
                 locked_have_key = True
 
     return is_closed, is_locked, locked_have_key
-
-def can_interact(noun_inst): # succeeds if accessible
-
-    _, _, reason_val, meaning = registry.check_item_is_accessible(noun_inst)
-    if reason_val in (0, 3, 4, 5, 8):
-        return 1, reason_val
-    else:
-        return 0, reason_val
 
 def get_entries_from_dict(input_dict):
     logging_fn()
@@ -794,9 +800,9 @@ def lock_unlock(format_tuple, input_dict, do_open=False):
         if format_tuple.count("noun") == 2:
             #print("format tuple has 2 nouns")
             noun_1 = get_noun(input_dict)
-            accessible_1, _ = can_interact(noun_1)
+            accessible_1, _, _ = can_interact(noun_1)
             noun_2 = get_noun(input_dict, 2)
-            accessible_2, _ = can_interact(noun_2)
+            accessible_2, _, _ = can_interact(noun_2)
             if accessible_1 and accessible_2:
                 #rint(f"{noun_1} and {noun_2} are both accessible.")
                 success = check_key_lock_pairing(noun_1, noun_2)
@@ -843,36 +849,6 @@ def lock_unlock(format_tuple, input_dict, do_open=False):
         print("verbname == lock, don't know why I'm here.")
     print(f"Cannot process {input_dict} in def lock() End of function, unresolved. (Function not yet written, should use open_close variant instead)")
 
-def open_item(format_tuple, input_dict):
-    logging_fn()
-
-    verb_entry, noun_entry, _, _, _, _ = get_entries_from_dict(input_dict)
-
-    noun_inst = noun_entry["instance"]
-    if get_noun(input_dict, 2):
-        for noun in (noun_inst, get_noun(input_dict, 2)):
-            if hasattr(noun, "is_key"):
-                lock_unlock(format_tuple, input_dict, do_open=True)
-                return
-
-    if hasattr(noun, "is_transition_obj"):
-        noun_inst = noun
-
-    accessible, _ = can_interact(noun_inst)
-    inst, container, reason_val, meaning = registry.check_item_is_accessible(noun_inst)
-    if reason_val in (0, 3, 4, 5):
-        is_closed, is_locked, locked_and_have_key = check_lock_open_state(noun_inst=noun_inst, verb_inst = verb_entry["instance"])
-
-        if is_locked or locked_and_have_key:
-            if len(format_tuple) < 3:
-                print(f"{assign_colour(noun_inst)} is locked; you have to unlock it before it'll open.")
-        elif is_closed:
-            set_noun_attr(("is_open", True), noun=noun_inst)
-            print(f"You open the {assign_colour(noun_inst)}.")
-            #print(f"noun.is_open: {noun_inst.is_open}")
-    else:
-        print(f"You can't open the {assign_colour(noun_inst)} right now.")
-
 def close(format_tuple, input_dict):
     logging_fn()
 
@@ -900,11 +876,10 @@ def open_close(format_tuple, input_dict):
     noun_inst = get_noun(input_dict)
 
     if get_noun(input_dict, 2):
-        for option in noun_inst, get_noun(input_dict, 2):
-            open_item(format_tuple, input_dict)
-            return
-            if hasattr(option, "is_open"):
-                noun_inst = option # if one of the nouns mentioned can be opened, assume we mean to open that one.
+
+        return
+        if hasattr(option, "is_open"):
+            noun_inst = option # if one of the nouns mentioned can be opened, assume we mean to open that one.
 
     verb_inst = get_verb(input_dict)
 
@@ -922,7 +897,7 @@ def open_close(format_tuple, input_dict):
             return # not perfect because it returns even if you couldn't have accessed the door to check, but works for the moment while I'm testing the events. TODO Fix this later
 
 ## I think part of the issue is that the check_lock_open_state tries to combine both 'is this a thinkg I could access to try to unlock' with 'is this is a thing I can unlock'. I need to separate them out. a) is this a thing I can access, return. b) if so, is this a thing I can unlock.
-    is_closed, is_locked, locked_and_have_key = check_lock_open_state(noun_inst, verb_inst)
+    is_closed, is_locked, locked_and_have_key = check_lock_open_state(noun_inst)
 
     print("is_closed, is_locked, locked_and_have_key : ", is_closed, is_locked, locked_and_have_key)
     if verb_inst.name in ("close", "lock"):
@@ -1009,67 +984,72 @@ def open_close(format_tuple, input_dict):
 def simple_open_close(format_tuple, input_dict):
     logging_fn()
 
-    if len(format_tuple) > 2:
-        open_close(format_tuple, input_dict)
-        return
     verb_inst = get_verb(input_dict)
     noun_inst = get_noun(input_dict)
 
+    if len(format_tuple) > 2:
+        use_item_w_item(format_tuple, input_dict)
+        return
+
+    interactable, val, meaning = can_interact(noun_inst) # succeeds if accessible
+    if not interactable:
+        if val == 6:
+            print(f"You can't open something you aren't nearby to...")
+            return
+        print(f"You can't do that right now.\n[{noun_inst} / {meaning}]")
+        return
+
+    from interactions.item_interactions import is_loc_ext
+
+    outcome = is_loc_ext(noun_inst)
+    if outcome:
+        print(outcome)
+        return
+
+    if not hasattr(noun_inst, "is_open"):
+        print(f"You can't open the {assign_colour(noun_inst)}.")
+        return
+
     if verb_inst.name == "open":
-        if hasattr(noun_inst, "is_loc_exterior"):
-            if hasattr(noun_inst, "is_loc_exterior"):
-               noun = noun_inst.transition_objs
-
-            if isinstance(noun, ItemInstance):
-                noun_inst = noun
-        if hasattr(noun_inst, "is_open"):
-            if noun_inst.is_open == True:
-                print(f"{assign_colour(noun_inst)} is already open.")
-                return
-            if noun_inst.is_open == False:
-                if hasattr(noun_inst, "is_locked") and noun_inst.is_locked == True:
-                    open_close(format_tuple, input_dict)
-                    return
-                #print(f"noun_inst.is_open now: {noun_inst.is_open}")
-                _, _, reason_val, meaning  = registry.check_item_is_accessible(noun_inst)
-                if reason_val in (0, 5) or (reason_val == 6 and hasattr(noun_inst, "is_transition_obj") and (hasattr(noun_inst, "enter_location") and noun_inst.enter_location == loc.current.place)):
-# NOTE: This is where 'open x' goes to. I have far too many routes for opening/closing items. CULL THEM.
-                    print(f"Noun {noun_inst} is closed, sending to set_noun_attr")
-                    print(f"You open the {assign_colour(noun_inst)}.")
-                    set_noun_attr(("is_open", True), noun=noun_inst)
-                    #noun_inst.is_open = True
-                    #print(f"noun_inst.is_open now: {noun_inst.is_open}")
-                    return
-
-                if reason_val == 6:
-                    print(f"You can't open something you aren't nearby to...")
-                    return
-                else:
-                    print(f"Cannot open {noun_inst.name} because {meaning}.")
-                    return
-        else:
-            if hasattr(noun_inst, "is_loc_exterior"):
-                if hasattr(noun_inst, "transition_objs"):
-                    for trans_obj in noun_inst.transition_objs:
-                        print(f"You can't enter the {assign_colour(noun_inst)}, but maybe the {assign_colour(trans_obj)}?")
-                        return
-            print(f"{assign_colour(noun_inst)} cannot be opened; this is odd. Potentially. Or maybe a totally normal thing.")
-    else:
+            #print(f"meaning: {meaning}")
         if noun_inst.is_open == True:
-            print(f"You close the {assign_colour(noun_inst)}.")
-            #print(f"noun_inst.is_open now: {noun_inst.is_open}")
-            noun_inst.is_open = False
-            #print(f"noun_inst.is_open now: {noun_inst.is_open}")
+            print(f"{assign_colour(noun_inst)} is already open.")
             return
+
+        if hasattr(noun_inst, "is_locked") and noun_inst.is_locked == True:
+            print(f"You can't open a locked {assign_colour(noun_inst)}.")
+            #open_close(format_tuple, input_dict)
+            return
+
+        if val in can_open_codes:
+            print(f"You open the {assign_colour(noun_inst)}.")
+            set_noun_attr(("is_open", True), noun=noun_inst)
+            return
+       # _, confirmed_container, reason_val, meaning  = registry.check_item_is_accessible(noun_inst)
+
+        if val in in_container_codes and hasattr(noun_inst, "contained_in"):#confirmed_container:
+            print(f"You need to remove the {assign_colour(noun_inst)} from the {assign_colour(noun_inst.contained_in)} it's in, first.")
+            return
+
+        else:
+            print(f"Cannot open {noun_inst.name} because {meaning}.")
+            return
+        #print(f"reason_val: {reason_val}, meaning: {meaning}")
+
+    else:
         if noun_inst.is_open == False:
-            if hasattr(noun_inst, "is_locked") and noun_inst.is_locked == True:
-                open_close(format_tuple, input_dict)
-                return
-            print(f"{assign_colour(noun_inst)} is already closed.")
+            # cancelling the next lines because if it's closed and I'm saying 'close', why are we going into locked processes?
+            #if hasattr(noun_inst, "is_locked") and noun_inst.is_locked == True:
+            #    open_close(format_tuple, input_dict)
+            #    return
+            print(f"The {assign_colour(noun_inst)} is already closed.")
             return
 
-    print(f"Cannot process {input_dict} in def simple_open_close() End of function, unresolved.")
-
+        print(f"You close the {assign_colour(noun_inst)}.")
+        #print(f"noun_inst.is_open now: {noun_inst.is_open}")
+        noun_inst.is_open = False
+        #print(f"noun_inst.is_open now: {noun_inst.is_open}")
+        return
 
 def combine(format_tuple, input_dict):
     logging_fn()
@@ -1409,39 +1389,31 @@ def use_item_w_item(format_tuple, input_dict):
     #print(f"Format list: {format_tuple}")
     #print(f"Length format list: {len(format_tuple)}")
     ## use x on y
-    verb_entry, noun_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
-    if format_tuple == (('verb', 'noun', 'direction', 'noun')):
-        if verb_entry["str_name"] == "use" and ((direction_entry and direction_entry["str_name"] == "on") or (semantic_entry and semantic_entry["str_name"] == "with")):
-            # need to figure out the best way to divert from here to lock_unlock, so we don't repeat it over an over.
-            # Maybe just if one of the nouns == is_key?
-            actor_noun = get_noun(input_dict)
-            target_noun = get_noun(input_dict, 2)
+    _, noun_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
+    dir_or_sem = get_dir_or_sem_if_singular(input_dict)
+
+    verb = get_verb(input_dict)
+    actor_noun = get_noun(input_dict)
+    target_noun = get_noun(input_dict, 2)
+    if not target_noun:
+        print(f"No second noun: {format_tuple} should not be in use_item_w_item function. Check routing.")
+        return
+
+    if format_tuple == (('verb', 'noun', 'direction', 'noun')) or format_tuple == (('verb', 'noun', 'sem', 'noun')):
+        if verb.name in ("use", "unlock", "lock") and dir_or_sem and dir_or_sem in  ("on", "using", "with"):
+
             for noun in (actor_noun, target_noun):
-                if hasattr(noun, "is_key"):
+                if hasattr(noun, "is_key") or hasattr(noun, "requires_key"):
                     lock_unlock(format_tuple, input_dict)
                     return
-            print(f"Apparently neither {actor_noun} or {target_noun} are is_key?")
-            if hasattr(target_noun, "requires_key"):
-                key_is_accessible=False
-                if actor_noun == target_noun.requires_key:
-                    _, container, reason_val, meaning = registry.check_item_is_accessible(actor_noun)
-                    print(f"meaning: {meaning}")
-                    if reason_val in (0, 3, 4, 5, 8):
-                        key_is_accessible=True
-                    _, container, reason_val, meaning = registry.check_item_is_accessible(target_noun)
-                    print(f"meaning: {meaning}")
-                    if reason_val in (0, 3, 4, 5, 8):
-                        if key_is_accessible:
-                            print("You use the key to open the lock.")
-                            print("Though it does't actually do it yet, I'm just testing. This whole thing needs rewriting.")
-                            target_noun.is_locked=False
-                            return
+            if verb.name in ("lock", "unlock"):
+                print(f"Cannot {verb.name}.")
+                return
 
-            closed, locked, locked_have_key = check_lock_open_state(actor_noun, verb_entry["instance"])
-            print(f"Actor-noun: {actor_noun}, target-noun: {target_noun}. Closed: {closed}, locked: {locked}, locked and have key: {locked_have_key}")
-            if locked_have_key:
-                if noun_entry["instance"].name == input_dict[3]["verb"]["instance"].children:
-                    print(f"input_dict[3]['verb']['instance']: {input_dict[3]['verb']['instance']} == child")
+            print(f"You want to {verb.name} {actor_noun} {dir_or_sem} {target_noun}; I'm not sure what that means.")
+            return
+
+        print(f"Not sure how to deal with {format_tuple}")
 
     print(f"Cannot process {input_dict} in def use_item_w_item() End of function, unresolved. (Function partially written but doesn't do anything.)")
 

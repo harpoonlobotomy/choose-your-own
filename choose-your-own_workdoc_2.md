@@ -3653,3 +3653,82 @@ Item glass jar in registry and local_items
 inst in registry by name: <ItemInstance glass jar (49a08bc3-4748-45d3-ac5d-c197b702eca5)>
 
 And yet, if inst in local_items: fails.
+
+
+Okay, that's done. Item descriptions work nicely now.
+
+
+Next:
+
+
+[[  put paperclip in glass jar  ]]
+
+Added paperclip to glass jar.
+
+
+[[  put paperclip in glass jar  ]]
+
+glass jar is already in <ItemInstance paperclip (3148f9a5-8510-4a62-bf0c-613c786b0b6c)>
+
+
+[[  inventory  ]]
+
+severed tentacle
+fashion mag
+paperclip
+glass jar
+
+Can't put a paperclip in the jar because there already is one. I need to be able to direct these things more easily. 'If I say 'put x in y', assume I don't mean the 'x' taht 's already in 'y' if there's another 'x' available.
+
+
+Though first I'm going to fix all the 'open x' functions.
+
+'simple_open_close' was a good idea but it's messy as fuck and basically redundant, and I should just use 'open_close'.
+
+
+1.47pm, 6.2.26
+
+going to add
+ hasattr(noun_inst, "is_transition_obj") and (hasattr(noun_inst, "enter_location") and noun_inst.enter_location == loc.current.place))
+
+to check_item_is_accessible, so I have a code for 'is not local but treat it as such'.
+
+
+oh I already did that apparently, that's what reason_val 8 is for.
+
+Working on open etc.
+
+I have cleaned up simple_open_close, which is exclusively for len(format_tuple) == 2, open/close operations. Feels sensible enough to get those out the way. All open/close verbs go through this, and are redirected to def open_close if they're longer than len 2.
+
+I'm tempted to route lock_unlock through this too.
+
+
+Anyway.
+
+4.33pm
+Just testing the game, and the key is, once again, not properly revealed after the event ends. Fml.
+ 'is_hidden': True,
+ still set. (meta key is such a useful command, glad I put that in.)
+
+Okay, fixed it. I'd added the on_item_start and on_item_end to effect_attrs and not updated it, so it was tryin to set 'is_hidden' to the full on_item_end/on_item_start dict and failing silently.
+
+
+Now:
+
+
+You're facing north. A simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's an old iron key, mottled with age.
+
+[[  take iron key  ]]
+
+The iron key is now in your inventory.
+
+[[  look around  ]]
+
+loc_item: <ItemInstance secateurs (afdfb681-9472-4aa4-9ed0-3e226bf02c22)>
+
+Around you, you see the interior of a rather run-down looking work shed, previously boarded up but seemingly, not anymore.
+There's a simple desk, hazily lit by the window over it to the north.
+
+You're facing north. A simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's secateurs.
+
+So why aren't the secateurs there from the start? Should be. I've messed up in the location descriptions again somewhere.

@@ -18,7 +18,7 @@ type_defaults = {
     "standard": {},
     "static": {"can_examine": False, "breakable": False},
     #"all_items": {"starting_location": None, "current_loc": None, "alt_names": {}, "is_hidden": False},
-    "container": {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False, 'starting_children': None, 'container_limits': 4, "name_no_children": None, "description_no_children": None},
+    "container": {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False, 'starting_children': None, 'container_limits': 4, "name_no_children": None, "name_any_children": None, "description_no_children": None, "description_any_children": None},
     "key": {"is_key": True},
     "can_pick_up": {"can_pick_up": True, "item_size": 0, "started_contained_in": None, "contained_in": None},
     "event": {"event": None, "event_type": "item_triggered", "event_key": None, "event_item": None},
@@ -496,6 +496,7 @@ class itemRegistry:
         #    7: "other error, investigate",
         #    8: "is a location exterior"
         #    9: "item is hidden" (must be discovered somehow, not shown in general 'look around' views.)
+        #   10: "item is transitional, treat as local."
         #}
 
         #   10: "item is transitional" # may be in another location, but is treated as if local. (Really this is just '0', but I've written it here so I might remember.)
@@ -572,12 +573,12 @@ class itemRegistry:
                         reason = 5
                     else:
                         if hasattr(inst, "is_transition_obj"):
-                            if hasattr(inst, "enter_location") and inst.enter_location ==  loc.current.place:
+                            if hasattr(inst, "enter_location") and hasattr(inst, "enter_location") and inst.enter_location ==  loc.current.place:
                                 reason = 0
-                            elif hasattr(inst, "is_loc_exterior") and inst.location.place == loc.current.place:
-                                reason = 8
                             else:
                                 reason = 6
+                        elif hasattr(inst, "is_loc_exterior") and inst.location.place == loc.current.place:
+                            reason = 8
 
                         else:
                             reason = 6
@@ -786,14 +787,21 @@ class itemRegistry:
 
     def nicename(self, inst: ItemInstance):
         logging_fn()
-        if "container" in inst.flags:
-            children = self.instances_by_container(inst)
-            if not children:
+
+        if "container" in inst.item_type:
+            if inst.children:
+                if hasattr(inst, "starting_children") and inst.starting_children:
+                    if inst.children == inst.starting_children:
+                        return inst.nicename
+                return inst.name_any_children
+
+            if not inst.children:
                 return inst.name_children_removed
 
         if not inst:
             print("[NICENAME] No such item.")
             return None
+
         return inst.nicename
 
     def get_name(self, inst: ItemInstance):
