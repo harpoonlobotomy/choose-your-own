@@ -510,6 +510,13 @@ def in_loc_facing_card(cardinal:cardinalInstance):
 
 ### END COLOUR ASSIGNMENT
 
+### SHORTHAND FNs
+
+def has_and_true(item, attr):
+    #print(f"HAS AND TRUE: item: {item}, attr: {attr}")
+    if hasattr(item, attr) and getattr(item, attr) == True:
+        return True
+    return False
 
 ### SIMPLE UTILITIES
 

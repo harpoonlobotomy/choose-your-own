@@ -66,9 +66,10 @@ def get_type_tags(new_str, item_dict):
         if category not in type_defaults:
             print(f"Category `{category}` not in type_defaults.")
             exit()
-        for flag in type_defaults[category]:
+
+        for flag, val in type_defaults[category].items():
             if flag not in item_dict: # so it doesn't overwrite any custom flag in a loc item entry
-                item_dict[flag] = type_defaults[category][flag]
+                item_dict[flag] = val
 
     return item_dict
 
@@ -137,6 +138,7 @@ def get_item_data(item_name, incoming_data=None): # note: no locations here. Thi
     cleaned_dict = {}
 
     if isinstance(incoming_data, str):
+        print(f"Incoming data == str: {incoming_data}")
         # assume it's a description from items_desc, because what else would it be.
         incoming_data = {"description": incoming_data}
 
@@ -146,8 +148,13 @@ def get_item_data(item_name, incoming_data=None): # note: no locations here. Thi
         printing.print_green(f"Item already found in generator: {item_name}.")
     if item_name in item_defs:
         item_data = item_defs[item_name]
+
     elif item_name in gen_items:
         item_data = gen_items[item_name]
+
+    else:
+        print(f"{item_name} not in item_defs or gen_items")
+
     if not item_data:
         item_data = item_def_from_str(item_name)
 
@@ -155,9 +162,7 @@ def get_item_data(item_name, incoming_data=None): # note: no locations here. Thi
         cleaned_dict[field] = item_data[field]
 
     for field in incoming_data:
-        #print(f"Field in incoming data: {field}")
         if not cleaned_dict.get(field):
-            #print(f"Field in incoming data not in cleaned dict (will be added): {field}")
             cleaned_dict[field] = incoming_data[field]
 
     if cleaned_dict.get("item_type"):
@@ -167,12 +172,11 @@ def get_item_data(item_name, incoming_data=None): # note: no locations here. Thi
         cleaned_dict = item_def_from_str(item_name, cleaned_dict)
         cleaned_dict = get_type_tags(cleaned_dict.get("item_type"), cleaned_dict)
 
-    for field in ("started_contained_in", "contained_in", "starting_location", "current_loc"):
-        if field in cleaned_dict:
-            cleaned_dict.pop(field)
+    #for field in ("started_contained_in", "contained_in", "starting_location", "current_loc"):
+    #    if field in cleaned_dict:
+    #        cleaned_dict.pop(field)
 
     generator.item_defs[item_name] = cleaned_dict
-
     return cleaned_dict
 
 
@@ -220,6 +224,9 @@ def get_items_from_card(loc, cardinal, loc_data):
             other_items[item] = loc_data["items"]
 
     for item in other_items:
+        print(f"item: {item}")
+        if item == None or item == {}:
+            continue
         if item in desc_items:
             if item in added:
                 print("This item was already added, but there's another one. I can't deal with this.")
@@ -235,12 +242,15 @@ def get_items_from_card(loc, cardinal, loc_data):
             loc_items_dict[loc][cardinal][item] = item_attr
         else:
             loc_items_dict[loc][cardinal][item] = other_items[item].get(item)
+
+        print(f"item in other_items: {loc_items_dict[loc][cardinal][item]}")
         get_item_data(item, loc_items_dict[loc][cardinal][item])
 
     for item in desc_items:
         if not item in other_items and item != "" and item not in excluded_itemnames:
             loc_items_dict[loc][cardinal][item] = desc_items[item].get(item)
             # Should get item data here, maybe. We're just adding what's in generated/item_defs. Only downside is it won't update if an item is made but not added to generated right away. But we're not generating anything here, so that's alright actually.
+            print(f"item in desc_items dict_gen: {loc_items_dict[loc][cardinal][item]}")
             get_item_data(item, loc_items_dict[loc][cardinal][item])
 
 def get_loc_items_dict(loc=None, cardinal=None):
@@ -317,7 +327,7 @@ def init_item_dict():
             #print(f"item {item}, field: {field}, type: {type(item[field])}")
 
 
-    update_gen_items = True
+    update_gen_items = False # This should be changed, I shouldn't be turning the actual dict to all strings, itemReg just has to turn it back again and that's the priority. If I want to output to generated, do it to a new dict.
     if update_gen_items:
         serialise_item_defs()
         with open(json_to_edit, 'w') as file:

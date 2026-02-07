@@ -50,8 +50,8 @@ type_defaults = {
     "can_speak" : {'can_speak': True, 'speaks_common': True},
     "can_open": {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False},
     "transition": {"is_transition_obj": True, "enter_location": None, "exit_to_location": None},
-    "loc_exterior": {"is_loc_exterior":True, "transition_objs": set(), "has_door": False},
-    "is_door": {"door_loc": None, "loc_ext_obj": None}
+    "loc_exterior": {"is_loc_exterior":True, "transition_objs": None, "has_door": False},
+    "door_window": {"is_door": False, "is_window": False, "is_other": False}
 
     #{"special_traits: set("dirty", "wet", "panacea", "dupe", "weird", "can_combine")}, # aka random attr storage I'm not using yet
     #"exterior": {"is_interior": False} ## Can be set scene-wide, so 'all parts of 'graveyard east' are exterior unless otherwise mentioned'. (I say 'can', I mean 'will be when I set it up')
@@ -136,12 +136,7 @@ class ItemInstance:
             for item_type in attr:
                 self.item_type.add(item_type)
 
-        # Added this section back in, apparently it needs it sometimes. Oh, right, because item_gen doesn't overwrite fields, so it doesn't add the transition data to generic items. Fair enough.
-        for item_type in self.item_type:
-            #print(f"{self}  ITEM TYPE: {item_type}")
-            for flag in type_defaults.get(item_type):
-                if not hasattr(self, flag):
-                    setattr(self, flag, type_defaults[item_type][flag])
+        # removed this section again; fixed item_dict_gen to actually have all the flags it needs initially. Now itemReg only has to get the formatting right and find the instances where relevant..
 
         return self.item_type
 
@@ -158,7 +153,11 @@ class ItemInstance:
         self.is_transition_obj = False
         self.item_type = self.clean_item_types(attr["item_type"])
         self.colour = None
-        self.description:str = attr.get("description")
+        self.descriptions:dict = attr.get("descriptions") # dict of different descriptions for different item states.
+        """
+Note on descriptions: if self.descriptions, will have different descriptions depending on type, flags. Will automate it with a dict later (which flags determine which description options). Not sure yet if all items will always have descriptions, or or simple objects with no alternate names will only ever have 'description' and use that always. Will allow for self.description as-is for now.
+        """
+        self.description:str = attr.get("description") # will be initd shortly, depending on item conditions. Use default if found for simple objects with no alt names.
         self.starting_location:dict = attr.get("starting_location") # currently is styr
         self.verb_actions = set()
         self.location:cardinalInstance = None
@@ -251,12 +250,6 @@ class itemRegistry:
 
         self.locks_keys = {}
 
-        #removed item_defs from here, because we should be using the generator's item defs.
-        #import json
-        #json_primary = "dynamic_data/items_main.json" # may break things
-        #with open(json_primary, 'r') as file:
-        #    item_defs = json.load(file)
-#
         self.item_defs = {}#item_defs
 
     # -------------------------
@@ -320,6 +313,8 @@ class itemRegistry:
             self.keys.add(inst)
 
         self.instances.add(inst)
+
+        self.init_descriptions(inst)
 
         return inst
 
@@ -662,19 +657,24 @@ class itemRegistry:
         if old_container or new_container or hasattr(inst, "contained_in"):
             return_text = []
             if hasattr(inst, "contained_in"):
+                print(f"inst.contained in: {inst}.{inst.contained_in}")
                 if old_container != None:
                     parent = old_container
                 else:
                     parent = inst.contained_in
                 if parent:
+                    print(f"parent.children: {parent.children}")
                     parent.children.remove(inst)
+                    print(f"parent.children: {parent.children} (should be removed now)")
                     inst.contained_in = None
                     return_text.append((f"Item `[{inst}]` removed from old container `[{parent}]`", inst, parent))
                     print(f"Removed {assign_colour(inst)} from {assign_colour(parent)}.")
+                    self.init_descriptions(parent)
 
             if new_container:
                 new_container.children.add(inst) # Added this, it wasn't adding items as children to containers.
                 inst.contained_in = new_container
+                self.init_descriptions(new_container)
 
                 return_text.append((f"Added [{inst}] to new container [{new_container}]", inst, new_container))
                 print(f"Added {assign_colour(inst)} to {assign_colour(new_container)}.")
@@ -770,40 +770,13 @@ class itemRegistry:
 
     def describe(self, inst: ItemInstance, caps=False, colour_instances=False)->str:
         logging_fn()
+        print("New describe, just formats and returns.")
+
+        if not hasattr(inst, "description"):
+            return "You see nothing special."
 
         description = inst.description
 
-        if "container" in inst.item_type:
-            #print(f"Container in inst.flags: {inst}")
-            all_children = True
-            if hasattr(inst, "children") and getattr(inst, "starting_children"):
-                for child in inst.starting_children:
-                    if child in inst.children:
-                        print(f"Child {child.name} is present in parent {inst.name}.")
-                    else:
-                        all_children = False
-            #children = self.instances_by_container(inst)
-            #if not all_children:
-            if inst.children:
-                long_desc = []
-                from testing_coloured_descriptions import compile_long_desc
-                from misc_utilities import assign_colour
-                if hasattr(inst, "description_any_children"):
-                    long_desc.append(inst.description_any_children)
-                for child in inst.children:
-                    long_desc.append(assign_colour(child, nicename=True))
-
-                description = compile_long_desc(long_desc)
-
-            else:
-                if hasattr(inst, "description_no_children") and inst.description_no_children != None:
-                    description = inst.description_no_children # works now. If it's a container with no children, it prints this instead.
-                # still need to make it non-binary but that can happen later. This'll do for now.
-
-        if hasattr(inst, "is_open") and inst.is_open == True:
-            if hasattr(inst, "if_open_description"):
-                description = inst.if_open_description
-        """Convenience method to return a formatted description."""
         if caps:
             from misc_utilities import smart_capitalise
             description = smart_capitalise(description)
@@ -811,7 +784,90 @@ class itemRegistry:
         if description:
             return description
 
-        return "You see nothing special."
+
+    def init_descriptions(self, inst: ItemInstance):
+        logging_fn()
+        from misc_utilities import has_and_true
+        orig_description = inst.description
+        description = None
+        starting_children_only = False
+
+        if not inst.descriptions and inst.description:
+            print("not inst.descriptions but has inst.description")
+            return
+
+        def get_if_open(inst:ItemInstance, label:str):
+            if has_and_true(inst, label):
+                #getattr(inst.descriptions, f"open_{label}")
+                description = inst.descriptions.get(f"open_{label}")
+                #description = getattr(inst.descriptions, f"open_{label}")
+            else:
+                description = inst.descriptions.get(label)
+                #description = getattr(inst.descriptions, label)
+
+            if not description:
+                print(f"No description found for {inst} / {label}")
+                exit()
+
+            return description
+
+        if "container" in inst.item_type:
+            print(f"Container in inst.flags: {inst}")
+            if has_and_true(inst, "children") and has_and_true(inst, "starting_children"):
+                starting_children_only = True
+                print(f"children: {inst.children}")
+                print("has and true starting_children")
+                for child in inst.children:
+                    if not child in inst.starting_children or has_and_true(child, "hidden"):
+                        starting_children_only = False
+
+
+            if starting_children_only:
+                print("starting_children_only")
+                description = get_if_open(inst, "starting_children_only")
+                #if has_and_true(inst, "is_open"):
+                #    description = inst.descriptions.get("open_starting_children_only")
+                #else:
+                #    description = inst.descriptions.get("starting_children_only")
+
+            elif inst.children:
+                print("inst.children")
+                long_desc = []
+                from testing_coloured_descriptions import compile_long_desc
+                from misc_utilities import assign_colour
+                #if hasattr(inst, "description_any_children"):
+                long_desc.append(get_if_open(inst, "any_children"))
+                    #if has_and_true(inst, "is_open"):
+                    #    long_desc.append(inst.descriptions.get("open_any_children"))
+                    #else:
+                    #    long_desc.append(inst.descriptions.get("any_children"))
+
+                for child in inst.children:
+                    long_desc.append(assign_colour(child, nicename=True))
+
+                description = compile_long_desc(long_desc)
+
+            else:
+                if not has_and_true(inst, "children"):
+                    print("not has and true 'no_children'")
+                    description = get_if_open(inst, "no_children")
+                    #if has_and_true(inst, "open"):
+                    #    description = inst.descriptions.get("open_no_children")
+                    #else:
+                    #    description = inst.descriptions.get("no_children")
+
+        elif has_and_true(inst, "is_open"):
+            if hasattr(inst.descriptions) and inst.descriptions.get("if_open"):
+                description = inst.descriptions["if_open"]
+
+        if description:
+            inst.description = description
+            return
+
+        if orig_description:
+            return
+
+        print(f"At the end of init_descriptions, no description found for {inst}")
 
     def nicename(self, inst: ItemInstance):
         logging_fn()
@@ -1209,6 +1265,7 @@ def initialise_itemRegistry():
     from item_dict_gen import init_item_dict
     registry.item_defs = init_item_dict()
 
+
     get_loc_items()
 
     plural_word_dict = {}
@@ -1221,6 +1278,8 @@ def initialise_itemRegistry():
         if hasattr(obj, "is_loc_exterior"):
             location = loc.place_by_name(obj.name)
             if hasattr(location, "entry_item"):
+                if not hasattr(obj, "transition_objs") or not isinstance(obj.transition_objs, set):
+                    obj.transition_objs = set()
                 obj.transition_objs.add(location.entry_item)
 
     registry.add_plural_words(plural_word_dict)

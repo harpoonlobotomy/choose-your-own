@@ -1254,7 +1254,7 @@ def push(format_tuple, input_dict):
         if hasattr(noun, "can_be_opened"):
             if noun.is_open:
                 print(f"You push against the {assign_colour(noun)}, but it doesn't move much further.")
-            elif not noun.is_open:
+            else:
                 if noun.is_locked:
                     print(f"You push against the {noun}, but it doesn't budge.")
                 else:

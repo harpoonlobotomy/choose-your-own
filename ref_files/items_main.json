@@ -69,10 +69,11 @@
     "has_multiple_instances": 3
   },
   "glass jar": {
-    "nicename": "a glass jar with flowers",
-    "description": "a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers",
-    "description_any_children": "a glass jar, holding ",
-    "description_no_children": "a glass jar, now empty aside from some bits of debris.",
+    "nicename": "a simple glass jar",
+    "descriptions": {
+        "starting_children_only": "a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers",
+        "any_children": "a glass jar, holding ",
+        "no_children": "a glass jar, now empty aside from some bits of debris."},
     "item_type": "{'can_pick_up', 'container'}",
     "alt_names": {},
     "is_hidden": false,
@@ -374,20 +375,6 @@
     "can_spoil": true,
     "is_safe": true,
     "effect": null,
-    "loot_type": "starting"
-  },
-  "regional map": {
-    "nicename": "a regional map",
-    "description": "It's a regional map",
-    "item_type": "{'books_paper', 'can_pick_up'}",
-    "alt_names": {},
-    "is_hidden": false,
-    "can_pick_up": true,
-    "item_size": "smaller_than_apple",
-    "print_on_investigate": true,
-    "flammable": true,
-    "can_read": true,
-    "": null,
     "loot_type": "starting"
   },
   "unlabelled cream": {
@@ -762,7 +749,7 @@
   },
 "work shed": {
     "nicename": "work shed",
-    "item_type": "{'wall', 'static'}",
+    "item_type": "{'wall', 'static', 'loc_exterior'}",
     "is_vertical_surface": true,
     "can_examine": false,
     "breakable": false,
@@ -771,7 +758,7 @@
   "wooden door": {
     "alt_names": ["shed doorway", "shed door"],
     "nicename": "shed door",
-    "item_type": "{'wall', 'can_open', 'static'}",
+    "item_type": "{'wall', 'can_open', 'static', 'door_window}",
     "is_vertical_surface": true,
     "is_open": false,
     "can_be_opened": true,

@@ -7,12 +7,7 @@
       "item_desc": {
             "generic": "The bed looks nice enough - nothing fancy, but not a disaster either. Two pillows, a spare blanket at the foot of the bed. There's a small bedside drawer to each side, and a painting above the bed."},
       "short_desc": "There's a queen-size bed, simple but clean looking,",
-      "items": {
-        "": {
-          "description": null,
-          "is_hidden": false
-        }
-      }
+      "items": {}
     },
     "east": {
       "item_desc": {
@@ -85,10 +80,7 @@
       },
       "short_desc": "sit a variety of headstones",
       "items": {
-        "desiccated skeleton": {
-          "description": null,
-          "is_hidden": true
-        }
+        "desiccated skeleton": {}
       }
     },
     "south": {
@@ -103,7 +95,7 @@
       "short_desc": "is what looks like a work shed of some kind",
       "items": {
         "work shed": {"item_type": ["loc_exterior", "wall", "static"]},
-        "wooden door": {"enter_location": "work shed", "exit_to_location": "graveyard", "item_type": ["wall", "can_open", "static", "transition", "is_door"], "not_in_loc_desc": true}}
+        "wooden door": {"enter_location": "work shed", "exit_to_location": "graveyard", "item_type": ["wall", "can_open", "static", "transition", "door_window"], "not_in_loc_desc": true}}
     },
     "descrip": "You're in a rather poorly kept PPPgraveyardEEE - smaller than you might have expected given the scale of the gate and fences"
   },
