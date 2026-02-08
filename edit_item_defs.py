@@ -1,7 +1,6 @@
 import uuid
 from pprint import pprint
 from itemRegistry import ItemInstance
-from item_definitions import item_defs_dict
 from misc_utilities import assign_colour
 import printing
 
@@ -28,25 +27,9 @@ gen_items_file = "dynamic_data/generated_items.json"
 # 'can_lock' == "can_be_locked"
 # 'is_closed == 'is_open:False'
 #
-type_defaults = { # gently ordered - will overwrite earlier attrs with later ones (eg 'is horizontal surface' for flooring with overwrite 'static''s.)
-    "standard": {},
-    "static": {"can_examine": False, "breakable": False},
-    "all_items": {"starting_location": None, "current_loc": None, "alt_names": {}, "is_hidden": False},
-    "container": {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False, 'starting_children': None, 'container_limits': 4, "name_no_children": None, "description_no_children": None},
-    "key": {"is_key": True},
-    "can_pick_up": {"can_pick_up": True, "item_size": 0, "started_contained_in": None, "contained_in": None},
-    "event": {"event": None, "event_type": "item_triggered", "event_key": None},
-    "trigger": {"trigger_type": "plot_advance", "trigger_target": None, "is_exhausted": False},
-    "flooring": {"is_horizontal_surface": True},
-    "wall": {"is_vertical_surface": True},
-    "food_drink": {"can_consume": True, "can_spoil": True, "is_safe": True, "effect": None},
-    "fragile": {"broken_name": None, "flammable": False, "can_break": True},
-    "electronics": {"can_be_charged": True, "is_charged": False, "takes_batteries": False, "has_batteries": False},
-    "books_paper": {'print_on_investigate': True, 'flammable': True, 'can_read': True},
+## Removed all the interior dicts. They're not necessary and will actually get in the way - having the type defaults exposed is far more beneficial.
 
-    #{"special_traits: set("dirty", "wet", "panacea", "dupe", "weird", "can_combine")}, # aka random attr storage I'm not using yet
-    #"exterior": {"is_interior": False} ## Can be set scene-wide, so 'all parts of 'graveyard east' are exterior unless otherwise mentioned'. (I say 'can', I mean 'will be when I set it up')
-}## Removed all the interior dicts. They're not necessary and will actually get in the way - having the type defaults exposed is far more beneficial.
+from itemRegistry import type_defaults
 
 all_flags_in_type_default = set() # temporarily putting this out here.
 for cat_type in type_defaults:
@@ -120,9 +103,8 @@ def check_all_flags_present():
         for def_type in item_types:
             print(f"DEF TYPE: {def_type}")
             type_tags = type_defaults.get(def_type)
-            skip_tags = ("contained_in", "current_loc", "started_contained_in", "starting_location")
             for tag in type_tags:
-                if not tag in skip_tags and not item_defs_dict[item].get(tag):
+                if not item_defs_dict[item].get(tag):
                     missing_tags[item][tag]=type_defaults[def_type].get(tag)
 
     print("Missing tags per item: ")
@@ -146,12 +128,9 @@ def check_all_flags_present():
         with open(gen_items_file, 'w') as file: ##NOTE: Currently puts it in generated instead so I can check, later just do it directly back to items_main.
             json.dump(item_defs_dict, file, indent=2)
 
-check_all_flags_present()
+#check_all_flags_present()
 
 def testing_t_defaults_against_item_defs(per_item=True, item_name=""):
-
-
-    print(f"all flags in type_default: {all_flags_in_type_default}")
 
     def_flags_in_t_def = set()
     all_def_flags = set()
@@ -222,55 +201,29 @@ def testing_t_defaults_against_item_defs(per_item=True, item_name=""):
         print(f"Flags in item_defs but not default_types: {all_def_flags - all_flags_in_type_default}")
         return all_flags_in_type_default
 
-#testing_t_defaults_against_item_defs(per_item=True)
-
-size = "item_size"
-box_desc = "It's a box. Boxy box."
-
-descriptions = {
-    "box": box_desc,
-    "locked box": box_desc,
-    "cabinet": "A cabinet with something weird about it.",
-    "elephant": "Big and grey and stompy."
-}
-
-test_items = {
-    "everything": {"item_type": set((static, container, can_pick_up, event, trigger, "flooring"))},
-    "earring": {"item_type": set((can_pick_up,)), "exceptions": {"started_contained_in": "box"}},
-    "box": {"item_type": set((container, can_pick_up)), "exceptions": {"can_be_locked": False}},
-    #"gold key": {"item_type": set(("key",)), "exceptions": {"starting_location": "some other place"}},
-    "locked box": {"item_type": set((container, can_pick_up)), "exceptions": {"requires_key": "gold key", "starting_location": "east graveyard"}},
-    "cabinet": {"item_type": set((static, event)), "exceptions": {"can_examine": True, "event_key": "box", "trigger_target": "box"}},
-    "wall": {"item_type": set((static,)), "exceptions": {"is_vertical_surface": True}},
-    "elephant": {"item_type": set((standard,)), "exceptions": {size:10}},
-    "stone ground": {"item_type": set((static, "flooring"))}
-}
-
-locations = {"Graveyard": {"east": {"items": ["stone ground", "grave"]}, "west": {"items": ["stone ground"]}, "north": {"items": ["stone ground"]}, "south": {"items": ["stone ground", "headstones"]}},
-            "OtherPlace": {"east": {"items": ["everything", "grandfather clock"]}, "west": {"items": ["birdbath"]}, "north": {"items": "merry-go-round"}, "south": {"items": "rocking chair"}},
-            "Mermaid Grotto": {"east": {"items": ["sandy ground"]}, "west": {"items": ["sandy ground"]}, "north": {"items": ["sandy ground"]}, "south": {"items": ["sandy ground"]}}
-            }
-
-flag_keys = ("id", "name", "description", "current_loc", "is_open", "can_be_closed", "can_be_locked", "is_locked", "requires_key", "is_key", "can_pick_up", "can_examine", "breakable", "contained_in", "item_size", "item_type", "is_horizontal_surface", "is_vertical_surface", "event", "event_type", "item_triggered", "event_key", "trigger_target", "trigger_type", "plot_advance", "is_exhausted", "starting_location", "started_contained_in", "extra")
 
 use_generated = False
  ## just a shortcut for a min while I test TODO remember to delete later
 gen_items = {}
 
 
-        #generated_items.test_items[key] = (entry)
-        #print(f"Temp items: {generated_items.test_items}")
-
-
-
 class tempDatastore:
 
-    def __init__(self):
+    def __init__(self, item_data):
+        self.item_defs:dict = item_data
+        self.updated_defs = {}
+
+        self.flags_to_amend = set()
         self.temp_items = set()
         self.confirmed_items = {}
         self.updated = set()
 
-testReg = tempDatastore()
+item_defs = r"ref_files\items_main.json"
+with open(item_defs, 'r') as file:
+    item_data = json.load(file)
+
+testReg = tempDatastore(item_data)
+
 """
 indexed view:
 def items_in(container=None, *, open=None, locked=None):
@@ -296,13 +249,13 @@ So indexed view is definitely what I need. The duplication and even deep nesting
 
 if __name__ == "__main__":
     #init_testreg()
-
+    """
     def get_loc_items(loc, cardinal=None):
-        """
+
         Now currently, items are stored and they tell env_data where they live. It does make more sense to place them via location not via the item itself.
 
         I think I want to have a separate dict for it, like I have here in my test setup. Otherwise I have to double-back through all the items anyway to add instances
-        """
+
         if cardinal == None:
             for cardinal in ("north", "south", "east", "west"):
                 if locations[loc][cardinal].get("items"):
@@ -375,18 +328,12 @@ if __name__ == "__main__":
                         if flag_name not in flag_keys:
                             print(f"Attribute name {flag_name} not in flag_keys. Consider adding it.")
 
+
     def get_types_from_flags(itemname=""):
 
 ### This whole thing is so abysmally messy. Too tired to see why it's not working so I'm just throwing shit at the wall in case it fixes it. Going to have to stop and come back tomorrow.
 
-        renames = {
-            'description_no_children': "description_no_children",
-            'name_children_removed': "name_no_children" ,
-            'needs_key_to_lock': "requires_key",
-            'can_lock': "can_be_locked",
-            'is_closed': "is_open",
-            'can_open': "can_be_opened"
-        }
+        renames = {}
 
         pick_item = "scroll"
 
@@ -441,6 +388,8 @@ if __name__ == "__main__":
         return pick_item
 
     #pick_item = get_types_from_flags()
+
+
 
     def add_confirms():
 
@@ -678,6 +627,7 @@ if __name__ == "__main__":
                 if test == "" or test == None:
                     with open(items_main, 'w') as main_file:
                         json.dump(main_data, main_file, indent=2)
+
                 print("Do you want to remove these items from the gen_items file?")
                 test = input()
                 if test in ("y", "yes"):
@@ -694,20 +644,151 @@ if __name__ == "__main__":
                     json.dump(data, file, indent=2)
         else:
             print("Nothing to add, all entries in main dict and/or no changes made.")
+    """
 
-    #add_gen_to_main()
-"""
-#def items_in(container=None, *, open=None, locked=None):
-#    for item in self.by_location[graveyard_east]:
-#        if container is not None and item.container is not container:
-#            continue
-#        if open is not None and item.is_open != open:
-#            continue
-#        if locked is not None and item.is_locked != locked:
-#            continue
-#        yield item
-#
-#for i in items_in(container=True, open=True):
-#    ...
-#
-"""
+def get_all_default_flags(item):
+
+    item_def_flags = []
+    default_flags = set()
+    types = set()
+
+    new_dict = {}
+
+    item_def = testReg.item_defs.get(item)
+    #print(f"\nitem: {item}")
+    #for tag in item_def.keys():
+    #    item_def_flags.append(tag)
+    #print(f"total_flags: {item_def_flags}")
+
+
+    from item_dict_gen import item_type_descriptions
+
+    description_dict = {}
+
+    from itemRegistry import type_defaults
+    if item_def.get("item_type"):
+        attr = item_def.get("item_type")
+        if isinstance(attr, str):
+            if "{" in attr:
+                _, type_item = attr.split("{")
+                type_item, _ = type_item.split("}")
+                type_item = type_item.replace("'", "")
+                parts = type_item.split(", ")
+                #self.item_type = self.item_type | set(parts)
+                for part in parts:
+                    if part != None:
+                        types.add(part)
+            else:
+                print(f"Is string but no", r"'{'", " ?")
+            item_def["item_type"] = types
+
+        for def_type in types:
+            flags = type_defaults.get(def_type)
+
+            for flag, val in flags.items():
+                if flag in item_def:
+                    continue
+                item_def[flag] = val
+
+
+            if item_type_descriptions.get(def_type):
+                description_dict = item_type_descriptions[def_type]
+            
+            if item_def.get("descriptions"):
+                for entry in description_dict.keys():
+                    if entry not in item_def["descriptions"]:
+                        item_def["descriptions"].update({entry: ""})
+            else:
+                item_def["descriptions"] = description_dict
+
+    #print(f"item_def: {item_def}")
+
+def flags_not_in_default(item):
+
+    ignored_flags = ["nicename", "item_type", "descriptions", "nicenames"]
+    all_flags = set()
+    for def_type in testReg.item_defs[item].get("item_type"):
+        flags = set(type_defaults.get(def_type))
+        if not flags:
+            print(f"{def_type} not in type_defaults.")
+            exit()
+        all_flags = all_flags | flags
+    #print(f"FLAGS: {all_flags}")
+
+    flags_to_check = list()
+
+    for attr in list(testReg.item_defs[item]):
+        if attr not in ignored_flags and attr not in all_flags:
+            if not testReg.item_defs[item][attr]:
+                testReg.item_defs[item].pop(attr)
+            else:
+                flags_to_check.append(attr)
+
+    flags_to_really_check = set()
+    if flags_to_check:
+        for flag in flags_to_check:
+            if flag == "loot_type":
+                if testReg.item_defs[item][flag] == "starting_loot":
+                    testReg.item_defs[item]["item_type"].add("starting_loot")
+                else:
+                    testReg.item_defs[item]["item_type"].add("random_loot")
+            elif flag == "key" and testReg.item_defs[item].get('requires_key') == False:
+                testReg.item_defs[item]["requires_key"] = testReg.item_defs[item]["key"]
+                testReg.item_defs[item].pop("key")
+
+            elif flag == "has_multiple_instances":
+                testReg.item_defs[item]["item_type"].add("is_cluster")
+
+            elif flag == "description" and not hasattr(testReg.item_defs[item], "descriptions"):
+                testReg.item_defs[item]["descriptions"] = {"generic": f"{testReg.item_defs[item]["description"]}"}
+                testReg.item_defs[item].pop("description")
+            elif flag == "flammable":
+                testReg.item_defs[item]["item_type"].add("flammable")
+            elif flag == "is_key_to":
+                testReg.item_defs[item]["item_type"].add("key")
+            else:
+                testReg.flags_to_amend.add(flag)
+                #flags_to_really_check.add(flag)
+    #for flag in all_flags:
+    #    if flag not in item_defs:
+    #        print(f"Flag {flag} not in item defs for `{item}`, despite being in item type defaults.")
+    #if flags_to_really_check:
+        #print(f"\n\nFlags to check in {item} defs:\n{flags_to_really_check}\n{testReg.item_defs[item]}")
+
+def update_ref_file(json_file):
+
+    import json
+    with open(json_file, 'w') as file:
+        json.dump(testReg.item_defs, file, indent=2)
+
+json_file = r"dynamic_data\temp_defs.json"
+
+def serialise_item_defs():
+    for item, field in testReg.item_defs.items():
+        for k, v in field.items():
+            if isinstance(v, set):
+                testReg.item_defs[item][k] = list(v)
+
+
+def order_dict():
+    testReg.item_defs = dict(sorted(testReg.item_defs.items()))
+
+
+def fix_flags():
+    for item in testReg.item_defs:
+        get_all_default_flags(item)
+
+        flags_not_in_default(item)
+
+generated_file = r"ref_files\generated_items.json"
+order_dict()
+update_ref_file(generated_file)
+
+fix_flags()
+
+
+
+serialise_item_defs()
+order_dict()
+update_ref_file(json_file)
+print(testReg.flags_to_amend)

@@ -5,7 +5,6 @@
     "item_type": "{'can_pick_up', 'fragile', 'can_open'}",
     "can_pick_up": true,
     "item_size": 0,
-    "broken_name": "broken padlock",
     "flammable": false,
     "can_break": true,
     "alt_names": {},
@@ -19,13 +18,14 @@
   },
   "gate": {
     "nicename": "a gate",
-    "description": "Heavy wrought iron bars with little decoration, held closed with a padlock on a heavy chain.",
+    "descriptions": {
+        "if_closed": "Heavy wrought iron bars with little decoration, held closed with a padlock on a heavy chain.",
+        "if_open": "Heavy wrought iron bars with little decoration, now slightly ajar."},
     "item_type": "{'static', 'event', 'can_open'}",
     "can_examine": false,
-    "breakable": false,
+    "can_break": false,
     "alt_names": {},
     "is_hidden": false,
-    "event_ended_desc": "Heavy wrought iron bars with little decoration, now slightly ajar.",
     "event": "graveyard_gate_opens",
     "event_type": "item_triggered",
     "is_open": false,
@@ -52,24 +52,30 @@
     "alt_names": {},
     "is_hidden": true,
     "can_examine": false,
-    "breakable": false,
     "broken_name": null,
     "flammable": false,
     "can_break": true
   },
   "moss": {
-    "nicename": "a few moss clumps",
-    "description": "a few clumps of mostly green moss.",
+    "nicenames": {
+        "if_singular": "a clump of moss",
+        "if_plural": "a few moss clumps"},
+    "descriptions": {
+        "if_singular": "a small clump of moss, mostly green with brown specks.",
+        "if_plural": "a few clumps of mostly green moss."},
     "item_type": "{'can_pick_up'}",
     "alt_names": {},
     "is_hidden": false,
     "can_pick_up": true,
     "item_size": "a_few_marbles",
-    "special_traits": "After 3 ingame days, after being picked up and kept in inventory, will dry. If dry, no longer suitable for commerce with bridge goblin.",
     "has_multiple_instances": 3
   },
   "glass jar": {
-    "nicename": "a simple glass jar",
+    "nicenames": {
+        "starting_children_only": "a glass jar with dried flowers",
+        "any_children": "a simple glass jar",
+        "no_children": "an empty glass jar"
+    },
     "descriptions": {
         "starting_children_only": "a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers",
         "any_children": "a glass jar, holding ",
@@ -87,8 +93,6 @@
       "dried flowers"
     ],
     "container_limits": "smaller_than_apple",
-    "name_no_children": "an empty glass jar",
-    "name_any_children": "a glass jar",
     "can_pick_up": true,
     "item_size": "smaller_than_basketball"
   },
@@ -116,7 +120,7 @@
     "nicename": "stone ground",
     "item_type": "{'static', 'flooring'}",
     "can_examine": false,
-    "breakable": false,
+    "can_break": false,
     "is_horizontal_surface": true,
     "description": "stony ground, a mixture of small pebbles and rough broken rubble",
     "alt_names": {},
@@ -134,7 +138,7 @@
   "scroll": {
     "nicename": "an old scroll",
     "description": "An old parchment scroll, seemingly abandoned at a hidden shrine.",
-    "item_type": "{'books_paper', 'can_pick_up'}",
+    "item_type": "{'books_paper', 'can_pick_up', 'can_open'}",
     "alt_names": {},
     "is_hidden": false,
     "is_open": false,
@@ -157,14 +161,11 @@
     "can_be_closed": true,
     "can_be_locked": true,
     "is_locked": true,
-    "requires_key": false,
+    "requires_key": "wire cutters",
     "starting_children": null,
     "container_limits": "smaller_than_apple",
-    "name_no_children": null,
-    "description_no_children": "A tall scratched ivory pot; no label, and a cork stopper held in place with a fine but strong-looking wire tied around the neck.",
     "can_pick_up": true,
-    "item_size": "smaller_than_basketball",
-    "key": "wire cutters"
+    "item_size": "smaller_than_basketball"
   },
   "metal pot": {
     "nicename": "a metal pot",
@@ -232,7 +233,7 @@
   "TV set": {
     "nicename": "a television set",
     "description": "A decent looking TV set, probably a few years old but appears to be well kept. Currently turned off. This model has a built-in DVD player.",
-    "item_type": "{'static', 'electronics'}",
+    "item_type": "{'static', 'electronics', 'container'}",
     "alt_names": [
       "television",
       "tv set",
@@ -240,7 +241,7 @@
     ],
     "is_hidden": false,
     "can_combine": null,
-    "combine_with": "DVD"
+    "children_type_limited": ["DVD"]
   },
   "window": {
     "nicename": "a window",
@@ -336,13 +337,10 @@
     "item_size": "a_few_marbles",
     "can_be_charged": true,
     "is_charged": false,
-    "takes_batteries": true,
+    "takes_batteries": ["batteries"],
     "has_batteries": false,
     "can_combine": null,
-    "combine_with": [
-      "blue_car",
-      "batteries"
-    ],
+    "is_key_to": "blue car",
     "loot_type": "starting"
   },
   "fish food": {
@@ -354,9 +352,6 @@
     "can_pick_up": true,
     "item_size": "a_few_marbles",
     "can_combine": null,
-    "combine_with": [
-      "fish_tank, river"
-    ],
     "loot_type": "starting",
     "can_consume": true,
     "can_spoil": true,
@@ -500,6 +495,7 @@
     "requires_key": false,
     "starting_children": null,
     "container_limits": 4,
+    "children_type_limited": ["digital"],
     "name_no_children": null,
     "description_no_children": null,
     "can_pick_up": true,
@@ -558,7 +554,7 @@
     "description": "A cabinet with something weird about it.",
     "item_type": "{'event', 'static', 'can_open'}",
     "can_examine": true,
-    "breakable": true,
+    "can_break": true,
     "alt_names": {},
     "is_hidden": false,
     "event": null,
@@ -596,11 +592,11 @@
     "alt_names": {},
     "is_hidden": false,
     "can_examine": false,
-    "breakable": false,
+    "can_break": false,
     "is_open": false,
     "can_be_opened": true,
-    "can_be_closed": true,
-    "can_be_locked": true,
+    "can_be_closed": false,
+    "can_be_locked": false,
     "is_locked": true,
     "requires_key": false,
     "starting_children": null,
@@ -615,7 +611,7 @@
     "alt_names": {},
     "is_hidden": false,
     "can_examine": false,
-    "breakable": false,
+    "can_break": false,
     "can_pick_up": true,
     "item_size": 0,
     "can_consume": true,
@@ -632,7 +628,7 @@
     "alt_names": {},
     "is_hidden": false,
     "can_examine": false,
-    "breakable": false
+    "can_break": false
   },
   "merry-go-round": {
     "nicename": "a merry-go-round",
@@ -641,7 +637,7 @@
     "alt_names": {},
     "is_hidden": false,
     "can_examine": false,
-    "breakable": false
+    "can_break": false
   },
   "birdbath": {
     "nicename": "a stone birdbath",
@@ -650,14 +646,13 @@
     "alt_names": {},
     "is_hidden": false,
     "can_examine": false,
-    "breakable": false
+    "can_break": false
   },
   "comb": {
     "nicename": "a comb",
     "description": "A simple plastic comb, made matte by the environment and time.",
     "item_type": "{'static', 'fragile'}",
     "can_examine": false,
-    "breakable": false,
     "alt_names": {},
     "is_hidden": false,
     "broken_name": null,
@@ -669,7 +664,7 @@
     "description": "a rather impressive trident, starp points and a fine filigree on the handle.",
     "item_type": "{'static'}",
     "can_examine": false,
-    "breakable": false,
+    "can_break": false,
     "alt_names": {},
     "is_hidden": false
   },
@@ -686,7 +681,7 @@
   "mummified mouse": {
     "nicename": "a mummified mouse",
     "description": "The tiny, dried body of a long-dead mouse, curled up. You could think it was sleeping if it wasn't so frail and stiff.",
-    "item_type": "{'fragile', 'can_pick_up', 'food_drink'}",
+    "item_type": "{'fragile', 'can_pick_up', 'food_drink', 'flammable'}",
     "broken_name": null,
     "flammable": true,
     "can_break": true,
@@ -696,8 +691,7 @@
     "is_hidden": false,
     "can_consume": true,
     "can_spoil": true,
-    "is_safe": true,
-    "effect": null
+    "is_safe": true
   },
   "grandfather clock": {
     "nicename": "a grandfather clock",
@@ -706,7 +700,7 @@
     "alt_names": {},
     "is_hidden": false,
     "can_examine": false,
-    "breakable": false,
+    "can_break": false,
     "is_open": false,
     "can_be_opened": true,
     "can_be_closed": true,
@@ -752,7 +746,7 @@
     "item_type": "{'wall', 'static', 'loc_exterior'}",
     "is_vertical_surface": true,
     "can_examine": false,
-    "breakable": false,
+    "can_break": false,
     "description": "a simple shed, with wood panelled walls and a simple wooden door."
   },
   "wooden door": {
@@ -767,8 +761,12 @@
     "is_locked": false,
     "requires_key": false,
     "can_examine": false,
-    "breakable": false,
-    "if_open_description": "a plain wooden door, sitting slightly ajar",
-    "description": "a closed wooden door, with nail-marks from a cross-bar removed somewhat recently"
+    "can_break": false,
+    "descriptions": {"if_closed": "a closed wooden door, with nail-marks from a cross-bar removed somewhat recently", "if_open": "a plain wooden door, sitting slightly ajar"}
+  },
+  "curtains": {
+    "alt_names": [],
+    "nicename": "a pair of curtains",
+    "item_type": "{'can_open', 'static', 'flammable'}"
   }
 }

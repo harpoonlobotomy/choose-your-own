@@ -6,6 +6,29 @@ from env_data import locRegistry as loc
 CARDINALS = ["north", "east", "south", "west"]
 excluded_itemnames = ["generic", "no_items", "no_starting_items"]
 
+
+item_type_descriptions = {
+"container": {
+    "starting_children_only": "",
+    "any_children": "",
+    "no_children": "",
+    "open_starting_children_only": "",
+    "open_any_children": "",
+    "open_no_children": ""
+    },
+"can_open": {
+    "if_open": "",
+    "if_closed": ""
+    },
+"fragile": {
+    "if_broken": "",
+    },
+"food_drink": {
+    "if_spoiled": ""
+    }
+}
+
+
 global loc_items_dict
 loc_items_dict = {}
 

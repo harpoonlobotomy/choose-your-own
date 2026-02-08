@@ -44,7 +44,9 @@ in_words = ["in", "inside", "into"]
 to_words = ["to", "towards", "at", "for"] ## these two (< + ^) are v similar but have some exclusive uses, so keeping them separately makes sense here. # 'for' in the sense of 'leave for the graveyard'.
 down_words = ["down"]
 
-
+update_description_attrs = [
+    "is_open", "is_broken", "is_dirty", "is_burned", "is_spoiled", "is_charged"
+]
 #### Fundamental Operations ####
 
 def get_current_loc():
@@ -68,7 +70,11 @@ def set_noun_attr(*values, noun:ItemInstance):
         #print(f"item_val in values: {item_val}")
         item, val = item_val
         setattr(noun, item, val)
+        if item in update_description_attrs and hasattr(noun, "descriptions") and noun.descriptions:
+            from itemRegistry import registry
+            registry.init_descriptions(noun)
         #noun.event = None # Once it's served its purpose, stop it being an event obj. TODO add a proper function here to remove it from anywhere it's stored. Need to formalise the language for that first though. This works for now as the padlock can now be picked up.
+
 
 
 def is_loc_current_loc(location=None, cardinal=None):
@@ -798,15 +804,16 @@ def lock_unlock(format_tuple, input_dict, do_open=False):
                             set_noun_attr(("is_locked", False), ("is_open", True), noun=lock)
                             return
 
-                    elif not lock.is_locked:
+                    elif not lock.is_locked and verb.name == "lock":
                         print(f"You use the {assign_colour(key)} to lock the {assign_colour(lock)}.")
                         set_noun_attr(("is_open", False), ("is_locked", True), noun=lock)
                         return
 
+                    elif do_open:
+                        print(f"You open {lock} with {key}? This doesn't work yet.")
+
                 else:
                     print(f"You can't open the {assign_colour(noun_1)} with {assign_colour(noun_2)}")
-                    #print(f"{noun_1} and {noun_2} are not a pairing. Key: {key}, lock: {lock}")
-                    #print(f"VARS: {vars(noun_1)}\n Noun 2 vars: {vars(noun_2)}")
 
             else:
                 print(f"{noun_1} and/or {noun_2} are not accessible: 1: {accessible_1}, 2: {accessible_2}")
@@ -1011,7 +1018,7 @@ def simple_open_close(format_tuple, input_dict):
 
         print(f"You close the {assign_colour(noun_inst)}.")
         #print(f"noun_inst.is_open now: {noun_inst.is_open}")
-        noun_inst.is_open = False
+        set_noun_attr(("is_open", False), noun=noun_inst)
         #print(f"noun_inst.is_open now: {noun_inst.is_open}")
         return
 

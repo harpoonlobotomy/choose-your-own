@@ -111,3 +111,107 @@ If something can have children, it needs at least 'any_children' and 'no_childre
 
 3.06pm
 Okay, so the 'update on change' instead of 'update on print' is implemented for containers. Need to do the same for other things that open/close (the only real other example I have currently for 'items with different description states'; door, gate, padlock, etc) so will do that next.
+
+
+4.51pm open/close done.
+
+
+1.37pm
+Working on the item editor script, just want to clean up the dict now I've changed flags etc and having this set up going forward is just a good plan. It was kind of already set up but not in the way I need, its old function was largely replaced by meta commands.
+
+Oh, need to set up a change name fn in itemReg too. So if an item is broken it becomes 'broken {item}', and updates by_name etc accordingly. If I want to, can always just change the description and the nicename or smth. Or go with the idea I had the other day of storing a 'print name' separately from the item name. Will see. Trouble with that idea is again, someone has to type it in, i the name they see isn't the name they have to type that just feels like a nightmare.
+
+1.38pm
+Hey here's a question. Why am I storing item_types as str in itemRef then remaking it into a list every single time? Why not just make it a list? It's only a set in the live file because it automatically deduplicates. Should just make it a list when exporting instead of a str. ffs. DO THIS.
+
+1.50pm
+Trying to figure out the best thing to do with descriptions. Because I've added `descriptions: {generic: None}` to the 'standard' item (better to have a single entry dict and use the descriptions for all items than have some use the dict and others use 'description', I think? though maybe not, idk), but containers still have
+    "container": {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False, 'starting_children': None, 'container_limits': 4, "name_no_children": None, "name_any_children": None, "description_no_children": None, "description_any_children": None},
+their descriptions given as separate tags.
+
+so maybe I add 'descriptions' in 'container' too? So I don't have to later convert those tags into descriptions: entries, but they're still included.
+Though wait, no, that's /names/. Aw fuck. Okay. No more custom names. It's nice having 'glass jar with flowers' vs 'glass jar' but idk if it ever actually updated.
+Or, I have `names: {with_starting_children: "glass jar with flowers"}`. But I really don't want a dict for each name. Really I should just... not change the names. As much as I like it. Idk.
+For now will add a separate 'names' dict and just not implement it.
+
+No, that's just silly.
+Adding
+<container_name>: {
+    "names": {starting_children_only: "container with starting_children name"}
+}
+just for starting children is silly. Okay. Will leave starting_children name there.
+
+OOOOH. it didn't update item.name, it updated /nicename/. Okay we can keep that.
+So in that case we can add a dict for nicename.
+
+    "nicename": "a simple glass jar",
+    "nicenames": {
+        "name_no_children": "an empty glass jar",
+        "name_any_children": "a simple glass jar",
+        "name_starting_children_only": "a glass jar with dried flowers in it"
+    }
+
+So I'll remove 'nicename', and will add a check in the nicename section for if not hasattr(item, "nicename"), use the relevant nicenames entry.
+
+### THING TO REMEMBER ###
+Containers may not have nicename entry. Use empty/not empty/start_children_only name respectively.
+Also in this case, update the description-update section to also update the container's nicename so it's always just 'item.nicename'.
+
+Removed 'name_' from the
+    "nicenames": {
+        "name_no_children": "an empty glass jar",
+        "name_any_children": "a simple glass jar",
+        "name_starting_children_only": "a glass jar with dried flowers in it"
+    }
+entries, so the formatting matches descriptions. So instead of nicenames:name_no_children then
+descriptions: no_children,
+it can do the exact same operation for nicenames and descriptions.
+
+Have added
+"descriptions":
+            {"if_closed": "", "if_open": ""}
+to door_window. So it's a little messy because containers can also be open/closed, but are only described by their contents. But I think it makes enough sense.
+
+Actually no. Adding that description to can_open instead, and will just set it up so the descriptions of 'container' override the descriptions of can_open.
+
+## NOTE ##
+wire cutters item def has
+"key"
+but also
+requires_key:None.
+Replacing 'key' with 'requires_key'. May have to update itemReg/gen item dict.
+
+Now the trouble with
+ "requires_key": "wire cutters",
+ is that the wire cutters aren't actually a key. So though it'll work in the code properly as they function as keys, the description 'you unlock x with y' won't apply. Also, you wouldn't write 'unlock jar with wire cutters'. So maybe they shouldn't be a key in that sense. idk. Will have to look at that one. TODO: how to implement 'open jar wrapped in wire using wire cutters' and figure out how that'll work.
+
+Really, if I type 'open jar with wire cutters', even if I don't write 'unlock', if y is a key to x, it should unlock. Implement that.
+
+Removed
+    "special_traits": "After 3 ingame days, after being picked up and kept in inventory, will dry. If dry, no longer suitable for commerce with bridge goblin.",
+from moss' item def.
+
+# Also TODO: I hvae 'has_multiple_instances' in the moss entry but it doesn't do anything anywhere.
+
+Have added
+    "nicenames": {
+        "if_singular": "a clump of moss",
+        "if_plural": "a few moss clumps"},
+    "descriptions": {
+        "if_singular": "a small clump of moss, mostly green with brown specks.",
+        "if_plural": "a few clumps of mostly green moss."},
+to implement later for the multiple_instances.
+
+Because the event desc only applies because of the open door, changing
+   "event_ended_desc": "Heavy wrought iron bars with little decoration, now slightly ajar.",
+   to just be the if_open description. Will need to adapt itemReg and/or generate_descriptions accordingly.
+
+NOTE:
+# Should remove "is_key": True, from key type_default, because if item_type.get("key"), then is_key is always true.
+
+
+Also:
+I should move the detailed descriptions for magazines etc to item defs unless they need to be rolled for. Not even really sure I want to keep the rolling tbh. Maybe on repeated reads, instead? So, you read it bit by bit. Or both, you read it bit by bit and each time it rolls, so it makes sense that you have the chance to get the information. With better odds each time, until it's guaranteed on the last go. Maybe. idk.
+
+
+Also, I should remove 'flammable: true' from entries, and just use the presence of 'item_type: flammable'. I use item_type so heavily already, makes sense to just /rely/ on the existing of an item_type tag instead of checking for the presence and value of 'is_flammable'.

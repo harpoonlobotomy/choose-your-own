@@ -13,7 +13,7 @@ all_items_generated = set()
 
 CARDINALS = ["north", "east", "south", "west"]
 
-####### CONTAINER LIMIT CATEGORIES ############
+####### item_size CATEGORIES ############
 
 SMALL_FLAT_THINGS = "small_flat_things"
 A_FEW_MARBLES = 'a_few_marbles'
@@ -30,28 +30,69 @@ container_limit_sizes = {
     SMALLER_THAN_BASKETBALL: 5,
     BIGGER_THAN_BASKETBALL: 6
 }
+
 print("Item registry is being run right now.")
 
 type_defaults = {
-    "standard": {},
-    "static": {"can_examine": False, "breakable": False},
+    "standard":
+        {f"descriptions": {"generic": None}},
+    "static":
+        {"can_examine": False, "can_break": False},
     #"all_items": {"starting_location": None, "current_loc": None, "alt_names": {}, "is_hidden": False},
-    "container": {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False, 'starting_children': None, 'container_limits': 4, "name_no_children": None, "name_any_children": None, "description_no_children": None, "description_any_children": None},
-    "key": {"is_key": True},
-    "can_pick_up": {"can_pick_up": True, "item_size": 0, "started_contained_in": None, "contained_in": None},
-    "event": {"event": None, "event_type": "item_triggered", "is_event_key": None},
-    "trigger": {"trigger_type": "plot_advance", "trigger_target": None, "is_exhausted": False},
-    "flooring": {"is_horizontal_surface": True},
-    "wall": {"is_vertical_surface": True},
-    "food_drink": {"can_consume": True, "can_spoil": True, "is_safe": True, "effect": None},
-    "fragile": {"broken_name": None, "flammable": False, "can_break": True},
-    "electronics": {"can_be_charged": True, "is_charged": False, "takes_batteries": False, "has_batteries": False},
-    "books_paper": {'print_on_investigate': True, 'flammable': True, 'can_read': True},
-    "can_speak" : {'can_speak': True, 'speaks_common': True},
-    "can_open": {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False},
-    "transition": {"is_transition_obj": True, "enter_location": None, "exit_to_location": None},
-    "loc_exterior": {"is_loc_exterior":True, "transition_objs": None, "has_door": False},
-    "door_window": {"is_door": False, "is_window": False, "is_other": False}
+    "can_open":
+        {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False,
+        "descriptions":
+            {"if_closed": "", "if_open": ""},
+        "nicenames": {
+            "if_closed": None, "if_open": None}},
+    "container":
+        {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False, 'starting_children': None, 'container_limits': 4, "children_type_limited": False, "can_be_added_to": True,
+         "nicenames": {
+            "starting_children_only": "",
+            "any_children": "",
+            "no_children": ""},
+        "descriptions": {
+            "starting_children_only": "",
+            "any_children": "",
+            "no_children": ""}},
+    "key":
+        {"is_key": True, "is_key_to": None},
+    "can_pick_up":
+        {"can_pick_up": True, "item_size": 1, "started_contained_in": None, "contained_in": None},
+    "event":
+        {"event": None, "event_type": "item_triggered", "is_event_key": None},
+    "trigger":
+        {"trigger_type": "plot_advance", "trigger_target": None, "is_exhausted": False},
+    "flooring":
+        {"is_horizontal_surface": True},
+    "wall":
+        {"is_vertical_surface": True},
+    "food_drink":
+        {"can_consume": True, "can_spoil": True, "is_spoiled": True, "is_safe": True, "effect": None},
+    "fragile":
+        {"is_broken": False, "can_break": True},
+    "flammable":
+        {"is_burned": False, "flammable": True},
+    "books_paper":
+        {'print_on_investigate': True, 'flammable': True, 'is_burned': False, 'can_read': True},
+    "electronics":
+        {"can_be_charged": True, "is_charged": False, "takes_batteries": True, "has_batteries": False},
+    "can_speak" :
+        {'can_speak': True, 'speaks_common': True},
+    "transition":
+        {"is_transition_obj": True, "enter_location": None, "exit_to_location": None},
+    "loc_exterior":
+        {"is_loc_exterior":True, "transition_objs": None, "has_door": False},
+    "door_window":
+        {"is_door": False, "is_window": False, "is_other": False},
+    "random_loot": {
+        "loot_type": None},
+    "starting_loot": {
+        "loot_type": "starting_loot"
+    },
+    "is_cluster": {
+        "has_multiple_instances": 2
+    }
 
     #{"special_traits: set("dirty", "wet", "panacea", "dupe", "weird", "can_combine")}, # aka random attr storage I'm not using yet
     #"exterior": {"is_interior": False} ## Can be set scene-wide, so 'all parts of 'graveyard east' are exterior unless otherwise mentioned'. (I say 'can', I mean 'will be when I set it up')
@@ -768,9 +809,8 @@ class itemRegistry:
 
         return random.choice(items)# if items else "No Items (RANDOM_FROM)"
 
-    def describe(self, inst: ItemInstance, caps=False, colour_instances=False)->str:
+    def describe(self, inst: ItemInstance, caps=False)->str:
         logging_fn()
-        print("New describe, just formats and returns.")
 
         if not hasattr(inst, "description"):
             return "You see nothing special."
@@ -857,8 +897,12 @@ class itemRegistry:
                     #    description = inst.descriptions.get("no_children")
 
         elif has_and_true(inst, "is_open"):
-            if hasattr(inst.descriptions) and inst.descriptions.get("if_open"):
+            if hasattr(inst, "descriptions") and inst.descriptions.get("if_open"):
                 description = inst.descriptions["if_open"]
+
+        elif hasattr(inst, "is_open") and not getattr(inst, "is_open"):
+            if hasattr(inst, "descriptions") and inst.descriptions.get("if_closed"):
+                description = inst.descriptions["if_closed"]
 
         if description:
             inst.description = description

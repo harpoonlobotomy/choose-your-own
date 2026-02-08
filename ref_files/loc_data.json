@@ -11,9 +11,10 @@
     },
     "east": {
       "item_desc": {
-            "generic": "Against the wall is a large television, sitting between two decent sized windows overlooking the city. The curtains are drawn."},
-      "short_desc": "a television and two decent sized windows overlooking the city",
-      "items": {}
+            "generic": "Against the wall is a large television, sitting between two large windows overlooking the city.",
+            "curtains": "The curtains are drawn."},
+      "short_desc": "a television and two decently sized windows overlooking the city",
+      "items": {"curtains": {"not_in_loc_desc": true}}
     },
     "south": {
       "item_desc": {
