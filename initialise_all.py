@@ -14,7 +14,6 @@ def initialise_all():
     event_data = itemRegistry.initialise_itemRegistry()
     print("initialised itemregistry")
 
-    env_data.get_loc_descriptions()
 
     import verbRegistry
     verbRegistry.initialise_verbRegistry()
@@ -23,4 +22,6 @@ def initialise_all():
     import eventRegistry
     eventRegistry.initialise_eventRegistry()
     eventRegistry.add_items_to_events()
+
+    env_data.get_loc_descriptions() # Moved here so the event data is in place. No idea how it works before but not now, I can't see which change affected it, but it seems to work as long as I init the descriptions at the end (which makes sense anyway).
     #time.sleep(.5)

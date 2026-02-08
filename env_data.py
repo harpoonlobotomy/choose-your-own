@@ -297,10 +297,10 @@ def initialise_placeRegistry():
                     print(f"Target place transition objects: {target_place.transition_objs}")
 
 
-def get_descriptions(place:placeInstance):
+def get_descriptions(place:placeInstance, cardinal:cardinalInstance=None):
 
     from testing_coloured_descriptions import loc_descriptions
-    description_dict = loc_descriptions(place)
+    description_dict = loc_descriptions(place, cardinal)
     place.overview = description_dict.get(place.name).get("overview")
     if not isinstance(place.overview, str):
         place.overview = list(place.overview)[0]
@@ -312,12 +312,17 @@ def get_descriptions(place:placeInstance):
     #print(f"place.overview::::: {place.overview}")
     CARDINALS = ["north", "east", "south", "west"]
     for card in CARDINALS:
+        #if cardinal and card != cardinal:
+        #    print(f"SKIPPING CARDINAL {card}")
+        #    continue
         if locRegistry.cardinals[place].get(card) and isinstance(locRegistry.cardinals[place].get(card), cardinalInstance):
             card_inst = locRegistry.cardinals[place].get(card)
-            card_inst.description = description_dict[place.name].get(card)
+            if description_dict[place.name].get(card):
+                card_inst.description = description_dict[place.name].get(card)
 
 
-def get_loc_descriptions(place=None):
+def get_loc_descriptions(place=None, cardinal=None):
+    logging_fn(f"{place}, {cardinal}")
 
     if place == None:
         for place in locRegistry.places:
@@ -329,7 +334,11 @@ def get_loc_descriptions(place=None):
         place - locRegistry.place_by_name(place)
 
     if place and isinstance(place, placeInstance):
-        get_descriptions(place)
+        if cardinal and isinstance(cardinal, cardinalInstance):
+            #print("get_descriptions with cardinal:")
+            get_descriptions(place, cardinal)
+        else:
+            get_descriptions(place)
 
 
 if "__main__" == __name__:

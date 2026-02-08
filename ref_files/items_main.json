@@ -47,8 +47,6 @@
     "requires_key": false,
     "starting_children": null,
     "container_limits": 4,
-    "name_no_children": null,
-    "description_no_children": null,
     "alt_names": {},
     "is_hidden": true,
     "can_examine": false,
@@ -624,11 +622,7 @@
   "rocking chair": {
     "nicename": "a wooden rocking chair",
     "description": "a simple but well-made rocking chair.",
-    "item_type": "{'static'}",
-    "alt_names": {},
-    "is_hidden": false,
-    "can_examine": false,
-    "can_break": false
+    "item_type": "{'standard'}"
   },
   "merry-go-round": {
     "nicename": "a merry-go-round",

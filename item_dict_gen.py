@@ -161,7 +161,7 @@ def get_item_data(item_name, incoming_data=None): # note: no locations here. Thi
     cleaned_dict = {}
 
     if isinstance(incoming_data, str):
-        print(f"Incoming data == str: {incoming_data}")
+        #print(f"Incoming data == str: {incoming_data}")
         # assume it's a description from items_desc, because what else would it be.
         incoming_data = {"description": incoming_data}
 
@@ -247,7 +247,7 @@ def get_items_from_card(loc, cardinal, loc_data):
             other_items[item] = loc_data["items"]
 
     for item in other_items:
-        print(f"item: {item}")
+        #print(f"item: {item}")
         if item == None or item == {}:
             continue
         if item in desc_items:
@@ -266,14 +266,14 @@ def get_items_from_card(loc, cardinal, loc_data):
         else:
             loc_items_dict[loc][cardinal][item] = other_items[item].get(item)
 
-        print(f"item in other_items: {loc_items_dict[loc][cardinal][item]}")
+        #print(f"item in other_items: {loc_items_dict[loc][cardinal][item]}")
         get_item_data(item, loc_items_dict[loc][cardinal][item])
 
     for item in desc_items:
         if not item in other_items and item != "" and item not in excluded_itemnames:
             loc_items_dict[loc][cardinal][item] = desc_items[item].get(item)
             # Should get item data here, maybe. We're just adding what's in generated/item_defs. Only downside is it won't update if an item is made but not added to generated right away. But we're not generating anything here, so that's alright actually.
-            print(f"item in desc_items dict_gen: {loc_items_dict[loc][cardinal][item]}")
+            #print(f"item in desc_items dict_gen: {loc_items_dict[loc][cardinal][item]}")
             get_item_data(item, loc_items_dict[loc][cardinal][item])
 
 def get_loc_items_dict(loc=None, cardinal=None):

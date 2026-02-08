@@ -49,8 +49,8 @@ effect_attrs = {
         "on_event_start": {"can_pick_up": False},
         "on_event_end": {"can_pick_up": True}},
     "locked_items": {
-        "on_event_start": {"is_closed": True, "is_locked": True},
-        "on_event_end": {"is_closed": False, "is_locked": False}},
+        "on_event_start": {"is_open": False, "is_locked": True},
+        "on_event_end": {"is_open": True, "is_locked": False}},
     "hidden_items": {
         "on_event_start": {"is_hidden": True, "can_pick_up": False},
         "on_event_end": {"is_hidden": False, "can_pick_up": True}}
@@ -787,7 +787,10 @@ class eventRegistry:
                             registry.by_location[locRegistry.current].add(inst)
                             if event.effects_on_start:
                                 for effect, item in event.effects_on_start.items():
-                                    print(f"EFFECT: {effect}, item: {item}")
+                                    if effect_attrs[effect].get("on_event_start"):
+                                        for attr in effect_attrs[effect]["on_event_start"]:
+                                            setattr(item, attr, effect_attrs[effect]["on_event_start"][attr])
+                                            print(f"EFFECT: {effect}, item: {item}")
                             ## TODO this is half done. Finish this bit... Need to make sure the attributes are properly set to the new item, they may differ from item defs defaults.
                             print("Initialised event item (inst)")
 
@@ -838,8 +841,10 @@ class eventRegistry:
 
         if to_be_current.effects_on_start:
             for effect, item in to_be_current.effects_on_start.items():
-                print(f"EFFECT: {effect}, item: {item}")
-
+                print(f"EFFECT: {effect}, item: {item}") # untested, leaving the print here to remind myself to make sure it works.
+                if effect_attrs[effect].get("on_event_start"):
+                    for attr in effect_attrs[effect]["on_event_start"]:
+                        setattr(item, attr, effect_attrs[effect]["on_event_start"][attr])
 
 
 
@@ -910,13 +915,17 @@ class eventRegistry:
                 setattr(event_item, k, v)
                 """
             #print(f"event to end: hidden items:: {event_to_end.hidden_items}")
+            from itemRegistry import registry
             for item_set in ("hidden_items", "held_items", "locked_items"):
                 if getattr(event_to_end, item_set):
                     pop_me = set()
                     for item in getattr(event_to_end, item_set):
                         if effect_attrs.get(item_set) and effect_attrs[item_set].get("on_event_end"):
                             for k, v in effect_attrs[item_set]["on_event_end"].items():
+                                #print(f"Item: {item}, K: {k}, v: {v}")
+                                #print(f"Before setattr for item[k]: {getattr(item, k)}")
                                 setattr(item, k, v)
+                                #print(f"After setattr for item[k]: {getattr(item, k)}")
 
                         #else:
                             #print(f"No entry in effect_attrs for {item_set}")
@@ -935,6 +944,7 @@ class eventRegistry:
                                     item.is_event_key = False # assuming each event key is only used once, which is true for now. Later may need alternate setups.
 
             for item in event_to_end.items:
+                registry.init_descriptions(inst = item)
                 if hasattr(item, "is_event_key"):
                     item.is_event_key = False
 
@@ -1190,7 +1200,7 @@ class eventIntake:
                 self.match_item_to_name_only = attr["start_trigger"]["item_trigger"].get("match_item_by_name_only")
                 #events.generate_event_from_item[attr["start_trigger"]["item_trigger"]["item_name"]] = self
                 # Means location etc doesn't matter in this case, only that the item name matches start trigger.
-            self.can_repeat_forever = attr.get("can_repeat_forever")
+            self.repeats = attr.get("repeats")
 
         if self.is_timed_event:
             self.setup_timed_events(attr)

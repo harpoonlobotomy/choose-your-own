@@ -648,18 +648,9 @@ if __name__ == "__main__":
 
 def get_all_default_flags(item):
 
-    item_def_flags = []
-    default_flags = set()
     types = set()
 
-    new_dict = {}
-
     item_def = testReg.item_defs.get(item)
-    #print(f"\nitem: {item}")
-    #for tag in item_def.keys():
-    #    item_def_flags.append(tag)
-    #print(f"total_flags: {item_def_flags}")
-
 
     from item_dict_gen import item_type_descriptions
 
@@ -681,6 +672,9 @@ def get_all_default_flags(item):
             else:
                 print(f"Is string but no", r"'{'", " ?")
             item_def["item_type"] = types
+        elif isinstance(attr, list):
+            types = set(attr)
+            item_def["item_type"] = types # so I can add to it later along with the string converted version.
 
         for def_type in types:
             flags = type_defaults.get(def_type)
@@ -693,7 +687,7 @@ def get_all_default_flags(item):
 
             if item_type_descriptions.get(def_type):
                 description_dict = item_type_descriptions[def_type]
-            
+
             if item_def.get("descriptions"):
                 for entry in description_dict.keys():
                     if entry not in item_def["descriptions"]:
@@ -713,7 +707,6 @@ def flags_not_in_default(item):
             print(f"{def_type} not in type_defaults.")
             exit()
         all_flags = all_flags | flags
-    #print(f"FLAGS: {all_flags}")
 
     flags_to_check = list()
 
@@ -724,9 +717,17 @@ def flags_not_in_default(item):
             else:
                 flags_to_check.append(attr)
 
-    flags_to_really_check = set()
+    omit_flags = [
+        "flammable", ""
+    ]
+
+    #flags_to_really_check = set()
     if flags_to_check:
         for flag in flags_to_check:
+            if flag in omit_flags:
+                if flag == "flammable":
+                    if testReg.item_defs[item][flag] == "starting_loot":
+                        testReg.item_defs[item]["item_type"].add("starting_loot")
             if flag == "loot_type":
                 if testReg.item_defs[item][flag] == "starting_loot":
                     testReg.item_defs[item]["item_type"].add("starting_loot")
@@ -761,8 +762,6 @@ def update_ref_file(json_file):
     with open(json_file, 'w') as file:
         json.dump(testReg.item_defs, file, indent=2)
 
-json_file = r"dynamic_data\temp_defs.json"
-
 def serialise_item_defs():
     for item, field in testReg.item_defs.items():
         for k, v in field.items():
@@ -771,24 +770,30 @@ def serialise_item_defs():
 
 
 def order_dict():
+
+    for item in testReg.item_defs:
+        testReg.item_defs[item] = dict(sorted(testReg.item_defs[item].items()))
+
     testReg.item_defs = dict(sorted(testReg.item_defs.items()))
 
 
 def fix_flags():
     for item in testReg.item_defs:
         get_all_default_flags(item)
-
         flags_not_in_default(item)
 
+
+# this first bit is just so I have a direct comparison of entries before/after the change.
 generated_file = r"ref_files\generated_items.json"
 order_dict()
+#
+
 update_ref_file(generated_file)
 
 fix_flags()
-
-
-
 serialise_item_defs()
 order_dict()
+
+json_file = r"dynamic_data\temp_defs.json" # currently using temp_defs until I'm sure I want to keep it.
 update_ref_file(json_file)
 print(testReg.flags_to_amend)

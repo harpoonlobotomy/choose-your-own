@@ -2,12 +2,14 @@
 import re
 from env_data import placeInstance
 import itemRegistry
+from logger import logging_fn
 from misc_utilities import assign_colour
 from printing import print_green, print_red, print_yellow
 
 print_test_descriptions = False
 
 def format_descrip(d_type="area_descrip", description="", location = None, cardinal = None):
+
     long_desc = []
 
     import json, config
@@ -15,6 +17,7 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
         loc_dict = json.load(loc_items_file)
 
     if d_type == "area_descrip":
+        logging_fn("area_descrip")
         if not loc_dict.get(location):
             for loc in loc_dict:
                 if loc_dict[loc].get("alt_names"):
@@ -38,6 +41,7 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
             return description
 
     elif d_type == "item_desc":
+        logging_fn("item_desc")
         no_items_text = None
         if location == "hotel room":
             location = "city hotel room"
@@ -62,7 +66,7 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                     if item:
                         if itemRegistry.registry.instances_by_name(item) and local_items:
                             #print(f"Item {item} in registry and local_items")
-                            for inst in itemRegistry.registry.instances_by_name(item):
+                            for inst in itemRegistry.registry.by_name[item]:
                                 if inst in local_items:
                                     if "[[]]" in long_dict[item]:
                                         long_parts = long_dict[item].split("[[]]")
@@ -80,10 +84,10 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                                             else:
                                                 split_parts = re.split("<<.+>>", long_parts[1])
                                                 long_parts[1] = split_parts[0]
-                                                if "fff" in long_parts[1]:
-                                                    long_parts[1] = long_parts[1].replace("fff","")
+                                                if "fff" in long_parts[0]:
+                                                    long_parts[0] = long_parts[0].replace("fff","")
 
-
+                                        #print(f"Long parts: {long_parts}")
                                         test = long_parts[0] + assign_colour(inst) + long_parts[1]
                                         long_desc.append(test)
                                     else:
@@ -129,7 +133,7 @@ def compile_long_desc(long_desc):
 
     return new_desc
 
-def init_loc_descriptions(place=None):
+def init_loc_descriptions(place=None, card=None):
 
     desc_dict = {}
     location_description = {}
@@ -186,7 +190,14 @@ def init_loc_descriptions(place=None):
                     desc_dict[location][cardinal]["short"] = cardinal_sort_desc
                     output.append(cardinal_sort_desc)
 
-                long_desc = format_descrip(d_type="item_desc", location=location, cardinal=cardinal)
+                if card:
+                    if cardinal == card.name:
+                        long_desc = format_descrip(d_type="item_desc", location=location, cardinal=cardinal)
+                    else:
+                        long_desc = None
+
+                else:
+                    long_desc = format_descrip(d_type="item_desc", location=location, cardinal=cardinal)
 
                 if long_desc:
                     new_desc = compile_long_desc(long_desc)
@@ -198,9 +209,9 @@ def init_loc_descriptions(place=None):
 
     return location_description, compiled_cardinals
 
-def loc_descriptions(place=None):
+def loc_descriptions(place=None, card_inst=None):
 
-    location_description, cardinal_descriptions = init_loc_descriptions(place)
+    location_description, cardinal_descriptions = init_loc_descriptions(place, card=card_inst)
     #print(f"LOCATION DESCRIPTION: {location_description}")
     #print(f"CARDINAL DESCRIPTIONS: {cardinal_descriptions}")
 

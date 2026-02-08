@@ -35,7 +35,7 @@ print("Item registry is being run right now.")
 
 type_defaults = {
     "standard":
-        {f"descriptions": {"generic": None}},
+        {f"descriptions": {"generic": None}, "slice_threshold": 5, "smash_threshold": 5},
     "static":
         {"can_examine": False, "can_break": False},
     #"all_items": {"starting_location": None, "current_loc": None, "alt_names": {}, "is_hidden": False},
@@ -58,7 +58,7 @@ type_defaults = {
     "key":
         {"is_key": True, "is_key_to": None},
     "can_pick_up":
-        {"can_pick_up": True, "item_size": 1, "started_contained_in": None, "contained_in": None},
+        {"can_pick_up": True, "item_size": 1},
     "event":
         {"event": None, "event_type": "item_triggered", "is_event_key": None},
     "trigger":
@@ -70,9 +70,9 @@ type_defaults = {
     "food_drink":
         {"can_consume": True, "can_spoil": True, "is_spoiled": True, "is_safe": True, "effect": None},
     "fragile":
-        {"is_broken": False, "can_break": True},
+        {"is_broken": False, "slice_threshold": 1, "smash_threshold": 1},
     "flammable":
-        {"is_burned": False, "flammable": True},
+        {"is_burned": False},
     "books_paper":
         {'print_on_investigate': True, 'flammable': True, 'is_burned': False, 'can_read': True},
     "electronics":
@@ -833,10 +833,10 @@ class itemRegistry:
         starting_children_only = False
 
         if not inst.descriptions and inst.description:
-            print("not inst.descriptions but has inst.description")
             return
 
         def get_if_open(inst:ItemInstance, label:str):
+
             if has_and_true(inst, label):
                 #getattr(inst.descriptions, f"open_{label}")
                 description = inst.descriptions.get(f"open_{label}")
@@ -846,41 +846,27 @@ class itemRegistry:
                 #description = getattr(inst.descriptions, label)
 
             if not description:
-                print(f"No description found for {inst} / {label}")
-                exit()
+                return None
 
             return description
 
         if "container" in inst.item_type:
-            print(f"Container in inst.flags: {inst}")
             if has_and_true(inst, "children") and has_and_true(inst, "starting_children"):
                 starting_children_only = True
-                print(f"children: {inst.children}")
-                print("has and true starting_children")
                 for child in inst.children:
                     if not child in inst.starting_children or has_and_true(child, "hidden"):
                         starting_children_only = False
 
 
             if starting_children_only:
-                print("starting_children_only")
                 description = get_if_open(inst, "starting_children_only")
-                #if has_and_true(inst, "is_open"):
-                #    description = inst.descriptions.get("open_starting_children_only")
-                #else:
-                #    description = inst.descriptions.get("starting_children_only")
 
-            elif inst.children:
-                print("inst.children")
+            elif hasattr(inst, "children") and inst.children:
                 long_desc = []
                 from testing_coloured_descriptions import compile_long_desc
                 from misc_utilities import assign_colour
-                #if hasattr(inst, "description_any_children"):
+
                 long_desc.append(get_if_open(inst, "any_children"))
-                    #if has_and_true(inst, "is_open"):
-                    #    long_desc.append(inst.descriptions.get("open_any_children"))
-                    #else:
-                    #    long_desc.append(inst.descriptions.get("any_children"))
 
                 for child in inst.children:
                     long_desc.append(assign_colour(child, nicename=True))
@@ -888,13 +874,8 @@ class itemRegistry:
                 description = compile_long_desc(long_desc)
 
             else:
-                if not has_and_true(inst, "children"):
-                    print("not has and true 'no_children'")
+                if not has_and_true(inst, "children") and get_if_open(inst, "no_children"):
                     description = get_if_open(inst, "no_children")
-                    #if has_and_true(inst, "open"):
-                    #    description = inst.descriptions.get("open_no_children")
-                    #else:
-                    #    description = inst.descriptions.get("no_children")
 
         elif has_and_true(inst, "is_open"):
             if hasattr(inst, "descriptions") and inst.descriptions.get("if_open"):
@@ -907,6 +888,9 @@ class itemRegistry:
         if description:
             inst.description = description
             return
+
+        if hasattr(inst, "descriptions") and inst.descriptions.get("generic"):
+            inst.description = inst.descriptions["generic"]
 
         if orig_description:
             return

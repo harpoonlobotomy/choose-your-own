@@ -161,7 +161,7 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
 
     from misc_utilities import in_loc_facing_card
     print(f"You're now in {in_loc_facing_card(loc.current)}\n")
-    get_loc_descriptions(loc.current.place)
+    get_loc_descriptions(loc.current.place, loc.current)
 
     if new_location:
         print(loc.current.place.overview)
@@ -191,6 +191,6 @@ def turn_around(new_cardinal):
             return
     loc.set_current(loc=None, cardinal=cardinal)
     print(f"You turn to face the {assign_colour(loc.current, card_type="place_name")}")
-    get_loc_descriptions(place=loc.current.place)
+    get_loc_descriptions(place=loc.current.place, cardinal=loc.current)
     print(f"{loc.current.description}")
 

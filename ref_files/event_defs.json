@@ -48,6 +48,7 @@
   "moss_dries": {
       "is_generated_event": true,
       "is_timed_event": true,
+      "repeats": "forever",
 
       "start_trigger": {
           "item_trigger": {
@@ -75,9 +76,7 @@
     "messages": {
         "start_msg": "You pick up the moss, and feel it squish a little between your fingers.",
         "end_msg": "After a few days, you realise the moss you've been carrying around has tried out. Damn. Or maybe you wanted some dry moss...?",
-        "failure_msg": "You put down the still-damp moss."},
-
-    "can_repeat_forever": true},
+        "failure_msg": "You put down the still-damp moss."}},
 
 "scroll_drops_key": {
     "is_quick_event": true,

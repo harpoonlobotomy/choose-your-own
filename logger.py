@@ -44,7 +44,7 @@ def traceback_fn():
     print(print_stack(f=frame))
     ##  Args: ArgInfo(args=['no_lookup', 'print_all', 'none_possible', 'preamble', 'inventory', 'look_around', 'return_any'], varargs='values', keywords=None, locals={'no_lookup': None, 'print_all': True, 'none_possible': True, 'preamble': 'Please pick your destination:', 'inventory': False, 'look_around': False, 'return_any': False, 'values': (['a graveyard', 'a forked tree branch', 'a city hotel room', 'a pile of rocks'],)})
 
-def logging_fn():
+def logging_fn(note:str=""):
 
     frame = inspect.currentframe().f_back
     #data == frame obj
@@ -72,7 +72,7 @@ def logging_fn():
         middle = f"{fancy_formatting}{functionname}{clear_formatting}"
         end = f"{plain_formatting}  ){clear_formatting}"
 
-        print(start, middle, end)
+        print(start, middle, note, end)
         if logging_config["args"]:
             args = inspect.getargvalues(frame)
             arg = args.args
