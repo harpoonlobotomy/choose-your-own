@@ -485,3 +485,19 @@ Next thing:
 Failed parser: 'eventInstance' object has no attribute 'generate_on_start'
 
 Need to re-add that flag, was likely removed in the flag edits I made. Will commit all this first though, these were some solid fixes.
+
+2.52pm
+Finally figured out why some of my print lines have a random space at the start of them.
+
+            if print_text:
+                print("\n", assign_colour(msg, colour="event_msg"))
+^^ leaves a space at the far left.
+
+            if print_text:
+                print()
+                print(assign_colour(msg, colour="event_msg"))
+^^ doesn't leave a space at the far left.
+
+also
+            print(f"\n{assign_colour(msg, colour='event_msg')}")
+^^ doesn't leave a space at the far left.

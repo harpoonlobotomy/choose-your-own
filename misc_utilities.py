@@ -335,12 +335,31 @@ def separate_loot(child_input=None, parent_input=None, inventory=[]): ## should 
 
 ### COLOUR ASSIGNMENT
 
+def get_itemname_from_sqrbrkt(string):
+
+    parts = string.split("[[")
+    other_parts = parts[1].split("]]")
+    #print(f"Parts[0]: {parts[0]}, other_parts: {other_parts}")
+    item_name_raw = other_parts[0].strip()
+    item_name = assign_colour(item_name_raw)
+    #print(f"item_name: {item_name}")
+    joined = [parts[0], item_name]
+    for part in other_parts:
+        if part == item_name_raw:
+            continue
+        joined.append(part.strip())
+    compiled_str = "".join(joined)
+    #print(f"joined: {compiled_str}")
+    return compiled_str
+
+
 def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=False, not_bold=False, caps=False, card_type = None):
     #logging_fn()
     from tui.colours import Colours
-
-#    if item is a list, run it through col_list. Might be recursive as hell though. idk. Need to figure how how/when col_list is used first.
-#    Main issue is that the calls for col_list expect a list output, assign_colour doesn't do that. I think the current setup is how it really needs to be.
+    string = item
+    if colour == "event_msg":
+        if "[[" in item:
+            return get_itemname_from_sqrbrkt(string)
 
     bg = None
     bld = ita = u_line = invt = False
