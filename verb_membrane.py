@@ -46,7 +46,7 @@ null_words = set(("a", "plus", "the", "at"))
 
 combine_sems = ["into", "with", "to", "and"]
 
-combine_parts = {("put", "into"), ("add", "to") # thinking about this for more specific matching. Not sure. Idea is 'put x into y' == explicitly y is a container.
+combine_parts = {("put", "into"), ("add", "to"), ("a", "while")# thinking about this for more specific matching. Not sure. Idea is 'put x into y' == explicitly y is a container.
 }
 
    #exit()
@@ -69,6 +69,7 @@ def check_noun_actions(noun_inst, verbname):
 
 def get_noun_instances(dict_from_parser, viable_formats):
 
+    error = None
     def check_cardinals(entry, dict, format):
 
         from env_data import locRegistry
@@ -89,7 +90,7 @@ def get_noun_instances(dict_from_parser, viable_formats):
         #print(f"locRegistry.cardinals[loc_inst]: {locRegistry.cardinals[loc_inst]}")
 
         card_inst = locRegistry.cardinals[loc_inst][card]
-        dict_from_parser[idx][kind] = ({"instance": card_inst, "str_name": entry["str_name"]})
+        dict_from_parser[idx][kind] = ({"instance": card_inst, "str_name": entry["str_name"], "text": entry["text"]})
         return dict_from_parser
 
     #if len(viable_formats) != 1:
@@ -128,7 +129,8 @@ def get_noun_instances(dict_from_parser, viable_formats):
                         #if name in registry.item_defs:
                         #    noun_inst = registry.init_single(name, registry.item_defs[name])
                     #if not noun_inst:
-                        print(f"No found ItemInstance for {entry}")
+                        dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": entry["text"], "text": entry["text"]})
+                        error = (f"No found ItemInstance for {entry}", (idx, kind))
                     else:
                         #print(f"Noun inst: {noun_inst}")
                         if not isinstance(noun_inst, ItemInstance):
@@ -136,11 +138,11 @@ def get_noun_instances(dict_from_parser, viable_formats):
 
                         noun_name = check_noun_actions(noun_inst, verb)
                         if noun_name:
-                            dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": name})
+                            dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": name, "text": entry["text"]})
                             suitable_nouns += 1
                         else:
     ## NOTE: Added this here so all nouns pass even if they will fail later, which entirely removes the point of the allowed noun_actions. But, I can better tailor failure messages within each later action-fn. So I think I'm going with it for now.
-                            dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": name})
+                            dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": name, "text": entry["text"]})
                             #print(f"You can't `{verb.name}` the {entry["str_name"]}")
                             suitable_nouns -= 10
 
@@ -148,11 +150,11 @@ def get_noun_instances(dict_from_parser, viable_formats):
                     from env_data import locRegistry
                     loc_name = entry["str_name"]
                     if locRegistry.place_by_name(loc_name):
-                        dict_from_parser[idx][kind] = ({"instance": locRegistry.place_by_name(loc_name), "str_name": loc_name})
+                        dict_from_parser[idx][kind] = ({"instance": locRegistry.place_by_name(loc_name), "str_name": loc_name, "text": entry["text"]})
 
                 elif kind == "direction": #Changing cardinals to their own specicial thing, can then ignore this part really.
 
-                    dict_from_parser[idx][kind] = ({"instance": None, "str_name": entry["str_name"]})
+                    dict_from_parser[idx][kind] = ({"instance": None, "str_name": entry["str_name"], "text": entry["text"]})
                     # TODO: Make it more explicit (or at least, really really remember) that this is going to <cardinal> <current_location> unless stated otherwise.
 
                         #locRegistry.place_cardinals[place_instance_obj][cardinal_direction_str]
@@ -160,9 +162,8 @@ def get_noun_instances(dict_from_parser, viable_formats):
                     #print(f"Kind is cardinal: {entry}")
                     dict_from_parser = check_cardinals(entry, dict_from_parser, viable_formats)
 
-        #print(f"dict_from_parser in geT_noun_instances: {dict_from_parser}")
-        return dict_from_parser
-    return None
+        return dict_from_parser, error
+    return None, "No dict_from_parser"
 
 class Membrane:
 
@@ -175,12 +176,17 @@ class Membrane:
         self.all_verb_names = verbs_set
         self.combined_wordphrases = combined_wordphrases
 
-        from itemRegistry import registry
-        self.nouns_list = list(registry.item_defs.keys())
-        self.plural_words_dict = registry.plural_words
-
-        from env_data import loc_dict
+        from env_data import loc_dict, locRegistry
         self.locations = list(loc_dict.keys())
+
+        self.nouns_list = list(registry.item_defs.keys())
+        plural_word_dict = {}
+
+        for item_name in self.nouns_list:
+            if len(item_name.split()) > 1:
+                plural_word_dict[item_name] = tuple(item_name.split())
+
+        self.plural_words_dict = registry.plural_words
 
         compound_locs = {}
         for word in self.locations:
@@ -210,13 +216,36 @@ class Membrane:
 
         self.formats = formats
 
+    def get_local_nouns(self):
+
+        from set_up_game import game
+        from itemRegistry import registry
+        from env_data import locRegistry
+
+        inventory = game.inventory
+        #print(f"inventory: {inventory}")
+        #print(f"locRegistry.current: {locRegistry.current}")
+        current_loc_items = registry.get_item_by_location(locRegistry.current)
+        #print(f"current_loc_items: {current_loc_items}")
+        local_named = set()
+        if inventory:
+            for item in inventory:
+                local_named.add(item.name)
+        if current_loc_items:
+            for item in current_loc_items:
+                local_named.add(item.name)
+        self.local_nouns = local_named
+        #print(f"local nouns: {self.local_nouns}")
+
 membrane = Membrane()
 
 test_input_list = ["take the paperclip", "pick up the glass jar", "put the paperclip in the wallet", "place the dried flowers on the headstone", "go to the graveyard", "approach the forked tree branch", "look at the moss", "examine the damp newspaper", "read the puzzle mag", "read the fashion mag in the city hotel room", "open the glass jar", "close the window", "pry open the TV set", "smash the TV set", "break the glass jar", "clean the watch", "clean the severed tentacle", "mix the unlabelled cream with the anxiety meds", "combine the fish food and the moss", "eat the dried flowers", "consume the fish food", "drink the unlabelled cream", "burn the damp newspaper", "burn the fashion mag in a pile of rocks", "throw the pretty rock", "lob the pretty rock at the window", "chuck the glass jar into a pile of rocks", "drop the wallet", "discard the paper scrap with number", "remove the batteries from the TV set", "add the batteries to the mobile phone", "put the car keys in the plastic bag", "set the watch", "lock the window", "unlock the window", "shove the TV set", "move the headstone", "barricade the window with the TV set", "separate the costume jewellery", "investigate the exact thing", "observe the graveyard", "watch the watch", "go to a city hotel room", "leave the graveyard", "depart", "go", "go to the pile of rocks", "take the exact thing", "put the severed tentacle in the glass jar", "open the wallet with the paperclip", "read the mail order catalogue at the forked tree branch", "pick the moss", "pick the watch", "pick up moss", "throw anxiety meds", "put batteries into watch", "clean a pile of rocks"]
 
 test_input_list = ["go west", "go north", "go to shed", "go north", "go to work shed", "go north", "go to shed door", "go to work shed door", "open door", "close door", "open shed door", "close shed door", "go into shed", "open door", "go into work shed", "go into work shed", "leave shed", "inventory", "drop mag", "take mag", "drop mag at church", "go into work shed", "open work shed door", "open door", "go into shed", "take map", "take key", "go to north graveyard", "use key on padlock", "lock padlock with key", "unlock padlock with key", "take padlock"]
 
-test_input_list = ["logging_args", "go west", "open door", "enter shed", "take map", "take key", "go to north graveyard", "unlock padlock with key", "pick up padlock", "open gate"]
+test_input_list = ["logging args", "go west", "open door", "enter shed", "take map", "take key", "go to north graveyard", "look at gate", "unlock padlock with key", "look at gate", "pick up padlock", "open gate"]
+
+#test_input_list = ["inventory", "logging args", "read mag for a while", "read catalogue for a while"]
 
 import json
 class UserEncoder(json.JSONEncoder):
@@ -230,6 +259,8 @@ class UserEncoder(json.JSONEncoder):
 
         if isinstance(o, ItemInstance|placeInstance|cardinalInstance|eventInstance|VerbInstance):
             return str(o)
+        elif isinstance(o, set):
+            return list(o)
         # Let the base class default method raise the TypeError
         return super().default(o)
 
@@ -245,6 +276,9 @@ def run_membrane(input_str=None):
         logging_fn()
 
         response = (None, None)
+
+        while input_str == None:
+            input_str = input("\n")
 
         while "logging" in input_str:
             if input_str != None and "logging" in input_str:
@@ -263,17 +297,25 @@ def run_membrane(input_str=None):
                 logging_fn()
                 input_str = input()
 
-        if input_str == None:
-            input_str = input()
 
         try:
             from verbRegistry import Parser
             #print("Before input_parser")
             viable_format, dict_from_parser = Parser.input_parser(Parser, input_str)
-            #print("After input_parser")
+            #print(f"After input_parser\n{dict_from_parser}")
             if not viable_format:
                 return None
-            inst_dict = get_noun_instances(dict_from_parser, viable_format)
+            inst_dict, error = get_noun_instances(dict_from_parser, viable_format)
+            if error:
+                message, idx_kind = error
+                idx, kind = idx_kind
+                text = inst_dict[idx][kind].get("text")
+                print(f"Nothing found here by the name \033[1;33m`{text}`\033[0m.")
+                return None
+            if not inst_dict:
+                MOVE_UP = "\033[A"
+                print(f"{MOVE_UP}\033[1;31m[ Couldn't find anything to do with the input `{input_str}`, sorry. ]\033[0m")
+                return None
             #print("after get_noun_instances")
             if to_json:
                 input_outcome_dict[(str(i) + " " + input_str)] = inst_dict
@@ -307,8 +349,7 @@ def run_membrane(input_str=None):
         except Exception as e:
             print(f"Failed parser: {e}")
 
-    #from config import run_tests
-    run_tests = False#True
+    from config import run_tests
     if run_tests:
         print("run tests on")
         from time import sleep

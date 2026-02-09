@@ -272,3 +272,216 @@ meta from meta_instances: {3: Token(idx=3, text='update_json', kind={'meta'}, ca
 to what was actually "a".
 
 Fixed it now, alt_words were just strings, not list as they should be, so it was matching 'a' to the alt_word 'update'.
+
+
+1.22am 9/2/26
+Okay so why:
+
+values: ("Tokens after tokenise: [Token(idx=0, text='read', kind={'verb'}, canonical='read'), Token(idx=1, text='mag', kind={'noun'}, canonical='gold key'), Token(idx=2, text='for', kind={'sem'}, canonical='for'), Token(idx=3, text='a', kind={'null'}, canonical='a'), Token(idx=4, text='while', kind={'sem'}, canonical='while')]",)
+
+Why does 'read mag for a while'
+end up with 'mag' being 'gold key'????
+
+values: ('Tokenise: idx: 1, word: mag',)
+item in local_named: gold key
+
+Okay so why
+
+current_loc_items: None
+local nouns: set()
+
+are these both empty?
+
+it's past midnight, I need sleep, but fix this tomorrow. verbRegistry, around ln 192.
+
+
+10.58am 9/2/26
+Huh so this is odd:
+
+locRegistry.current: <cardinalInstance south work shed (2df43f0c-f7c3-46f1-a034-620414af2c13)>
+current_loc_items: None
+local nouns: set()
+
+Added a print to check what 'current' was at the time of init, and apparently it's south work shed?
+When it comes to print the game it's graveyard, I'm not sure where south work shed is coming from.
+
+I'm not sure where the location is actually being set. It used to just be in set_up_game, but this runs before that, so I don't know. I assume it's just the last location to be init'd.
+
+11.09am
+Yes - so it was actually working before, but because it was randomly setting current to the last created location (still need to figure out exactly why, but that's what's happening) it was correctly finding no local items. If I set the starting location to east graveyard, it finds the items it should.
+
+
+Okay. So, I do need to change plural_words_dict, or change how the parser deals with local/accessible items.
+Currently it only deals with local/accessible items at the end, which is preferable in some ways. But, it makes it inconsistent - if there's no magazine and I say 'read mag', it says 'can't find any 'mag' to work with', which is a failure within compound_words, which is different to the error it would have if I said 'read alien', because 'alien' wouldn't be recognised as a noun, so the error would be at the sequencer level (or earlier if I tell it not to simply nullify not-found nouns.)
+
+The trouble is, it doesn't know if it's actually a noun that just isn't accessible (as in there is a jar, but it's somewhere else) or if you wrote djkhskj and that's why it can't find it locally. If you give it the full noun list, then you get more custom messages like 'you can't pick up something that isn't near you' (trying to pick up a thing in a different place) which I like, but also means you get messages using that item's full name. I don't like that it gives different messages either way. Like if you randomly got a spawn with the catalogue and said 'throw catalogue', you'd get an error about how it can't throw the mail order catalogue yet because I haven't written it. But in that same game if you wrote 'throw magazine', it'd error because magazine isn't a word.
+
+So idk.
+
+Maybe we give it the full word list, but if no instance found we /don't/ let it update the cardinal. So we say 'yes this is a noun, but it's only called 'catalogue' like you typed and we don't know any more about it'. Still means you have a difference between 'catalogue' (if it exists in the item_defs) and 'dogalogue' (if it doesn't), but it's better than it saying 'there's no mail order catalogue to touch' when you didn't give it 'mail order', nor see that anywhere.
+I think that's better.
+
+I think the trouble is that it doesn't assign the noun instance at that point in the parser. Maybe I need to add another field to tokens for 'originally typed', bc right now we have what, 'kinds', 'canonical', 'instance', and nouns don't fill instance until later. I guess there's no real reason why not? idk.
+
+But it's good to know the verb membrane is correctly generating the local items dict.
+
+So. We identify noun-kind via the full item_defs, not just instanced things, so that's our full noun list. But, we preserve the original text, not the final item name, and print that for any errors where the instance is unavailable. I think.
+
+Oh, I forgot this:
+
+values: ("token_role_options: Token(idx=1, text='mag', kind={'noun'}, canonical='gold key') // kinds: {'noun'}",)
+
+it was assigning 'gold key' to a noun if it couldn't find it. That's not good.
+
+values: ('Tokenise: idx: 1, word: mag',)
+item in local_named: gold key
+
+11.24am
+I really broke this yesterday.
+
+values: ('Tokenise: idx: 1, word: mag',)
+item in local_named: gold key
+
+
+
+Okay so that was happening because I told it to match basically anything to local items, entirely my fault and very obvious. That bit's fixed now.
+
+So, now the question is, why this:
+
+(  Func:  instances_by_name    )
+definition_key: gardening mag
+noun_name: None
+(  Func:  router    )
+viable_format: ('verb', 'noun', 'sem', 'sem')
+inst_dict: {0: {'verb': {'instance': <verbInstance read (8f60f640-bda8-45bf-844b-78865b0134e2)>, 'str_name': 'read'}}, 1: {'noun': {'instance': <ItemInstance gardening mag (8d0eb771-e162-4339-84b1-972e46813108)>, 's[[  read gardening mag for while  ]]m': {'instance': None, 'str_name': 'for'}}, 3: {'sem': {'instance': None, 'str_name': 'while'}}}
+
+
+^ hard to make sense of but it worked for 'read mag for a while'.
+
+But then next time:
+
+(  Func:  verbReg_Reciever    )
+values: ("top of token_role_options: Token(idx=4, text='while', kind={'sem'}, canonical='while')",)
+(  Func:  verbReg_Reciever    )
+values: ("token_role_options: Token(idx=4, text='while', kind={'sem'}, canonical='while') // kinds: {'sem'}",)
+(  Func:  verbReg_Reciever    )
+values: ("return for sequences: viable sequences: [['verb', 'noun', 'sem', 'sem']]",)
+(  Func:  verbReg_Reciever    )
+values: ("sequences after sequencer: [('verb', 'noun', 'sem', 'sem')]",)
+(  Func:  instances_by_name    )
+definition_key: gardening mag
+[ Couldn't find anything to do with the input `read mag for a while`, sorry. ]
+
+
+Okay so, rerunning it, sometimes it works, sometimes it doesn't. I don't know why.
+
+11.43am
+Added more prints:
+
+fashion mag is in inventory before this runs.
+item in compound matches: fashion mag
+item not in local named
+
+So it's not finding it for some reason.
+
+And for catalogue (which is not in item defs at all)
+values: ('Tokenise: idx: 1, word: catalogue',)
+WORD: catalogue, PARTS: ['read', 'catalogue', 'for', 'a', 'while']
+WORD: catalogue, PARTS: ['read', 'catalogue', 'for', 'a', 'while']
+
+it doesnt' even get to that point, because there's only one potential match to 'catalogue'.
+
+Oh, so inventory isn't init'd until later, so local_named doesn't include it. Not sure then why the mags are sometimes found. Very odd.
+
+What I should do is add a type called 'error', so I can add an error type (as in 'this is part of a non-present compound word'), but it can still carry on and be processed in case it's a location etc, the way I do with null; a thing can be null + something else, then the something else just takes priority. So should do the same with nouns. Because right now, it can't find 'gardening mag' because there's no gardening mag instance, but from 'read mag' we get this
+
+Token(idx=1, text='mag', kind={'noun'}, canonical='gardening mag'), because it's in the item_defs.
+
+So, two issues - one, need to add inventory to local_items (and will need update local_items - I don't think it'll update currently, it's just assigned at init. Hm.)
+
+11.58am
+Okay, so now it updates local_nouns each time parser runs, and includes current inventory and locational items.
+
+
+12.09pm
+
+Okay, so - during tokenisation, we have 'text' as the raw input that was being converted.
+But, when it gets into token role options/dict_from_parser, we lose the 'text' field and only have instance and str_name, which is the proper name of the found instance/item_defs entry. So I need to preserve the 'text' field, so we still have the inputted str to print in errors even in the later stage.
+
+
+12.48pm
+That's fixed now.
+
+Next:
+
+Two things show up when I run and rerun the current set of instructions.
+
+1: (it follows through to 'option', when usually, it doesn't. That function is basically unused entirely now. (Need to erase it entirely unless it has some use, but right now it just exists to feed immediately back to run_membrane, BUT only sometimes. ie, the first time I ran these instructions, it didn't hit def option() once. And the second time, only sometimes.))
+#   (  Func:  get_item_by_location    )
+#   gate is already open.
+#
+#   (  Func:  option    )
+#
+#
+#
+#   USER INPUT FN
+#   run tests on
+#   (  Func:  loop    )
+
+2:
+#   Heavy wrought iron bars with little decoration, now slightly ajar.
+#   [[  unlock padlock with iron key  ]]
+#
+#   Cannot process {0: {'verb': {'instance': <verbInstance unlock (57d37a26-6b72-46e8-99e6-da4e00407af3)>, 'str_name': 'unlock', 'text': 'unlock'}}, 1: {'noun': {'instance': <ItemInstance padlock (77e9ee3e-f19f-4116-8ff9-7ab852150730)>, 'str_name': 'padlock'}}, 2: {'sem': {'instance': None, 'str_name': 'with', 'text': 'with'}}, 3: {'noun': {'instance': <ItemInstance iron key (7fd30db1-fd40-4793-9526-f8845c9cdf57)>, 'str_name': 'iron key'}}} in def lock() End of function, unresolved. (Function not yet written, should use open_close variant instead)
+#   [[  look at gate  ]]
+
+
+
+For 1:
+
+So we start in option here,
+def inner_loop(speed_mode=False):
+    logging_fn()
+
+    loc.currentPlace.visited = True
+    loc.currentPlace.first_weather = game.weather
+
+    while True:
+        test=option()
+
+And it only goes there because test_runme goes through the inner loop, which only exists to set current visited, first_weather and go to option, which feeds immediately to run_membrane, which then loops
+
+loop(input_str)
+
+So I need to figure out where/why it's 'escaping' that loop and going back to 'optin', because it really... shouldn't.
+
+Oh - it's because it finished the loop via test strings, and when it finished the loop was over, so it returned to options and then reentered. Okay. So actually it's good that it feeds through options, though I need to rename it etc to make its function clearer, as it used to be where the input parsing was directed.
+
+So, ignore 1. It's not an error, just an oddly designed leftover that actually serves a useful purpose.
+
+In that case, 2:
+
+It can't unlock the padlock because it's already unlocked and in my pocket (as it was unlocked in the first loop). It should just say that instead of erroring, I need to check why.
+
+
+Okay. The above is now fixed, and I've fixed the input printing too. print_input_str now works, so instead of automatically changing what you typed from 'look at jar' to 'look at glass jar', it prints:
+
+#   [[  look at jar  ]]
+#
+#   You look at the glass jar:
+#   A glass jar, holding some dried flowers.
+#
+#   The glass jar contains:
+#     dried flowers
+
+So that's better.
+
+Fixed the config file with a couple of other minor things too, basically centralising testing/printing settings there instead of within the scripts themselves. More to do but it's good.
+
+So, nouns/local nouns is fixed. plural_nouns is always made from all nouns, but then I believe nouns are tested against local whether they're compound or not.
+
+Next thing:
+
+Failed parser: 'eventInstance' object has no attribute 'generate_on_start'
+
+Need to re-add that flag, was likely removed in the flag edits I made. Will commit all this first though, these were some solid fixes.

@@ -8,16 +8,16 @@ def initialise_all():
     ## The order here matters. Need to have the locations done first, so the items can use the location objects. Then items, so verbRegistry can use the itemRegistry.
     import env_data
     env_data.initialise_placeRegistry()
-    print("initialised placeregistry")
+    print("initialised placeRegistry")
 
     import itemRegistry
     event_data = itemRegistry.initialise_itemRegistry()
-    print("initialised itemregistry")
+    print("initialised itemRegistry")
 
 
     import verbRegistry
     verbRegistry.initialise_verbRegistry()
-    print("initialised verbregistry")
+    print("initialised verbRegistry")
 
     import eventRegistry
     eventRegistry.initialise_eventRegistry()

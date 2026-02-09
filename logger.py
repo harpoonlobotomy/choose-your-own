@@ -66,10 +66,13 @@ def logging_fn(note:str=""):
 
         plain_formatting = "\033[3;34m"
         fancy_formatting = "\033[4;1;35m"
+        note_formatting = "\033[0;42m"
         clear_formatting = "\033[0m"
 
         start = f"{plain_formatting}(  Func: {clear_formatting}"
         middle = f"{fancy_formatting}{functionname}{clear_formatting}"
+        if note:
+            note = f"{note_formatting}{note}{clear_formatting}"
         end = f"{plain_formatting}  ){clear_formatting}"
 
         print(start, middle, note, end)

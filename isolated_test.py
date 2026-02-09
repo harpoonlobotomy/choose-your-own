@@ -120,7 +120,7 @@ def god_mode():
 
 def user_input():
     text = do_input()
-
+    print("USER INPUT FN")
     if text != None:
         text=text.strip()
 
@@ -141,12 +141,12 @@ def user_input():
 def option(preamble=None):
     logging_fn()
 
-    if preamble:
-        print(preamble)
-    print("\n")
-    test=user_input()
+    #if preamble:
+    #    print(preamble)
+    #print("\n")
+    #test=user_input()
 
-    run_membrane(test)
+    run_membrane()
 
 
 def inner_loop(speed_mode=False):
@@ -167,7 +167,7 @@ def run():
     #do_clearscreen()
     playernm = ""
 
-    test_mode=True
+    test_mode=config.test_mode
 
     if test_mode:
         playernm = "Testbot"
@@ -181,12 +181,11 @@ def run():
     game = set_up(weirdness=True, bad_language=True, player_name=playernm)
 
     map_items = registry.instances_by_name("local map")
-    print(f"MAP ITEMS: {map_items}")
     if map_items:
         for map in map_items:
             game.map_item = map
             setattr(map, "is_map", True)
-            print(f"game.map_items: {game.map_item}")
+
             break
     if not test_mode:
         print("[[ Type 'help' for controls and options. ]]")

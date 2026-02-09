@@ -12,13 +12,15 @@ from logger import logging_fn
 from printing import print_green, print_red
 from verb_actions import get_current_loc
 
+from config import show_reciever
 print("Verb registry is being run right now.")
 
 null_adjectives = True
 
 def verbReg_Reciever(*values):
-    logging_fn()
-    return values
+    if show_reciever:
+        logging_fn()
+        return values
 
 def test_print(input, print_true=False):
     #print(f"Input {input}, print_true: {print_true}")
@@ -101,7 +103,7 @@ class VerbRegistry:
 @dataclass
 class Parser:
 
-    def check_compound_words(parts_dict, word, parts, idx, kinds, word_type, omit_next):
+    def check_compound_words(parts_dict, word, parts, idx, kinds, word_type, omit_next, local_named):
 
         #print(f"\nCHECK COMPOUND WORDS: {word_type}\n")
         canonical = potential_match = perfect_match = None
@@ -109,7 +111,7 @@ class Parser:
         compound_matches = {}
         #if not word.startswith("a "):
             #word = "a " + word
-        #print(f"PARTS: {parts}")
+        #print(f"WORD: {word}, PARTS: {parts}")
         #print(f"parts dict:: type: {type(parts_dict)}")
         for compound_word, word_parts in parts_dict.items():
             if perfect_match:
@@ -206,18 +208,20 @@ class Parser:
                 if test in matches:
                     match = test
             else:
-                for item in parts_dict: # this just takes the first match, so if 'gold key' and 'iron key' are both there, it will take gold key regardless.
-                    if item in compound_word:
-                        print(f"item in local_named: {item}")
-                        #if item in parts_dict:
+                 for item in compound_matches: # this just takes the first match, so if 'gold key' and 'iron key' are both there, it will take gold key regardless.
+                    #print(f"item in compound matches: {item}")
+                    if item in local_named:
+                        #print(f"item in local_named: {item}")
+                        if item in parts_dict:
                             #print(f"item in parts_dict: {item}")
-                        compound_word, word_parts in parts_dict.get(item)
-                            #print(compound_word, word_parts)
-                            #print(parts[idx+matches_count])# and parts[idx+matches_count].lower() in word_parts
-                        #print(f"Item in local_named: {item}")
+                            compound_word, word_parts in parts_dict.get(item)
+
+
+
 #{matches_count+1} `{parts[idx+matches_count+1]
                         match = item
                         break
+
             if match:
                 canonical = match
                 kinds.add(word_type)
@@ -243,12 +247,13 @@ class Parser:
         compound_locs = membrane.compound_locations
         compound_nouns = membrane.plural_words_dict
         items = nouns_list
+        local_items = membrane.local_nouns
         tokens = []
         omit_next = 0
 
         initial = verbs.list_null_words | set(directions) | set(loc_options) | verbs.semantics | cardinals
 
-        print(f"initial: {initial}")
+        #print(f"initial: {initial}")
 
         for idx, word in enumerate(parts):
             word = word.lower()
@@ -263,39 +268,39 @@ class Parser:
                 canonical = None
 
                 if word in verbs.all_meta_verbs:
-                    print(f"word in verbs.all_meta_verbs: {word}")
+                    #print(f"word in verbs.all_meta_verbs: {word}")
                     if word not in verbs.meta_verbs:
-                        print("word not in meta_verbs")
+                        #print("word not in meta_verbs")
                         for key_word in verbs.meta_verbs:
                             if verbs.meta_verbs[key_word].get("alt_words"):
                                 for alt_word in verbs.meta_verbs[key_word]["alt_words"]:
                                     if word == alt_word:
-                                        print(f"word in verbs.meta_verbs[key_word]: {word}, key word: {key_word}")
+                                        #print(f"word in verbs.meta_verbs[key_word]: {word}, key word: {key_word}")
                                         word = key_word
                                         kinds.add("meta")
                                         canonical = word
                     else:
-                        print(f"word in meta_verbs: {word}")
+                        #print(f"word in meta_verbs: {word}")
                         kinds.add("meta")
                         canonical = word
 
                 if word in initial or f"a {word}" in initial:
-                    print(f"Word in initial: {word}")
+                    #print(f"Word in initial: {word}")
                     if word in word_phrases and (word_phrases.get(word) and parts[0] in word_phrases.get(word)):
-                        print(f"word in verbs.null_words: {word}")
+                        #print(f"word in verbs.null_words: {word}")
                         kinds.add("null")
                         canonical = word
                     if word in verbs.semantics:
-                        print(f"word in verbs.semantics: {word}")
+                        #print(f"word in verbs.semantics: {word}")
                         kinds.add("sem")
                         canonical = word
                     elif word in verbs.list_null_words:
-                        print(f"word in verbs.null_words: {word}")
+                        #print(f"word in verbs.null_words: {word}")
                         kinds.add("null")
                         canonical = word
 
                     else:
-                        print(f"word in else initial: {word}")
+                        #print(f"word in else initial: {word}")
                         if word in cardinals:
                             kinds.add("cardinal")
                             canonical = word
@@ -356,10 +361,10 @@ class Parser:
                     potential_match = True
                 else:
                     second_perfect = None
-                    idx, word, kinds, canonical, potential_match, omit_next, perfect = Parser.check_compound_words(parts_dict = compound_nouns, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "noun", omit_next=omit_next)
+                    idx, word, kinds, canonical, potential_match, omit_next, perfect = Parser.check_compound_words(parts_dict = compound_nouns, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "noun", omit_next=omit_next, local_named=local_items)
                     second_perfect = None
                     try:
-                        second_idx, second_word, second_kinds, second_canonical, second_potential_match, second_omit_next, second_perfect = Parser.check_compound_words(parts_dict = compound_locs, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "location", omit_next=omit_next)
+                        second_idx, second_word, second_kinds, second_canonical, second_potential_match, second_omit_next, second_perfect = Parser.check_compound_words(parts_dict = compound_locs, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "location", omit_next=omit_next, local_named=local_items)
                     except Exception as e:
                         print(f"Could not get location: {e}")
 
@@ -406,6 +411,12 @@ class Parser:
                         verbReg_Reciever(f"Tokenise: idx: {idx}, word: {word}, not canonical")
                         if kinds == "No match":
                             return word, kinds
+
+                        from config import add_new_words_if_missing
+                        if not add_new_words_if_missing:
+                            MOVE_UP = "\033[A"
+                            print(f"{MOVE_UP}\033[1;31m[ Couldn't find anything to do with the input `{input_str}`, sorry. ]\033[0m")
+                            continue
                         print(f"No canonical for idx `{idx}`, word `{word}`")
                         print("Please enter a word type if you would like to add a new noun/verb/location")
                         test = input()
@@ -497,7 +508,7 @@ class Parser:
                         #print(f"This is {token.kind}")
                         #print(f"Token: {token}")
 
-                        reformed_dict[matched] = {sequence[matched]: token.canonical}
+                        reformed_dict[matched] = {sequence[matched]: {"canonical": token.canonical, "text": token.text}}
                         #print(reformed_dict[matched])
 
                         matched += 1
@@ -654,33 +665,35 @@ class Parser:
         #print(f"Format key: {format_key}")
         for i, item in enumerate(format_key):
             #print(f"Word type: {item}, type: {type(item)}")
-            item_name = initial_dict[i][item]
-            #print(f"item_name: {item_name}")
+            item_name = initial_dict[i][item].get("canonical")
             if item == "verb":
                 verb, _ = Parser.resolve_verb(tokens, item_name, format_key)
                 #resolve_verb(tokens, verb_name, format_key)
                 if verb:
                     #print(f"Verb::: {verb}, verb_name: {verb.name}")
                     #dict_for_output[i]={item: verb}
-                    dict_for_output[i]={item: {"instance":verb, "str_name":item_name}}
+                    dict_for_output[i]={item: {"instance":verb, "str_name":item_name, "text": initial_dict[i][item].get("text")}}
 
             else:
-                dict_for_output[i]={item:{"instance":None, "str_name":item_name}}
+                dict_for_output[i]={item:{"instance":None, "str_name":item_name, "text": initial_dict[i][item].get("text")}}
 
         return dict_for_output, tokens # including tokens for any minor input detail that might matter later.
-
 
     def input_parser(self, input_str):
         logging_fn()
         from verb_membrane import membrane
 
         all_nouns_list = membrane.nouns_list # swapping these out so it only considers local nouns. Keeping the orignal here as all_ in case it breaks things.
-        nouns_list = membrane.local_nouns
+        nouns_list = membrane.nouns_list
         locations = membrane.locations
         directions = membrane.directions
         cardinals = membrane.cardinals
 
+        membrane.get_local_nouns()
+
         tokens = self.tokenise(input_str, nouns_list, locations, directions, cardinals, membrane)
+        if not tokens:
+            return None, None
         verbReg_Reciever(f"Tokens after tokenise: {tokens}")
         #print(f"Tokens: {tokens}")
         if isinstance(tokens, tuple):
@@ -695,7 +708,7 @@ class Parser:
 
         if not sequences:
             MOVE_UP = "\033[A"
-            print(f"{MOVE_UP}\033[1;31m[ Couldn't find anything to do with the input `{input_str}`, sorry. ]\033[0m")
+            print(f"{MOVE_UP}\033[1;31m[ Couldn't find anything to do with the input `{input_str}`, sorry. <after get_sequences_from_tokens>]\033[0m")
             clean_parts = []
             token_parts = [i.kind for i in tokens if i.kind != "null"]
             for parts in token_parts:

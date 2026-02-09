@@ -794,26 +794,30 @@ def lock_unlock(format_tuple, input_dict, do_open=False):
                         key = noun_2
                         lock = noun_1
                 if key and lock:
-                    if lock.is_locked and not do_open:
-                        print(f"You use the {assign_colour(key.name)} to unlock the {assign_colour(lock.name)}")
-                        set_noun_attr(("is_locked", False), noun=lock)
-                        return
-
-                    elif lock.is_locked and do_open:
+                    if lock.is_locked and do_open:
                             print(f"You use the {assign_colour(key)} to unlock the {assign_colour(lock)}, and open it.")
                             set_noun_attr(("is_locked", False), ("is_open", True), noun=lock)
                             return
-
-                    elif not lock.is_locked and verb.name == "lock":
-                        print(f"You use the {assign_colour(key)} to lock the {assign_colour(lock)}.")
-                        set_noun_attr(("is_open", False), ("is_locked", True), noun=lock)
+                    elif lock.is_locked and not do_open:
+                        print(f"You use the {assign_colour(key)} to unlock the {assign_colour(lock)}")
+                        set_noun_attr(("is_locked", False), noun=lock)
                         return
+
+                    elif not lock.is_locked:
+                        if verb.name == "lock":
+                            print(f"You use the {assign_colour(key)} to lock the {assign_colour(lock)}.")
+                            set_noun_attr(("is_open", False), ("is_locked", True), noun=lock)
+                            return
+                        else:
+                            print(f"You can't unlock the {assign_colour(lock)}; it's already unlocked.")
+                            return
 
                     elif do_open:
                         print(f"You open {lock} with {key}? This doesn't work yet.")
 
                 else:
                     print(f"You can't open the {assign_colour(noun_1)} with {assign_colour(noun_2)}")
+                    return
 
             else:
                 print(f"{noun_1} and/or {noun_2} are not accessible: 1: {accessible_1}, 2: {accessible_2}")
@@ -1468,15 +1472,17 @@ def router(viable_format, inst_dict, input_str=None):
 
     verb_inst = None
     quick_list = []
+    input_strings = []
     for v in inst_dict.values():
         for data in v.values():
             quick_list.append(data["str_name"])
+            input_strings.append(data["text"])
     MOVE_UP = "\033[A"
 
-    from config import print_input_str
+    from config import print_input_str # currently input_str is never sent through so this never applies.
 
-    if print_input_str and input_str:
-        print(f'{MOVE_UP}\n\033[1;32m[[  {input_str}  ]]\033[0m\n')
+    if print_input_str:
+        print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {" ".join(input_strings)}  ]]\033[0m\n')
 
     else: #print processed str
         print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {" ".join(quick_list)}  ]]\033[0m\n')

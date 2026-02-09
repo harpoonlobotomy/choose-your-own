@@ -146,6 +146,7 @@ class placeRegistry:
 
         elif loc:
             if isinstance(loc, str):
+                # TODO: Set up by_cardinal_str here, don't add a bunch of new string parsers.
                 loc_test = self.by_name[loc]
                 if isinstance(loc_test, placeInstance):
                     loc = loc_test
@@ -156,8 +157,8 @@ class placeRegistry:
             if isinstance(loc, placeInstance) and not cardinal:
                 self.currentPlace = loc
                 if not self.current:
-                    print("No current_cardinal, defaulting to 'south'.")
-                    current_card = "south"
+                    print("env_data/ No current_cardinal, defaulting to 'south'.")
+                    current_card = "east"
                 else:
                     current_card = self.current.name
                 new_card = self.cardinals[self.currentPlace][current_card]
@@ -296,6 +297,8 @@ def initialise_placeRegistry():
                 else:
                     print(f"Target place transition objects: {target_place.transition_objs}")
 
+    from config import starting_location_str
+    locRegistry.set_current(starting_location_str)
 
 def get_descriptions(place:placeInstance, cardinal:cardinalInstance=None):
 

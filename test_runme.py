@@ -2,10 +2,10 @@ def test_main():
 
     #print("Wipe previous?")
     #test = input()
-    test = "y"
-    if test in ("y", "yes"):
-        import os
-        os.system("cls")
+    #test = "y"
+    #if test in ("y", "yes"):
+    #    import os
+    #    os.system("cls")
 
     print("\n\nStarting Run.\n\n")
 

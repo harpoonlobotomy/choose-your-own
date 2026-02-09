@@ -1036,11 +1036,6 @@ class itemRegistry:
 registry = itemRegistry()
 
 
-if __name__ == "__main__":
-
-    from env_data import initialise_placeRegistry
-    initialise_placeRegistry()
-
 def use_generated_items(input_=None):
     import json
 
@@ -1314,3 +1309,9 @@ def initialise_itemRegistry():
 
     return registry.event_items
 
+if __name__ == "__main__":
+
+    from env_data import initialise_placeRegistry
+    initialise_placeRegistry()
+
+    initialise_itemRegistry()

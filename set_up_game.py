@@ -114,7 +114,7 @@ def load_world(relocate=False, rigged=False, new_loc=None):
     return loc.currentPlace
 
 def init_settings(manual=False):
-    print("No settings in this version.")
+    print()#"No settings in this version.")
 
 def init_game():
 
