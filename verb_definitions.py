@@ -7,16 +7,16 @@
 
 
 meta_verbs = {
-    "inventory": {"alt_words": "i"},
+    "inventory": {"alt_words": ["i"]},
     "help": {"alt_words": ""},
     "settings": {"alt_words": ""},
     "stats": {"alt_words": ""},
-    "describe": {"alt_words": "d"},
-    "godmode": {"alt_words": "god"}, # remove this if there's ever a god...?
-    "quit": {"alt_words": "q"},
+    "describe": {"alt_words": ["d"]},
+    "godmode": {"alt_words": ["god"]}, # remove this if there's ever a god...?
+    "quit": {"alt_words": ["q"]},
     "show visted": {"alt_words": ""},
-    "update_json": {"alt_words": "update"},
-    "meta": {"alt_words": "edit"}
+    "update_json": {"alt_words": ["update"]},
+    "meta": {"alt_words": ["edit"]}
 }
 
 
@@ -38,16 +38,18 @@ meta = "meta"
 #    "verb_noun_noun": f"{verb} o{null} {noun} {null} o{null} {noun}"
 #}
 cardinals = ["north", "east", "south", "west"]
-directions = ["down", "up", "left", "right", "away", "toward", "towards", "closer", "further", "to", "into", "against", "across", "at", "in", "on", "from", "inside", "away", "into", "for", "elsewhere", "here", "through"]
+directions = ["down", "up", "left", "right", "away", "toward", "towards", "closer", "further", "to", "into", "against", "across", "at", "in", "on", "from", "inside", "away", "into", "elsewhere", "here", "through"]
 ## "in front of"?? Need to be able to cope with that.
 
 nulls = ["the", "a", "an"]
-semantics = ["with", "and", "around"]
+semantics = ["with", "and", "around", "for", "while"]
+
+null_sem_combinations = ["a while"]
 
 positional_dict = {
     "in": {"alts": ["inside", "within"]},
     "on": {"alts": ["atop", "onto"]},
-    "against": {"alts": ["leant", "leaning on"]}
+    "against": {"alts": ["leant", "lean"]}
     }
 
 formats = {
@@ -85,12 +87,15 @@ formats = {
     "verb_noun": (verb, noun), # drop paperclip
     "verb_sem_noun": (verb, sem, noun), # 'look at watch'
     "verb_dir_noun": (verb, direction, noun), # 'look at watch'
+    "verb_noun_sem": (verb, noun, sem), # 'read book a while
     "verb_noun_dir": (verb, noun, direction), # throw ball up
     "verb_noun_dir_loc": (verb, noun, direction, location), # drop paperclip at graveyard
 
     ### TWO NOUNS ###
     "verb_noun_noun": (verb, noun, noun), # can't think of any examples.
     "verb_noun_dir_noun": (verb, noun, direction, noun), # push chest towards door, put paperclip in jar
+    "verb_noun_sem_sem": (verb, noun, sem, sem), # "read mag for a while" (Don't know why 'for' is directional, surely it should be semantic.)
+    #"verb_noun_dir_sem": (verb, noun, direction, sem), # have changed 'for' to be semantic instead of directional, for now. Will see how much it breaks things.
     "verb_noun_dir_dir_noun": (verb, noun, direction, direction, noun), # put paperclip down on table
     "verb_noun_dir_noun_dir_loc": (verb, noun, direction, noun, direction, location), # put paperclip in glass jar in graveyard # pointless, but included just in case.
     "verb_noun_sem_noun": (verb, noun, sem, noun), # mix water with potion
@@ -143,6 +148,7 @@ verb_dir_car_loc = formats["verb_dir_car_loc"]
 verb_dir_loc_car = formats["verb_dir_loc_car"]
 verb_dir_loc = formats["verb_dir_loc"]
 verb_dir_noun = formats["verb_dir_noun"]
+verb_noun_sem = formats["verb_noun_sem"] # read book a while
 verb_sem_noun = formats["verb_sem_noun"] # wait with book
 verb_noun_dir = formats["verb_noun_dir"] # [enter] [work shed] [door]
 
@@ -151,6 +157,8 @@ verb_noun_dir_noun = formats["verb_noun_dir_noun"]
 verb_noun_dir_dir_noun = formats["verb_noun_dir_dir_noun"]
 verb_noun_dir_noun_dir_loc = formats["verb_noun_dir_noun_dir_loc"]
 verb_noun_dir_loc = formats["verb_noun_dir_loc"]
+#verb_noun_dir_sem = formats["verb_noun_dir_sem"]
+verb_noun_sem_sem = formats["verb_noun_sem_sem"]
 verb_noun_sem_noun = formats["verb_noun_sem_noun"]
 verb_dir_noun_sem_noun = formats["verb_dir_noun_sem_noun"]
 
@@ -194,7 +202,7 @@ verb_defs_dict = {
     "throw": {"alt_words": ["chuck", "lob"], "allowed_null": ["at"], "formats": [verb_noun, verb_noun_dir, verb_noun_sem_noun, verb_noun_dir_noun, verb_noun_dir_loc]}, # throw ball down, throw ball at tree
     "push": {"alt_words": ["shove", "pull"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun, verb_noun_noun]},
     "drop": {"alt_words": ["discard", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun, verb_noun_dir_loc, verb_noun_dir_noun_dir_loc, verb_noun_dir_meta]},
-    "read": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_loc]},
+    "read": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_loc, verb_noun_sem_sem, verb_noun_sem]},
     "use": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_dir_loc, verb_noun_dir_noun, verb_noun_noun]},
     "burn": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_dir_loc], "inventory_check": "fire_source"},
     "lock": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_noun], "inventory_check": "key"},
@@ -209,7 +217,7 @@ verb_defs_dict = {
     "set": {"alt_words": [""], "allowed_null": None, "formats": [verb_noun_dir, verb_noun_sem_noun, verb_noun], "distinction": {"second_noun":"fire", "new_verb":"burn", "else_verb":"put"}}, ## not implemented, just an idea. 'if fire is the second noun, the correct verb to use is 'burn', else the verb is 'put'. So 'set' is not its own thing, just a membrane/signpost.
     "clean": {"alt_words": ["wipe"], "allowed_null": None, "formats": [verb_noun, verb_loc, verb_noun_sem_noun]},
     "enter": {"alt_words": [], "allowed_null": None, "formats": [verb_loc, verb_dir_loc, verb_noun, verb_dir_noun, verb_noun_noun]},
-    "time": {"alt_words": ["wait", "waste time", "spend time"], "allowed_null": None, "formats": [verb_only, verb_dir, verb_sem_noun]}
+    "time": {"alt_words": ["wait", "waste time", "spend time"], "allowed_null": None, "formats": [verb_only, verb_dir, verb_sem_noun, verb_noun_sem_sem]}
     }
 
 ## also, how to deal with something like 'set paper on fire'

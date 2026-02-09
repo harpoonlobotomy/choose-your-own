@@ -16,6 +16,9 @@ print("Verb registry is being run right now.")
 
 null_adjectives = True
 
+def verbReg_Reciever(*values):
+    logging_fn()
+    return values
 
 def test_print(input, print_true=False):
     #print(f"Input {input}, print_true: {print_true}")
@@ -75,6 +78,7 @@ class VerbRegistry:
         self.formats = set()
         self.cardinals = set()
         self.compound_words = {}
+        self.null_sem_combinations = list()
 
     def create_verb_instance(self, verb_key:str, attr:dict)->VerbInstance:
 
@@ -185,29 +189,14 @@ class Parser:
                 return idx, word, kinds, canonical, potential_match, omit_next, perfect_match
 
             #print("More than one compound match")
-            from itemRegistry import registry
-            from env_data import locRegistry
-            from set_up_game import game
-            inventory = game.inventory
-            current_loc_items = registry.get_item_by_location(locRegistry.current)
-            local_named = set()
             matches = set()
             match = None
             #print(f"Compound matches: {compound_matches}")
-            if inventory:
-                for item in inventory:
-                    local_named.add(item.name)
-            if current_loc_items:
-                for item in current_loc_items:
-                    local_named.add(item.name)
 
             for item_name in compound_matches: # this just takes the first match, so if 'gold key' and 'iron key' are both there, it will take gold key regardless.
                 #print(f"item name in compound matches: {item_name}")
-                #print(f"local named (all): {local_named}")
-                if item_name in local_named:
-                    #print(f"Item name in local_named: {item_name}")
-                    matches.add(item_name)
-                    match = item_name
+                matches.add(item_name)
+                match = item_name
 
             if not match and len(matches) > 1:
                 print("There are multiple items here you could be talking about. Please enter which one you mean:")
@@ -217,12 +206,12 @@ class Parser:
                 if test in matches:
                     match = test
             else:
-                for item in compound_matches: # this just takes the first match, so if 'gold key' and 'iron key' are both there, it will take gold key regardless.
-                    if item in local_named:
-                        #print(f"item in local_named: {item}")
-                        if item in parts_dict:
+                for item in parts_dict: # this just takes the first match, so if 'gold key' and 'iron key' are both there, it will take gold key regardless.
+                    if item in compound_word:
+                        print(f"item in local_named: {item}")
+                        #if item in parts_dict:
                             #print(f"item in parts_dict: {item}")
-                            compound_word, word_parts in parts_dict.get(item)
+                        compound_word, word_parts in parts_dict.get(item)
                             #print(compound_word, word_parts)
                             #print(parts[idx+matches_count])# and parts[idx+matches_count].lower() in word_parts
                         #print(f"Item in local_named: {item}")
@@ -259,11 +248,13 @@ class Parser:
 
         initial = verbs.list_null_words | set(directions) | set(loc_options) | verbs.semantics | cardinals
 
+        print(f"initial: {initial}")
+
         for idx, word in enumerate(parts):
             word = word.lower()
             kinds = set()
             potential_match=False
-
+            verbReg_Reciever(f"Tokenise: idx: {idx}, word: {word}")
             if omit_next > 1:
                 omit_next -= 1
                 continue
@@ -272,28 +263,39 @@ class Parser:
                 canonical = None
 
                 if word in verbs.all_meta_verbs:
+                    print(f"word in verbs.all_meta_verbs: {word}")
                     if word not in verbs.meta_verbs:
+                        print("word not in meta_verbs")
                         for key_word in verbs.meta_verbs:
-                            if word in verbs.meta_verbs[key_word].get("alt_words"):
-                                word = key_word
-                                kinds.add("meta")
-                                canonical = word
+                            if verbs.meta_verbs[key_word].get("alt_words"):
+                                for alt_word in verbs.meta_verbs[key_word]["alt_words"]:
+                                    if word == alt_word:
+                                        print(f"word in verbs.meta_verbs[key_word]: {word}, key word: {key_word}")
+                                        word = key_word
+                                        kinds.add("meta")
+                                        canonical = word
                     else:
+                        print(f"word in meta_verbs: {word}")
                         kinds.add("meta")
                         canonical = word
 
                 if word in initial or f"a {word}" in initial:
+                    print(f"Word in initial: {word}")
                     if word in word_phrases and (word_phrases.get(word) and parts[0] in word_phrases.get(word)):
+                        print(f"word in verbs.null_words: {word}")
                         kinds.add("null")
                         canonical = word
                     if word in verbs.semantics:
+                        print(f"word in verbs.semantics: {word}")
                         kinds.add("sem")
                         canonical = word
                     elif word in verbs.list_null_words:
+                        print(f"word in verbs.null_words: {word}")
                         kinds.add("null")
                         canonical = word
 
                     else:
+                        print(f"word in else initial: {word}")
                         if word in cardinals:
                             kinds.add("cardinal")
                             canonical = word
@@ -385,7 +387,7 @@ class Parser:
                         #continue
 
 
-                    if not canonical:# or (second_perfect and not perfect) or (second_canonical and not perfect and not canonical):
+                    if not canonical and second_canonical:
                         idx = second_idx
                         word = second_word
                         kinds = second_kinds
@@ -401,6 +403,7 @@ class Parser:
                         continue
 
                     if not canonical:
+                        verbReg_Reciever(f"Tokenise: idx: {idx}, word: {word}, not canonical")
                         if kinds == "No match":
                             return word, kinds
                         print(f"No canonical for idx `{idx}`, word `{word}`")
@@ -434,18 +437,22 @@ class Parser:
 
     def token_role_options(token) -> list:
 
+            verbReg_Reciever(f"top of token_role_options: {token}")
             kinds = set(token.kind)
             if not kinds:
                 return [None]
             # pure optional null
             if kinds == {"null"}:
+                verbReg_Reciever(f"token_role_options: {token} // kinds: {kinds}")
                 return [None]
 
             # null + other roles → optional
             if "null" in kinds:
+                verbReg_Reciever(f"token_role_options: {token} // kinds: {kinds}")
                 return [k for k in kinds if k != "null"] + [None]
 
             # normal token
+            verbReg_Reciever(f"token_role_options: {token} // kinds: {kinds}")
             return list(kinds)
 
     def get_viable_verb(token, force_location=False):
@@ -532,7 +539,7 @@ class Parser:
             new_sequences = []
 
             for seq in sequences:
-                #print(f"seq: {seq}")
+                #print(f"seq: {seq} // sequences: {sequences}")
                 for opt in options:
                     if opt is None:
                         new_sequences.append(seq)
@@ -565,7 +572,7 @@ class Parser:
                                 viable_sequences.append(seq)
                             elif seq in viable_sequences and seq not in viable_sequences:
                                 viable_sequences.append(seq)
-
+                #print("before meta_instances")
                 if meta_instances:
                     for entry in meta_instances:
                         for verb in entry.values():
@@ -574,17 +581,34 @@ class Parser:
                             elif set(seq) == verb.kind and seq not in viable_sequences:
                                 viable_sequences.append(seq)
                             elif isinstance(seq, list) and len(seq) == 1: ## Added to allow 'meta' to work. Not sure why it was needed, though.
+                                print("is seq list and len == 1")
                                 if seq[0] in verb.kind:
                                     viable_sequences.append(seq)
 
                     if not viable_sequences:
                         meta = meta_instances[0]
-                        token = meta[0]
+                        token = meta[0] # only works if the meta is the first entry.
                         instance = Parser.get_viable_verb(token)
                         if hasattr(instance, "formats"):
                             if tuple(seq) in instance.formats:
                                 viable_sequences.append(seq)
 
+        #if not viable_sequences:
+        #    for seq in sequences:
+        #        seq = str(seq)
+        #        print(f"seq: {seq}")
+        #        if "'direction', 'sem'" in seq:
+        #            dir_text = sem_text = None
+        #            for token in tokens:
+        #                if "direction" in token.kind:
+        #                    dir_text = token.text
+        #                if "sem" in token.kind:
+        #                    sem_text = token.text
+#
+        #            if dir_text and sem_text:
+        #                print(f"dir_text: {dir_text}, sem_text: {sem_text}")
+        #            print("Direction, sem in seq")
+        verbReg_Reciever(f"return for sequences: viable sequences: {viable_sequences}")
         return [tuple(seq) for seq in viable_sequences if seq], verb_instances
 
     def resolve_verb(tokens, verb_name, format_key) -> tuple[VerbInstance|str]:
@@ -650,13 +674,14 @@ class Parser:
         logging_fn()
         from verb_membrane import membrane
 
-        nouns_list = membrane.nouns_list
+        all_nouns_list = membrane.nouns_list # swapping these out so it only considers local nouns. Keeping the orignal here as all_ in case it breaks things.
+        nouns_list = membrane.local_nouns
         locations = membrane.locations
         directions = membrane.directions
         cardinals = membrane.cardinals
 
         tokens = self.tokenise(input_str, nouns_list, locations, directions, cardinals, membrane)
-
+        verbReg_Reciever(f"Tokens after tokenise: {tokens}")
         #print(f"Tokens: {tokens}")
         if isinstance(tokens, tuple):
             word_str, part2 = tokens
@@ -664,7 +689,9 @@ class Parser:
             if part2 == "No match":
                 return word_str, None
 
+        verbReg_Reciever(f"tokens before sequencer: {tokens}")
         sequences, verb_instances = self.get_sequences_from_tokens(tokens)
+        verbReg_Reciever(f"sequences after sequencer: {sequences}")
 
         if not sequences:
             MOVE_UP = "\033[A"
@@ -709,7 +736,7 @@ sizes = ["big", "small", "tiny", "enormous", "massive", "little"]
 
 def initialise_verbRegistry():
 
-    from verb_definitions import get_verb_defs, allowed_null, semantics, formats, meta_verbs
+    from verb_definitions import get_verb_defs, allowed_null, semantics, formats, meta_verbs, null_sem_combinations
 
     verb_defs_dict, verb_set = get_verb_defs()
     verbs.all_verbs = verb_set
@@ -724,6 +751,7 @@ def initialise_verbRegistry():
     verbs.semantics = set(i for i in semantics)
     verbs.list_null_words = allowed_null
     verbs.cardinals = set(("north", "south", "east", "west"))
+    verbs.null_sem_combinations
 
     from itemRegistry import registry
 

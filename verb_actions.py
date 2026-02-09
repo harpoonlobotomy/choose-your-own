@@ -611,18 +611,18 @@ def look(format_tuple=None, input_dict=None):
                 turn_cardinal(intended_direction, turning=False)
 
         elif noun:
-            if hasattr(noun, "description_detailed"):
-                read(format_tuple, input_dict)
-            else:
-                item_interactions.look_at_item(noun)
+            #if hasattr(noun, "description_detailed"):
+            #    read(format_tuple, input_dict)
+            #else:
+            item_interactions.look_at_item(noun)
 
     elif len(format_tuple) == 3:
 
         if noun and format_tuple[1] == "direction":
-            if hasattr(noun, "description_detailed"):
-                read(format_tuple, input_dict)
-            else:
-                item_interactions.look_at_item(noun)
+            #if hasattr(noun, "description_detailed"):
+            #    read(format_tuple, input_dict)
+            #else:
+            item_interactions.look_at_item(noun)
         elif format_tuple[2] == "cardinal" and format_tuple[1] == "direction":
             turn_cardinal(inst_from_idx(input_dict[2], "cardinal"), turning = False)
 

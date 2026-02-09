@@ -215,3 +215,60 @@ I should move the detailed descriptions for magazines etc to item defs unless th
 
 
 Also, I should remove 'flammable: true' from entries, and just use the presence of 'item_type: flammable'. I use item_type so heavily already, makes sense to just /rely/ on the existing of an item_type tag instead of checking for the presence and value of 'is_flammable'.
+
+In the course of that, for fragile, instead of just 'can_break', am adding
+
+    "fragile":
+        {"is_broken": False, "slice_threshold": 1, "smash_threshold": 10},
+
+the ints for slice and smash threshold are just sharp vs blunt damage, which will do for now. So, curtains are smash threshold 10 (virtually unsmashable (or 11 for 'literally unsmashable'), and slice threshold of 1, because they're easy to cut. Should work I think. No idea if it'll ever actually get used. Haven't even got 'cut' as a verb yet. Should do that.)
+
+Have also added slice and smash threshold of 5 to 'standard' items, so unless otherwise written, all items are 5 across the board.
+
+5.15pm
+Swapped event flag can_repeat_forever for just using the preexisting "repeats" an assiging val of "forever". Neither was implemented yet anyway.
+
+6.34pm
+Cleared some unnecessary work from generate_descriptions, it was getting the description for every cardinal every time, including item_desc, even if only one cardinal was used.
+Have set it up now so it does the full run once (like it does with items), then only get the item_desc for the facing cardinal (as that's all that will be printed anyway). It was needless busywork to do it the other way. Might still be able to clean it up further, but this is good for now.
+
+9.56pm
+Hm.
+read magazine for a while
+Failed parser: 0
+
+Interesting. Why 0?
+
+10.07pm
+So. No answer yet but:
+
+(  Func:  verbReg_Reciever    )
+values: ([Token(idx=0, text='read', kind={'verb'}, canonical='read'), Token(idx=1, text='puzzle', kind=('noun',), canonical='puzzle mag'), Token(idx=3, text='for', kind={'direction'}, canonical='for'), Token(idx=4, text='update_json', kind={'meta'}, canonical='update_json'), Token(idx=5, text='while', kind=set(), canonical=None)],)
+(  Func:  verbReg_Reciever    )
+values: ("token_role_options: Token(idx=0, text='read', kind={'verb'}, canonical='read') // kinds: {'verb'}",)
+(  Func:  verbReg_Reciever    )
+values: ("token_role_options: Token(idx=1, text='puzzle', kind=('noun',), canonical='puzzle mag') // kinds: {'noun'}",)
+(  Func:  verbReg_Reciever    )
+values: ("token_role_options: Token(idx=3, text='for', kind={'direction'}, canonical='for') // kinds: {'direction'}",)
+(  Func:  verbReg_Reciever    )
+values: ("token_role_options: Token(idx=4, text='update_json', kind={'meta'}, canonical='update_json') // kinds: {'meta'}",)
+
+(verbReg_Reciever is just a function I made that I can send vars to so they'll print when I print logging args. There's a better way no doubt but it works temporarily, I can just throw it wherever I want and it prints only when I print args. Later can add a bool to config to turn it on/off.)
+
+But what's interesting is that 'a' ended up with kind meta and test update_json. Assumedly that's just the last option it checks, but it shouldn't be applied. Especially when 'a' should be excluded as 'null' anyway.
+
+Okay so that's because I had told it to always use second_ results even if not second canonical. So it was just filling with whatever it could even if it didn't match.
+
+Okay so the apparent issue is here
+
+                    if not viable_sequences:
+                        meta = meta_instances[0]
+                        token = meta[0] <--
+                        instance = Parser.get_viable_verb(token)
+
+But that issue is only happening because it applied
+meta from meta_instances: {3: Token(idx=3, text='update_json', kind={'meta'}, canonical='update_json')}
+
+to what was actually "a".
+
+Fixed it now, alt_words were just strings, not list as they should be, so it was matching 'a' to the alt_word 'update'.

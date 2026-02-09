@@ -26,13 +26,8 @@ def instance_name_in_inventory(inst_name:str)->ItemInstance:
 def show_map(noun):
     #bring the noun in here in case there are multiple maps later.
     print()
-    print_green("<     This is where we show a map image in some kinda way.     >", invert=True)
-    print("Here, we have some process to open a map. No idea how to do that yet...")
-    print("I mean I could just open an image I guess. Eh.")
+    print_green("<     Showing Map.     >", invert=True)
     from config import map_file
-    #from PIL import Image
-    #with Image.open(map_file) as img:
-    #    img.show
     import os
     os.startfile(map_file)
 
