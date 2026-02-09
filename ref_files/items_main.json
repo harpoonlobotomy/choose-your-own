@@ -1,786 +1,1470 @@
 {
   "padlock": {
-    "nicename": "a padlock",
-    "description": "An old dark-metal padlock.",
-    "item_type": "{'can_pick_up', 'fragile', 'can_open'}",
-    "can_pick_up": true,
-    "item_size": 0,
-    "flammable": false,
-    "can_break": true,
-    "alt_names": {},
-    "is_hidden": false,
-    "is_exhausted": false,
-    "is_open": false,
-    "can_be_opened": true,
     "can_be_closed": true,
     "can_be_locked": true,
-    "is_locked": true
+    "can_be_opened": true,
+    "can_break": true,
+    "can_pick_up": true,
+    "descriptions": {
+      "generic": "An old dark-metal padlock.",
+      "if_open": "",
+      "if_closed": "",
+      "if_broken": ""
+    },
+    "is_broken": false,
+    "is_locked": true,
+    "is_open": false,
+    "item_size": 0,
+    "item_type": [
+      "standard",
+      "can_lock",
+      "fragile",
+      "can_pick_up",
+      "can_open"
+    ],
+    "nicenames": {
+      "generic": "a padlock"
+    },
+    "requires_key": false,
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "gate": {
-    "nicename": "a gate",
-    "descriptions": {
-        "if_closed": "Heavy wrought iron bars with little decoration, held closed with a padlock on a heavy chain.",
-        "if_open": "Heavy wrought iron bars with little decoration, now slightly ajar."},
-    "item_type": "{'static', 'event', 'can_open'}",
-    "can_examine": false,
+    "can_be_closed": true,
+    "can_be_locked": true,
+    "can_be_opened": true,
     "can_break": false,
-    "alt_names": {},
-    "is_hidden": false,
+    "can_examine": false,
+    "descriptions": {
+      "if_closed": "Heavy wrought iron bars with little decoration, held closed with a padlock on a heavy chain.",
+      "if_open": "Heavy wrought iron bars with little decoration, now slightly ajar."
+    },
     "event": "graveyard_gate_opens",
     "event_type": "item_triggered",
-    "is_open": false,
-    "can_be_opened": true,
-    "can_be_closed": true,
-    "can_be_locked": true,
+    "is_event_key": null,
     "is_locked": true,
-    "requires_key": false
+    "is_open": false,
+    "item_type": [
+      "standard",
+      "event",
+      "can_lock",
+      "static",
+      "can_open"
+    ],
+    "nicenames": {
+      "generic": "a gate"
+    },
+    "requires_key": false,
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "desiccated skeleton": {
-    "nicename": "a desiccated skeleton",
-    "description": "A sunbleached skeleton, with most of its bones present.",
-    "item_type": "{'container', 'static', 'fragile'}",
-    "is_open": false,
-    "can_be_opened": true,
+    "can_be_added_to": true,
     "can_be_closed": true,
     "can_be_locked": true,
-    "is_locked": true,
-    "requires_key": false,
-    "starting_children": null,
-    "container_limits": 4,
-    "alt_names": {},
-    "is_hidden": true,
+    "can_be_opened": true,
+    "can_break": true,
     "can_examine": false,
-    "broken_name": null,
-    "flammable": false,
-    "can_break": true
+    "children_type_limited": false,
+    "container_limits": 4,
+    "descriptions": {
+      "generic": "A sunbleached skeleton, with most of its bones present.",
+      "starting_children_only": "",
+      "any_children": "",
+      "no_children": "",
+      "open_starting_children_only": "",
+      "open_any_children": "",
+      "open_no_children": "",
+      "if_broken": ""
+    },
+    "is_broken": false,
+    "is_hidden": true,
+    "is_locked": true,
+    "is_open": false,
+    "item_type": [
+      "standard",
+      "static",
+      "fragile",
+      "container"
+    ],
+    "nicenames": {
+      "generic": "a desiccated skeleton"
+    },
+    "requires_key": false,
+    "slice_threshold": 5,
+    "smash_threshold": 5,
+    "starting_children": null
   },
   "moss": {
-    "nicenames": {
-        "if_singular": "a clump of moss",
-        "if_plural": "a few moss clumps"},
-    "descriptions": {
-        "if_singular": "a small clump of moss, mostly green with brown specks.",
-        "if_plural": "a few clumps of mostly green moss."},
-    "item_type": "{'can_pick_up'}",
-    "alt_names": {},
-    "is_hidden": false,
     "can_pick_up": true,
+    "descriptions": {
+      "if_singular": "a small clump of moss, mostly green with brown specks.",
+      "if_plural": "a few clumps of mostly green moss."
+    },
+    "has_multiple_instances": 3,
     "item_size": "a_few_marbles",
-    "has_multiple_instances": 3
+    "item_type": [
+      "standard",
+      "is_cluster",
+      "can_pick_up"
+    ],
+    "nicenames": {
+      "if_singular": "a clump of moss",
+      "if_plural": "a few moss clumps"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "glass jar": {
-    "nicenames": {
-        "starting_children_only": "a glass jar with dried flowers",
-        "any_children": "a simple glass jar",
-        "no_children": "an empty glass jar"
-    },
-    "descriptions": {
-        "starting_children_only": "a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers",
-        "any_children": "a glass jar, holding ",
-        "no_children": "a glass jar, now empty aside from some bits of debris."},
-    "item_type": "{'can_pick_up', 'container'}",
-    "alt_names": {},
-    "is_hidden": false,
-    "is_open": true,
-    "can_be_opened": false,
+    "can_be_added_to": true,
     "can_be_closed": false,
     "can_be_locked": false,
+    "can_be_opened": false,
+    "can_pick_up": true,
+    "children_type_limited": false,
+    "container_limits": "smaller_than_apple",
+    "descriptions": {
+      "starting_children_only": "a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers",
+      "any_children": "a glass jar, holding ",
+      "no_children": "a glass jar, now empty aside from some bits of debris.",
+      "open_starting_children_only": "",
+      "open_any_children": "",
+      "open_no_children": ""
+    },
     "is_locked": false,
+    "is_open": true,
+    "item_size": "smaller_than_basketball",
+    "item_type": [
+      "standard",
+      "can_pick_up",
+      "container"
+    ],
+    "nicenames": {
+      "starting_children_only": "a glass jar with dried flowers",
+      "any_children": "a simple glass jar",
+      "no_children": "an empty glass jar"
+    },
     "requires_key": false,
+    "slice_threshold": 5,
+    "smash_threshold": 5,
     "starting_children": [
       "dried flowers"
-    ],
-    "container_limits": "smaller_than_apple",
-    "can_pick_up": true,
-    "item_size": "smaller_than_basketball"
+    ]
   },
   "iron key": {
-    "nicename": "an iron key",
-    "item_type": "{'key', 'can_pick_up'}",
-    "is_key": true,
     "can_pick_up": true,
-    "item_size": 0,
-    "description": "An iron key, handy for a quest or something, probably.",
+    "descriptions": {
+      "generic": "An iron key, handy for a quest or something, probably."
+    },
+    "is_key": true,
     "is_key_to": "padlock",
-    "is_hidden": false
+    "item_size": 0,
+    "item_type": [
+      "standard",
+      "key",
+      "can_pick_up"
+    ],
+    "nicenames": {
+      "generic": "an iron key"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "gold key": {
-    "nicename": "a gold key",
-    "item_type": "{'key', 'can_pick_up'}",
-    "is_key": true,
     "can_pick_up": true,
+    "descriptions": {
+      "generic": "a bright gold key, quite new-looking"
+    },
+    "is_key": true,
+    "is_key_to": null,
     "item_size": "small_flat_things",
-    "description": "a bright gold key, quite new-looking",
-    "alt_names": {},
-    "is_hidden": false
+    "item_type": [
+      "standard",
+      "key",
+      "can_pick_up"
+    ],
+    "nicenames": {
+      "generic": "a gold key"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "stone ground": {
-    "nicename": "stone ground",
-    "item_type": "{'static', 'flooring'}",
-    "can_examine": false,
     "can_break": false,
+    "can_examine": false,
+    "descriptions": {
+      "generic": "stony ground, a mixture of small pebbles and rough broken rubble"
+    },
     "is_horizontal_surface": true,
-    "description": "stony ground, a mixture of small pebbles and rough broken rubble",
-    "alt_names": {},
-    "is_hidden": false
+    "item_type": [
+      "standard",
+      "static",
+      "flooring"
+    ],
+    "nicenames": {
+      "generic": "a stone ground"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "earring": {
-    "nicename": "earring",
-    "item_type": "{'can_pick_up'}",
     "can_pick_up": true,
+    "descriptions": {
+      "generic": "a single silver earring with a small blue stone dangling from a short chain"
+    },
     "item_size": 0,
-    "description": "a single silver earring with a small blue stone dangling from a short chain",
-    "alt_names": {},
-    "is_hidden": false
+    "item_type": [
+      "standard",
+      "can_pick_up"
+    ],
+    "nicenames": {
+      "generic": "a earring"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "scroll": {
-    "nicename": "an old scroll",
-    "description": "An old parchment scroll, seemingly abandoned at a hidden shrine.",
-    "item_type": "{'books_paper', 'can_pick_up', 'can_open'}",
-    "alt_names": {},
-    "is_hidden": false,
-    "is_open": false,
-    "can_be_opened": true,
     "can_be_closed": true,
+    "can_be_locked": true,
+    "can_be_opened": true,
     "can_pick_up": true,
-    "item_size": "smaller_than_basketball",
-    "print_on_investigate": true,
+    "can_read": true,
+    "descriptions": {
+      "generic": "An old parchment scroll, seemingly abandoned at a hidden shrine.",
+      "if_open": "",
+      "if_closed": ""
+    },
     "flammable": true,
-    "can_read": true
+    "is_burned": false,
+    "is_locked": true,
+    "is_open": false,
+    "item_size": "smaller_than_basketball",
+    "item_type": [
+      "standard",
+      "books_paper",
+      "can_open",
+      "can_pick_up"
+    ],
+    "nicenames": {
+      "generic": "an old scroll"
+    },
+    "print_on_investigate": true,
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "ivory pot": {
-    "nicename": "an ivory-coloured jar",
-    "description": "A tall scratched ivory pot; no label, and a cork stopper held in place with a fine but strong-looking wire tied around the neck.",
-    "item_type": "{'can_pick_up', 'container'}",
-    "alt_names": {},
-    "is_hidden": false,
-    "is_open": false,
-    "can_be_opened": true,
+    "can_be_added_to": true,
     "can_be_closed": true,
     "can_be_locked": true,
-    "is_locked": true,
-    "requires_key": "wire cutters",
-    "starting_children": null,
-    "container_limits": "smaller_than_apple",
+    "can_be_opened": true,
     "can_pick_up": true,
-    "item_size": "smaller_than_basketball"
+    "children_type_limited": false,
+    "container_limits": "smaller_than_apple",
+    "descriptions": {
+      "generic": "A tall scratched ivory pot; no label, and a cork stopper held in place with a fine but strong-looking wire tied around the neck.",
+      "starting_children_only": "",
+      "any_children": "",
+      "no_children": "",
+      "open_starting_children_only": "",
+      "open_any_children": "",
+      "open_no_children": ""
+    },
+    "is_locked": true,
+    "is_open": false,
+    "item_size": "smaller_than_basketball",
+    "item_type": [
+      "standard",
+      "can_pick_up",
+      "container"
+    ],
+    "nicenames": {
+      "generic": "an ivory-coloured jar"
+    },
+    "requires_key": "wire cutters",
+    "slice_threshold": 5,
+    "smash_threshold": 5,
+    "starting_children": null
   },
   "metal pot": {
-    "nicename": "a metal pot",
-    "description": "A stout metal pot, which would be called a pot if I wasn't testing how it deals with two jars; it seems to be dug into the earth, and stuck fast. It has a flat, plate-like lid, with a small gold lock holding it closed.",
-    "item_type": "{'can_pick_up', 'container'}",
-    "alt_names": {},
-    "is_hidden": false,
-    "is_open": false,
-    "can_be_opened": true,
+    "can_be_added_to": true,
     "can_be_closed": true,
     "can_be_locked": true,
+    "can_be_opened": true,
+    "can_pick_up": true,
+    "children_type_limited": false,
+    "container_limits": "smaller_than_basketball",
+    "descriptions": {
+      "generic": "A stout metal pot, which would be called a pot if I wasn't testing how it deals with two jars; it seems to be dug into the earth, and stuck fast. It has a flat, plate-like lid, with a small gold lock holding it closed.",
+      "starting_children_only": "",
+      "any_children": "",
+      "no_children": "",
+      "open_starting_children_only": "",
+      "open_any_children": "",
+      "open_no_children": ""
+    },
     "is_locked": true,
-    "requires_key": false,
+    "is_open": false,
+    "item_size": "bigger_than_basketball",
+    "item_type": [
+      "standard",
+      "can_pick_up",
+      "container"
+    ],
+    "nicenames": {
+      "generic": "a metal pot"
+    },
+    "requires_key": "old gold key",
+    "slice_threshold": 5,
+    "smash_threshold": 5,
     "starting_children": [
       "wire cutters"
-    ],
-    "container_limits": "smaller_than_basketball",
-    "name_no_children": null,
-    "description_no_children": null,
-    "can_pick_up": true,
-    "item_size": "bigger_than_basketball",
-    "key": "old gold key"
+    ]
   },
   "wire cutters": {
-    "nicename": "a pair of wire cutters",
-    "description": "A slightly rusted pair of wire cutters. They look like they'll still work, though.",
-    "item_type": "{'can_pick_up', 'key'}",
-    "alt_names": {},
-    "is_hidden": false,
-    "is_key": true,
     "can_pick_up": true,
-    "item_size": "palm_sized"
+    "descriptions": {
+      "generic": "A slightly rusted pair of wire cutters. They look like they'll still work, though."
+    },
+    "is_key": true,
+    "is_key_to": null,
+    "item_size": "palm_sized",
+    "item_type": [
+      "standard",
+      "key",
+      "can_pick_up"
+    ],
+    "nicenames": {
+      "generic": "a pair of wire cutters"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "watch": {
-    "nicename": "a gold watch",
-    "description": "A scratched gold watch.",
-    "item_type": "{'can_pick_up'}",
-    "alt_names": {},
-    "is_hidden": false,
     "can_pick_up": true,
-    "item_size": "smaller_than_apple"
+    "descriptions": {
+      "generic": "A scratched gold watch."
+    },
+    "item_size": "smaller_than_apple",
+    "item_type": [
+      "standard",
+      "can_pick_up"
+    ],
+    "nicenames": {
+      "generic": "a gold watch"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "dried flowers": {
-    "nicename": "some dried flowers",
-    "description": "a bunch of old flowers, brittle and pale; certainly not as vibrant as you imagine they once were.",
-    "item_type": "{'can_pick_up', 'fragile'}",
-    "alt_names": {},
-    "is_hidden": false,
+    "can_break": true,
     "can_pick_up": true,
+    "descriptions": {
+      "generic": "a bunch of old flowers, brittle and pale; certainly not as vibrant as you imagine they once were.",
+      "if_broken": ""
+    },
+    "is_broken": false,
+    "is_burned": false,
     "item_size": "smaller_than_apple",
-    "broken_name": null,
-    "flammable": true,
-    "can_break": true
+    "item_type": [
+      "standard",
+      "flammable",
+      "fragile",
+      "can_pick_up"
+    ],
+    "nicenames": {
+      "generic": "a some dried flowers"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "headstone": {
-    "nicename": "a carved headstone",
-    "description": "a simple stone headstone, engraved with the name `J.W. Harstott`.",
-    "item_type": "{'static'}",
     "alt_names": [
       "gravestone"
     ],
-    "is_hidden": false,
-    "dirty": null
+    "can_break": false,
+    "can_examine": false,
+    "descriptions": {
+      "generic": "a simple stone headstone, engraved with the name `J.W. Harstott`."
+    },
+    "item_type": [
+      "standard",
+      "static"
+    ],
+    "nicenames": {
+      "generic": "a carved headstone"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "TV set": {
-    "nicename": "a television set",
-    "description": "A decent looking TV set, probably a few years old but appears to be well kept. Currently turned off. This model has a built-in DVD player.",
-    "item_type": "{'static', 'electronics', 'container'}",
     "alt_names": [
       "television",
       "tv set",
       "tv"
     ],
-    "is_hidden": false,
-    "can_combine": null,
-    "children_type_limited": ["DVD"]
-  },
-  "window": {
-    "nicename": "a window",
-    "description": "a window, facing out of the hotel room and down over the street below. Currently closed.",
-    "item_type": "{'can_open'}",
-    "alt_names": {},
-    "is_hidden": false,
-    "is_open": false,
-    "can_be_opened": true,
+    "can_be_added_to": true,
+    "can_be_charged": true,
     "can_be_closed": true,
     "can_be_locked": true,
+    "can_be_opened": true,
+    "can_break": false,
+    "can_examine": false,
+    "children_type_limited": [
+      "DVD"
+    ],
+    "container_limits": 4,
+    "descriptions": {
+      "generic": "A decent looking TV set, probably a few years old but appears to be well kept. Currently turned off. This model has a built-in DVD player.",
+      "starting_children_only": "",
+      "any_children": "",
+      "no_children": "",
+      "open_starting_children_only": "",
+      "open_any_children": "",
+      "open_no_children": ""
+    },
+    "has_batteries": false,
+    "is_charged": false,
     "is_locked": true,
-    "requires_key": false
+    "is_open": false,
+    "item_type": [
+      "standard",
+      "static",
+      "electronics",
+      "container"
+    ],
+    "nicenames": {
+      "generic": "a television set"
+    },
+    "requires_key": false,
+    "slice_threshold": 5,
+    "smash_threshold": 5,
+    "starting_children": null,
+    "takes_batteries": true
+  },
+  "window": {
+    "can_be_closed": true,
+    "can_be_locked": true,
+    "can_be_opened": true,
+    "descriptions": {
+      "generic": "a window, facing out of the hotel room and down over the street below. Currently closed.",
+      "if_open": "",
+      "if_closed": ""
+    },
+    "is_locked": true,
+    "is_open": false,
+    "item_type": [
+      "standard",
+      "can_open",
+      "can_lock"
+    ],
+    "nicenames": {
+      "generic": "a window"
+    },
+    "requires_key": false,
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "carved stick": {
-    "nicename": "a spiral-carved stick",
-    "description": "a stick, around 3 feet long, with tight spirals carved around the length except for a 'handle' at the thicker end.",
-    "item_type": "{'can_pick_up'}",
-    "alt_names": {},
-    "is_hidden": false,
     "can_pick_up": true,
-    "item_size": "bigger_than_basketball"
+    "descriptions": {
+      "generic": "a stick, around 3 feet long, with tight spirals carved around the length except for a 'handle' at the thicker end."
+    },
+    "item_size": "bigger_than_basketball",
+    "item_type": [
+      "standard",
+      "can_pick_up"
+    ],
+    "nicenames": {
+      "generic": "a spiral-carved stick"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "paperclip": {
-    "nicename": "a paperclip",
-    "description": "a humble paperclip.",
-    "item_type": "{'can_pick_up'}",
-    "alt_names": {},
-    "is_hidden": false,
     "can_pick_up": true,
+    "descriptions": {
+      "generic": "a humble paperclip."
+    },
     "item_size": "small_flat_things",
-    "loot_type": "starting"
+    "item_type": [
+      "standard",
+      "random_loot",
+      "can_pick_up"
+    ],
+    "loot_type": "starting",
+    "nicenames": {
+      "generic": "a paperclip"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "puzzle mag": {
-    "nicename": "a puzzle magazine",
-    "description": "It's a puzzle magazine",
-    "item_type": "{'books_paper', 'can_pick_up'}",
-    "alt_names": {},
-    "is_hidden": false,
     "can_pick_up": true,
-    "item_size": "smaller_than_basketball",
-    "print_on_investigate": true,
-    "flammable": true,
     "can_read": true,
-    "loot_type": "magazine"
+    "descriptions": {
+      "generic": "It's a puzzle magazine"
+    },
+    "flammable": true,
+    "is_burned": false,
+    "item_size": "smaller_than_basketball",
+    "item_type": [
+      "standard",
+      "books_paper",
+      "random_loot",
+      "can_pick_up"
+    ],
+    "loot_type": "magazine",
+    "nicenames": {
+      "generic": "a puzzle magazine"
+    },
+    "print_on_investigate": true,
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "fashion mag": {
-    "nicename": "a fashion magazine",
-    "description": "It's a fashion magazine",
-    "item_type": "{'books_paper', 'can_pick_up'}",
-    "alt_names": {},
-    "is_hidden": false,
     "can_pick_up": true,
-    "item_size": "smaller_than_basketball",
-    "print_on_investigate": true,
-    "flammable": true,
     "can_read": true,
-    "loot_type": "magazine"
+    "descriptions": {
+      "generic": "It's a fashion magazine"
+    },
+    "flammable": true,
+    "is_burned": false,
+    "item_size": "smaller_than_basketball",
+    "item_type": [
+      "standard",
+      "books_paper",
+      "random_loot",
+      "can_pick_up"
+    ],
+    "loot_type": "magazine",
+    "nicenames": {
+      "generic": "a fashion magazine"
+    },
+    "print_on_investigate": true,
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "gardening mag": {
-    "nicename": "a gardening magazine",
-    "description": "It's a gardening magazine",
-    "item_type": "{'books_paper', 'can_pick_up'}",
-    "alt_names": {},
-    "is_hidden": false,
     "can_pick_up": true,
-    "item_size": "smaller_than_basketball",
-    "print_on_investigate": true,
-    "flammable": true,
     "can_read": true,
-    "loot_type": "magazine"
+    "descriptions": {
+      "generic": "It's a gardening magazine"
+    },
+    "flammable": true,
+    "is_burned": false,
+    "item_size": "smaller_than_basketball",
+    "item_type": [
+      "standard",
+      "books_paper",
+      "random_loot",
+      "can_pick_up"
+    ],
+    "loot_type": "magazine",
+    "nicenames": {
+      "generic": "a gardening magazine"
+    },
+    "print_on_investigate": true,
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "mail order catalogue": {
-    "nicename": "a mail order catalogue",
-    "description": "It's a mail order catalogue",
-    "item_type": "{'books_paper', 'can_pick_up'}",
-    "alt_names": {},
-    "is_hidden": false,
     "can_pick_up": true,
-    "item_size": "smaller_than_basketball",
-    "print_on_investigate": true,
-    "flammable": true,
     "can_read": true,
-    "loot_type": "magazine"
+    "descriptions": {
+      "generic": "It's a mail order catalogue"
+    },
+    "flammable": true,
+    "is_burned": false,
+    "item_size": "smaller_than_basketball",
+    "item_type": [
+      "standard",
+      "books_paper",
+      "random_loot",
+      "can_pick_up"
+    ],
+    "loot_type": "magazine",
+    "nicenames": {
+      "generic": "a mail order catalogue"
+    },
+    "print_on_investigate": true,
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "car keys": {
-    "nicename": "a set of car keys",
-    "description": "It's a car keys",
-    "item_type": "{'can_pick_up', 'electronics'}",
-    "alt_names": {},
-    "is_hidden": false,
-    "can_pick_up": true,
-    "item_size": "a_few_marbles",
     "can_be_charged": true,
-    "is_charged": false,
-    "takes_batteries": ["batteries"],
+    "can_pick_up": true,
+    "descriptions": {
+      "generic": "It's a car keys"
+    },
     "has_batteries": false,
-    "can_combine": null,
+    "is_charged": false,
+    "is_key": true,
     "is_key_to": "blue car",
-    "loot_type": "starting"
+    "item_size": "a_few_marbles",
+    "item_type": [
+      "standard",
+      "random_loot",
+      "electronics",
+      "can_pick_up",
+      "key"
+    ],
+    "loot_type": "starting",
+    "nicenames": {
+      "generic": "a set of car keys"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5,
+    "takes_batteries": [
+      "batteries"
+    ]
   },
   "fish food": {
-    "nicename": "a jar of fish food",
-    "description": "It's a fish food",
-    "item_type": "{'can_pick_up', 'food_drink}",
-    "alt_names": {},
-    "is_hidden": false,
-    "can_pick_up": true,
-    "item_size": "a_few_marbles",
-    "can_combine": null,
-    "loot_type": "starting",
     "can_consume": true,
+    "can_pick_up": true,
     "can_spoil": true,
+    "descriptions": {
+      "generic": "It's a fish food",
+      "if_spoiled": ""
+    },
+    "effect": null,
     "is_safe": true,
-    "effect": null
+    "is_spoiled": true,
+    "item_size": "a_few_marbles",
+    "item_type": [
+      "standard",
+      "food_drink",
+      "random_loot",
+      "can_pick_up"
+    ],
+    "loot_type": "starting",
+    "nicenames": {
+      "generic": "a jar of fish food"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "anxiety meds": {
-    "nicename": "a bottle of anxiety meds",
-    "description": "It's a anxiety meds",
-    "item_type": "{'food_drink', 'can_pick_up'}",
-    "alt_names": {},
-    "is_hidden": false,
-    "can_pick_up": true,
-    "item_size": "a_few_marbles",
     "can_consume": true,
+    "can_pick_up": true,
     "can_spoil": true,
-    "is_safe": true,
+    "descriptions": {
+      "generic": "It's a anxiety meds",
+      "if_spoiled": ""
+    },
     "effect": null,
-    "loot_type": "starting"
+    "is_safe": true,
+    "is_spoiled": true,
+    "item_size": "a_few_marbles",
+    "item_type": [
+      "standard",
+      "food_drink",
+      "random_loot",
+      "can_pick_up"
+    ],
+    "loot_type": "starting",
+    "nicenames": {
+      "generic": "a bottle of anxiety meds"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "unlabelled cream": {
-    "nicename": "an unlabelled cream",
-    "description": "It's a unlabelled cream",
-    "item_type": "{'can_pick_up'}",
-    "alt_names": {},
-    "is_hidden": false,
     "can_pick_up": true,
+    "descriptions": {
+      "generic": "It's a unlabelled cream"
+    },
     "item_size": "smaller_than_apple",
-    "loot_type": "starting"
+    "item_type": [
+      "standard",
+      "random_loot",
+      "can_pick_up"
+    ],
+    "loot_type": "starting",
+    "nicenames": {
+      "generic": "an unlabelled cream"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "batteries": {
-    "nicename": "a set of batteries",
-    "description": "It's a batteries",
-    "item_type": "{'can_pick_up'}",
-    "alt_names": {},
-    "is_hidden": false,
     "can_pick_up": true,
+    "descriptions": {
+      "generic": "It's a batteries"
+    },
     "item_size": "a_few_marbles",
+    "item_type": [
+      "standard",
+      "random_loot",
+      "can_pick_up"
+    ],
     "loot_type": [
       "starting",
       "medium_loot"
-    ]
+    ],
+    "nicenames": {
+      "generic": "a set of batteries"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "costume jewellery": {
-    "nicename": "a bit of costume jewellery",
-    "description": "Pretty but probably not too expensive. Gold metal with dark red gems.",
-    "item_type": "{'can_pick_up'}",
-    "alt_names": {},
-    "is_hidden": false,
     "can_pick_up": true,
+    "descriptions": {
+      "generic": "Pretty but probably not too expensive. Gold metal with dark red gems."
+    },
     "item_size": "a_few_marbles",
-    "loot_type": "minor_loot"
+    "item_type": [
+      "standard",
+      "random_loot",
+      "can_pick_up"
+    ],
+    "loot_type": "minor_loot",
+    "nicenames": {
+      "generic": "a bit of costume jewellery"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "plastic bag": {
-    "nicename": "a sturdy plastic bag",
-    "description": "a used plastic bag from a grocery store. No holes, at least.",
-    "item_type": "{'can_pick_up', 'fragile', 'container'}",
-    "alt_names": {},
-    "is_hidden": false,
-    "is_open": false,
-    "can_be_opened": true,
+    "can_be_added_to": true,
     "can_be_closed": true,
     "can_be_locked": true,
-    "is_locked": true,
-    "requires_key": false,
-    "starting_children": null,
-    "container_limits": "bigger_than_basketball",
-    "name_no_children": null,
-    "description_no_children": null,
-    "can_pick_up": true,
-    "item_size": "smaller_than_apple",
-    "broken_name": null,
-    "flammable": true,
+    "can_be_opened": true,
     "can_break": true,
-    "loot_type": "minor_loot"
+    "can_pick_up": true,
+    "children_type_limited": false,
+    "container_limits": "bigger_than_basketball",
+    "descriptions": {
+      "generic": "a used plastic bag from a grocery store. No holes, at least.",
+      "starting_children_only": "",
+      "any_children": "",
+      "no_children": "",
+      "open_starting_children_only": "",
+      "open_any_children": "",
+      "open_no_children": "",
+      "if_broken": ""
+    },
+    "is_broken": false,
+    "is_burned": false,
+    "is_locked": true,
+    "is_open": false,
+    "item_size": "smaller_than_apple",
+    "item_type": [
+      "standard",
+      "random_loot",
+      "fragile",
+      "can_pick_up",
+      "container",
+      "flammable"
+    ],
+    "loot_type": "minor_loot",
+    "nicenames": {
+      "generic": "a sturdy plastic bag"
+    },
+    "requires_key": false,
+    "slice_threshold": 5,
+    "smash_threshold": 5,
+    "starting_children": null
   },
   "pretty rock": {
-    "nicename": "a pretty rock",
-    "description": "A particularly pretty rock. A nice blue colour and slightly rough texture, pleasant to hold.",
-    "item_type": "{'can_pick_up'}",
-    "alt_names": {},
-    "is_hidden": false,
     "can_pick_up": true,
+    "descriptions": {
+      "generic": "A particularly pretty rock. A nice blue colour and slightly rough texture, pleasant to hold."
+    },
     "item_size": "a_few_marbles",
-    "loot_type": "minor_loot"
+    "item_type": [
+      "standard",
+      "random_loot",
+      "can_pick_up"
+    ],
+    "loot_type": "minor_loot",
+    "nicenames": {
+      "generic": "a pretty rock"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "damp newspaper": {
-    "nicename": "a damp newspaper",
-    "description": "A damp newspaper from about a week ago.",
-    "item_type": "{'books_paper', 'can_pick_up', 'fragile'}",
-    "alt_names": {},
-    "is_hidden": false,
-    "can_pick_up": true,
-    "item_size": "smaller_than_basketball",
-    "broken_name": null,
-    "flammable": true,
     "can_break": true,
-    "print_on_investigate": true,
+    "can_pick_up": true,
     "can_read": true,
-    "loot_type": "minor_loot"
+    "descriptions": {
+      "generic": "A damp newspaper from about a week ago.",
+      "if_broken": ""
+    },
+    "flammable": true,
+    "is_broken": false,
+    "is_burned": false,
+    "item_size": "smaller_than_basketball",
+    "item_type": [
+      "standard",
+      "books_paper",
+      "random_loot",
+      "fragile",
+      "can_pick_up"
+    ],
+    "loot_type": "minor_loot",
+    "nicenames": {
+      "generic": "a damp newspaper"
+    },
+    "print_on_investigate": true,
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "5 pound note": {
-    "nicename": "5 pound note",
-    "description": "A small amount of legal tender. Could be useful if you find a shop.",
-    "item_type": "{'can_pick_up', 'fragile'}",
-    "alt_names": {},
-    "is_hidden": false,
-    "can_pick_up": true,
-    "item_size": "small_flat_things",
-    "broken_name": null,
-    "flammable": true,
     "can_break": true,
-    "loot_type": "medium_loot"
+    "can_pick_up": true,
+    "descriptions": {
+      "generic": "A small amount of legal tender. Could be useful if you find a shop.",
+      "if_broken": ""
+    },
+    "is_broken": false,
+    "is_burned": false,
+    "item_size": "small_flat_things",
+    "item_type": [
+      "standard",
+      "random_loot",
+      "fragile",
+      "can_pick_up",
+      "flammable"
+    ],
+    "loot_type": "medium_loot",
+    "nicenames": {
+      "generic": "a 5 pound note"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "paper scrap with number": {
-    "nicename": "a scrap of paper with a number written on it",
-    "description": "A small scrap of torn, off-white paper with a hand-scrawled phone number written on it.",
-    "item_type": "{'books_paper', 'can_pick_up', 'fragile'}",
-    "alt_names": {},
-    "is_hidden": false,
-    "can_pick_up": true,
-    "item_size": "small_flat_things",
-    "broken_name": null,
-    "flammable": true,
     "can_break": true,
-    "print_on_investigate": true,
+    "can_pick_up": true,
     "can_read": true,
-    "loot_type": "medium_loot"
+    "descriptions": {
+      "generic": "A small scrap of torn, off-white paper with a hand-scrawled phone number written on it.",
+      "if_broken": ""
+    },
+    "flammable": true,
+    "is_broken": false,
+    "is_burned": false,
+    "item_size": "small_flat_things",
+    "item_type": [
+      "standard",
+      "books_paper",
+      "random_loot",
+      "fragile",
+      "can_pick_up"
+    ],
+    "loot_type": "medium_loot",
+    "nicenames": {
+      "generic": "a scrap of paper with a number written on it"
+    },
+    "print_on_investigate": true,
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "mobile phone": {
-    "nicename": "a mobile phone",
-    "description": "A mobile phone. You don't think it's yours. Doesn't seem to have a charge.",
-    "item_type": "{'can_pick_up', 'electronics', 'container'}",
-    "alt_names": {},
-    "is_hidden": false,
-    "is_open": false,
-    "can_be_opened": true,
+    "can_be_added_to": true,
+    "can_be_charged": true,
     "can_be_closed": true,
     "can_be_locked": true,
-    "is_locked": true,
-    "requires_key": false,
-    "starting_children": null,
-    "container_limits": 4,
-    "children_type_limited": ["digital"],
-    "name_no_children": null,
-    "description_no_children": null,
+    "can_be_opened": true,
     "can_pick_up": true,
-    "item_size": "palm_sized",
-    "can_be_charged": true,
-    "is_charged": true,
-    "takes_batteries": false,
+    "children_type_limited": [
+      "digital"
+    ],
+    "container_limits": 4,
+    "descriptions": {
+      "generic": "A mobile phone. You don't think it's yours. Doesn't seem to have a charge.",
+      "starting_children_only": "",
+      "any_children": "",
+      "no_children": "",
+      "open_starting_children_only": "",
+      "open_any_children": "",
+      "open_no_children": ""
+    },
     "has_batteries": false,
-    "key": "mobile_passcode",
-    "loot_type": "great_loot"
+    "is_charged": true,
+    "is_locked": true,
+    "is_open": false,
+    "item_size": "palm_sized",
+    "item_type": [
+      "standard",
+      "random_loot",
+      "electronics",
+      "can_pick_up",
+      "container"
+    ],
+    "loot_type": "great_loot",
+    "nicenames": {
+      "generic": "a mobile phone"
+    },
+    "requires_key": "mobile_passcode",
+    "slice_threshold": 5,
+    "smash_threshold": 5,
+    "starting_children": null,
+    "takes_batteries": false
   },
   "wallet": {
-    "nicename": "a wallet, with cash",
-    "description": "A worn leather wallet with around 30 pound inside. No identification or cards.",
-    "item_type": "{'can_pick_up', 'container'}",
-    "alt_names": {},
-    "is_hidden": false,
-    "is_open": false,
-    "can_be_opened": true,
+    "can_be_added_to": true,
     "can_be_closed": true,
     "can_be_locked": true,
-    "is_locked": true,
-    "requires_key": false,
-    "starting_children": null,
-    "container_limits": "small_flat_things",
-    "name_no_children": null,
-    "description_no_children": null,
+    "can_be_opened": true,
     "can_pick_up": true,
+    "children_type_limited": false,
+    "container_limits": "small_flat_things",
+    "descriptions": {
+      "generic": "A worn leather wallet with around 30 pound inside. No identification or cards.",
+      "starting_children_only": "",
+      "any_children": "",
+      "no_children": "",
+      "open_starting_children_only": "",
+      "open_any_children": "",
+      "open_no_children": ""
+    },
+    "is_locked": true,
+    "is_open": false,
     "item_size": "palm_sized",
-    "loot_type": "great_loot"
+    "item_type": [
+      "standard",
+      "can_pick_up",
+      "random_loot",
+      "container"
+    ],
+    "loot_type": "great_loot",
+    "nicenames": {
+      "generic": "a wallet, with cash"
+    },
+    "requires_key": false,
+    "slice_threshold": 5,
+    "smash_threshold": 5,
+    "starting_children": null
   },
   "the exact thing": {
-    "nicename": "the exact thing you've been needing",
-    "description": "It's the exact thing you need for the thing you need it for. But only once.",
-    "item_type": "{'can_pick_up'}",
-    "alt_names": {},
-    "is_hidden": false,
     "can_pick_up": true,
+    "descriptions": {
+      "generic": "It's the exact thing you need for the thing you need it for. But only once."
+    },
     "item_size": "small_flat_things",
-    "panacea": null,
-    "loot_type": "special_loot"
+    "item_type": [
+      "standard",
+      "random_loot",
+      "can_pick_up"
+    ],
+    "loot_type": "special_loot",
+    "nicenames": {
+      "generic": "a the exact thing you've been needing"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "severed tentacle": {
-    "nicename": "a severed tentacle",
-    "description": "It's a severed tentacle",
-    "item_type": "{'can_pick_up'}",
-    "alt_names": {},
-    "is_hidden": false,
     "can_pick_up": true,
+    "descriptions": {
+      "generic": "It's a severed tentacle"
+    },
     "item_size": "smaller_than_basketball",
-    "weird": null,
-    "loot_type": "weird"
+    "item_type": [
+      "standard",
+      "random_loot",
+      "can_pick_up"
+    ],
+    "loot_type": "weird",
+    "nicenames": {
+      "generic": "a severed tentacle"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "cabinet": {
-    "nicename": "cabinet",
-    "description": "A cabinet with something weird about it.",
-    "item_type": "{'event', 'static', 'can_open'}",
-    "can_examine": true,
-    "can_break": true,
-    "alt_names": {},
-    "is_hidden": false,
-    "event": null,
-    "event_type": "item_triggered",
-    "is_open": false,
-    "can_be_opened": true,
+    "can_be_added_to": true,
     "can_be_closed": true,
     "can_be_locked": true,
+    "can_be_opened": true,
+    "can_break": true,
+    "can_examine": true,
+    "children_type_limited": false,
+    "container_limits": 4,
+    "descriptions": {
+      "generic": "A cabinet with something weird about it.",
+      "if_open": "",
+      "if_closed": "",
+      "starting_children_only": "",
+      "any_children": "",
+      "no_children": "",
+      "open_starting_children_only": "",
+      "open_any_children": "",
+      "open_no_children": ""
+    },
     "is_locked": true,
-    "requires_key": false
+    "is_open": false,
+    "item_type": [
+      "standard",
+      "static",
+      "container"
+    ],
+    "nicenames": {
+      "generic": "a cabinet"
+    },
+    "requires_key": false,
+    "slice_threshold": 5,
+    "smash_threshold": 5,
+    "starting_children": null
   },
   "locked box": {
-    "nicename": "locked box",
-    "description": "It's a box. Boxy box.",
-    "item_type": "{'can_pick_up', 'container'}",
-    "alt_names": {},
-    "is_hidden": false,
-    "is_open": false,
-    "can_be_opened": true,
+    "can_be_added_to": true,
     "can_be_closed": true,
     "can_be_locked": true,
-    "is_locked": true,
-    "requires_key": "gold key",
-    "starting_children": null,
-    "container_limits": 4,
-    "name_no_children": null,
-    "description_no_children": null,
+    "can_be_opened": true,
     "can_pick_up": true,
-    "item_size": 0
+    "children_type_limited": false,
+    "container_limits": 4,
+    "descriptions": {
+      "generic": "It's a box. Boxy box.",
+      "starting_children_only": "",
+      "any_children": "",
+      "no_children": "",
+      "open_starting_children_only": "",
+      "open_any_children": "",
+      "open_no_children": ""
+    },
+    "is_locked": true,
+    "is_open": false,
+    "item_size": 0,
+    "item_type": [
+      "standard",
+      "can_pick_up",
+      "container"
+    ],
+    "nicenames": {
+      "generic": "a locked box"
+    },
+    "requires_key": "gold key",
+    "slice_threshold": 5,
+    "smash_threshold": 5,
+    "starting_children": null
   },
   "grave": {
-    "nicename": "a fresh grave",
-    "description": "a recently filled grave.",
-    "item_type": "{'static', 'container'}",
-    "alt_names": {},
-    "is_hidden": false,
-    "can_examine": false,
-    "can_break": false,
-    "is_open": false,
-    "can_be_opened": true,
+    "can_be_added_to": true,
     "can_be_closed": false,
     "can_be_locked": false,
-    "is_locked": true,
-    "requires_key": false,
-    "starting_children": null,
+    "can_be_opened": true,
+    "can_break": false,
+    "can_examine": false,
+    "children_type_limited": false,
     "container_limits": 4,
-    "name_no_children": null,
-    "description_no_children": null
+    "descriptions": {
+      "generic": "a recently filled grave.",
+      "starting_children_only": "",
+      "any_children": "",
+      "no_children": "",
+      "open_starting_children_only": "",
+      "open_any_children": "",
+      "open_no_children": ""
+    },
+    "is_locked": true,
+    "is_open": false,
+    "item_type": [
+      "standard",
+      "static",
+      "container"
+    ],
+    "nicenames": {
+      "generic": "a fresh grave"
+    },
+    "requires_key": false,
+    "slice_threshold": 5,
+    "smash_threshold": 5,
+    "starting_children": null
   },
   "raven": {
-    "nicename": "a raven",
-    "description": "A raven, sleek and black. You're pretty sure it knows your secrets.",
-    "item_type": "{'can_pick_up', 'food_drink', 'can_speak'}",
-    "alt_names": {},
-    "is_hidden": false,
-    "can_examine": false,
-    "can_break": false,
-    "can_pick_up": true,
-    "item_size": 0,
     "can_consume": true,
-    "can_spoil": true,
-    "is_safe": true,
-    "effect": null,
+    "can_pick_up": true,
     "can_speak": true,
+    "can_spoil": true,
+    "descriptions": {
+      "generic": "A raven, sleek and black. You're pretty sure it knows your secrets.",
+      "if_spoiled": ""
+    },
+    "effect": null,
+    "is_safe": true,
+    "is_spoiled": true,
+    "item_size": 0,
+    "item_type": [
+      "standard",
+      "food_drink",
+      "can_speak",
+      "can_pick_up"
+    ],
+    "nicenames": {
+      "generic": "a raven"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5,
     "speaks_common": true
   },
   "rocking chair": {
-    "nicename": "a wooden rocking chair",
-    "description": "a simple but well-made rocking chair.",
-    "item_type": "{'standard'}"
+    "descriptions": {
+      "generic": "a simple but well-made rocking chair."
+    },
+    "item_type": [
+      "standard"
+    ],
+    "nicenames": {
+      "generic": "a wooden rocking chair"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "merry-go-round": {
-    "nicename": "a merry-go-round",
-    "description": "a sweet if slightly outdated merry-go-round, horsed in-tact with and with most of its paint.",
-    "item_type": "{'static'}",
-    "alt_names": {},
-    "is_hidden": false,
+    "can_break": false,
     "can_examine": false,
-    "can_break": false
+    "descriptions": {
+      "generic": "a sweet if slightly outdated merry-go-round, horsed in-tact with and with most of its paint."
+    },
+    "item_type": [
+      "standard",
+      "static"
+    ],
+    "nicenames": {
+      "generic": "a merry-go-round"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "birdbath": {
-    "nicename": "a stone birdbath",
-    "description": "a stone birdbath, dark green algae stuck firm to the basin.",
-    "item_type": "{'static'}",
-    "alt_names": {},
-    "is_hidden": false,
+    "can_break": false,
     "can_examine": false,
-    "can_break": false
+    "descriptions": {
+      "generic": "a stone birdbath, dark green algae stuck firm to the basin."
+    },
+    "item_type": [
+      "standard",
+      "static"
+    ],
+    "nicenames": {
+      "generic": "a stone birdbath"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "comb": {
-    "nicename": "a comb",
-    "description": "A simple plastic comb, made matte by the environment and time.",
-    "item_type": "{'static', 'fragile'}",
+    "can_break": true,
     "can_examine": false,
-    "alt_names": {},
-    "is_hidden": false,
-    "broken_name": null,
-    "flammable": false,
-    "can_break": true
+    "descriptions": {
+      "generic": "A simple plastic comb, made matte by the environment and time.",
+      "if_broken": ""
+    },
+    "is_broken": false,
+    "item_type": [
+      "standard",
+      "static",
+      "fragile"
+    ],
+    "nicenames": {
+      "generic": "a comb"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "trident": {
-    "nicename": "a trident",
-    "description": "a rather impressive trident, starp points and a fine filigree on the handle.",
-    "item_type": "{'static'}",
-    "can_examine": false,
     "can_break": false,
-    "alt_names": {},
-    "is_hidden": false
+    "can_examine": false,
+    "descriptions": {
+      "generic": "a rather impressive trident, starp points and a fine filigree on the handle."
+    },
+    "item_type": [
+      "standard",
+      "static"
+    ],
+    "nicenames": {
+      "generic": "a trident"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "ornate silver key": {
-    "nicename": "an ornate silver key",
-    "description": "an ornate silver key with small `VI` pressed into the head.",
-    "item_type": "{'key', 'can_pick_up'}",
-    "is_key": true,
-    "alt_names": {},
-    "is_hidden": false,
     "can_pick_up": true,
-    "item_size": 0
+    "descriptions": {
+      "generic": "an ornate silver key with small `VI` pressed into the head."
+    },
+    "is_key": true,
+    "is_key_to": null,
+    "item_size": 0,
+    "item_type": [
+      "standard",
+      "key",
+      "can_pick_up"
+    ],
+    "nicenames": {
+      "generic": "an ornate silver key"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "mummified mouse": {
-    "nicename": "a mummified mouse",
-    "description": "The tiny, dried body of a long-dead mouse, curled up. You could think it was sleeping if it wasn't so frail and stiff.",
-    "item_type": "{'fragile', 'can_pick_up', 'food_drink', 'flammable'}",
-    "broken_name": null,
-    "flammable": true,
     "can_break": true,
-    "can_pick_up": true,
-    "item_size": 0,
-    "alt_names": {},
-    "is_hidden": false,
     "can_consume": true,
+    "can_pick_up": true,
     "can_spoil": true,
-    "is_safe": true
+    "descriptions": {
+      "generic": "The tiny, dried body of a long-dead mouse, curled up. You could think it was sleeping if it wasn't so frail and stiff.",
+      "if_spoiled": "",
+      "if_broken": ""
+    },
+    "effect": null,
+    "is_broken": false,
+    "is_burned": false,
+    "is_safe": true,
+    "is_spoiled": true,
+    "item_size": 0,
+    "item_type": [
+      "standard",
+      "food_drink",
+      "fragile",
+      "can_pick_up",
+      "flammable"
+    ],
+    "nicenames": {
+      "generic": "a mummified mouse"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "grandfather clock": {
-    "nicename": "a grandfather clock",
-    "description": "An antique-looking grandfather clock, silent. Maybe it's in need of a wind. ",
-    "item_type": "{'container', 'static'}",
-    "alt_names": {},
-    "is_hidden": false,
-    "can_examine": false,
-    "can_break": false,
-    "is_open": false,
-    "can_be_opened": true,
+    "can_be_added_to": true,
     "can_be_closed": true,
     "can_be_locked": true,
+    "can_be_opened": true,
+    "can_break": false,
+    "can_examine": false,
+    "children_type_limited": false,
+    "container_limits": 4,
+    "descriptions": {
+      "generic": "An antique-looking grandfather clock, silent. Maybe it's in need of a wind. ",
+      "starting_children_only": "",
+      "any_children": "",
+      "no_children": "",
+      "open_starting_children_only": "",
+      "open_any_children": "",
+      "open_no_children": ""
+    },
     "is_locked": true,
+    "is_open": false,
+    "item_type": [
+      "standard",
+      "static",
+      "container"
+    ],
+    "nicenames": {
+      "generic": "a grandfather clock"
+    },
     "requires_key": "ornate silver key",
+    "slice_threshold": 5,
+    "smash_threshold": 5,
     "starting_children": [
       "mummified mouse"
-    ],
-    "container_limits": 4,
-    "name_no_children": null,
-    "description_no_children": null
+    ]
   },
   "old gold key": {
-    "nicename": "old gold key",
-    "item_type": "{'key', 'can_pick_up'}",
-    "is_key": true,
     "can_pick_up": true,
-    "item_size": 0
+    "descriptions": {
+      "generic": null
+    },
+    "is_key": true,
+    "is_key_to": null,
+    "item_size": 0,
+    "item_type": [
+      "standard",
+      "key",
+      "can_pick_up"
+    ],
+    "nicenames": {
+      "generic": "a old gold key"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "secateurs": {
-    "nicename": "a pair of secateurs",
-    "item_type": "{'can_pick_up'}",
     "can_pick_up": true,
+    "descriptions": {
+      "generic": "Slightly rusted secateurs, still likely sharp enough to do their job."
+    },
     "item_size": 0,
-    "description": "Slightly rusted secateurs, still likely sharp enough to do their job.",
-    "is_hidden": false
+    "item_type": [
+      "standard",
+      "can_pick_up"
+    ],
+    "nicenames": {
+      "generic": "a pair of secateurs"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "local map": {
-    "nicename": "local map",
-    "item_type": "{'can_pick_up', 'fragile', 'books_paper'}",
-    "can_pick_up": true,
-    "item_size": 0,
-    "broken_name": null,
-    "flammable": false,
     "can_break": true,
-    "print_on_investigate": true,
+    "can_pick_up": true,
     "can_read": true,
-    "description": "a yellowed [[]] showing the region surrounding the graveyard."
+    "descriptions": {
+      "generic": "a yellowed [[]] showing the region surrounding the graveyard.",
+      "if_broken": ""
+    },
+    "flammable": false,
+    "is_broken": false,
+    "is_burned": false,
+    "item_size": 0,
+    "item_type": [
+      "standard",
+      "books_paper",
+      "fragile",
+      "can_pick_up"
+    ],
+    "nicenames": {
+      "generic": "a local map"
+    },
+    "print_on_investigate": true,
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
-"work shed": {
-    "nicename": "work shed",
-    "item_type": "{'wall', 'static', 'loc_exterior'}",
-    "is_vertical_surface": true,
-    "can_examine": false,
+  "work shed": {
     "can_break": false,
-    "description": "a simple shed, with wood panelled walls and a simple wooden door."
+    "can_examine": false,
+    "descriptions": {
+      "generic": "a simple shed, with wood panelled walls and a simple wooden door."
+    },
+    "has_door": false,
+    "is_loc_exterior": true,
+    "is_vertical_surface": true,
+    "item_type": [
+      "standard",
+      "static",
+      "wall",
+      "loc_exterior"
+    ],
+    "nicenames": {
+      "generic": "a work shed"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5,
+    "transition_objs": null
   },
   "wooden door": {
-    "alt_names": ["shed doorway", "shed door"],
-    "nicename": "shed door",
-    "item_type": "{'wall', 'can_open', 'static', 'door_window}",
-    "is_vertical_surface": true,
-    "is_open": false,
-    "can_be_opened": true,
+    "alt_names": [
+      "shed doorway",
+      "shed door"
+    ],
     "can_be_closed": true,
-    "can_be_locked": false,
-    "is_locked": false,
-    "requires_key": false,
-    "can_examine": false,
+    "can_be_opened": true,
     "can_break": false,
-    "descriptions": {"if_closed": "a closed wooden door, with nail-marks from a cross-bar removed somewhat recently", "if_open": "a plain wooden door, sitting slightly ajar"}
+    "can_examine": false,
+    "descriptions": {
+      "if_closed": "a closed wooden door, with nail-marks from a cross-bar removed somewhat recently",
+      "if_open": "a plain wooden door, sitting slightly ajar"
+    },
+    "is_door": false,
+    "is_open": false,
+    "is_other": false,
+    "is_vertical_surface": true,
+    "is_window": false,
+    "item_type": [
+      "standard",
+      "static",
+      "wall",
+      "door_window",
+      "can_open"
+    ],
+    "nicenames": {
+      "generic": "a shed door"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "curtains": {
-    "alt_names": [],
-    "nicename": "a pair of curtains",
-    "item_type": "{'can_open', 'static', 'flammable'}"
+    "can_be_closed": true,
+    "can_be_opened": true,
+    "can_break": false,
+    "can_examine": false,
+    "descriptions": {
+      "generic": null,
+      "if_open": "",
+      "if_closed": ""
+    },
+    "is_burned": false,
+    "is_open": false,
+    "item_type": [
+      "standard",
+      "static",
+      "flammable",
+      "can_open"
+    ],
+    "nicenames": {
+      "generic": "a pair of curtains"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   },
   "matchbox": {
-    "alt_names": ["box of matches"],
-    "item_type": ["container", "can_pick_up", "flammable"],
-    "item_size": "a_few_marbles",
-    "starting_children": ["matches"],
+    "alt_names": [
+      "box of matches"
+    ],
+    "can_be_added_to": true,
+    "can_be_closed": true,
+    "can_be_locked": true,
+    "can_be_opened": true,
+    "can_pick_up": true,
+    "children_type_limited": false,
+    "container_limits": 4,
     "descriptions": {
-        "generic": "a scratched and worn matchbox, waterstained but with the scratch panel on the side still in tact."}
+      "generic": "a scratched and worn matchbox, waterstained but with the scratch panel on the side still in tact.",
+      "starting_children_only": "",
+      "any_children": "",
+      "no_children": "",
+      "open_starting_children_only": "",
+      "open_any_children": "",
+      "open_no_children": ""
+    },
+    "is_burned": false,
+    "is_locked": true,
+    "is_open": false,
+    "item_size": "a_few_marbles",
+    "item_type": [
+      "standard",
+      "flammable",
+      "can_pick_up",
+      "container"
+    ],
+    "nicenames": {},
+    "requires_key": false,
+    "slice_threshold": 5,
+    "smash_threshold": 5,
+    "starting_children": [
+      "matches"
+    ]
   },
   "match": {
-    "alt_names": ["matches"],
-    "item_type": ["firesource", "can_pick_up", "flammable"],
-    "item_size": "small_flat_things",
-    "nicenames": {
-        "if_singular": "a single match",
-        "if_plural": "a few matches"},
+    "alt_names": [
+      "matches"
+    ],
+    "can_pick_up": true,
     "descriptions": {
-        "if_singular": "a single match, not yet used.",
-        "if_plural": "a number of matches, all unused."},
-    "has_multiple_instances": 12
+      "if_singular": "a single match, not yet used.",
+      "if_plural": "a number of matches, all unused."
+    },
+    "firesource": true,
+    "has_multiple_instances": 12,
+    "is_burned": false,
+    "item_size": "small_flat_things",
+    "item_type": [
+      "standard",
+      "is_cluster",
+      "firesource",
+      "can_pick_up",
+      "flammable"
+    ],
+    "nicenames": {
+      "if_singular": "a single match",
+      "if_plural": "a few matches"
+    },
+    "slice_threshold": 5,
+    "smash_threshold": 5
   }
 }

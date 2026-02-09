@@ -35,16 +35,18 @@ print("Item registry is being run right now.")
 
 type_defaults = {
     "standard":
-        {f"descriptions": {"generic": None}, "slice_threshold": 5, "smash_threshold": 5},
+        {f"descriptions": {"generic": None}, "nicenames": {}, "slice_threshold": 5, "smash_threshold": 5},
     "static":
         {"can_examine": False, "can_break": False},
     #"all_items": {"starting_location": None, "current_loc": None, "alt_names": {}, "is_hidden": False},
     "can_open":
-        {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False,
+        {"is_open": False, "can_be_opened": True, "can_be_closed": True},
         "descriptions":
             {"if_closed": "", "if_open": ""},
         "nicenames": {
-            "if_closed": None, "if_open": None}},
+            "if_closed": None, "if_open": None},
+    "can_lock":
+        {"can_be_locked": True, "is_locked": True, "requires_key": False},
     "container":
         {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False, 'starting_children': None, 'container_limits': 4, "children_type_limited": False, "can_be_added_to": True,
          "nicenames": {
@@ -93,7 +95,8 @@ type_defaults = {
     "is_cluster": {
         "has_multiple_instances": 2
     },
-    "firesource": {"firesource": True}
+    "firesource": {"firesource": True},
+    "data_noun": {"is_not_physical": True}
 
     #{"special_traits: set("dirty", "wet", "panacea", "dupe", "weird", "can_combine")}, # aka random attr storage I'm not using yet
     #"exterior": {"is_interior": False} ## Can be set scene-wide, so 'all parts of 'graveyard east' are exterior unless otherwise mentioned'. (I say 'can', I mean 'will be when I set it up')

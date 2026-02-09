@@ -55,9 +55,17 @@ def check_flag(item_types:set=set(), flag:str="", get_single=True):
 def check_all_flags_present():
 
     import json
-    json_primary = "dynamic_data/items_main.json" # may break things
+    json_primary = "ref_files/items_main.json" # may break things
     with open(json_primary, 'r') as file:
         item_defs_dict = json.load(file)
+
+    save_to_backup = True
+    if save_to_backup:
+        backup = r"dynamic_data\items_main_backup.json"
+        with open(backup, 'w') as file: ##NOTE: Currently puts it in generated instead so I can check, later just do it directly back to items_main.
+            json.dump(item_defs_dict, file, indent=2)
+        return
+
     missing_tags = {}
 
     for item in item_defs_dict:
@@ -137,7 +145,7 @@ def testing_t_defaults_against_item_defs(per_item=True, item_name=""):
     collected_per_item = {}
 
     import json
-    json_primary = "dynamic_data/items_main.json" # may break things
+    json_primary = "ref_files/items_main.json" # may break things
     with open(json_primary, 'r') as file:
         item_defs_dict = json.load(file)
 
@@ -646,62 +654,101 @@ if __name__ == "__main__":
             print("Nothing to add, all entries in main dict and/or no changes made.")
     """
 
+from item_dict_gen import item_type_descriptions
+from itemRegistry import type_defaults
+
 def get_all_default_flags(item):
+
+    print(f"\nITEM: {item}")
+    def clean_types(types, attr):
+        if "{" in attr:
+            _, type_item = attr.split("{")
+            type_item, _ = type_item.split("}")
+            type_item = type_item.replace("'", "")
+            parts = type_item.split(", ")
+            #self.item_type = self.item_type | set(parts)
+            for part in parts:
+                if part != None:
+                    types.add(part)
+        else:
+            print(f"Is string but no", r"'{'", " ?")
+        return types
 
     types = set()
 
-    item_def = testReg.item_defs.get(item)
-
-    from item_dict_gen import item_type_descriptions
+    copy_def = testReg.item_defs.get(item)
+    item_def = copy_def.copy()
 
     description_dict = {}
 
-    from itemRegistry import type_defaults
     if item_def.get("item_type"):
         attr = item_def.get("item_type")
         if isinstance(attr, str):
-            if "{" in attr:
-                _, type_item = attr.split("{")
-                type_item, _ = type_item.split("}")
-                type_item = type_item.replace("'", "")
-                parts = type_item.split(", ")
-                #self.item_type = self.item_type | set(parts)
-                for part in parts:
-                    if part != None:
-                        types.add(part)
-            else:
-                print(f"Is string but no", r"'{'", " ?")
-            item_def["item_type"] = types
+            types = clean_types(types, attr)
         elif isinstance(attr, list):
             types = set(attr)
-            item_def["item_type"] = types # so I can add to it later along with the string converted version.
+             # so I can add to it later along with the string converted version.
 
-        for def_type in types:
-            flags = type_defaults.get(def_type)
+        if "standard" not in types:
+            types.add("standard")
 
-            for flag, val in flags.items():
-                if flag in item_def:
-                    continue
-                item_def[flag] = val
+        item_def["item_type"] = types
+
+        for def_type in type_defaults:
+            if def_type in types:
+                flags = type_defaults.get(def_type)
+                for flag, val in flags.items():
+                    if flag in item_def:
+                        continue
+                    if isinstance(val, dict):
+                        item_def[flag] = val.copy()
+                    else:
+                        item_def[flag] = val
+                #for flag, val in flags.items():
+                #    if flag in item_def:
+                #        continue
+                #    item_def[flag] = val
 
 
-            if item_type_descriptions.get(def_type):
-                description_dict = item_type_descriptions[def_type]
+                if item_type_descriptions.get(def_type):
+                    description_dict = item_type_descriptions[def_type]
+                    
 
-            if item_def.get("descriptions"):
-                for entry in description_dict.keys():
-                    if entry not in item_def["descriptions"]:
-                        item_def["descriptions"].update({entry: ""})
-            else:
-                item_def["descriptions"] = description_dict
+                if item_def.get("descriptions"):
+                    for entry in description_dict.keys():
+                        if entry not in item_def["descriptions"]:
+                            item_def["descriptions"].update({entry: ""})
+                else:
+                    item_def["descriptions"] = description_dict
 
+                if item_def.get("nicename"):
+                    nicename = item_def["nicename"]
+                    if nicename == None:
+                        nicename = item
+                    if not nicename.startswith("a ") and not nicename.startswith("an "):
+                        nicename = f"a {nicename}"
+
+                    if item_def.get("nicenames"):
+                        for entry in item_def["nicenames"]:
+                            if not item_def["nicenames"][entry]:
+                                item_def["nicenames"][entry] = nicename
+                    else:
+                        item_def["nicenames"] = {"generic": nicename}
+
+                    item_def.pop("nicename")
+
+    #if item_def["descriptions"] is type_defaults["standard"]["descriptions"]:
+    #    print("item def descriptions == type_default standard descriptions")
+    #else:
+    #    print("item def descriptions != type_default standard descriptions")
+    testReg.updated_defs[item] = item_def
     #print(f"item_def: {item_def}")
 
 def flags_not_in_default(item):
 
-    ignored_flags = ["nicename", "item_type", "descriptions", "nicenames"]
+    ignored_flags = ["nicename", "item_type", "descriptions"]
     all_flags = set()
-    for def_type in testReg.item_defs[item].get("item_type"):
+    for def_type in testReg.updated_defs[item].get("item_type"):
         flags = set(type_defaults.get(def_type))
         if not flags:
             print(f"{def_type} not in type_defaults.")
@@ -710,10 +757,10 @@ def flags_not_in_default(item):
 
     flags_to_check = list()
 
-    for attr in list(testReg.item_defs[item]):
+    for attr in list(testReg.updated_defs[item]):
         if attr not in ignored_flags and attr not in all_flags:
-            if not testReg.item_defs[item][attr]:
-                testReg.item_defs[item].pop(attr)
+            if not testReg.updated_defs[item][attr]:
+                testReg.updated_defs[item].pop(attr)
             else:
                 flags_to_check.append(attr)
 
@@ -724,31 +771,38 @@ def flags_not_in_default(item):
     #flags_to_really_check = set()
     if flags_to_check:
         for flag in flags_to_check:
-            if flag in omit_flags:
-                if flag == "flammable":
-                    if testReg.item_defs[item][flag] == "starting_loot":
-                        testReg.item_defs[item]["item_type"].add("starting_loot")
             if flag == "loot_type":
-                if testReg.item_defs[item][flag] == "starting_loot":
-                    testReg.item_defs[item]["item_type"].add("starting_loot")
+                if testReg.updated_defs[item][flag] == "starting_loot":
+                    testReg.updated_defs[item]["item_type"].add("starting_loot")
                 else:
-                    testReg.item_defs[item]["item_type"].add("random_loot")
-            elif flag == "key" and testReg.item_defs[item].get('requires_key') == False:
-                testReg.item_defs[item]["requires_key"] = testReg.item_defs[item]["key"]
-                testReg.item_defs[item].pop("key")
+                    testReg.updated_defs[item]["item_type"].add("random_loot")
+            elif flag == "key" and testReg.updated_defs[item].get('requires_key') == False:
+                testReg.updated_defs[item]["requires_key"] = testReg.updated_defs[item]["key"]
+                testReg.updated_defs[item].pop("key")
 
             elif flag == "has_multiple_instances":
-                testReg.item_defs[item]["item_type"].add("is_cluster")
+                testReg.updated_defs[item]["item_type"].add("is_cluster")
 
-            elif flag == "description" and not hasattr(testReg.item_defs[item], "descriptions"):
-                testReg.item_defs[item]["descriptions"] = {"generic": f"{testReg.item_defs[item]["description"]}"}
-                testReg.item_defs[item].pop("description")
+            elif flag == "description" and not hasattr(testReg.updated_defs[item], "descriptions"):
+                #print(f"DESCRIPTION: {testReg.updated_defs[item]['description']}")
+                testReg.updated_defs[item]["descriptions"] = {"generic": f"{testReg.updated_defs[item]["description"]}"}
+                testReg.updated_defs[item].pop("description")
             elif flag == "flammable":
-                testReg.item_defs[item]["item_type"].add("flammable")
+                testReg.updated_defs[item]["item_type"].add("flammable")
+                testReg.updated_defs[item].pop(flag)
+
             elif flag == "is_key_to":
-                testReg.item_defs[item]["item_type"].add("key")
+                testReg.updated_defs[item]["item_type"].add("key")
+            elif flag == "nicename":
+                print("flag = nicename")
+                if testReg.updated_defs[item].get("nicenames"):
+                    for entry in testReg[item]["nicenames"]:
+                        print(f"ENTRY: {entry}")
+                        testReg[item]["nicenames"][entry] = testReg.updated_defs[item]["nicename"]
             else:
                 testReg.flags_to_amend.add(flag)
+
+
                 #flags_to_really_check.add(flag)
     #for flag in all_flags:
     #    if flag not in item_defs:
@@ -756,25 +810,28 @@ def flags_not_in_default(item):
     #if flags_to_really_check:
         #print(f"\n\nFlags to check in {item} defs:\n{flags_to_really_check}\n{testReg.item_defs[item]}")
 
-def update_ref_file(json_file):
+def update_ref_file(json_file, updated=True):
 
+    if updated:
+        dictionary = testReg.updated_defs
+    else:
+        dictionary = testReg.item_defs
     import json
     with open(json_file, 'w') as file:
-        json.dump(testReg.item_defs, file, indent=2)
+        json.dump(dictionary, file, indent=2)
 
-def serialise_item_defs():
-    for item, field in testReg.item_defs.items():
+def serialise_item_defs(dictionary):
+    for item, field in dictionary.items():
         for k, v in field.items():
             if isinstance(v, set):
-                testReg.item_defs[item][k] = list(v)
+                dictionary[item][k] = list(v)
 
 
-def order_dict():
+def order_dict(dictionary):
+    for item in dictionary:
+        dictionary[item] = dict(sorted(dictionary[item].items()))
 
-    for item in testReg.item_defs:
-        testReg.item_defs[item] = dict(sorted(testReg.item_defs[item].items()))
-
-    testReg.item_defs = dict(sorted(testReg.item_defs.items()))
+    dictionary = dict(sorted(dictionary.items()))
 
 
 def fix_flags():
@@ -785,15 +842,19 @@ def fix_flags():
 
 # this first bit is just so I have a direct comparison of entries before/after the change.
 generated_file = r"ref_files\generated_items.json"
-order_dict()
+
+dictionary = testReg.item_defs
+order_dict(dictionary)
 #
+#check_all_flags_present()
 
-update_ref_file(generated_file)
-
+update_ref_file(generated_file, updated=False)
+dictionary = testReg.updated_defs
 fix_flags()
-serialise_item_defs()
-order_dict()
+serialise_item_defs(dictionary)
+order_dict(dictionary)
 
-json_file = r"dynamic_data\temp_defs.json" # currently using temp_defs until I'm sure I want to keep it.
-update_ref_file(json_file)
-print(testReg.flags_to_amend)
+#json_file = r"dynamic_data\temp_defs.json" # currently using temp_defs until I'm sure I want to keep it.
+json_file = r"ref_files\items_main.json" # may break things
+update_ref_file(json_file, updated=True)
+#print(testReg.flags_to_amend)
