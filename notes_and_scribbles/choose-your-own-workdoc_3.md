@@ -501,3 +501,9 @@ Finally figured out why some of my print lines have a random space at the start 
 also
             print(f"\n{assign_colour(msg, colour='event_msg')}")
 ^^ doesn't leave a space at the far left.
+
+3.25 Added some minor function to def burn, and updated the parser a little to allow for 'set x on fire', as well as 'set x down'.
+
+Oh - seeing as membrane now updates local_items every time, I really should reuse that during the item checks, instead of rerunning it over and over. If I save both sets to membrane, then I only ever check against those, not getting those lists over and over from itemReg/inventory for accessibility checks. Yes?
+
+Will look into it later. Braindead today.

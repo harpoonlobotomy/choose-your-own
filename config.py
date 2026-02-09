@@ -5,7 +5,7 @@ enable_tui: bool = False
 
 run_tests = False#True
 
-test_mode = False # True == skip player name, intro
+test_mode = True # True == skip player name, intro
 
 white_bg = True
 print_items_in_area = False#True
@@ -22,6 +22,8 @@ event_data = r"ref_files\event_defs.json"
 starting_location_str = r"graveyard"
 
 # verbregistry/verb_membrane/parsing
-show_reciever = False
+show_reciever = True#False
 
 add_new_words_if_missing = False
+
+require_firesource = True

@@ -4,6 +4,7 @@
 #import time
 from calendar import c
 from time import sleep
+from typing import Required
 from logger import logging_fn, traceback_fn
 from env_data import cardinalInstance, locRegistry as loc, placeInstance
 from interactions import item_interactions
@@ -723,9 +724,35 @@ def clean(format_tuple, input_dict):
 
 def burn(format_tuple, input_dict):
     logging_fn()
-    print("burn FUNCTION")
 
-    print(f"Cannot process {input_dict} in def burn() End of function, unresolved. (Function not yet written)")
+    noun = get_noun(input_dict)
+
+    from config import require_firesource
+
+    can_burn = False
+    firesource_found = False
+
+    if require_firesource:
+        print("Here check for a fire source locally or in inventory, only allow burn if found. (Set up the check using membrane.local_items, make that change everywhere so we don't keep running the 'get_local_items' over and over. It /has/ to be better if it's the same preprocessed set, right?)")
+        firesource_found = True # spoofed for testing
+
+    if "flammable" in noun.item_type: # later, all should be this. For now, most aren't. Wrote the whole new chunk of edit_item_defs but haven't updated items_main yet.
+        can_burn = True
+
+    if hasattr(noun, "flammable") and noun.flammable:
+        can_burn = True
+
+    if not require_firesource or (require_firesource and firesource_found):
+        if can_burn:
+            print(f"The {noun.name} can certainly burn.")
+            set_noun_attr(("is_burned", True), noun=noun)
+            return
+
+    if not can_burn:
+        print(f"The {assign_colour(noun)} can't burn, it seems.")
+
+    elif require_firesource:
+        print(f"You don't have anything to burn the {assign_colour(noun)} with.")
 
 
 def break_item(format_tuple, input_dict):
@@ -744,6 +771,7 @@ def break_item(format_tuple, input_dict):
         if dir_or_sem in ("with", "using", "on"):
             if hasattr(noun_2, "can_break"):
                 print("Chance to break either object. Need to implement a breakability scale, so I can test which item breaks. Need to formalise the break/flammable setup overall.")
+                # Havea added slice and smash thresholds for damage defence to the dict (or will, once I update via edit_item_defs), but also need to implement it on the weapon side. Or is it just 'higher number beats lower number'? idk. If two knives try to slice each other, one won't lose just because it's a slightly sharper knife. Idk. Maybe the diff between thresholds has to be >2 or something, or is relative to the numbers of each. Or I have different vals for off and def. idk.
 
 
     # verb_noun == break item (if it's fragile enough)
@@ -1352,6 +1380,10 @@ def drop(format_tuple, input_dict):
 
 def set_action(format_tuple, input_dict):
     logging_fn()
+    verb = get_verb(input_dict)
+    if verb.name == "set":
+        print("This should always be a 'place thing somewhere' type command. If not, fix me.")
+
     # verb_noun_dir == set item down == drop
     # verb_noun_dir_noun == set item on fire if noun2 == 'fire' == burn
     # verb_dir_noun_sem_noun set on fire with item

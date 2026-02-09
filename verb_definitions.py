@@ -42,7 +42,7 @@ directions = ["down", "up", "left", "right", "away", "toward", "towards", "close
 ## "in front of"?? Need to be able to cope with that.
 
 nulls = ["the", "a", "an"]
-semantics = ["with", "and", "around", "for", "while"]
+semantics = ["with", "and", "around", "for", "while", "set"]
 
 null_sem_combinations = ["a while"]
 
@@ -99,7 +99,12 @@ formats = {
     "verb_noun_dir_dir_noun": (verb, noun, direction, direction, noun), # put paperclip down on table
     "verb_noun_dir_noun_dir_loc": (verb, noun, direction, noun, direction, location), # put paperclip in glass jar in graveyard # pointless, but included just in case.
     "verb_noun_sem_noun": (verb, noun, sem, noun), # mix water with potion
-    "verb_dir_noun_sem_noun": (verb, direction, noun, sem, noun) #go to table with box
+    "verb_dir_noun_sem_noun": (verb, direction, noun, sem, noun), #go to table with box
+
+    "sem_noun_verb": (sem, noun, verb), # 'set magazine alight
+    "sem_noun_dir_verb": (sem, noun, direction, verb) # set magazine on fire
+    ## NOTE: Will likely break at several points in the parser, as they expect 'verb' to always be first. Also may break because 'set' is a verb, too.
+
 }
 """
 formats = {
@@ -162,6 +167,9 @@ verb_noun_sem_sem = formats["verb_noun_sem_sem"]
 verb_noun_sem_noun = formats["verb_noun_sem_noun"]
 verb_dir_noun_sem_noun = formats["verb_dir_noun_sem_noun"]
 
+sem_noun_verb = formats["sem_noun_verb"]
+sem_noun_dir_verb = formats["sem_noun_dir_verb"]
+
 ## Note: Need to figure out how I'm getting noun-objects in here. Like, 'magnifying glass' is 1 noun, but two words. Need to figure that out.
 
 allowed_null = set(('the', 'a', 'an', 'out', 'of')) ## removed strictly directional words from null, as null is used differently now.
@@ -204,7 +212,7 @@ verb_defs_dict = {
     "drop": {"alt_words": ["discard", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun, verb_noun_dir_loc, verb_noun_dir_noun_dir_loc, verb_noun_dir_meta]},
     "read": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_loc, verb_noun_sem_sem, verb_noun_sem]},
     "use": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_dir_loc, verb_noun_dir_noun, verb_noun_noun]},
-    "burn": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_dir_loc], "inventory_check": "fire_source"},
+    "burn": {"alt_words": ["fire", "alight"], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_dir_loc, sem_noun_dir_verb, sem_noun_verb], "inventory_check": "fire_source"},
     "lock": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_noun], "inventory_check": "key"},
     "unlock": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun_sem_noun, verb_noun, verb_noun_noun], "inventory_check": "key"},
     "open": {"alt_words": ["pry", ""], "allowed_null": None, "formats": [verb_noun, verb_meta, verb_dir_meta, verb_noun_sem_noun, verb_dir_meta, verb_noun_noun]},
@@ -224,18 +232,8 @@ verb_defs_dict = {
 # Need a clean way to deal with multi-component things like this. Say, 'set', could be 'set paper on table', or 'set paper on fire'. So maybe
 # 'if set, if input[noun2] == "fire", verb = burn. else, verb = place
 
-#verb_defs_dict = {
-#    "go to": {"alt_words":["go", "approach"], "null_words": ["to"], "formats": [verb_only, verb_noun]},
-#    "leave": {"alt_words": ["depart", ""], "null_words": ["the"], "formats": [verb_noun]},
-#    "combine": {"alt_words": ["mix", "add"], "null_words": ["and", "with", "plus", "the", "a"], "expected_parts": 2, "formats": f"[verb] [null] {type#(ItemInstance)} [null] {type(ItemInstance)}", "requires_noun": True},
-#    "drop": {"alt_words": ["", ""], "null_words": ["the", "a"], "expected_parts": 1, "formats": f"[verb] {type(ItemInstance)}", "requires_noun": True},
-#    "eat": {"alt_words": ["consume", ""], "null_words": ["the", "a"], "expected_parts": 1, "formats": f"[verb] {type(ItemInstance)}", "requires_noun": True},
-#    "look": {"alt_words": ["watch", "observe"], "null_words": ["at"], "expected_parts": 1, "formats": f"[verb] {type(ItemInstance)}", "requires_noun": False}
-#    }
-
-
 def get_verb_defs(verb_name=None):
-    #print("\n" * 10)
+
     verb_set=set()
     if verb_name:
         attr=verb_defs_dict.get(verb_name)
@@ -247,4 +245,4 @@ def get_verb_defs(verb_name=None):
                 if alt_name:
                     verb_set.add(alt_name)
 
-        return verb_defs_dict, verb_set ## Just a strait up set of all the verbs, nothing else.
+        return verb_defs_dict, verb_set
