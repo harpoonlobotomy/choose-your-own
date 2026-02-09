@@ -92,7 +92,8 @@ type_defaults = {
     },
     "is_cluster": {
         "has_multiple_instances": 2
-    }
+    },
+    "firesource": {"firesource": True}
 
     #{"special_traits: set("dirty", "wet", "panacea", "dupe", "weird", "can_combine")}, # aka random attr storage I'm not using yet
     #"exterior": {"is_interior": False} ## Can be set scene-wide, so 'all parts of 'graveyard east' are exterior unless otherwise mentioned'. (I say 'can', I mean 'will be when I set it up')
@@ -199,6 +200,7 @@ class ItemInstance:
 Note on descriptions: if self.descriptions, will have different descriptions depending on type, flags. Will automate it with a dict later (which flags determine which description options). Not sure yet if all items will always have descriptions, or or simple objects with no alternate names will only ever have 'description' and use that always. Will allow for self.description as-is for now.
         """
         self.description:str = attr.get("description") # will be initd shortly, depending on item conditions. Use default if found for simple objects with no alt names.
+        print(f"Name: {self.name} // self.description in init: {self.description}")
         self.starting_location:dict = attr.get("starting_location") # currently is styr
         self.verb_actions = set()
         self.location:cardinalInstance = None
@@ -445,6 +447,11 @@ class itemRegistry:
                             return instance_count, instance_children
 
                         if child in self.item_defs:
+                            if self.alt_names.get(child):
+                                #child = self.by_alt_names[child]
+                                new_child = self.alt_names[child]
+                                print(f"TARGET CHHILD: {child} # new_child: {new_child}")
+                            print(f"BY alt names: {self.alt_names}")
                             target_child = self.init_single(child, self.item_defs[child])
                             all_item_names_generated.append((target_child, "generate_child from item_defs"))
                         else:
@@ -829,10 +836,20 @@ class itemRegistry:
         logging_fn()
         from misc_utilities import has_and_true
         orig_description = inst.description
+        print(f"orig_description: {orig_description}")
         description = None
         starting_children_only = False
 
+        if self.alt_names.get(inst.name):
+            descriptions = self.item_defs.get(self.alt_names.get(inst.name)).get("descriptions")
+            if descriptions:
+                print(f"Descriptions from alt_names: {descriptions}")
+                print(f"inst.descriptions: {inst.descriptions}")
+            if not hasattr(inst, "descriptions") or not inst.descriptions:
+                inst.descriptions = descriptions
+
         if not inst.descriptions and inst.description:
+            print(f"inst.description: {inst.description}")
             return
 
         def get_if_open(inst:ItemInstance, label:str):
@@ -851,51 +868,70 @@ class itemRegistry:
             return description
 
         if "container" in inst.item_type:
+
             if has_and_true(inst, "children") and has_and_true(inst, "starting_children"):
                 starting_children_only = True
                 for child in inst.children:
                     if not child in inst.starting_children or has_and_true(child, "hidden"):
                         starting_children_only = False
 
-
             if starting_children_only:
-                description = get_if_open(inst, "starting_children_only")
+                test = get_if_open(inst, "starting_children_only")
+                print(f"TEST: {test}")
+                if test:
+                    description = test
 
             elif hasattr(inst, "children") and inst.children:
                 long_desc = []
                 from testing_coloured_descriptions import compile_long_desc
                 from misc_utilities import assign_colour
+                if_open = get_if_open(inst, "any_children")
+                if if_open:
+                    long_desc.append(get_if_open(inst, "any_children"))
 
-                long_desc.append(get_if_open(inst, "any_children"))
+                    for child in inst.children:
+                        long_desc.append(assign_colour(child, nicename=True))
+                        print(f"long_desc with child: {long_desc}")
 
-                for child in inst.children:
-                    long_desc.append(assign_colour(child, nicename=True))
-
-                description = compile_long_desc(long_desc)
+                    description = compile_long_desc(long_desc)
 
             else:
                 if not has_and_true(inst, "children") and get_if_open(inst, "no_children"):
                     description = get_if_open(inst, "no_children")
 
-        elif has_and_true(inst, "is_open"):
-            if hasattr(inst, "descriptions") and inst.descriptions.get("if_open"):
-                description = inst.descriptions["if_open"]
+        if not description:
+            print(f"Not description: {inst.name}, description: {description} // descriptions: {inst.descriptions}")
+            if hasattr(inst, "descriptions"):
+                if has_and_true(inst, "is_open") and inst.descriptions.get("if_open"):
+                    description = inst.descriptions["if_open"]
 
-        elif hasattr(inst, "is_open") and not getattr(inst, "is_open"):
-            if hasattr(inst, "descriptions") and inst.descriptions.get("if_closed"):
-                description = inst.descriptions["if_closed"]
+                elif hasattr(inst, "is_open") and not getattr(inst, "is_open") and inst.descriptions.get("if_closed"):
+                    description = inst.descriptions["if_closed"]
+
+                if inst.descriptions.get("if_singular"):
+                    print(f"IF SINGULAR: {inst.descriptions["if_singular"]}")
+                    if inst.has_multiple_instances == 1:
+                        print("singular")
+                        description = inst.descriptions["if_singular"]
+                if inst.descriptions.get("if_plural"):
+                    print(f"IF plural: {inst.descriptions["if_plural"]}")
+                    if inst.has_multiple_instances > 1:
+                        print("Plural")
+                        description = inst.descriptions["if_plural"]
+
+                elif inst.descriptions.get("generic"):
+                    description = inst.descriptions["generic"]
+                    inst.description = description
 
         if description:
+            print(f"DESCRIPTION: {description}")
             inst.description = description
             return
-
-        if hasattr(inst, "descriptions") and inst.descriptions.get("generic"):
-            inst.description = inst.descriptions["generic"]
 
         if orig_description:
             return
 
-        print(f"At the end of init_descriptions, no description found for {inst}")
+        print(f"At the end of init_descriptions, no description found for {inst}: {description}")
 
     def nicename(self, inst: ItemInstance):
         logging_fn()
@@ -1176,8 +1212,10 @@ def apply_loc_data_to_item(item, item_data, loc_data):
                 item_data[field] = loc_data[field]
 
     if item_data.get("description"):
+        print(f"item_data description: {item_data["description"]}")
         if "[[]]" in item_data["description"]:
             item_data["description"] = item_data["description"].replace("[[]]", item)
+
 
     if loc_data and loc_data.get("starting_location"):
 
@@ -1203,7 +1241,7 @@ def get_loc_items(loc=None, cardinal=None):
 
     from item_dict_gen import generator, excluded_itemnames
     import json
-
+    registry.alt_names = generator.alt_names
     import config
     with open(config.loc_data, 'r') as file:
         loc_dict = json.load(file)
@@ -1233,9 +1271,16 @@ def get_loc_items(loc=None, cardinal=None):
                             continue
                         item_data = generator.item_defs.get(item)
                         if item_data:
-                            if not item_data["description"]: ## only overwrite the item description if there isn't one written. Use location-descrip in location name, but item descrip in item descriptions. This works for now, might need to change it later. Not sure.
-                                print(f"No item data description for {item}")
-                                item_data["description"] = loc_data["item_desc"].get(item)
+                            print(f"ITEM DATA: {item_data}")
+                            if not item_data.get("description"): ## only overwrite the item description if there isn't one written. Use location-descrip in location name, but item descrip in item descriptions. This works for now, might need to change it later. Not sure.
+                                if item_data.get("descriptions"):
+                                    for entry in item_data["descriptions"]:
+                                        print(f"Entry: {entry} / {item_data["descriptions"][entry]}")
+                                        item_data["description"] = item_data["descriptions"][entry]
+                                        break
+                                else:
+                                    print(f"No item data description for {item}")
+                                    item_data["description"] = loc_data["item_desc"].get(item)
                         item_data["starting_location"] = card_inst
                         apply_loc_data_to_item(item, item_data, loc_data["items"].get(item))
 

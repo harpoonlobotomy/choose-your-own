@@ -85,7 +85,9 @@
       }
     },
     "south": {
-      "item_desc": {"generic": "There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble."},
+      "item_desc": {
+            "generic": "There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble.",
+            "matchbox": "Amongst the weeds, you see a weather-worn [[]]."},
       "short_desc": "stands a mausoleum",
       "items": {}
     },

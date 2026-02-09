@@ -53,7 +53,8 @@ def look_at_item(item_inst): ## this is just using everything from registry. Sho
             print(f"You look at the {assign_colour(item_inst)}{extra}")
 
             print(assign_colour(registry.describe(item_inst, caps=True), colour="description"))
-            verb_actions.print_children_in_container(item_inst)
+            if hasattr(item_inst, "is_open") and item_inst.is_open:
+                verb_actions.print_children_in_container(item_inst)
 
             #print(f"game.map_item id: {game.map_item.id}")
             #print(f"item_inst id: {item_inst.id}")

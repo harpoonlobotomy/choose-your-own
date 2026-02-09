@@ -507,3 +507,47 @@ also
 Oh - seeing as membrane now updates local_items every time, I really should reuse that during the item checks, instead of rerunning it over and over. If I save both sets to membrane, then I only ever check against those, not getting those lists over and over from itemReg/inventory for accessibility checks. Yes?
 
 Will look into it later. Braindead today.
+
+4.38pm
+
+[[  take matchbox  ]]
+
+The matchbox is now in your inventory.
+
+[[  look at matchbox  ]]
+
+You look at the matchbox:
+NoneNone.
+
+Need to re-implement the default description in the new 'descriptions' setup. (fwiw, the first 'None' is yellow, the second is blue. I imagine the second is the children list, maybe?)
+
+4.42pm
+#   [[  look at matchbox  ]]
+#
+#   You look at the matchbox:
+#   NoneNone.
+#
+#   The matchbox contains:
+#     matches
+#
+#   [[  look at matches  ]]
+#
+#   You can't see that right now.
+#
+#   [[  open matchbox  ]]
+#
+#   You can't open a locked matchbox.
+
+So - need the descriptions for the matchbox, and I'm not sure why they're broken (have added generic desc to the matchbox entry now)
+Also, I can't open the matchbox because it's locked (need to change that in the item defs, but useful for the error for now), but I can see the matches inside it. I thought I'd properly updated containers to check item.is_hidden, but maybe I undid that at some point when I changed the setup for checking local_items. Ooooh. Yeah that local_items check doesn't consider hidden items. Though that doesn't explain this, because the matches aren't hidden, they're inside a container. Shouldn't be counted as 'in the local area' if they're inside a container and not mentioned otherwise.
+
+Why is 'description' like this?
+ #  'description': 'None\x1b[1;34mNone\x1b[0m.',
+
+Oh, maybe the assign_colour thing is going wrong? Doesn't seem it though. idk. Yeah the moss works properly, and that has the same [[]] formatting, so it's not that.
+
+5.51pm
+Okay. So the fix is messy, my brain is everywhere today and I can't think straight but it does work now. But just a note to myself on a better day, make it nicer. Messiness and spaghetti aside, it does work now to:
+> Get item defs from alt_names (eg a child named 'matches' will still be called 'matches', but will get the item_def from item 'match')
+> properly allocate descriptions (inc using alt names also, and fixed logic issues with the various descriptions options),
+> also checks for whether a container is open or not when deciding to print the children.

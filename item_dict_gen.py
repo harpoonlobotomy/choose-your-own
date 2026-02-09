@@ -37,6 +37,9 @@ from itemRegistry import type_defaults
 class itemGenerator:
     def __init__(self):
         self.item_defs = {}
+
+        self.alt_names = {}
+
         self.is_child = {"child": {}, "parent": {}} # really should just have child:parent, but that won't include locations etc. Doesn't work.
         self.has_children = {"parent": {}, f"children": {}} # item + def
         self.requires_key = {"lock": {}, "key": {}}
@@ -179,7 +182,12 @@ def get_item_data(item_name, incoming_data=None): # note: no locations here. Thi
         print(f"{item_name} not in item_defs or gen_items")
 
     if not item_data:
-        item_data = item_def_from_str(item_name)
+        print(f"Generator.alt_names: {generator.alt_names}")
+        if generator.alt_names.get(item_name):
+            print(f"generator.alt_names get item_name [{item_name}]: {item_defs[generator.alt_names[item_name]]}")
+            item_data = item_defs[generator.alt_names[item_name]]
+        else:
+            item_data = item_def_from_str(item_name)
 
     for field in item_data:
         cleaned_dict[field] = item_data[field]
@@ -267,6 +275,9 @@ def get_items_from_card(loc, cardinal, loc_data):
             loc_items_dict[loc][cardinal][item] = other_items[item].get(item)
 
         #print(f"item in other_items: {loc_items_dict[loc][cardinal][item]}")
+        if not loc_items_dict[loc][cardinal][item]:
+            if generator.alt_names.get(item):
+                item = generator.alt_names[item]
         get_item_data(item, loc_items_dict[loc][cardinal][item])
 
     for item in desc_items:
@@ -274,6 +285,9 @@ def get_items_from_card(loc, cardinal, loc_data):
             loc_items_dict[loc][cardinal][item] = desc_items[item].get(item)
             # Should get item data here, maybe. We're just adding what's in generated/item_defs. Only downside is it won't update if an item is made but not added to generated right away. But we're not generating anything here, so that's alright actually.
             #print(f"item in desc_items dict_gen: {loc_items_dict[loc][cardinal][item]}")
+        if not loc_items_dict[loc][cardinal][item]:
+            if generator.alt_names.get(item):
+                item = generator.alt_names[item]
             get_item_data(item, loc_items_dict[loc][cardinal][item])
 
 def get_loc_items_dict(loc=None, cardinal=None):
@@ -322,6 +336,15 @@ def get_all_other_items():
         get_item_data(item, item_defs[item])
 
 def init_item_dict():
+
+    alt_names_dict = {}
+    for item in item_defs:
+        if item_defs[item].get("alt_names"):
+            for name in item_defs[item]["alt_names"]:
+                alt_names_dict[name] = item
+                print(f"NAME: {name} // item: {item}")
+                
+    generator.alt_names = alt_names_dict
 
     get_loc_items_dict(loc=None, cardinal=None)
     get_all_other_items() # just ensures that every item in item_defs is covered.

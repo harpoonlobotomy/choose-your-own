@@ -462,7 +462,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
             if nicename:
                 held_name = item.nicename
             colour, item, bld = check_instance_col(item)
-            if nicename:
+            if nicename and held_name: # Need to check here to make sure nicename exists and isn't None. Maybe the issue with the matchbox?
                 item = held_name
 
 

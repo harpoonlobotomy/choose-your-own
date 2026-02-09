@@ -762,5 +762,25 @@
     "alt_names": [],
     "nicename": "a pair of curtains",
     "item_type": "{'can_open', 'static', 'flammable'}"
+  },
+  "matchbox": {
+    "alt_names": ["box of matches"],
+    "item_type": ["container", "can_pick_up", "flammable"],
+    "item_size": "a_few_marbles",
+    "starting_children": ["matches"],
+    "descriptions": {
+        "generic": "a scratched and worn matchbox, waterstained but with the scratch panel on the side still in tact."}
+  },
+  "match": {
+    "alt_names": ["matches"],
+    "item_type": ["firesource", "can_pick_up", "flammable"],
+    "item_size": "small_flat_things",
+    "nicenames": {
+        "if_singular": "a single match",
+        "if_plural": "a few matches"},
+    "descriptions": {
+        "if_singular": "a single match, not yet used.",
+        "if_plural": "a number of matches, all unused."},
+    "has_multiple_instances": 12
   }
 }
