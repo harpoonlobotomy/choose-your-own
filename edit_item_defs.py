@@ -712,7 +712,7 @@ def get_all_default_flags(item):
 
                 if item_type_descriptions.get(def_type):
                     description_dict = item_type_descriptions[def_type]
-                    
+
 
                 if item_def.get("descriptions"):
                     for entry in description_dict.keys():
@@ -799,6 +799,8 @@ def flags_not_in_default(item):
                     for entry in testReg[item]["nicenames"]:
                         print(f"ENTRY: {entry}")
                         testReg[item]["nicenames"][entry] = testReg.updated_defs[item]["nicename"]
+            elif flag in ("slice_threshold", "smash_threshold"):
+                testReg.updated_defs[item].pop(flag)
             else:
                 testReg.flags_to_amend.add(flag)
 
@@ -824,7 +826,9 @@ def serialise_item_defs(dictionary):
     for item, field in dictionary.items():
         for k, v in field.items():
             if isinstance(v, set):
-                dictionary[item][k] = list(v)
+                temp_list = list(v)
+                dictionary[item][k] = sorted(temp_list)
+                #dictionary[item][k] = list(v)
 
 
 def order_dict(dictionary):

@@ -4,12 +4,14 @@
 enable_tui: bool = False
 
 run_tests = True
+parse_test = True #turns off events + location item generation, generates every item placed at Everywhere North instead.
+parser_tests_output_to_json = True
 
 test_mode = True # True == skip player name, intro
 
 white_bg = True
 print_items_in_area = False#True
-print_input_str = True
+print_input_str = False#True
 
 map_file = r"ref_files\map.png"
 

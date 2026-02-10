@@ -35,7 +35,7 @@ print("Item registry is being run right now.")
 
 type_defaults = {
     "standard":
-        {f"descriptions": {"generic": None}, "nicenames": {}, "slice_threshold": 5, "smash_threshold": 5},
+        {f"descriptions": {"generic": None}, "nicenames": {}, "slice_defence": 5, "smash_defence": 5, "slice_attack": 5, "smash_attack": 5,},
     "static":
         {"can_examine": False, "can_break": False},
     #"all_items": {"starting_location": None, "current_loc": None, "alt_names": {}, "is_hidden": False},
@@ -48,7 +48,7 @@ type_defaults = {
     "can_lock":
         {"can_be_locked": True, "is_locked": True, "requires_key": False},
     "container":
-        {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False, 'starting_children': None, 'container_limits': 4, "children_type_limited": False, "can_be_added_to": True,
+        {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False, 'starting_children': None, 'container_limits': 4, "children_type_limited": False, "can_be_added_to": True, "children": None,
          "nicenames": {
             "starting_children_only": "",
             "any_children": "",
@@ -79,6 +79,7 @@ type_defaults = {
         {'print_on_investigate': True, 'flammable': True, 'is_burned': False, 'can_read': True},
     "electronics":
         {"can_be_charged": True, "is_charged": False, "takes_batteries": True, "has_batteries": False},
+    "battery": {"can_be_charged": True, "is_charged": True},
     "can_speak" :
         {'can_speak': True, 'speaks_common': True},
     "transition":
@@ -381,7 +382,7 @@ class itemRegistry:
 
     def delete_instance(self, inst: ItemInstance):
         inst_id=inst.id
-        inst = self.instances.pop(inst_id, None)
+        inst = self.instances.remove(inst_id)
         if not inst:
             return
 
@@ -474,7 +475,7 @@ class itemRegistry:
                         if target_child:
                             instance_children.append(target_child)
                             target_child.contained_in = parent
-                            if not hasattr(parent, "children"):
+                            if not hasattr(parent, "children") or parent.children == None:
                                 parent.children = set()
                             parent.children.add(target_child)
                             target_child.contained_in = parent
@@ -600,6 +601,7 @@ class itemRegistry:
             inventory_list = game.inventory
 
             local_items_list = self.get_item_by_location(loc.current)
+            print(f"Local_items_list in run_check: {local_items_list}")
             container, inst = is_item_in_container(inst, inventory_list)
 
             if inst in inventory_list and not container:
@@ -668,8 +670,10 @@ class itemRegistry:
             meaning = accessible_dict[reason]
 
             if confirmed_inst:
+                print(f"inst: {inst} / meaning: {meaning}")
                 return confirmed_inst, confirmed_container, reason, meaning
 
+            print(f"not confirmed inst: {inst} / meaning: {meaning}, item vars: {vars(inst)}")
             return None, confirmed_container, reason, meaning
 
         #if not isinstance(inst, ItemInstance):
@@ -730,6 +734,8 @@ class itemRegistry:
                     self.init_descriptions(parent)
 
             if new_container:
+                if not hasattr(new_container, "children") or new_container.children == None:
+                    new_container.children = set()
                 new_container.children.add(inst) # Added this, it wasn't adding items as children to containers.
                 inst.contained_in = new_container
                 self.init_descriptions(new_container)
@@ -1284,15 +1290,20 @@ def get_loc_items(loc=None, cardinal=None):
     loc_items_dict = {}
     from env_data import locRegistry
 
-    everything_test = True
-    if everything_test:
+    if config.parse_test:
         everything_entry = loc_dict["everything"]
         print(f"Everything entry: {everything_entry}")
         everything_entry["north"]["items"] = list(registry.item_defs)
         print(f"Everything entry: {everything_entry}")
         print(f"Everything entry north items: {everything_entry["north"]["items"]}")
 
+        north_everything = locRegistry.by_cardinal_str("north everything")
 
+        get_cardinal_items(north_everything.place, north_everything)
+
+        for item in registry.instances:
+            if hasattr(item, "location") and item.location != None and item.location != north_everything:
+                registry.move_item(item, north_everything)
 
     def get_cardinal_items(loc, cardinal):
         name_to_inst_tmp = {}
@@ -1358,18 +1369,20 @@ def get_loc_items(loc=None, cardinal=None):
             loc_items_dict[loc][cardinal] = {}
             name_to_inst_tmp = from_single_cardinal(loc, cardinal, name_to_inst_tmp)
 
-    if loc == None:
-        for loc in loc_dict:
+    if not config.parse_test:
+        if loc == None:
+            for loc in loc_dict:
+                loc_items_dict[loc] = {}
+                get_cardinal_items(loc, cardinal)
+        else:
             loc_items_dict[loc] = {}
             get_cardinal_items(loc, cardinal)
-    else:
-        loc_items_dict[loc] = {}
-        get_cardinal_items(loc, cardinal)
 
     registry.clean_relationships()
 
     if registry.new_parents and registry.new_parents != None:
         registry.generate_children_for_parent()
+
 
 def initialise_itemRegistry():
 

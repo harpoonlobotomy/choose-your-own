@@ -104,6 +104,7 @@ class VerbRegistry:
 class Parser:
 
     def check_compound_words(parts_dict, word, parts, idx, kinds, word_type, omit_next, local_named):
+        logging_fn()
 
         #print(f"\nCHECK COMPOUND WORDS: {word_type}\n")
         canonical = potential_match = perfect_match = None
@@ -619,7 +620,7 @@ class Parser:
         #            if dir_text and sem_text:
         #                print(f"dir_text: {dir_text}, sem_text: {sem_text}")
         #            print("Direction, sem in seq")
-        verbReg_Reciever(f"return for sequences: viable sequences: {viable_sequences}")
+        verbReg_Reciever(f"return for sequences: viable sequences: {viable_sequences}, verb_instances: {verb_instances}")
         return [tuple(seq) for seq in viable_sequences if seq], verb_instances
 
     def resolve_verb(tokens, verb_name, format_key) -> tuple[VerbInstance|str]:

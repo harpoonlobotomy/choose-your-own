@@ -660,3 +660,63 @@ printing when
 was typed. 'thing' didn't get a token because it was skipped as part of the parser's omit_next. So I guess I do need to pass the typed str itself through, not just reconstruct it from token.text entries.
 
 The rest are generally actual errors.
+
+Hm. Thinking that, seeing as I store the locations on the instances, maybe I should just check that instead of getting local_items if I already have the target instance...
+
+7.39am 10/2/26
+Going to just run it over and over until all the errors are cleared.
+Had to turn off events otherwise everything breaks as I've moved all items to Everything location.
+
+Puting detailed notes in a separate doc. Will just summarise found issues here.
+
+* Failed parser: 'NoneType' object has no attribute 'add' in move_item, think it's fixed (no 'children' set to add to.)
+
+* place dried flowers on headstone - no real mechanism to place things on things. Need to add a proper error message for the moment, add a 'place on surface' later.
+
+* No item descriptions for north graveyard. Should have the gate and padlock. Possibly just a result of moving all items to Everything North for the test, will check.
+
+* 'too many values* when trying to parse `approach the forked tree branch`.
+>   Same for `read the fashion mag in the city hotel room`.
+
+* `read the fashion mag in the city hotel room` counted 'city' and 'hotel' as separate tokens instead of combining the compound_word into one. Check if omit is broken.
+
+* 'What do you want to break the TV set with?' doesn't return, so it prints the end of fn error msg.
+
+* 'break jar' just errors immediately. It should be breakable, maybe I didn't add  the tag.
+
+
+## random note: Decide if I'm using noun_2, noun2, etc. Just use the same one all the time.
+
+# Other random note: Set all the instance colours once. If I don't need nicename or other formatting, surely I can just have a much smaller, simpler function that just applies the colour from item.colour. Or just use the colour class directly? Not sure, just a note for later.
+
+
+* clean x now checks for is_dirty and responds appropriately.
+* combine x with y has some basic rerouting, will see if it works.
+* Fixed `Failed parser: set.pop() takes no arguments (2 given)`, which was a remnant of very old code I'd never used.
+
+* 'a pile of rocks' fails in a unique way, because it omits both non-nouns and keeps the 'of'. Might need a way of tracking 'missing-dir/sem-missing' compounds. Hm. Not today though.
+* Added slice_attack/smash_attack, and changed slice_threshold to 'slice_defence', even if I prefer the word 'threshold'. Defence is clearer. Wrote simple 'x breaks y if x thrown at y and y is weaker'.
+* Added simple 'set the time on the watch' (though only with 'set the watch'. Seeing as I have a separate verb for 'time', that may cause issues... Nothing is compatible with two verbs yet).
+* lock/unlock noun did not return after printing, easy fix.
+
+8.57am
+
+Wrote a placeholder in def move because 'move headstone' errored (previously 'move' only redirected to def go, for 'move to graveyard east' type commands. Now it has a noun section, checks if static and refuses if so, but doesn't do anything else otherwise. Things don't have placement within the local area, so I'm not sure how to deal with 'push'/'move' commands unless something's being covered/uncovered/etc. Need to think on it.)
+
+Added barricade to verb_actions and defs, removed it from 'close' because they're different actions and that's silly. No actual barricading yet, but the fn should work with appropriate prints.
+
+Fixed 'observe graveyard' failing because 'look place' wasn't valid, it expected a cardinal or 'look /at/ place' (or just 'look').
+
+* another failure to get sequence and city + hotel being separate tokens again.
+* 'depart' doesn't print anything. It directs to 'go', gets entries, then just stops.
+
+* pure 'go' also failed, need to check in the parser around ln 326, think it's probably there. Have added prints.
+* 'go to a pile of rocks' fails weirdly, 'more than one viable sequence' despite only one sequence in sequences.
+* realised 'forked tree branch' also uses two tokens instead of compounding correctly, need to check if omit_next is working properly. May have broken it.
+
+9.52
+
+* `put batteries into watch` - need to add 'if noun2 == electronics and noun2.takes_batteries', and noun.is_battery' into 'put x into y'/use_item_with_item/whatever fn. Don't want to make everything that uses batteries into a container, esp as we don't want the batteries appearing to be in the container-watch in that context.
+
+
+10.00. Okay, have run through the full test list. Not too bad. Failed mostly where I expected. Going to run edit_item_defs again to add the new type_defaults, then run it again to see how many issues persist.

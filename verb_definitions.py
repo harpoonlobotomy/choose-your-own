@@ -153,8 +153,8 @@ verb_dir_car_loc = formats["verb_dir_car_loc"]
 verb_dir_loc_car = formats["verb_dir_loc_car"]
 verb_dir_loc = formats["verb_dir_loc"]
 verb_dir_noun = formats["verb_dir_noun"]
-verb_noun_sem = formats["verb_noun_sem"] # read book a while
 verb_sem_noun = formats["verb_sem_noun"] # wait with book
+verb_noun_sem = formats["verb_noun_sem"] # read book a while
 verb_noun_dir = formats["verb_noun_dir"] # [enter] [work shed] [door]
 
 verb_noun_noun = formats["verb_noun_noun"]
@@ -216,7 +216,8 @@ verb_defs_dict = {
     "lock": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_noun], "inventory_check": "key"},
     "unlock": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun_sem_noun, verb_noun, verb_noun_noun], "inventory_check": "key"},
     "open": {"alt_words": ["pry", ""], "allowed_null": None, "formats": [verb_noun, verb_meta, verb_dir_meta, verb_noun_sem_noun, verb_dir_meta, verb_noun_noun]},
-    "close": {"alt_words": ["barricade", ""], "allowed_null": None, "formats": [verb_noun, verb_meta, verb_dir_meta, verb_noun_sem_noun, verb_noun_noun]},
+    "barricade": {"alt_words": [""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_noun]},
+    "close": {"alt_words": [""], "allowed_null": None, "formats": [verb_noun, verb_meta, verb_dir_meta, verb_noun_sem_noun, verb_noun_noun]},
     "break": {"alt_words": ["smash", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun]},
     "take": {"alt_words": ["pick up", "get", "pick"], "allowed_null": None, "formats": [verb_noun, verb_dir_noun, verb_noun_sem_noun, verb_noun_dir_noun, verb_noun_dir_noun_dir_loc]}, # take ball, take ball from bag
     "put": {"alt_words": ["place", "leave"], "allowed_null": ["in", "inside"], "formats": [verb_noun_dir, verb_noun_dir_meta, verb_noun_sem_noun, verb_noun_dir_noun, verb_noun_dir_noun_dir_loc]}, # put paper down, put paper on table ## using 'leave' here might be tricky. But I want to allow for 'leave church' and 'leave pamphlet on table' both.

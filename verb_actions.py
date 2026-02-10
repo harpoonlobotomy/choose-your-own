@@ -43,7 +43,7 @@ flag_actions = {
 
 in_words = ["in", "inside", "into"]
 to_words = ["to", "towards", "at", "for"] ## these two (< + ^) are v similar but have some exclusive uses, so keeping them separately makes sense here. # 'for' in the sense of 'leave for the graveyard'.
-down_words = ["down"]
+down_words = ["down", "on"]
 
 update_description_attrs = [
     "is_open", "is_broken", "is_dirty", "is_burned", "is_spoiled", "is_charged"
@@ -111,10 +111,12 @@ def get_transition_noun(noun, format_tuple, input_dict):
                     print(f"More than one transition object for {noun}. Can't deal with this yet. Exiting.")
                     exit()
     if not noun:
+        print(f"Not noun: input_dict: {input_dict}")
         if get_location(input_dict):
             location = get_location(input_dict)
             if hasattr(location, "entry_item"):
                 loc_item = location.entry_item
+                print(f"HAs loc item: {loc_item}")
                 if isinstance(loc_item, str):
                     for loc_item in local_items_list:
                         if loc_item.name == loc_item:
@@ -324,6 +326,13 @@ def get_noun(input_dict:dict, x_noun:int=None, get_str=False) -> ItemInstance:
 
     #print(f"get_noun failed to find the noun instance: {input_dict}")
 
+def get_nouns(input_dict):
+
+    noun = get_noun(input_dict)
+    noun_2 = get_noun(input_dict, 2)
+    return (noun, noun_2)
+
+
 def get_location(input_dict:dict, get_str=False) -> cardinalInstance|placeInstance:
     logging_fn()
     # x_noun: 1 == 1st noun, 2 == "2nd noun", etc. Otherwise will always return the first found.
@@ -518,6 +527,9 @@ def meta(format_tuple, input_dict):
 def go(format_tuple, input_dict): ## move to a location/cardinal/inside
     logging_fn()
 
+    if len(format_tuple) == 1:
+        print("Where do you want to go?")
+        return
     current_loc, current_card = get_current_loc()
 
     verb_entry, noun_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
@@ -563,6 +575,8 @@ def go(format_tuple, input_dict): ## move to a location/cardinal/inside
                     ("Going to enter via get_noun")
                     enter(format_tuple, input_dict)
                     return
+                print("Sorry, where do you want to go?")
+                return
                 print("If this does not have a location, it breaks. Why am I still using location_entry etc after determining they don't exist. Works if the direction is something internal, but not if I just type 'go to church', a location that doesn't exist.")
                 #if len(format_tuple) == 3:
                 print(f"FORMAT TUPLE: {format_tuple}")
@@ -627,6 +641,10 @@ def look(format_tuple=None, input_dict=None):
             #    read(format_tuple, input_dict)
             #else:
             item_interactions.look_at_item(noun)
+        elif location_entry:
+            from misc_utilities import look_around
+            look_around()
+            return
 
     elif len(format_tuple) == 3:
 
@@ -719,6 +737,15 @@ def clean(format_tuple, input_dict):
         #if "verb" in format_tuple and "location" in format_tuple:
             print(f"You want to clean the {assign_colour(get_location(input_dict))}? Not implemented yet.")
             return
+        if "noun" in format_tuple:
+            noun = get_noun(input_dict)
+            if hasattr(noun, "is_dirty") and noun.is_dirty:
+                print(f"You clean the {assign_colour(noun)}")
+                return
+            print(f"The {assign_colour(noun)} seems pretty clean already.")
+            return
+
+
     noun = get_noun(input_dict)
     noun_2 = get_noun(input_dict, 2)
     dir_or_sem = get_dir_or_sem_if_singular(input_dict)
@@ -765,6 +792,18 @@ def burn(format_tuple, input_dict):
     elif require_firesource:
         print(f"You don't have anything to burn the {assign_colour(noun)} with.")
 
+def barricade(format_tuple, input_dict):
+
+    noun, noun2 = get_nouns(input_dict)
+    if not noun:
+        print("Barricade what, exactly?")
+        return
+    if not noun2:
+        print(f"What do you want to use to barricade the {assign_colour(noun)}?")
+        return
+    if "door_window" in noun.item_type:
+        print(f"You want to barricade the window/door {assign_colour(noun)}. A valiant effort, I just haven't coded it yet.")
+
 
 def break_item(format_tuple, input_dict):
     logging_fn()
@@ -776,12 +815,14 @@ def break_item(format_tuple, input_dict):
     if hasattr(noun, "can_break"):
         if not noun_2:
             print(f"What do you want to break the {assign_colour(noun)} with?")
+            return
 
     if noun_2:
         dir_or_sem = get_dir_or_sem_if_singular(input_dict)
         if dir_or_sem in ("with", "using", "on"):
             if hasattr(noun_2, "can_break"):
                 print("Chance to break either object. Need to implement a breakability scale, so I can test which item breaks. Need to formalise the break/flammable setup overall.")
+                return
                 # Havea added slice and smash thresholds for damage defence to the dict (or will, once I update via edit_item_defs), but also need to implement it on the weapon side. Or is it just 'higher number beats lower number'? idk. If two knives try to slice each other, one won't lose just because it's a slightly sharper knife. Idk. Maybe the diff between thresholds has to be >2 or something, or is relative to the numbers of each. Or I have different vals for off and def. idk.
 
 
@@ -810,6 +851,7 @@ def lock_unlock(format_tuple, input_dict, do_open=False):
     noun = get_noun(input_dict)
     if len(format_tuple) == 2:
         print(f"{assign_colour(noun.name)} requires a key, no?")
+        return
     elif len(format_tuple) == 4:
         #print(f"Format is len 4: {format_tuple}")
         if format_tuple.count("noun") == 2:
@@ -1069,9 +1111,20 @@ def combine(format_tuple, input_dict):
     logging_fn()
     #if verb_noun_sem_noun, verb_noun_dir_noun, combine a+b
     #if verb_noun == what do you want to combine it with.
-    print("COMBINE FUNCTION")
+    noun, noun2 = get_nouns(input_dict)
+    if not noun2:
+        print(f"What do you want to combine with the {assign_colour(noun)}")
+        return
 
-    print(f"Cannot process {input_dict} in def combine() End of function, unresolved. (Function not yet written)")
+    if "container" in noun.item_type:
+        #check relative sizes here; haven't implemente that anywhere yet.
+        #assuming the sizes are suitable:
+        put(format_tuple, input_dict) # might be a fair guess if b is a container?
+        return
+
+    print(f"You want to combine {assign_colour(noun)} and {assign_colour(noun2)}? Sounds good, but we don't do that yet...")
+
+    #print(f"Cannot process {input_dict} in def combine() End of function, unresolved. (Function not yet written)")
     pass
 
 def separate(format_tuple, input_dict):
@@ -1093,8 +1146,25 @@ def combine_and_separate(format_tuple, input_dict):
 def move(format_tuple, input_dict):
     logging_fn()
 
+    noun = get_noun(input_dict)
     if get_location(input_dict) and get_dir_or_sem_if_singular(input_dict): # so if it's 'move to graveyard', it just treats it as 'go to'.
+        if noun:
+            print(f"This probably isn't a simply 'move to graveyard', seeing as we have {noun} here. Not written yet, sorry.")
+            return
         go(format_tuple, input_dict)
+        return
+
+    noun2 = get_noun(input_dict, 2)
+
+    if noun and noun2:
+        dir_or_sem = get_dir_or_sem_if_singular(input_dict)
+        if dir_or_sem:
+            print(f"Something about moving the {assign_colour(noun)} {dir_or_sem} the {assign_colour(noun2)}? Not written yet, sorry.")
+            return
+    elif noun:
+        if "static" in noun.item_type:
+            print(f"Try as you might, you can't move the {assign_colour(noun)}.")
+        print(f"Where do you want to move the {assign_colour(noun)}?")
         return
 
     print(f"Cannot process {input_dict} in def move() End of function, unresolved.")
@@ -1273,12 +1343,13 @@ def put(format_tuple, input_dict, location=None):
                 move_a_to_b(a=a, b=b, action=action_word, direction=sem_or_dir, current_loc=location)
                 return
 
-    print(f"Cannot process {input_dict} in def put() End of function, unresolved.")
+    print(f"You can't put {assign_colour(noun_1)} on {assign_colour(noun_2)}; I just haven't programmed it yet.")
 
 def throw(format_tuple, input_dict):
     logging_fn()
 
     noun = get_noun(input_dict)
+
     if not noun:
         print("What do you want to throw?")
         return
@@ -1288,6 +1359,18 @@ def throw(format_tuple, input_dict):
     dir_or_sem = get_dir_or_sem_if_singular(input_dict)
     if dir_or_sem and dir_or_sem in down_words:
         move_a_to_b(noun, loc.current, "You drop the", "to leave it at the")
+
+    noun2 = get_noun(input_dict, 2)
+    if dir_or_sem in to_words and noun2:
+        print(f"You throw the {assign_colour(noun)} at the {assign_colour(noun2)}")
+        if hasattr(noun2, "smash_defence") and hasattr(noun, "smash_attack"):
+            if noun2.smash_defence < noun.smash_attack:
+                print(f"The {assign_colour(noun)} breaks as the {assign_colour(noun)} hits it.") # TODO: custom breaking messages for obviously breakable things with [[]] or smth for the breaker obj name.
+                set_noun_attr(("is_broken", True), noun2)
+            elif noun2.smash_defence >= noun.smash_attack:
+                print(f"The {assign_colour(noun2)} hits the {assign_colour(noun2)}, but doesn't seem to damage it.")
+
+
 
 
     # verb_noun == where do you want to throw it (unless context),
@@ -1302,26 +1385,36 @@ def push(format_tuple, input_dict):
     noun = get_noun(input_dict)
     if "door_window" in noun.item_type:
         if hasattr(noun, "can_be_opened"):
+            print("NOTE: This doesn't check if the noun is accessible. I guess we're doing that using local_items in the parser now?")
             if noun.is_open:
                 print(f"You push against the {assign_colour(noun)}, but it doesn't move much further.")
+                return
             else:
                 if noun.is_locked:
                     print(f"You push against the {noun}, but it doesn't budge.")
+                    return
                 else:
                     print(f"You push against the {noun}, and it opens just enough for you to see inside.")
                     if noun.location == loc.current:
                         if noun.exit_to_location == loc.current.place:
                             enter(format_tuple, input_dict)
+                            return
                     else:
                         print("No description here. Should be one eventually.")
+                        return
 
+    noun2 = get_noun(input_dict, 2)
+    if noun2:
+        dir_or_sem = get_dir_or_sem_if_singular(input_dict)
+        if dir_or_sem in to_words:
+            print(f"Things don't have weight yet, I don't know if you can push the {assign_colour(noun)} {dir_or_sem} the {assign_colour(noun2)}.")
+            return
+    print(f"Things don't have weight yet, I don't know if you can push the {assign_colour(noun)}.")
+    return
 
     # verb_noun == to move things out the way in general
     # verb_noun_dir == #push box left
     # verb_noun_dir_noun == push box away from cabinet
-
-    print(f"Cannot process {input_dict} in def push() End of function, unresolved. (Function not yet written)")
-
 
 def drop(format_tuple, input_dict):
     logging_fn()
@@ -1393,6 +1486,13 @@ def set_action(format_tuple, input_dict):
     logging_fn()
     verb = get_verb(input_dict)
     if verb.name == "set":
+        if len(format_tuple) == 2:
+            noun = get_noun(input_dict)
+            if noun:
+                if "watch" == noun.name or "watch" in noun.name:
+                    from set_up_game import game
+                    game.time
+                    print(f"You set an arbitrary time on the watch.  Seeing as it's {game.time}, you set it to around <some relevant time>. Make this better later.")
         print("This should always be a 'place thing somewhere' type command. If not, fix me.")
 
     # verb_noun_dir == set item down == drop
@@ -1417,9 +1517,9 @@ def use_item_w_item(format_tuple, input_dict):
     if not target_noun:
         print(f"No second noun: {format_tuple} should not be in use_item_w_item function. Check routing.")
         return
-
+    requires_key = None
     if format_tuple == (('verb', 'noun', 'direction', 'noun')) or format_tuple == (('verb', 'noun', 'sem', 'noun')):
-        if verb.name in ("use", "unlock", "lock") and dir_or_sem and dir_or_sem in  ("on", "using", "with"):
+        if verb.name in ("use", "unlock", "lock", "open") and dir_or_sem and dir_or_sem in  ("on", "using", "with"):
 
             for noun in (actor_noun, target_noun):
                 if hasattr(noun, "is_key") or hasattr(noun, "requires_key"):
@@ -1429,10 +1529,12 @@ def use_item_w_item(format_tuple, input_dict):
                 print(f"Cannot {verb.name}.")
                 return
 
-            print(f"You want to {verb.name} {actor_noun} {dir_or_sem} {target_noun}; I'm not sure what that means.")
+            print(f"You want to {verb.name} the {actor_noun} {dir_or_sem} a {target_noun}; I'm not sure what that means; {assign_colour(actor_noun)} doesn't need a key...")
             return
 
+
         print(f"Not sure how to deal with {format_tuple}")
+
 
     print(f"Cannot process {input_dict} in def use_item_w_item() End of function, unresolved. (Function partially written but doesn't do anything.)")
 

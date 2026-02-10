@@ -16,17 +16,21 @@
     "is_open": false,
     "item_size": 0,
     "item_type": [
-      "standard",
       "can_lock",
-      "fragile",
+      "can_open",
       "can_pick_up",
-      "can_open"
+      "fragile",
+      "standard"
     ],
     "nicenames": {
       "generic": "a padlock"
     },
     "requires_key": false,
+    "slice_attack": 5,
+    "slice_defence": 5,
     "slice_threshold": 5,
+    "smash_attack": 5,
+    "smash_defence": 5,
     "smash_threshold": 5
   },
   "gate": {
@@ -45,18 +49,20 @@
     "is_locked": true,
     "is_open": false,
     "item_type": [
-      "standard",
-      "event",
       "can_lock",
-      "static",
-      "can_open"
+      "can_open",
+      "event",
+      "standard",
+      "static"
     ],
     "nicenames": {
       "generic": "a gate"
     },
     "requires_key": false,
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "desiccated skeleton": {
     "can_be_added_to": true,
@@ -65,6 +71,7 @@
     "can_be_opened": true,
     "can_break": true,
     "can_examine": false,
+    "children": null,
     "children_type_limited": false,
     "container_limits": 4,
     "descriptions": {
@@ -82,16 +89,20 @@
     "is_locked": true,
     "is_open": false,
     "item_type": [
-      "standard",
-      "static",
+      "container",
       "fragile",
-      "container"
+      "standard",
+      "static"
     ],
     "nicenames": {
       "generic": "a desiccated skeleton"
     },
     "requires_key": false,
+    "slice_attack": 5,
+    "slice_defence": 5,
     "slice_threshold": 5,
+    "smash_attack": 5,
+    "smash_defence": 5,
     "smash_threshold": 5,
     "starting_children": null
   },
@@ -104,16 +115,18 @@
     "has_multiple_instances": 3,
     "item_size": "a_few_marbles",
     "item_type": [
-      "standard",
+      "can_pick_up",
       "is_cluster",
-      "can_pick_up"
+      "standard"
     ],
     "nicenames": {
       "if_singular": "a clump of moss",
       "if_plural": "a few moss clumps"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "glass jar": {
     "can_be_added_to": true,
@@ -121,6 +134,7 @@
     "can_be_locked": false,
     "can_be_opened": false,
     "can_pick_up": true,
+    "children": null,
     "children_type_limited": false,
     "container_limits": "smaller_than_apple",
     "descriptions": {
@@ -129,15 +143,18 @@
       "no_children": "a glass jar, now empty aside from some bits of debris.",
       "open_starting_children_only": "",
       "open_any_children": "",
-      "open_no_children": ""
+      "open_no_children": "",
+      "if_broken": ""
     },
+    "is_broken": false,
     "is_locked": false,
     "is_open": true,
     "item_size": "smaller_than_basketball",
     "item_type": [
-      "standard",
       "can_pick_up",
-      "container"
+      "container",
+      "fragile",
+      "standard"
     ],
     "nicenames": {
       "starting_children_only": "a glass jar with dried flowers",
@@ -145,7 +162,11 @@
       "no_children": "an empty glass jar"
     },
     "requires_key": false,
+    "slice_attack": 5,
+    "slice_defence": 5,
     "slice_threshold": 5,
+    "smash_attack": 5,
+    "smash_defence": 5,
     "smash_threshold": 5,
     "starting_children": [
       "dried flowers"
@@ -160,15 +181,17 @@
     "is_key_to": "padlock",
     "item_size": 0,
     "item_type": [
-      "standard",
+      "can_pick_up",
       "key",
-      "can_pick_up"
+      "standard"
     ],
     "nicenames": {
       "generic": "an iron key"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "gold key": {
     "can_pick_up": true,
@@ -179,15 +202,17 @@
     "is_key_to": null,
     "item_size": "small_flat_things",
     "item_type": [
-      "standard",
+      "can_pick_up",
       "key",
-      "can_pick_up"
+      "standard"
     ],
     "nicenames": {
       "generic": "a gold key"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "stone ground": {
     "can_break": false,
@@ -197,15 +222,17 @@
     },
     "is_horizontal_surface": true,
     "item_type": [
+      "flooring",
       "standard",
-      "static",
-      "flooring"
+      "static"
     ],
     "nicenames": {
       "generic": "a stone ground"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "earring": {
     "can_pick_up": true,
@@ -214,14 +241,16 @@
     },
     "item_size": 0,
     "item_type": [
-      "standard",
-      "can_pick_up"
+      "can_pick_up",
+      "standard"
     ],
     "nicenames": {
       "generic": "a earring"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "scroll": {
     "can_be_closed": true,
@@ -240,17 +269,19 @@
     "is_open": false,
     "item_size": "smaller_than_basketball",
     "item_type": [
-      "standard",
       "books_paper",
       "can_open",
-      "can_pick_up"
+      "can_pick_up",
+      "standard"
     ],
     "nicenames": {
       "generic": "an old scroll"
     },
     "print_on_investigate": true,
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "ivory pot": {
     "can_be_added_to": true,
@@ -258,6 +289,7 @@
     "can_be_locked": true,
     "can_be_opened": true,
     "can_pick_up": true,
+    "children": null,
     "children_type_limited": false,
     "container_limits": "smaller_than_apple",
     "descriptions": {
@@ -273,16 +305,18 @@
     "is_open": false,
     "item_size": "smaller_than_basketball",
     "item_type": [
-      "standard",
       "can_pick_up",
-      "container"
+      "container",
+      "standard"
     ],
     "nicenames": {
       "generic": "an ivory-coloured jar"
     },
     "requires_key": "wire cutters",
-    "slice_threshold": 5,
-    "smash_threshold": 5,
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5,
     "starting_children": null
   },
   "metal pot": {
@@ -291,6 +325,7 @@
     "can_be_locked": true,
     "can_be_opened": true,
     "can_pick_up": true,
+    "children": null,
     "children_type_limited": false,
     "container_limits": "smaller_than_basketball",
     "descriptions": {
@@ -306,16 +341,18 @@
     "is_open": false,
     "item_size": "bigger_than_basketball",
     "item_type": [
-      "standard",
       "can_pick_up",
-      "container"
+      "container",
+      "standard"
     ],
     "nicenames": {
       "generic": "a metal pot"
     },
     "requires_key": "old gold key",
-    "slice_threshold": 5,
-    "smash_threshold": 5,
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5,
     "starting_children": [
       "wire cutters"
     ]
@@ -329,31 +366,40 @@
     "is_key_to": null,
     "item_size": "palm_sized",
     "item_type": [
-      "standard",
+      "can_pick_up",
       "key",
-      "can_pick_up"
+      "standard"
     ],
     "nicenames": {
       "generic": "a pair of wire cutters"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "watch": {
+    "can_be_charged": true,
     "can_pick_up": true,
     "descriptions": {
       "generic": "A scratched gold watch."
     },
+    "has_batteries": false,
+    "is_charged": false,
     "item_size": "smaller_than_apple",
     "item_type": [
-      "standard",
-      "can_pick_up"
+      "can_pick_up",
+      "electronics",
+      "standard"
     ],
     "nicenames": {
       "generic": "a gold watch"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5,
+    "takes_batteries": true
   },
   "dried flowers": {
     "can_break": true,
@@ -366,15 +412,19 @@
     "is_burned": false,
     "item_size": "smaller_than_apple",
     "item_type": [
-      "standard",
+      "can_pick_up",
       "flammable",
       "fragile",
-      "can_pick_up"
+      "standard"
     ],
     "nicenames": {
       "generic": "some dried flowers"
     },
+    "slice_attack": 5,
+    "slice_defence": 5,
     "slice_threshold": 5,
+    "smash_attack": 5,
+    "smash_defence": 5,
     "smash_threshold": 5
   },
   "headstone": {
@@ -393,8 +443,10 @@
     "nicenames": {
       "generic": "a carved headstone"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "TV set": {
     "alt_names": [
@@ -409,6 +461,7 @@
     "can_be_opened": true,
     "can_break": false,
     "can_examine": false,
+    "children": null,
     "children_type_limited": [
       "DVD"
     ],
@@ -427,17 +480,19 @@
     "is_locked": true,
     "is_open": false,
     "item_type": [
-      "standard",
-      "static",
+      "container",
       "electronics",
-      "container"
+      "standard",
+      "static"
     ],
     "nicenames": {
       "generic": "a television set"
     },
     "requires_key": false,
-    "slice_threshold": 5,
-    "smash_threshold": 5,
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5,
     "starting_children": null,
     "takes_batteries": true
   },
@@ -453,16 +508,18 @@
     "is_locked": true,
     "is_open": false,
     "item_type": [
-      "standard",
+      "can_lock",
       "can_open",
-      "can_lock"
+      "standard"
     ],
     "nicenames": {
       "generic": "a window"
     },
     "requires_key": false,
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "carved stick": {
     "can_pick_up": true,
@@ -471,14 +528,16 @@
     },
     "item_size": "bigger_than_basketball",
     "item_type": [
-      "standard",
-      "can_pick_up"
+      "can_pick_up",
+      "standard"
     ],
     "nicenames": {
       "generic": "a spiral-carved stick"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "paperclip": {
     "can_pick_up": true,
@@ -487,16 +546,18 @@
     },
     "item_size": "small_flat_things",
     "item_type": [
-      "standard",
+      "can_pick_up",
       "random_loot",
-      "can_pick_up"
+      "standard"
     ],
     "loot_type": "starting",
     "nicenames": {
       "generic": "a paperclip"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "puzzle mag": {
     "can_pick_up": true,
@@ -508,18 +569,20 @@
     "is_burned": false,
     "item_size": "smaller_than_basketball",
     "item_type": [
-      "standard",
       "books_paper",
+      "can_pick_up",
       "random_loot",
-      "can_pick_up"
+      "standard"
     ],
     "loot_type": "magazine",
     "nicenames": {
       "generic": "a puzzle magazine"
     },
     "print_on_investigate": true,
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "fashion mag": {
     "can_pick_up": true,
@@ -531,18 +594,20 @@
     "is_burned": false,
     "item_size": "smaller_than_basketball",
     "item_type": [
-      "standard",
       "books_paper",
+      "can_pick_up",
       "random_loot",
-      "can_pick_up"
+      "standard"
     ],
     "loot_type": "magazine",
     "nicenames": {
       "generic": "a fashion magazine"
     },
     "print_on_investigate": true,
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "gardening mag": {
     "can_pick_up": true,
@@ -554,18 +619,20 @@
     "is_burned": false,
     "item_size": "smaller_than_basketball",
     "item_type": [
-      "standard",
       "books_paper",
+      "can_pick_up",
       "random_loot",
-      "can_pick_up"
+      "standard"
     ],
     "loot_type": "magazine",
     "nicenames": {
       "generic": "a gardening magazine"
     },
     "print_on_investigate": true,
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "mail order catalogue": {
     "can_pick_up": true,
@@ -577,18 +644,20 @@
     "is_burned": false,
     "item_size": "smaller_than_basketball",
     "item_type": [
-      "standard",
       "books_paper",
+      "can_pick_up",
       "random_loot",
-      "can_pick_up"
+      "standard"
     ],
     "loot_type": "magazine",
     "nicenames": {
       "generic": "a mail order catalogue"
     },
     "print_on_investigate": true,
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "car keys": {
     "can_be_charged": true,
@@ -602,18 +671,20 @@
     "is_key_to": "blue car",
     "item_size": "a_few_marbles",
     "item_type": [
-      "standard",
-      "random_loot",
-      "electronics",
       "can_pick_up",
-      "key"
+      "electronics",
+      "key",
+      "random_loot",
+      "standard"
     ],
     "loot_type": "starting",
     "nicenames": {
       "generic": "a set of car keys"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5,
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5,
     "takes_batteries": [
       "batteries"
     ]
@@ -631,17 +702,19 @@
     "is_spoiled": true,
     "item_size": "a_few_marbles",
     "item_type": [
-      "standard",
+      "can_pick_up",
       "food_drink",
       "random_loot",
-      "can_pick_up"
+      "standard"
     ],
     "loot_type": "starting",
     "nicenames": {
       "generic": "a jar of fish food"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "anxiety meds": {
     "can_consume": true,
@@ -656,17 +729,19 @@
     "is_spoiled": true,
     "item_size": "a_few_marbles",
     "item_type": [
-      "standard",
+      "can_pick_up",
       "food_drink",
       "random_loot",
-      "can_pick_up"
+      "standard"
     ],
     "loot_type": "starting",
     "nicenames": {
       "generic": "a bottle of anxiety meds"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "unlabelled cream": {
     "can_pick_up": true,
@@ -675,27 +750,32 @@
     },
     "item_size": "smaller_than_apple",
     "item_type": [
-      "standard",
+      "can_pick_up",
       "random_loot",
-      "can_pick_up"
+      "standard"
     ],
     "loot_type": "starting",
     "nicenames": {
       "generic": "an unlabelled cream"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "batteries": {
+    "can_be_charged": true,
     "can_pick_up": true,
     "descriptions": {
       "generic": "It's a batteries"
     },
+    "is_charged": true,
     "item_size": "a_few_marbles",
     "item_type": [
-      "standard",
+      "battery",
+      "can_pick_up",
       "random_loot",
-      "can_pick_up"
+      "standard"
     ],
     "loot_type": [
       "starting",
@@ -704,8 +784,10 @@
     "nicenames": {
       "generic": "a set of batteries"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "costume jewellery": {
     "can_pick_up": true,
@@ -714,16 +796,18 @@
     },
     "item_size": "a_few_marbles",
     "item_type": [
-      "standard",
+      "can_pick_up",
       "random_loot",
-      "can_pick_up"
+      "standard"
     ],
     "loot_type": "minor_loot",
     "nicenames": {
       "generic": "a bit of costume jewellery"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "plastic bag": {
     "can_be_added_to": true,
@@ -732,6 +816,7 @@
     "can_be_opened": true,
     "can_break": true,
     "can_pick_up": true,
+    "children": null,
     "children_type_limited": false,
     "container_limits": "bigger_than_basketball",
     "descriptions": {
@@ -750,19 +835,23 @@
     "is_open": false,
     "item_size": "smaller_than_apple",
     "item_type": [
-      "standard",
-      "random_loot",
-      "fragile",
       "can_pick_up",
       "container",
-      "flammable"
+      "flammable",
+      "fragile",
+      "random_loot",
+      "standard"
     ],
     "loot_type": "minor_loot",
     "nicenames": {
       "generic": "a sturdy plastic bag"
     },
     "requires_key": false,
+    "slice_attack": 5,
+    "slice_defence": 5,
     "slice_threshold": 5,
+    "smash_attack": 5,
+    "smash_defence": 5,
     "smash_threshold": 5,
     "starting_children": null
   },
@@ -773,16 +862,18 @@
     },
     "item_size": "a_few_marbles",
     "item_type": [
-      "standard",
+      "can_pick_up",
       "random_loot",
-      "can_pick_up"
+      "standard"
     ],
     "loot_type": "minor_loot",
     "nicenames": {
       "generic": "a pretty rock"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "damp newspaper": {
     "can_break": true,
@@ -797,18 +888,22 @@
     "is_burned": false,
     "item_size": "smaller_than_basketball",
     "item_type": [
-      "standard",
       "books_paper",
-      "random_loot",
+      "can_pick_up",
       "fragile",
-      "can_pick_up"
+      "random_loot",
+      "standard"
     ],
     "loot_type": "minor_loot",
     "nicenames": {
       "generic": "a damp newspaper"
     },
     "print_on_investigate": true,
+    "slice_attack": 5,
+    "slice_defence": 5,
     "slice_threshold": 5,
+    "smash_attack": 5,
+    "smash_defence": 5,
     "smash_threshold": 5
   },
   "5 pound note": {
@@ -822,17 +917,21 @@
     "is_burned": false,
     "item_size": "small_flat_things",
     "item_type": [
-      "standard",
-      "random_loot",
-      "fragile",
       "can_pick_up",
-      "flammable"
+      "flammable",
+      "fragile",
+      "random_loot",
+      "standard"
     ],
     "loot_type": "medium_loot",
     "nicenames": {
       "generic": "a 5 pound note"
     },
+    "slice_attack": 5,
+    "slice_defence": 5,
     "slice_threshold": 5,
+    "smash_attack": 5,
+    "smash_defence": 5,
     "smash_threshold": 5
   },
   "paper scrap with number": {
@@ -848,18 +947,22 @@
     "is_burned": false,
     "item_size": "small_flat_things",
     "item_type": [
-      "standard",
       "books_paper",
-      "random_loot",
+      "can_pick_up",
       "fragile",
-      "can_pick_up"
+      "random_loot",
+      "standard"
     ],
     "loot_type": "medium_loot",
     "nicenames": {
       "generic": "a scrap of paper with a number written on it"
     },
     "print_on_investigate": true,
+    "slice_attack": 5,
+    "slice_defence": 5,
     "slice_threshold": 5,
+    "smash_attack": 5,
+    "smash_defence": 5,
     "smash_threshold": 5
   },
   "mobile phone": {
@@ -869,6 +972,7 @@
     "can_be_locked": true,
     "can_be_opened": true,
     "can_pick_up": true,
+    "children": null,
     "children_type_limited": [
       "digital"
     ],
@@ -888,19 +992,21 @@
     "is_open": false,
     "item_size": "palm_sized",
     "item_type": [
-      "standard",
-      "random_loot",
-      "electronics",
       "can_pick_up",
-      "container"
+      "container",
+      "electronics",
+      "random_loot",
+      "standard"
     ],
     "loot_type": "great_loot",
     "nicenames": {
       "generic": "a mobile phone"
     },
     "requires_key": "mobile passcode",
-    "slice_threshold": 5,
-    "smash_threshold": 5,
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5,
     "starting_children": null,
     "takes_batteries": false
   },
@@ -910,6 +1016,7 @@
     "can_be_locked": true,
     "can_be_opened": true,
     "can_pick_up": true,
+    "children": null,
     "children_type_limited": false,
     "container_limits": "small_flat_things",
     "descriptions": {
@@ -925,18 +1032,20 @@
     "is_open": false,
     "item_size": "palm_sized",
     "item_type": [
-      "standard",
       "can_pick_up",
+      "container",
       "random_loot",
-      "container"
+      "standard"
     ],
     "loot_type": "great_loot",
     "nicenames": {
       "generic": "a wallet, with cash"
     },
     "requires_key": false,
-    "slice_threshold": 5,
-    "smash_threshold": 5,
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5,
     "starting_children": null
   },
   "the exact thing": {
@@ -946,16 +1055,18 @@
     },
     "item_size": "small_flat_things",
     "item_type": [
-      "standard",
+      "can_pick_up",
       "random_loot",
-      "can_pick_up"
+      "standard"
     ],
     "loot_type": "special_loot",
     "nicenames": {
       "generic": "the exact thing you've been needing"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "severed tentacle": {
     "can_pick_up": true,
@@ -964,16 +1075,18 @@
     },
     "item_size": "smaller_than_basketball",
     "item_type": [
-      "standard",
+      "can_pick_up",
       "random_loot",
-      "can_pick_up"
+      "standard"
     ],
     "loot_type": "weird",
     "nicenames": {
       "generic": "a severed tentacle"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "cabinet": {
     "can_be_added_to": true,
@@ -982,6 +1095,7 @@
     "can_be_opened": true,
     "can_break": true,
     "can_examine": true,
+    "children": null,
     "children_type_limited": false,
     "container_limits": 4,
     "descriptions": {
@@ -998,16 +1112,18 @@
     "is_locked": true,
     "is_open": false,
     "item_type": [
+      "container",
       "standard",
-      "static",
-      "container"
+      "static"
     ],
     "nicenames": {
       "generic": "a cabinet"
     },
     "requires_key": false,
-    "slice_threshold": 5,
-    "smash_threshold": 5,
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5,
     "starting_children": null
   },
   "locked box": {
@@ -1016,6 +1132,7 @@
     "can_be_locked": true,
     "can_be_opened": true,
     "can_pick_up": true,
+    "children": null,
     "children_type_limited": false,
     "container_limits": 4,
     "descriptions": {
@@ -1031,16 +1148,18 @@
     "is_open": false,
     "item_size": 0,
     "item_type": [
-      "standard",
       "can_pick_up",
-      "container"
+      "container",
+      "standard"
     ],
     "nicenames": {
       "generic": "a locked box"
     },
     "requires_key": "gold key",
-    "slice_threshold": 5,
-    "smash_threshold": 5,
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5,
     "starting_children": null
   },
   "grave": {
@@ -1050,6 +1169,7 @@
     "can_be_opened": true,
     "can_break": false,
     "can_examine": false,
+    "children": null,
     "children_type_limited": false,
     "container_limits": 4,
     "descriptions": {
@@ -1064,16 +1184,18 @@
     "is_locked": true,
     "is_open": false,
     "item_type": [
+      "container",
       "standard",
-      "static",
-      "container"
+      "static"
     ],
     "nicenames": {
       "generic": "a fresh grave"
     },
     "requires_key": false,
-    "slice_threshold": 5,
-    "smash_threshold": 5,
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5,
     "starting_children": null
   },
   "raven": {
@@ -1090,16 +1212,18 @@
     "is_spoiled": true,
     "item_size": 0,
     "item_type": [
-      "standard",
-      "food_drink",
+      "can_pick_up",
       "can_speak",
-      "can_pick_up"
+      "food_drink",
+      "standard"
     ],
     "nicenames": {
       "generic": "a raven"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5,
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5,
     "speaks_common": true
   },
   "rocking chair": {
@@ -1112,8 +1236,10 @@
     "nicenames": {
       "generic": "a wooden rocking chair"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "merry-go-round": {
     "can_break": false,
@@ -1128,8 +1254,10 @@
     "nicenames": {
       "generic": "a merry-go-round"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "birdbath": {
     "can_break": false,
@@ -1144,8 +1272,10 @@
     "nicenames": {
       "generic": "a stone birdbath"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "comb": {
     "can_break": true,
@@ -1156,14 +1286,18 @@
     },
     "is_broken": false,
     "item_type": [
+      "fragile",
       "standard",
-      "static",
-      "fragile"
+      "static"
     ],
     "nicenames": {
       "generic": "a comb"
     },
+    "slice_attack": 5,
+    "slice_defence": 5,
     "slice_threshold": 5,
+    "smash_attack": 5,
+    "smash_defence": 5,
     "smash_threshold": 5
   },
   "trident": {
@@ -1179,8 +1313,10 @@
     "nicenames": {
       "generic": "a trident"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "ornate silver key": {
     "can_pick_up": true,
@@ -1191,15 +1327,17 @@
     "is_key_to": null,
     "item_size": 0,
     "item_type": [
-      "standard",
+      "can_pick_up",
       "key",
-      "can_pick_up"
+      "standard"
     ],
     "nicenames": {
       "generic": "an ornate silver key"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "mummified mouse": {
     "can_break": true,
@@ -1218,16 +1356,20 @@
     "is_spoiled": true,
     "item_size": 0,
     "item_type": [
-      "standard",
+      "can_pick_up",
+      "flammable",
       "food_drink",
       "fragile",
-      "can_pick_up",
-      "flammable"
+      "standard"
     ],
     "nicenames": {
       "generic": "a mummified mouse"
     },
+    "slice_attack": 5,
+    "slice_defence": 5,
     "slice_threshold": 5,
+    "smash_attack": 5,
+    "smash_defence": 5,
     "smash_threshold": 5
   },
   "grandfather clock": {
@@ -1237,6 +1379,7 @@
     "can_be_opened": true,
     "can_break": false,
     "can_examine": false,
+    "children": null,
     "children_type_limited": false,
     "container_limits": 4,
     "descriptions": {
@@ -1251,16 +1394,18 @@
     "is_locked": true,
     "is_open": false,
     "item_type": [
+      "container",
       "standard",
-      "static",
-      "container"
+      "static"
     ],
     "nicenames": {
       "generic": "a grandfather clock"
     },
     "requires_key": "ornate silver key",
-    "slice_threshold": 5,
-    "smash_threshold": 5,
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5,
     "starting_children": [
       "mummified mouse"
     ]
@@ -1274,15 +1419,17 @@
     "is_key_to": null,
     "item_size": 0,
     "item_type": [
-      "standard",
+      "can_pick_up",
       "key",
-      "can_pick_up"
+      "standard"
     ],
     "nicenames": {
       "generic": "an old gold key"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "secateurs": {
     "can_pick_up": true,
@@ -1291,14 +1438,16 @@
     },
     "item_size": 0,
     "item_type": [
-      "standard",
-      "can_pick_up"
+      "can_pick_up",
+      "standard"
     ],
     "nicenames": {
       "generic": "a pair of secateurs"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "local map": {
     "can_break": true,
@@ -1313,16 +1462,20 @@
     "is_burned": false,
     "item_size": 0,
     "item_type": [
-      "standard",
       "books_paper",
+      "can_pick_up",
       "fragile",
-      "can_pick_up"
+      "standard"
     ],
     "nicenames": {
       "generic": "a local map"
     },
     "print_on_investigate": true,
+    "slice_attack": 5,
+    "slice_defence": 5,
     "slice_threshold": 5,
+    "smash_attack": 5,
+    "smash_defence": 5,
     "smash_threshold": 5
   },
   "work shed": {
@@ -1335,16 +1488,18 @@
     "is_loc_exterior": true,
     "is_vertical_surface": true,
     "item_type": [
+      "loc_exterior",
       "standard",
       "static",
-      "wall",
-      "loc_exterior"
+      "wall"
     ],
     "nicenames": {
       "generic": "a work shed"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5,
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5,
     "transition_objs": null
   },
   "wooden door": {
@@ -1366,17 +1521,19 @@
     "is_vertical_surface": true,
     "is_window": false,
     "item_type": [
+      "can_open",
+      "door_window",
       "standard",
       "static",
-      "wall",
-      "door_window",
-      "can_open"
+      "wall"
     ],
     "nicenames": {
       "generic": "a shed door"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "curtains": {
     "can_be_closed": true,
@@ -1391,16 +1548,18 @@
     "is_burned": false,
     "is_open": false,
     "item_type": [
-      "standard",
-      "static",
+      "can_open",
       "flammable",
-      "can_open"
+      "standard",
+      "static"
     ],
     "nicenames": {
       "generic": "a pair of curtains"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   },
   "matchbox": {
     "alt_names": [
@@ -1411,6 +1570,7 @@
     "can_be_locked": true,
     "can_be_opened": true,
     "can_pick_up": true,
+    "children": null,
     "children_type_limited": false,
     "container_limits": 4,
     "descriptions": {
@@ -1427,15 +1587,17 @@
     "is_open": false,
     "item_size": "a_few_marbles",
     "item_type": [
-      "standard",
-      "flammable",
       "can_pick_up",
-      "container"
+      "container",
+      "flammable",
+      "standard"
     ],
     "nicenames": {},
     "requires_key": false,
-    "slice_threshold": 5,
-    "smash_threshold": 5,
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5,
     "starting_children": [
       "matches"
     ]
@@ -1454,17 +1616,19 @@
     "is_burned": false,
     "item_size": "small_flat_things",
     "item_type": [
-      "standard",
-      "is_cluster",
-      "firesource",
       "can_pick_up",
-      "flammable"
+      "firesource",
+      "flammable",
+      "is_cluster",
+      "standard"
     ],
     "nicenames": {
       "if_singular": "a single match",
       "if_plural": "a few matches"
     },
-    "slice_threshold": 5,
-    "smash_threshold": 5
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
   }
 }
