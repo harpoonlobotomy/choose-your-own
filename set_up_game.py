@@ -120,11 +120,12 @@ def init_game():
 
     game.player.update({"hp":random.randrange(4, 8)})
     game.emotional_summary = calc_emotions()
+    import config
 
     init_settings()
     test_for_weird()
     #choices.set_choices()
-    load_world(new_loc="graveyard") # always start at graveyard
+    load_world(new_loc=config.starting_location_str) # always start at graveyard
     #initialise_itemRegistry()
     set_inventory()
     loadout() ## move loadout after load_world to allow for time_management to run first. Testing...
@@ -176,7 +177,8 @@ class game:
 
     emotional_summary = None
 
-    place = "graveyard"
+    import config
+    place = config.starting_location_str
     time = "morning"
     #pops = "few"
     weather = "fine"
@@ -184,7 +186,7 @@ class game:
 
     has_fire = False
 
-    facing_direction = "south"
+    facing_direction = config.starting_facing_direction
 
     currency = choices.currency
     carrier = choices.carrier
@@ -196,7 +198,7 @@ class game:
     #loc_list = list(locRegistry.places.values()) # just run it directly from loc within the game as needed.
     day_number=1
 
-    last_loc = "a graveyard" # just here to keep the persistence if things get distracted during a scene change
+    last_loc = config.starting_location_str # just here to keep the persistence if things get distracted during a scene change
 
 #set_up(weirdness, bad_language, player_name)
 

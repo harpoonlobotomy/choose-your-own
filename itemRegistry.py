@@ -194,7 +194,14 @@ class ItemInstance:
             setattr(self, attribute, attr[attribute])
 
         self.name:str = definition_key
-        self.nicename:str = attr.get("nicename")
+        if not attr.get("nicenames"):
+            self.nicename = f"a {self.name}"
+        else:
+            self.nicename:str = attr["nicenames"].get("generic")
+            if not self.nicename:
+                for entry in attr["nicenames"]:
+                    self.nicename = attr["nicenames"][entry]
+                    break # entirely arbirary. Need to rejig the description-selection function to do nicenames too.
         self.is_transition_obj = False
         self.item_type = self.clean_item_types(attr["item_type"])
         self.colour = None
@@ -303,8 +310,8 @@ class itemRegistry:
     # -------------------------
 
     def init_single(self, item_name, item_entry = None):
-        #print(f"[init_single] ITEM NAME: {item_name}")
-        #print(f"[init_single] ITEM ENTRY: {item_entry}")
+        print(f"\n\n[init_single] ITEM NAME: {item_name}")
+        print(f"[init_single] ITEM ENTRY: {item_entry}\n\n")
         if not item_entry:
             if self.item_defs.get(item_name):
                 item_entry = self.item_defs[item_name]
@@ -530,7 +537,7 @@ class itemRegistry:
                         if self.item_defs.get(getattr(item, "requires_key")):
                             target_obj = self.init_single(getattr(item, "requires_key"), self.item_defs.get(getattr(item, "requires_key")))
                             all_item_names_generated.append((item, "generate key from item_defs"))
-                            print(f"No target_obj from item defs for {item}, looking for {getattr(item, "requires_key")}")
+                            print(f"No target_obj from item defs for {item}, looking for {getattr(item, "requires_key")}, unless: {target_obj}")
                         else:
                             target_obj = use_generated_items(getattr(item, "requires_key"))
                             if not target_obj:
@@ -903,8 +910,13 @@ class itemRegistry:
                     description = get_if_open(inst, "no_children")
 
         if not description:
-            print(f"Not description: {inst.name}, description: {description} // descriptions: {inst.descriptions}")
+            #print(f"Not description: {inst.name}, description: {description} // descriptions: {inst.descriptions}")
             if hasattr(inst, "descriptions"):
+                if not inst.descriptions:
+                    inst.descriptions = {}
+                    inst.descriptions["generic"] = f"It's a {inst.name}"
+                    inst.description = inst.descriptions["generic"]
+                    return
                 if has_and_true(inst, "is_open") and inst.descriptions.get("if_open"):
                     description = inst.descriptions["if_open"]
 
@@ -993,6 +1005,10 @@ class itemRegistry:
     def pick_up(self, inst:str|ItemInstance, inventory_list=None, location=None, starting_objects=False) -> tuple[ItemInstance, list]:
         logging_fn()
 
+        item_name = None
+        if isinstance(inst, str):
+            item_name = inst
+
         if isinstance(inst, set) or isinstance(inst, list):
             inst=inst[0]
 
@@ -1018,9 +1034,14 @@ class itemRegistry:
             inst = self.get_item_from_defs(inst)
 
         if not inst:
+            if item_name:
+                item = item_name
             loc_card = location.place_name
             print(f"No inst, so calling new_item_from_str for item {item}")
-            inst = new_item_from_str(item_name=item, loc_cardinal=(loc_card)) # TODO: replace these with place instances, this is just temp
+            from item_dict_gen import generator
+            item_dict = generator.item_defs.get(item)
+            print(f"ITEM DICT: {item_dict}")
+            inst = new_item_from_str(item_name=item, loc_cardinal=(loc_card), partial_dict=item_dict) # TODO: replace these with place instances, this is just temp
             print("Failed to find inst in pick_up, generating from str..")
 
         if not starting_objects and not hasattr(inst, "can_pick_up"):
@@ -1139,6 +1160,8 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, part
         print('Item name is `""` .')
         print(f"item_name: {item_name}, input_str: {input_str}, loc_cardinal: {loc_cardinal}, partial_dict: {partial_dict}")
 
+    if partial_dict.get("item_type"):
+        input_str = partial_dict["item_type"]
     if not input_str:
         print("\n")
         printing.print_green(f"Options: {list(type_defaults)}", invert=True)
@@ -1146,8 +1169,11 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, part
         input_str = input()
 
     if not isinstance(input_str, str):
-        print(f"new_item_from_str requires a string input, not {type(input_str)}")
-        return
+        if isinstance(input_str, list):
+            input_str = " ".join(input_str)
+        else:
+            print(f"new_item_from_str requires a string input, not {type(input_str)}: {input_str}")
+            return
 
     if " " in input_str.strip():
         input_str = input_str.replace(",", "")
@@ -1203,9 +1229,10 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, part
 
 def apply_loc_data_to_item(item, item_data, loc_data):
 
-    if loc_data:
+    if loc_data and isinstance(loc_data, dict):
         for field in loc_data:
             if field == item:
+                print(f"loc_data: {loc_data} // field: {field}")
                 for attr in loc_data[field]:
                     if attr == item:
                         continue
@@ -1214,13 +1241,18 @@ def apply_loc_data_to_item(item, item_data, loc_data):
             else:
                 item_data[field] = loc_data[field]
 
+    else:
+        if isinstance(loc_data, list): # will only ever be Everything.
+            item_data["starting_location"] = "north everything"
+
+
     if item_data.get("description"):
         print(f"item_data description: {item_data["description"]}")
         if "[[]]" in item_data["description"]:
             item_data["description"] = item_data["description"].replace("[[]]", item)
 
 
-    if loc_data and loc_data.get("starting_location"):
+    if loc_data and isinstance(loc_data, dict) and loc_data.get("starting_location"):
 
         item_data["starting_location"] = loc_data["starting_location"]
 
@@ -1251,6 +1283,16 @@ def get_loc_items(loc=None, cardinal=None):
 
     loc_items_dict = {}
     from env_data import locRegistry
+
+    everything_test = True
+    if everything_test:
+        everything_entry = loc_dict["everything"]
+        print(f"Everything entry: {everything_entry}")
+        everything_entry["north"]["items"] = list(registry.item_defs)
+        print(f"Everything entry: {everything_entry}")
+        print(f"Everything entry north items: {everything_entry["north"]["items"]}")
+
+
 
     def get_cardinal_items(loc, cardinal):
         name_to_inst_tmp = {}

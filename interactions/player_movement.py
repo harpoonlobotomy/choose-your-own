@@ -187,6 +187,7 @@ def turn_around(new_cardinal):
         if cardinal.place.missing_cardinal:
             print(assign_colour(new_cardinal.missing_cardinal, "event_msg"))
             return
+    print("Just before set_current in turn_around")
     loc.set_current(loc=None, cardinal=cardinal)
     print(f"You turn to face the {assign_colour(loc.current, card_type="place_name")}")
     get_loc_descriptions(place=loc.current.place, cardinal=loc.current)

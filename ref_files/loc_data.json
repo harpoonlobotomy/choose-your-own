@@ -5,26 +5,35 @@
     ],
     "north": {
       "item_desc": {
-            "generic": "The bed looks nice enough - nothing fancy, but not a disaster either. Two pillows, a spare blanket at the foot of the bed. There's a small bedside drawer to each side, and a painting above the bed."},
+
+        "generic": "The bed looks nice enough - nothing fancy, but not a disaster either. Two pillows, a spare blanket at the foot of the bed. There's a small bedside drawer to each side, and a painting above the bed."
+      },
       "short_desc": "There's a queen-size bed, simple but clean looking,",
       "items": {}
     },
     "east": {
       "item_desc": {
-            "generic": "Against the wall is a large television, sitting between two large windows overlooking the city.",
-            "curtains": "The curtains are drawn."},
+        "generic": "Against the wall is a large television, sitting between two large windows overlooking the city.",
+        "curtains": "The curtains are drawn."
+      },
       "short_desc": "a television and two decently sized windows overlooking the city",
-      "items": {"curtains": {"not_in_loc_desc": true}}
+      "items": {
+        "curtains": {
+          "not_in_loc_desc": true
+        }
+      }
     },
     "south": {
       "item_desc": {
-            "generic": "There's a door, lightly sun-yellowed. Nondescript; fair to assume it's a bathroom door."},
+        "generic": "There's a door, lightly sun-yellowed. Nondescript; fair to assume it's a bathroom door."
+      },
       "short_desc": "a door, likely to a bathroom",
       "items": {}
     },
     "west": {
       "item_desc": {
-            "generic": "There's a standard hotel room door, with the fire escape route poster on the back and an empty coat hook."},
+        "generic": "There's a standard hotel room door, with the fire escape route poster on the back and an empty coat hook."
+      },
       "short_desc": "the door out of the room, likely to the hallway",
       "items": {}
     },
@@ -33,22 +42,30 @@
   "forked tree branch": {
     "alt_names": [],
     "north": {
-      "item_desc": {"generic": "This is the north part of a tree..."},
+      "item_desc": {
+        "generic": "This is the north part of a tree..."
+      },
       "short_desc": "The northern tree parts are ",
       "items": {}
     },
     "east": {
-      "item_desc": {"generic": "This is the east of a forked tree. Not sure what's here. Maybe a bird's nest.."},
+      "item_desc": {
+        "generic": "This is the east of a forked tree. Not sure what's here. Maybe a bird's nest.."
+      },
       "short_desc": "an eastern tree part",
       "items": {}
     },
     "south": {
-      "item_desc": {"generic": "South of a tree. Should probably be the exit."},
+      "item_desc": {
+        "generic": "South of a tree. Should probably be the exit."
+      },
       "short_desc": "a southern tree part",
       "items": {}
     },
     "west": {
-      "item_desc": {"generic": "West of the tree. Maybe a very nice view..."},
+      "item_desc": {
+        "generic": "West of the tree. Maybe a very nice view..."
+      },
       "short_desc": "what looks like a a western tree part",
       "items": {}
     },
@@ -86,19 +103,39 @@
     },
     "south": {
       "item_desc": {
-            "generic": "There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble.",
-            "matchbox": "Amongst the weeds, you see a weather-worn [[]]."},
+        "generic": "There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble.",
+        "matchbox": "Amongst the weeds, you see a weather-worn [[]]."
+      },
       "short_desc": "stands a mausoleum",
       "items": {}
     },
     "west": {
       "item_desc": {
         "generic": "Standing in unkempt long grass, you see what looks like ",
-        "work shed": "a [[]] of some kind, with a wooden door that looks like it was barricaded until recently"},
+        "work shed": "a [[]] of some kind, with a wooden door that looks like it was barricaded until recently"
+      },
       "short_desc": "is what looks like a work shed of some kind",
       "items": {
-        "work shed": {"item_type": ["loc_exterior", "wall", "static"]},
-        "wooden door": {"enter_location": "work shed", "exit_to_location": "graveyard", "item_type": ["wall", "can_open", "static", "transition", "door_window"], "not_in_loc_desc": true}}
+        "work shed": {
+          "item_type": [
+            "loc_exterior",
+            "wall",
+            "static"
+          ]
+        },
+        "wooden door": {
+          "enter_location": "work shed",
+          "exit_to_location": "graveyard",
+          "item_type": [
+            "wall",
+            "can_open",
+            "static",
+            "transition",
+            "door_window"
+          ],
+          "not_in_loc_desc": true
+        }
+      }
     },
     "descrip": "You're in a rather poorly kept PPPgraveyardEEE - smaller than you might have expected given the scale of the gate and fences"
   },
@@ -106,7 +143,8 @@
     "alt_names": [],
     "north": {
       "item_desc": {
-            "generic": "The shrine itself is fragile looking, with candles still not burnt down entirely."},
+        "generic": "The shrine itself is fragile looking, with candles still not burnt down entirely."
+      },
       "short_desc": "A wooden shrine, with aged fabric flags and various trinkets",
       "items": {
         "scroll": {}
@@ -114,13 +152,15 @@
     },
     "east": {
       "item_desc": {
-        "generic": "The underhang's east wall is damp with spray from the waterfall outside, but otherwise unremarkable"},
+        "generic": "The underhang's east wall is damp with spray from the waterfall outside, but otherwise unremarkable"
+      },
       "short_desc": "a small 'interior' wall of the underhang",
       "items": {}
     },
     "south": {
       "item_desc": {
-            "generic": "The sky and fields beyond; nothing much to do here except leave."},
+        "generic": "The sky and fields beyond; nothing much to do here except leave."
+      },
       "short_desc": "open air",
       "items": {}
     },
@@ -130,25 +170,29 @@
     "alt_names": [],
     "north": {
       "item_desc": {
-            "generic": ""},
+        "generic": ""
+      },
       "short_desc": "",
       "items": {}
     },
     "east": {
       "item_desc": {
-            "generic": ""},
+        "generic": ""
+      },
       "short_desc": "",
       "items": {}
     },
     "south": {
       "item_desc": {
-            "generic": ""},
+        "generic": ""
+      },
       "short_desc": "",
       "items": {}
     },
     "west": {
       "item_desc": {
-            "generic": ""},
+        "generic": ""
+      },
       "short_desc": "",
       "items": {}
     },
@@ -166,7 +210,10 @@
       },
       "short_desc": "There's a simple desk, hazily lit by the window over it",
       "items": {
-        "secateurs": {"description": "Slightly rusted secateurs, still likely sharp enough to do their job.", "is_hidden": false},
+        "secateurs": {
+          "description": "Slightly rusted secateurs, still likely sharp enough to do their job.",
+          "is_hidden": false
+        },
         "iron key": {
           "description": "An old iron key, pitted on the surface but still appears functional.",
           "is_key_to": "padlock",
@@ -177,5 +224,16 @@
       }
     },
     "descrip": "Around you, you see the interior of a rather run-down looking PPPwork shedEEE, previously boarded up but seemingly, not anymore."
+  },
+  "everything": {
+    "alt_names": [],
+    "north": {
+      "item_desc": {
+        "generic": "Everything, just everything. What is it you want? Spread around the bright white empty space, you see "
+      },
+      "short_desc": "Seems like there's everything here.",
+      "items": {}
+    },
+    "descrip": "A place with everything, for testing."
   }
 }

@@ -144,7 +144,7 @@ def look_around():
 
     print(loc.currentPlace.overview, "\n")
     #print("^ loc overview ^")
-    #print(f"loc.current: {loc.current}")
+    print(f"loc.current: {loc.current}")
     #print(f"loc.current vars: \n{vars(loc.current)}")
 
     print(f"You're facing {assign_colour(loc.current)}. {loc.current.description}")

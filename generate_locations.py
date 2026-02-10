@@ -147,7 +147,7 @@ def change_loc_data(loc_dict_entry, name, cardinal_no):
 
 
 
-def generate_new_location(loc_name:None):
+def generate_new_location(loc_name = None):
 
     if not loc_name:
         loc_name = input(f"Please enter desired location name: ")

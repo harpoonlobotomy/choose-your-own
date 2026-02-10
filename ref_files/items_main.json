@@ -372,7 +372,7 @@
       "can_pick_up"
     ],
     "nicenames": {
-      "generic": "a some dried flowers"
+      "generic": "some dried flowers"
     },
     "slice_threshold": 5,
     "smash_threshold": 5
@@ -898,7 +898,7 @@
     "nicenames": {
       "generic": "a mobile phone"
     },
-    "requires_key": "mobile_passcode",
+    "requires_key": "mobile passcode",
     "slice_threshold": 5,
     "smash_threshold": 5,
     "starting_children": null,
@@ -952,7 +952,7 @@
     ],
     "loot_type": "special_loot",
     "nicenames": {
-      "generic": "a the exact thing you've been needing"
+      "generic": "the exact thing you've been needing"
     },
     "slice_threshold": 5,
     "smash_threshold": 5
@@ -1279,7 +1279,7 @@
       "can_pick_up"
     ],
     "nicenames": {
-      "generic": "a old gold key"
+      "generic": "an old gold key"
     },
     "slice_threshold": 5,
     "smash_threshold": 5

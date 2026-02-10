@@ -92,15 +92,20 @@ def is_loc_current_loc(location=None, cardinal=None):
 def get_transition_noun(noun, format_tuple, input_dict):
     logging_fn()
     local_items_list = registry.get_item_by_location(loc.current)
+    print(f"local items in get_transition_noun: {local_items_list}")
     if hasattr(noun, "is_loc_exterior"):
+        print(f"has noun.in_loc_ext: {noun.is_loc_exterior}")
         if hasattr(noun, "transition_objs"):
             if isinstance(noun.transition_objs, ItemInstance):
+                print(f"noun transition objs: {noun.transition_objs}")
                 noun = noun.transition_objs
                 return noun
 
             else:
                 if len(noun.transition_objs) == 1:
+                    print("1 noun.transition_objs")
                     for neW_noun in noun.transition_objs:
+                        print(f"neW_noun: {neW_noun}")
                         return neW_noun
                 else:
                     print(f"More than one transition object for {noun}. Can't deal with this yet. Exiting.")
@@ -120,6 +125,12 @@ def get_transition_noun(noun, format_tuple, input_dict):
                     if local_items_list and loc_item in local_items_list:
                         noun = loc_item
                         return noun
+                    else:
+                        local_names = dict()
+                        for item in local_items_list:
+                            local_names[item.name] = item
+                        if loc_item.name in local_names: ## Fix this later, this should not be necessary.
+                            return local_names[loc_item.name]
 
     return noun
 
@@ -1453,12 +1464,13 @@ def enter(format_tuple, input_dict, noun=None):
             noun = get_noun(input_dict, 2)
         else:
             noun = get_noun(input_dict)
-
+    print(f"NOUN: {noun}")
     #if hasattr(noun, "is_loc_exterior"):
     #    print(f"{noun} is a location exterior object, this will work later.")
     if not noun or hasattr(noun, "is_loc_exterior") or hasattr(noun, "is_transition_obj"):
         noun = get_transition_noun(noun, format_tuple, input_dict)
 
+    print(f"NOUN after get_transition_noun: {noun}")
     if hasattr(noun, "enter_location"):
         #print(f"noun.enter_location: {noun.enter_location}")
         inside_location = noun.enter_location ## Noun must have both enter loc and exit_to_loc if it has either.

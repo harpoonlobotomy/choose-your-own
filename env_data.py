@@ -157,8 +157,8 @@ class placeRegistry:
             if isinstance(loc, placeInstance) and not cardinal:
                 self.currentPlace = loc
                 if not self.current:
-                    print("env_data/ No current_cardinal, defaulting to 'south'.")
-                    current_card = "east"
+                    print("env_data/ No current_cardinal, defaulting to 'north'.")
+                    current_card = "north"
                 else:
                     current_card = self.current.name
                 new_card = self.cardinals[self.currentPlace][current_card]

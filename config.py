@@ -3,7 +3,7 @@
 
 enable_tui: bool = False
 
-run_tests = False#True
+run_tests = True
 
 test_mode = True # True == skip player name, intro
 
@@ -19,7 +19,8 @@ loc_data = r"ref_files\loc_data.json"
 event_data = r"ref_files\event_defs.json"
 
 
-starting_location_str = r"graveyard"
+starting_location_str = r"everything"
+starting_facing_direction = "north"
 
 # verbregistry/verb_membrane/parsing
 show_reciever = True#False

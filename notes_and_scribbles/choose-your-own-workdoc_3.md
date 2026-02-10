@@ -551,3 +551,112 @@ Okay. So the fix is messy, my brain is everywhere today and I can't think straig
 > Get item defs from alt_names (eg a child named 'matches' will still be called 'matches', but will get the item_def from item 'match')
 > properly allocate descriptions (inc using alt names also, and fixed logic issues with the various descriptions options),
 > also checks for whether a container is open or not when deciding to print the children.
+
+
+10.14pm
+long_desc with child: ['a glass jar, holding ', '\x1b[31m<ItemInstance dried flowers (dd3545a4-ecf0-4b09-862e-f4912acfb288)>\x1b[0m']
+DESCRIPTION: a glass jar, holding <ItemInstance dried flowers (dd3545a4-ecf0-4b09-862e-f4912acfb288)>.
+Need to check to see if this error persists. Running itemReg on its own to set up some tests, not sure if this error appers in the main run or if it's because I'm running it in isolation.
+
+10.49pm
+Working on the test still.
+Found this error:
+(  Func:  get_transition_noun    )
+noun: <ItemInstance work shed (6545a662-f6d2-4f08-adc1-2622b181e45d)>
+format_tuple: ('verb', 'noun')
+input_dict: {0: {'verb': {'instance': <verbInstance enter (38279a08-5f12-4e78-ac6f-78afbf4bef04)>, 'str_name': 'enter', 'text': 'enter'}}, 1: {'noun': {'instance': <ItemInstance work shed (6545a662-f6d2-4f08-adc1-2622b181e45d)>, 'str_name': 'work shed', 'text': 'shed'}}}
+(  Func:  get_item_by_location    )
+loc_cardinal: <cardinalInstance west graveyard (01194da9-48df-4f54-99b0-7ff6f6c94c42)>
+(  Func:  turn_around    )
+new_cardinal: <cardinalInstance north everything (bed9b124-e226-4eca-83bd-6e8f2277dc25)>
+Failed parser: 'NoneType' object has no attribute 'get'
+
+
+Probably only an issue because I've randomly added a heap of shit in a weird way, but still. Should avoid errors like this even if they shouldn't happen in ideal typical play.
+
+also:
+
+(  Func:  instances_by_name    )
+definition_key: old gold key
+(  Func:  router    )
+viable_format: ('verb', 'noun')
+inst_dict: {0: {'verb': {'instance': <verbInstance take (42dc4d6a-e91d-4707-856b-5c2b6540a089)>, 'str_name': 'take', 'text': 'take'}}, 1: {'noun': {'instance': <ItemInstance old gold key (9df38fa3-7830-494d-95de-d60[[  take key  ]]r_name': 'old gold key', 'text': 'key'}}}
+
+instead of the local iron key, it's chosen old gold. Usyally its not been inits at this point but because of the test it has. Need to fix this too.
+
+(  Func:  get_item_by_location    )
+loc_cardinal: <cardinalInstance west graveyard (01194da9-48df-4f54-99b0-7ff6f6c94c42)>
+(  Func:  turn_around    )
+new_cardinal: <cardinalInstance north everything (bed9b124-e226-4eca-83bd-6e8f2277dc25)>
+Failed parser: 'NoneType' object has no attribute 'get'
+
+So this is odd.
+
+It describes being in the graveyard (Even though I told it to start in the Everything), gives the description for east graveyard,  goes west in graveyard, opens the door,  but then fails to get the transition noun:
+
+(  Func:  router    )
+viable_format: ('verb', 'noun')
+inst_dict: {0: {'verb': {'instance': <verbInstance enter (38279a08-5f12-4e78-ac6f-78afbf4bef04)>, 'str_name': 'enter', 'text': 'enter'}}, 1: {'noun': {'instance': <ItemInstance work shed (6545a662-f6d2-4f08-adc1-262[[  enter shed  ]]name': 'work shed', 'text': 'shed'}}}
+
+#   (  Func:  enter    )
+#   format_tuple: ('verb', 'noun')
+#   input_dict: {0: {'verb': {'instance': <verbInstance enter (38279a08-5f12-4e78-ac6f-78afbf4bef04)>, 'str_name': 'enter', 'text': 'enter'}}, 1: {'noun': {'instance': <ItemInstance work shed (6545a662-f6d2-4f08-adc1-2622b181e45d)>, #  'str_name': 'work shed', 'text': 'shed'}}}
+#   (  Func:  get_noun    )
+#   input_dict: {0: {'verb': {'instance': <verbInstance enter #    (38279a08-5f12-4e78-ac6f-78afbf4bef04)>, 'str_name': 'enter', 'text': 'enter'}}, 1: {'noun': {'instance': <ItemInstance work shed (6545a662-f6d2-4f08-adc1-2622b181e45d)>, 'str_name': 'work shed', 'text': 'shed'}}}
+#   (  Func:  get_transition_noun    )
+#   noun: <ItemInstance work shed (6545a662-f6d2-4f08-adc1-2622b181e45d)>
+#   format_tuple: ('verb', 'noun')
+#   input_dict: {0: {'verb': {'instance': <verbInstance enter (38279a08-5f12-4e78-ac6f-78afbf4bef04)>, 'str_name': 'enter', 'text': 'enter'}}, 1: {'noun': {'instance': <ItemInstance work shed (6545a662-f6d2-4f08-adc1-2622b181e45d)>, #  'str_name': 'work shed', 'text': 'shed'}}}
+#   (  Func:  get_item_by_location    )
+#   loc_cardinal: <cardinalInstance west graveyard (01194da9-48df-4f54-99b0-7ff6f6c94c42)>
+#   (  Func:  turn_around    )
+#   new_cardinal: <cardinalInstance north everything (bed9b124-e226-4eca-83bd-6e8f2277dc25)>
+#   Failed parser: 'NoneType' object has no attribute 'get'
+
+
+1.38am
+
+(  Func:  get_item_by_location    )
+loc_cardinal: <cardinalInstance west graveyard (83bb516f-caea-4995-8051-e7191f0473e0)>
+local items in get_transition_noun: {<ItemInstance work shed (7b3e6098-29b4-4a87-a474-f56577b515ae)>, <ItemInstance wooden door (c72ee11e-4851-4a72-bdc8-4facf172a9c0)>}
+has noun.in_loc_ext: True
+1 noun.transition_objs
+neW_noun: <ItemInstance wooden door (4ff5c570-afe8-4575-9c92-37a2f20b33e8)>
+NOUN after get_transition_noun: <ItemInstance wooden door (4ff5c570-afe8-4575-9c92-37a2f20b33e8)>
+
+Not sure if these lines just weren't printing before or if it wasn't happening.
+
+Well no, it definitely wasn't working before, because it said noun None.
+
+1.40am
+HAs loc item: <ItemInstance wooden door (c8508711-2ba5-4c9e-a808-d79abb3eb153)>
+NOUN after get_transition_noun: None
+This None doesn't lead anywhere
+Yeah. Sometimes it just doesn't. Hmph.
+
+
+HAs loc item: <ItemInstance wooden door (6ceaff9a-152a-4dac-b0c1-bd9d74295ea8)>
+local_items_list: {<ItemInstance work shed (bba9cc1b-493a-4a2c-b605-10b8c20b6e28)>, <ItemInstance wooden door (12455160-23d5-4bae-91fe-b9b1966d133b)>}
+
+Hmph. It's finding the wrong door, apparently there are  two. That's why it works sometimes.
+
+Well, temporarily for now,
+HAs loc item: <ItemInstance wooden door (8400dce4-4116-4067-87eb-83a5049d2cf6)>
+local_items_list: {<ItemInstance work shed (17a28e58-556f-443d-bd44-9000756a9f11)>, <ItemInstance wooden door (2f9709db-e182-4b41-8411-b37683a50dbc)>}
+NOUN after get_transition_noun: <ItemInstance wooden door (2f9709db-e182-4b41-8411-b37683a50dbc)>
+
+I've just got it to say 'if you have something of the expected name in the current loc, use that instead'. Not a good fix but works for the moment.
+
+2.14am
+Running the original test set of 50 instructions reveals a heap of interesting errors.
+
+Not an 'error' but a downside of using the input string instead of the noun name:
+
+[[  investigate exact  ]]
+printing when
+
+"investigate the exact thing",
+
+was typed. 'thing' didn't get a token because it was skipped as part of the parser's omit_next. So I guess I do need to pass the typed str itself through, not just reconstruct it from token.text entries.
+
+The rest are generally actual errors.
