@@ -96,5 +96,25 @@
     "messages": {
         "start_msg": "As the scroll rolls open in your hands, a small, tarnished gold key falls from it."
     }
+  },
+"item_leaves_broken_glass": {
+    "is_quick_event": true,
+    "repeats": false,
+    "starts_current": false,
+    "immediate_action": {
+        "attribute_trigger": {
+            "item_attribute": {"on_death": "broken_glass"},
+            "triggered_by": ["item_broken"]
+        }
+    },
+    "effects": {
+        "init_items": {
+            "0": {"item_name": "broken glass shards"}},
+        "remove_items": {
+            "0": {"item_name": "trigger_item"}}},
+
+    "messages": {
+        "start_msg": "As the [[]] breaks, it shatters into a clutter of glass shards."
+    }
   }
 }

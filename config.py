@@ -3,9 +3,9 @@
 
 enable_tui: bool = False
 
-run_tests = True
-parse_test = True #turns off events + location item generation, generates every item placed at Everywhere North instead.
-parser_tests_output_to_json = True
+run_tests = False
+parse_test = False#True #turns off events + location item generation, generates every item placed at Everywhere North instead.
+parser_tests_output_to_json = False#True
 
 test_mode = True # True == skip player name, intro
 
@@ -25,8 +25,11 @@ starting_location_str = r"everything"
 starting_facing_direction = "north"
 
 # verbregistry/verb_membrane/parsing
-show_reciever = True#False
+show_reciever = False#True#False
 
 add_new_words_if_missing = False
 
 require_firesource = True
+
+no_place_str = "north no_place"
+inv_loc_str = "north inventory_place"

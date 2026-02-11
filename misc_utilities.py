@@ -144,7 +144,7 @@ def look_around():
 
     print(loc.currentPlace.overview, "\n")
     #print("^ loc overview ^")
-    print(f"loc.current: {loc.current}")
+    #print(f"loc.current: {loc.current}")
     #print(f"loc.current vars: \n{vars(loc.current)}")
 
     print(f"You're facing {assign_colour(loc.current)}. {loc.current.description}")
@@ -504,6 +504,8 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
 
     elif isinstance(item, cardinalInstance):
         item = item.name
+    elif isinstance(item, placeInstance):
+        item=item.name
 
     coloured_text=Colours.c(item, colour, bg, bold=bld, italics=ita, underline=u_line, invert=invt, no_reset=no_reset)
     return coloured_text

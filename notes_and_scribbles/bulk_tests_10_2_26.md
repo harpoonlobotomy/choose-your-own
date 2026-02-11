@@ -280,3 +280,48 @@ I think I need to either make sure omit_next is working properly (which I'll do 
 Failed parser: 'ItemInstance' object has no attribute 'children'
 Ah. This one's interesting. Because we want to treat 'put batteries into watch' as a container, but watch is not a container (and I don't want to make it one just for this to work like containers do). Think I need to just add 'if noun2 == electronics and noun2.takes_batteries', and noun.is_battery (currently that doesn't exist, need to add it as a type_default maybe.) Have added 'battery' as type_default, will need to update items_main for it to take effect.
 
+#
+##  TEST TWO:
+#
+
+This is the first error, everything before this works as expected now:
+
+# [ Couldn't find anything to do with the input `approach the forked tree branch`, sorry. <after get_sequences_from_tokens>]
+# Failed parser: too many values to unpack (expected 2)
+
+Okay, so digging into the extra values I printed:
+It still sends local_named even when it's checking for locations. If it's checking for locations, it should ignore local entirely. Would explain why only the compound loc names are failing like this.
+
+Found it -
+
+return dict_from_parser
+
+ln 94 of membrane. I added the 'error' part, but didn't add it to the upper section.
+
+Oh, no, it wasn't that - it's because I made 'error' a tuple in itself, but only sometimes. That's the issue.
+
+11.04am
+
+Okay it seems like omit_next isn't following through correctly.
+
+omit_next:  3
+(  Func:  verbReg_Reciever    )
+values: ('Tokenise: idx: 3, word: tree, omit_next: 0',)
+
+So within compound_words, it's recognising that it needs to omit the next three (though it should only be two, as it doesn't omit itself)
+
+11.08am
+
+Oh, I found it.
+
+If it was a location (aka not perfect and second_perfect),
+it didn't update omit_next = second_omit_next. So it kept the (correct) omit_next of 0 because it wasn't a compound noun. Okay. Now it's fixed, and we have
+
+#   input_dict: {0: {'verb': {'instance': <verbInstance go (dbabc016-c0d7-4d83-9637-d7a28649f108)>, 'str_name': 'approach', 'text': 'approach'}}, 1: {'location': {'instance': <placeInstance forked tree branch (2bf77ab7-6480-4bc9-8e74-939bd2472e8c)>, 'str_name': 'forked tree branch', 'text': 'forked'}}}
+#   loc_name: forked tree branch
+#   You've climbed up a gnarled old tree to a forked tree branch, and found a relatively safe place to sit in its broad branches.
+#   The northern tree parts are  to the north. To the east an eastern tree part, to the south a southern tree part, and to the west what looks like a a western tree part.
+#
+#   This is the north part of a tree...
+
+

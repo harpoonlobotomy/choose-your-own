@@ -743,12 +743,11 @@ class eventRegistry:
 
 
         if msg_type == "held":
-
             if self.travel_is_limited:
                 if event == None:
                     event = self.held_at.get("held_by")
 
-                return print_current(event, state_type=msg_type, end_type=end_type, print_text=print_txt)
+                return print_current(event, state_type=msg_type, print_text=print_txt)
 
         if not event:
             print("Need to define event for start/end messages.")

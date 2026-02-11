@@ -174,8 +174,8 @@ class Parser:
 
             kinds.add(word_type)
             potential_match=True
-            omit_next = matches_count ## Skip however many successful matches there were, so we don't re-test words confirmed to be part of a compound word.
-            #print("omit_next: ", omit_next)
+            omit_next += matches_count-1 ## Skip however many successful matches there were, so we don't re-test words confirmed to be part of a compound word.
+            print("omit_next: ", omit_next)
             #print(idx, word, kinds, canonical, potential_match, omit_next) NOTE: This part is useful to print for testing, but annoying in practice.
             return idx, word, kinds, canonical, potential_match, omit_next, perfect_match
 
@@ -188,7 +188,7 @@ class Parser:
                     kinds = set()
                 kinds.add(word_type)
                 potential_match=True
-                omit_next = 1
+                omit_next += matches_count
                 return idx, word, kinds, canonical, potential_match, omit_next, perfect_match
 
             #print("More than one compound match")
@@ -210,7 +210,7 @@ class Parser:
                     match = test
             else:
                  for item in compound_matches: # this just takes the first match, so if 'gold key' and 'iron key' are both there, it will take gold key regardless.
-                    #print(f"item in compound matches: {item}")
+                    print(f"item in compound matches: {item}")
                     if item in local_named:
                         #print(f"item in local_named: {item}")
                         if item in parts_dict:
@@ -260,8 +260,8 @@ class Parser:
             word = word.lower()
             kinds = set()
             potential_match=False
-            verbReg_Reciever(f"Tokenise: idx: {idx}, word: {word}")
-            if omit_next > 1:
+            verbReg_Reciever(f"Tokenise: idx: {idx}, word: {word}, omit_next: {omit_next}")
+            if omit_next >= 1: # shouldn't this be >=, not ==? Surely if omit_next == 1, we need to omit once...
                 omit_next -= 1
                 continue
 
@@ -364,6 +364,7 @@ class Parser:
                     second_perfect = None
                     idx, word, kinds, canonical, potential_match, omit_next, perfect = Parser.check_compound_words(parts_dict = compound_nouns, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "noun", omit_next=omit_next, local_named=local_items)
                     second_perfect = None
+                    print(f"omit_next after first check compound words: {omit_next}")
                     try:
                         second_idx, second_word, second_kinds, second_canonical, second_potential_match, second_omit_next, second_perfect = Parser.check_compound_words(parts_dict = compound_locs, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "location", omit_next=omit_next, local_named=local_items)
                     except Exception as e:
@@ -380,11 +381,14 @@ class Parser:
                     elif second_perfect and not perfect:
                         kinds = (("location",))
                         tokens.append(Token(second_idx, second_word, second_kinds, second_canonical))
+                        omit_next = second_omit_next
                         continue
                     #    tokens.append(Token(second_idx, second_word, second_kinds, second_canonical))
                     #
 #
-                    #elif perfect and second_perfect:
+                    elif perfect and second_perfect:
+                        print(f"Perfect for both noun and location: help? {idx}, {word} // {kinds}/{second_kinds} // {perfect} / {second_perfect} // {canonical} / {second_canonical}")
+                        exit()
                     #    kinds = (("location",))
                     #    tokens.append(Token(second_idx, second_word, second_kinds, second_canonical))
                     #if perfect:
@@ -392,6 +396,9 @@ class Parser:
                         #tokens.append(Token(idx, word, kinds, canonical))
                         #continue
 
+                    if canonical:
+                        tokens.append(Token(idx, word, kinds, canonical))
+                        continue
 
                     if not canonical and second_canonical:
                         idx = second_idx
@@ -404,9 +411,6 @@ class Parser:
                         continue
 
                     #if canonical and not second_perfect:
-                    if canonical:
-                        tokens.append(Token(idx, word, kinds, canonical))
-                        continue
 
                     if not canonical:
                         verbReg_Reciever(f"Tokenise: idx: {idx}, word: {word}, not canonical")
@@ -510,7 +514,7 @@ class Parser:
                         #print(f"Token: {token}")
 
                         reformed_dict[matched] = {sequence[matched]: {"canonical": token.canonical, "text": token.text}}
-                        #print(reformed_dict[matched])
+                        print(reformed_dict[matched])
 
                         matched += 1
 
@@ -518,6 +522,7 @@ class Parser:
             print(f"More than one fully viable sequence:\n{full_matches}")
         elif len(full_matches) == 1:
             reformed_dict = full_matches
+        print(f"reformed_dict {reformed_dict}, sequence {sequence}")
         return reformed_dict, sequence
 
     def get_sequences_from_tokens(tokens) -> list:

@@ -113,6 +113,9 @@ class placeRegistry:
         self.cardinals = {} # locRegistry.cardinals[place_instance_obj][cardinal_direction_str]
         self.current = None # cardinal instance
         self.currentPlace = None
+        self.inv_place = None
+        self.no_place = None
+
 
     def add_cardinals(self, locationInstance):
         cardinals_dict = dict()
@@ -136,6 +139,7 @@ class placeRegistry:
                     print(f"Trying to set location to {loc.name} and cardinal to {cardinal.place_name}; this doesn't work...")
                     traceback_fn()
                     return
+
 
                 self.current = cardinal
                 self.currentPlace = loc
@@ -297,8 +301,11 @@ def initialise_placeRegistry():
                 else:
                     print(f"Target place transition objects: {target_place.transition_objs}")
 
-    from config import starting_location_str
+    from config import starting_location_str, no_place_str, inv_loc_str
     locRegistry.set_current(starting_location_str)
+    locRegistry.no_place = locRegistry.by_cardinal_str(no_place_str)
+    locRegistry.inv_place = locRegistry.by_cardinal_str(inv_loc_str)
+
 
 def get_descriptions(place:placeInstance, cardinal:cardinalInstance=None):
 

@@ -143,7 +143,8 @@
     "alt_names": [],
     "north": {
       "item_desc": {
-        "generic": "The shrine itself is fragile looking, with candles still not burnt down entirely."
+        "generic": "The shrine itself is fragile looking, lit with candles, and on it sits ",
+        "no_items": "The shrine itself is fragile looking, with candles still not burnt down entirely."
       },
       "short_desc": "A wooden shrine, with aged fabric flags and various trinkets",
       "items": {
@@ -161,10 +162,10 @@
       "item_desc": {
         "generic": "The sky and fields beyond; nothing much to do here except leave."
       },
-      "short_desc": "open air",
+      "short_desc": "open air, the ground wet from the overspray of the waterfall that conceals this place",
       "items": {}
     },
-    "descrip": "Sheltered from the rain you see a small PPPshrineEEE, built into the underhang of a cliff face."
+    "descrip": "Sheltered from the rain you see a small PPPshrineEEE, built into the underhang of a cliff face, mostly hidden behind a waterfall."
   },
   "church": {
     "alt_names": [],
@@ -235,5 +236,29 @@
       "items": {}
     },
     "descrip": "A place with everything, for testing."
+  },
+  "no_place": {
+    "alt_names": [],
+    "north": {
+      "item_desc": {
+        "generic": "During init, things are placed here. Currently, the things here are ",
+        "no_items": "During init, things are placed here. Currently, there are no items here. This is good."
+      },
+      "short_desc": "Everything starts here.",
+      "items": {}
+    },
+    "descrip": "Where all things start, and where no things should stay."
+  },
+  "inventory_place": {
+    "alt_names": [],
+    "north": {
+      "item_desc": {
+        "generic": "Current, your inventory holds: ",
+        "no_items": "Your inventory is empty."
+      },
+      "short_desc": "An inventory.",
+      "items": {}
+    },
+    "descrip": "Player Inventory [not actually a location]."
   }
 }

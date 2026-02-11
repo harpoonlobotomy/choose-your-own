@@ -2,7 +2,7 @@
 import random
 import uuid
 
-from env_data import cardinalInstance, placeInstance
+from env_data import cardinalInstance, placeInstance, locRegistry
 from logger import logging_fn, traceback_fn
 from env_data import locRegistry as loc
 import printing
@@ -211,9 +211,10 @@ class ItemInstance:
 Note on descriptions: if self.descriptions, will have different descriptions depending on type, flags. Will automate it with a dict later (which flags determine which description options). Not sure yet if all items will always have descriptions, or or simple objects with no alternate names will only ever have 'description' and use that always. Will allow for self.description as-is for now.
         """
         self.description:str = attr.get("description") # will be initd shortly, depending on item conditions. Use default if found for simple objects with no alt names.
-        print(f"Name: {self.name} // self.description in init: {self.description}")
+        #print(f"Name: {self.name} // self.description in init: {self.description}")
         self.starting_location:dict = attr.get("starting_location") # currently is styr
         self.verb_actions = set()
+
         self.location:cardinalInstance = None
         self.event = None
         self.is_event_key = False
@@ -311,8 +312,8 @@ class itemRegistry:
     # -------------------------
 
     def init_single(self, item_name, item_entry = None):
-        print(f"\n\n[init_single] ITEM NAME: {item_name}")
-        print(f"[init_single] ITEM ENTRY: {item_entry}\n\n")
+        #print(f"\n\n[init_single] ITEM NAME: {item_name}")
+        #print(f"[init_single] ITEM ENTRY: {item_entry}\n\n")
         if not item_entry:
             if self.item_defs.get(item_name):
                 item_entry = self.item_defs[item_name]
@@ -360,6 +361,7 @@ class itemRegistry:
                 self.by_alt_names[altname] = item_name
 
         if hasattr(inst, "starting_children") and getattr(inst, "starting_children"):
+            print(f"INST {inst} has starting children: {inst.starting_children}")
             self.new_parents.add(inst.id)
             registry.generate_children_for_parent(parent=inst)
 
@@ -381,8 +383,8 @@ class itemRegistry:
 
 
     def delete_instance(self, inst: ItemInstance):
-        inst_id=inst.id
-        inst = self.instances.remove(inst_id)
+
+        inst = self.instances.remove(inst)
         if not inst:
             return
 
@@ -431,23 +433,28 @@ class itemRegistry:
         return items
 
     def generate_children_for_parent(self, parent=None):
+        logging_fn()
 
         def get_children(parent:ItemInstance):
 
+            print("for child in parent.starting_children")
             instance_children = []
             instance_count = 0
             target_child = None
-            if parent.starting_children == None:
-                return
-
             if isinstance(parent.starting_children, str):
                 temp = []
                 temp.append(parent.starting_children)
                 parent.starting_children = temp
 
-            if isinstance(parent.starting_children, list|set|tuple):
-                for child in parent.starting_children:
+            if parent.starting_children == None:
+                print(f"parent.starting_children None: {parent.starting_children}")
+                return
+            print(f"parent.starting_children not == None: {parent.starting_children}")
+            if parent.starting_children != None and isinstance(parent.starting_children, list|set|tuple):
+                print(f"for child in parent.starting_children: {parent.starting_children}")
 
+                for child in parent.starting_children:
+                    print(f"CHILD: {child}")
                     def find_or_make_children(child, parent, instance_count, instance_children):
 
                         if isinstance(child, ItemInstance):
@@ -458,7 +465,7 @@ class itemRegistry:
                             return instance_count, instance_children
 
                         if child in self.item_defs:
-                            if self.alt_names.get(child):
+                            if hasattr(self, "alt_names") and self.alt_names.get(child):
                                 #child = self.by_alt_names[child]
                                 new_child = self.alt_names[child]
                                 print(f"TARGET CHHILD: {child} # new_child: {new_child}")
@@ -480,6 +487,7 @@ class itemRegistry:
                             parent.children.add(target_child)
                             target_child.contained_in = parent
 
+                        #exit()
                         return instance_count, instance_children
 
                     instance_count, instance_children = find_or_make_children(child, parent, instance_count, instance_children)
@@ -493,7 +501,6 @@ class itemRegistry:
                     else:
                         exit(f"Not all children found/made as instances. Str list:\n   {parent.starting_children}\nInstance list:\n    {instance_children}\nchild/parent dict: {registry.child_parent}") # again, right now hard exit if this ever fails. Need to see why if it does.
         # Was going to do keys here too, but I don't think I will. Maybe do those at runtime, they're not as widely relevant as children so maybe just do that identification when looked for? Though having said that, that means I have to be aware of whenever they might be checked for... Yeah I should do it here actually.
-
         if parent:
             get_children(parent)
 
@@ -538,7 +545,8 @@ class itemRegistry:
                         if self.item_defs.get(getattr(item, "requires_key")):
                             target_obj = self.init_single(getattr(item, "requires_key"), self.item_defs.get(getattr(item, "requires_key")))
                             all_item_names_generated.append((item, "generate key from item_defs"))
-                            print(f"No target_obj from item defs for {item}, looking for {getattr(item, "requires_key")}, unless: {target_obj}")
+                            if not target_obj:
+                                print(f"No target_obj from item defs for {item}, looking for {getattr(item, "requires_key")}")
                         else:
                             target_obj = use_generated_items(getattr(item, "requires_key"))
                             if not target_obj:
@@ -601,7 +609,7 @@ class itemRegistry:
             inventory_list = game.inventory
 
             local_items_list = self.get_item_by_location(loc.current)
-            print(f"Local_items_list in run_check: {local_items_list}")
+            #print(f"Local_items_list in run_check: {local_items_list}")
             container, inst = is_item_in_container(inst, inventory_list)
 
             if inst in inventory_list and not container:
@@ -695,7 +703,7 @@ class itemRegistry:
     # Movement
     # -------------------------
 
-    def move_item(self, inst:ItemInstance, location:cardinalInstance=None, new_container:ItemInstance=None, old_container:ItemInstance=None)->list:
+    def move_item(self, inst:ItemInstance, location:cardinalInstance=None, new_container:ItemInstance=None, old_container:ItemInstance=None, no_print=False)->list:
         logging_fn()
         from misc_utilities import assign_colour
 
@@ -719,18 +727,19 @@ class itemRegistry:
         if old_container or new_container or hasattr(inst, "contained_in"):
             return_text = []
             if hasattr(inst, "contained_in"):
-                print(f"inst.contained in: {inst}.{inst.contained_in}")
+                #print(f"inst.contained in: {inst}.{inst.contained_in}")
                 if old_container != None:
                     parent = old_container
                 else:
                     parent = inst.contained_in
                 if parent:
-                    print(f"parent.children: {parent.children}")
+                    #print(f"parent.children: {parent.children}")
                     parent.children.remove(inst)
-                    print(f"parent.children: {parent.children} (should be removed now)")
+                    #print(f"parent.children: {parent.children} (should be removed now)")
                     inst.contained_in = None
                     return_text.append((f"Item `[{inst}]` removed from old container `[{parent}]`", inst, parent))
-                    print(f"Removed {assign_colour(inst)} from {assign_colour(parent)}.")
+                    if not no_print:
+                        print(f"Removed {assign_colour(inst)} from {assign_colour(parent)}.")
                     self.init_descriptions(parent)
 
             if new_container:
@@ -852,20 +861,20 @@ class itemRegistry:
         logging_fn()
         from misc_utilities import has_and_true
         orig_description = inst.description
-        print(f"orig_description: {orig_description}")
+        #print(f"orig_description: {orig_description}")
         description = None
         starting_children_only = False
 
         if self.alt_names.get(inst.name):
             descriptions = self.item_defs.get(self.alt_names.get(inst.name)).get("descriptions")
-            if descriptions:
-                print(f"Descriptions from alt_names: {descriptions}")
-                print(f"inst.descriptions: {inst.descriptions}")
+            #if descriptions:
+                #print(f"Descriptions from alt_names: {descriptions}")
+                #print(f"inst.descriptions: {inst.descriptions}")
             if not hasattr(inst, "descriptions") or not inst.descriptions:
                 inst.descriptions = descriptions
 
         if not inst.descriptions and inst.description:
-            print(f"inst.description: {inst.description}")
+            #print(f"inst.description: {inst.description}")
             return
 
         def get_if_open(inst:ItemInstance, label:str):
@@ -945,7 +954,7 @@ class itemRegistry:
                     inst.description = description
 
         if description:
-            print(f"DESCRIPTION: {description}")
+            #print(f"DESCRIPTION: {description}")
             inst.description = description
             return
 
@@ -1253,7 +1262,7 @@ def apply_loc_data_to_item(item, item_data, loc_data):
 
 
     if item_data.get("description"):
-        print(f"item_data description: {item_data["description"]}")
+        #print(f"item_data description: {item_data["description"]}")
         if "[[]]" in item_data["description"]:
             item_data["description"] = item_data["description"].replace("[[]]", item)
 
@@ -1292,23 +1301,23 @@ def get_loc_items(loc=None, cardinal=None):
 
     if config.parse_test:
         everything_entry = loc_dict["everything"]
-        print(f"Everything entry: {everything_entry}")
+        #print(f"Everything entry: {everything_entry}")
         everything_entry["north"]["items"] = list(registry.item_defs)
-        print(f"Everything entry: {everything_entry}")
-        print(f"Everything entry north items: {everything_entry["north"]["items"]}")
+        #print(f"Everything entry: {everything_entry}")
+        #print(f"Everything entry north items: {everything_entry["north"]["items"]}")
 
         north_everything = locRegistry.by_cardinal_str("north everything")
-
-        get_cardinal_items(north_everything.place, north_everything)
-
-        for item in registry.instances:
-            if hasattr(item, "location") and item.location != None and item.location != north_everything:
-                registry.move_item(item, north_everything)
 
     def get_cardinal_items(loc, cardinal):
         name_to_inst_tmp = {}
 
         def from_single_cardinal(loc, cardinal, name_to_inst_tmp):
+
+            if isinstance(loc, placeInstance):
+                loc = loc.name
+            if isinstance(cardinal, cardinalInstance):
+                cardinal = cardinal.name
+
             if not loc_dict.get(loc.lower()):
                 return name_to_inst_tmp
 
@@ -1341,6 +1350,7 @@ def get_loc_items(loc=None, cardinal=None):
                         apply_loc_data_to_item(item, item_data, loc_data["items"].get(item))
 
                 if loc_data.get("items"):
+                    print(f"loc_data.get('items'): {loc_data["items"]}")
                     for item in loc_data["items"]:
                         if item == None or item == "" or item in excluded_itemnames:
                             continue
@@ -1363,11 +1373,17 @@ def get_loc_items(loc=None, cardinal=None):
 
         if cardinal == None:
             for cardinal in CARDINALS:
-                loc_items_dict[loc][cardinal] = {}
                 name_to_inst_tmp = from_single_cardinal(loc, cardinal, name_to_inst_tmp)
         else:
-            loc_items_dict[loc][cardinal] = {}
             name_to_inst_tmp = from_single_cardinal(loc, cardinal, name_to_inst_tmp)
+
+    if config.parse_test:
+        get_cardinal_items(north_everything.place, north_everything)
+
+        for item in registry.instances:
+            if hasattr(item, "location") and item.location != None and item.location != north_everything:
+                registry.move_item(item, north_everything)
+
 
     if not config.parse_test:
         if loc == None:
@@ -1380,8 +1396,9 @@ def get_loc_items(loc=None, cardinal=None):
 
     registry.clean_relationships()
 
-    if registry.new_parents and registry.new_parents != None:
-        registry.generate_children_for_parent()
+    #I'm not convinced the next lines are necessary, as generate_children_for_parent runs immediately. Surely it's one or the other, not both.
+    #if registry.new_parents and registry.new_parents != None:
+    #    registry.generate_children_for_parent()
 
 
 def initialise_itemRegistry():

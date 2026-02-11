@@ -85,7 +85,7 @@ def get_noun_instances(dict_from_parser, viable_formats):
                         loc_inst = locRegistry.by_name[loc_name]
 
         if loc_inst == None:
-            loc_inst = locRegistry.currentPlace
+            loc_inst = locRegistry.current.place
         card = entry['str_name']
         #print(f"locRegistry.cardinals[loc_inst]: {locRegistry.cardinals[loc_inst]}")
 
@@ -129,7 +129,7 @@ def get_noun_instances(dict_from_parser, viable_formats):
                         #if name in registry.item_defs:
                         #    noun_inst = registry.init_single(name, registry.item_defs[name])
                     #if not noun_inst:
-                        dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": entry["text"], "text": entry["text"]})
+                        dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": entry["str_name"], "text": entry["text"]})
                         error = (f"No found ItemInstance for {entry}", (idx, kind))
                     else:
                         #print(f"Noun inst: {noun_inst}")
@@ -162,7 +162,9 @@ def get_noun_instances(dict_from_parser, viable_formats):
                     #print(f"Kind is cardinal: {entry}")
                     dict_from_parser = check_cardinals(entry, dict_from_parser, viable_formats)
 
+        print("About to return dict_from_parser, error")
         return dict_from_parser, error
+    print("About to return dict_from_parser, error")
     return None, "No dict_from_parser"
 
 class Membrane:
@@ -238,14 +240,16 @@ class Membrane:
         #print(f"local nouns: {self.local_nouns}")
 
 membrane = Membrane()
-# excluded for not being relevant right now. "go to the graveyard", , "go to a city hotel room", "go to the pile of rocks"
-test_input_list = ["logging args", "take the paperclip", "pick up the glass jar", "put the paperclip in the wallet", "place the dried flowers on the headstone", "approach the forked tree branch", "look at the moss", "examine the damp newspaper", "read the puzzle mag", "read the fashion mag in the city hotel room", "open the glass jar", "close the window", "pry open the TV set", "smash the TV set", "break the glass jar", "clean the watch", "clean the severed tentacle", "mix the unlabelled cream with the anxiety meds", "combine the fish food and the moss", "eat the dried flowers", "consume the fish food", "drink the unlabelled cream", "burn the damp newspaper", "burn the fashion mag in the graveyard", "throw the pretty rock", "lob the pretty rock at the window", "chuck the glass jar into the glass jar", "drop the wallet", "discard the paper scrap with number", "remove the batteries from the TV set", "add the batteries to the mobile phone", "put the car keys in the plastic bag", "set the watch", "lock the window", "unlock the window", "shove the TV set", "move the headstone", "barricade the window with the TV set", "separate the costume jewellery", "investigate the exact thing", "observe the graveyard", "watch the watch", "leave the graveyard", "depart", "go", "take the exact thing", "put the severed tentacle in the glass jar", "open the wallet with the paperclip", "read the mail order catalogue at the forked tree branch", "pick the moss", "pick the watch", "pick up moss", "throw anxiety meds", "put batteries into watch", "clean a glass jar"]
+# excluded for not being relevant right now. "go to the graveyard", , "go to a city hotel room", "go to the pile of rocks", "approach the forked tree branch"
+
+test_input_list = ["take the paperclip", "take the paperclip", "pick up the glass jar", "put the paperclip in the wallet", "place the dried flowers on the headstone", "look at the moss", "examine the damp newspaper", "read the puzzle mag", "read the fashion mag in the city hotel room", "open the glass jar", "close the window", "pry open the TV set", "smash the TV set", "break the glass jar", "clean the watch", "clean the severed tentacle", "mix the unlabelled cream with the anxiety meds", "combine the fish food and the moss", "eat the dried flowers", "consume the fish food", "drink the unlabelled cream", "burn the damp newspaper", "burn the fashion mag in the graveyard", "throw the pretty rock", "lob the pretty rock at the window", "chuck the glass jar into the glass jar", "drop the wallet", "discard the paper scrap with number", "remove the batteries from the TV set", "add the batteries to the mobile phone", "put the car keys in the plastic bag", "set the watch", "lock the window", "unlock the window", "shove the TV set", "move the headstone", "barricade the window with the TV set", "separate the costume jewellery", "investigate the exact thing", "observe the graveyard", "watch the watch", "leave the graveyard", "depart", "go", "take the exact thing", "put the severed tentacle in the glass jar", "open the wallet with the paperclip", "read the mail order catalogue at the forked tree branch", "pick the moss", "pick the watch", "pick up moss", "throw anxiety meds", "put batteries into watch", "clean a glass jar"]
 
 #test_input_list = ["go west", "go north", "go to shed", "go north", "go to work shed", "go north", "go to shed door", "go to work shed door", "open door", "close door", "open shed door", "close shed door", "go into shed", "open door", "go into work shed", "go into work shed", "leave shed", "inventory", "drop mag", "take mag", "drop mag at church", "go into work shed", "open work shed door", "open door", "go into shed", "take map", "take key", "go to north graveyard", "use key on padlock", "lock padlock with key", "unlock padlock with key", "take padlock"]
 
 #test_input_list = ["logging args", "go west", "open door", "enter shed", "take map", "take key", "go to north graveyard", "look at gate", "unlock padlock with key", "look at gate", "pick up padlock", "open gate"]
 
 #test_input_list = ["inventory", "logging args", "read mag for a while", "read catalogue for a while"]
+#test_input_list = ["logging args", "take stick", "approach the forked tree branch", "look around"]
 
 import json
 class UserEncoder(json.JSONEncoder):
@@ -303,14 +307,33 @@ def run_membrane(input_str=None):
             from verbRegistry import Parser
             #print("Before input_parser")
             viable_format, dict_from_parser = Parser.input_parser(Parser, input_str)
-            #print(f"After input_parser\n{dict_from_parser}")
+            print(f"After input_parser\n{dict_from_parser}")
             if not viable_format:
                 return None
             inst_dict, error = get_noun_instances(dict_from_parser, viable_format)
+            print(f"error: {error} // inst_dict: {inst_dict}")
             if error:
+                if isinstance(error, str):
+                    print(f"Error: {error}")
+                    return None
+                print(f"ERROR: {error}")
                 message, idx_kind = error
                 idx, kind = idx_kind
+                print(f"inst_dict[idx][kind]: {inst_dict[idx][kind]}")
                 text = inst_dict[idx][kind].get("text")
+                canonical = inst_dict[idx][kind].get("str_name")
+                if canonical and " " in canonical:
+                    not_found = list()
+                    parts = canonical.split()
+                    print(f"PARTS: {parts}")
+                    if parts:
+                        for part in parts:
+                            if part in input_str:
+                                not_found.append(part)
+                    if not_found:
+                        text = " ".join(not_found)
+
+
                 print(f"Nothing found here by the name \033[1;33m`{text}`\033[0m.")
                 return None
             if not inst_dict:

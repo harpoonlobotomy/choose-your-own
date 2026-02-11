@@ -720,3 +720,291 @@ Fixed 'observe graveyard' failing because 'look place' wasn't valid, it expected
 
 
 10.00. Okay, have run through the full test list. Not too bad. Failed mostly where I expected. Going to run edit_item_defs again to add the new type_defaults, then run it again to see how many issues persist.
+
+11.09am
+Took me a while but fixed the issue of it not finding the compound locations correctly (adding multiple tokens for single locations). I wasn't updating omit_next from second_omit_next if it found second_perfect.
+
+Probably never found it myself because I just type the one word names when I'm typing it for little interstitial tests.
+
+Okay, big test again now.
+
+This one:
+#   paperclip is already in your inventory.
+Needs working on.
+Because whether it takes one from the inventory or local_items (which in the parser includes inventory) depends on the verb.
+so I guess def take should check to see if there's another instance of that name in the location, and if so, take that instead. That'll work.
+
+1.21pm 11/2/26
+
+Working agains on that damn paperclip. So it turns out there are three paperclips in existence in this run, one of them in my inventory, the others have no location.
+
+I'm really thinking of adding 'inventory' as a location, except it'll fuck the parser. But like, I know one of these paperclips is in my inventory (and because of previous print lines I know which it is), but there's no indication on the item instance that it's anywhere.
+
+Thought:
+A non-place ('no_place') location instance where all new item instances are 'put' during generation before the new location is applied.
+An 'inventory_place' location instance that holds the inventory.
+
+Use words like no_place and inventory_place, so they won't accidentally be triggered by the parser, and only used on the back end. And explicitly rule them out as travel locations, so we don't get a 'room of all items' bug or smth. Not that it matters if there was one, would be kinda neat. But anywho.
+
+
+
+1.43pm
+
+Okay so I thought I fixed the issue of omit_next, but now:
+
+values: ("top of token_role_options: Token(idx=3, text='glass', kind=('noun',), canonical='glass jar')",)
+(  Func:  verbReg_Reciever    )
+values: ("token_role_options: Token(idx=3, text='glass', kind=('noun',), canonical='glass jar') // kinds: {'noun'}",)
+(  Func:  verbReg_Reciever    )
+values: ("top of token_role_options: Token(idx=4, text='jar', kind={'noun'}, canonical='glass jar')",)
+(  Func:  verbReg_Reciever    )
+values: ("token_role_options: Token(idx=4, text='jar', kind={'noun'}, canonical='glass jar') // kinds: {'noun'}",)
+
+glass jar now takes two tokens.
+
+So, gets to idx 3, noun:
+
+#   word: glass
+#   parts: ['pick', 'up', 'the', 'glass', 'jar']
+#   idx: 3
+#   word_type: noun
+
+after which:
+omit_next:  1
+omit_next after first check compound words: 1
+
+but then it checks compound words /again
+
+#   word: glass
+#   parts: ['pick', 'up', 'the', 'glass', 'jar']
+#   idx: 3
+#   kinds: {'noun'}
+#   word_type: location
+#   omit_next: 1
+
+and then:
+#   word: jar
+#   parts: ['pick', 'up', 'the', 'glass', 'jar']
+#   idx: 4
+#   word_type: noun
+#   omit_next: 1
+
+omit_next:  1
+omit_next after first check compound words: 1
+
+#   word: jar
+#   parts: ['pick', 'up', 'the', 'glass', 'jar']
+#   idx: 4
+#   kinds: {'noun'}
+#   word_type: location
+#   omit_next: 1
+
+Then it resolves with no sequences, and the tokens
+
+values: ("token_role_options: Token(idx=3, text='glass', kind=('noun',), canonical='glass jar') // kinds: {'noun'}",)
+values: ("token_role_options: Token(idx=4, text='jar', kind={'noun'}, canonical='glass jar') // kinds: {'noun'}",)
+
+
+Think I fixed it now. I had omit_next only operating when it was > 1. I don't know why. probably a reason but I can't think of a good justification now. So for now, have just set it to if >= 1.
+
+2.34pm
+Next:
+You smash the glass jar on the ground.
+long_desc with child: ['a glass jar, holding ', '\x1b[1;31msome dried flowers\x1b[0m']
+
+That's not an error, just a print that I had set up for testing. But, does make me realise - if a container breaks, the contents have to fall out. Only makes sense.
+
+
+What to do with broken things? Remove the original instance from itemReg and generate a new 'broken x' instead? Or should particular items leave specific parts, eg glass jar becomes 'broken glass shards'.
+
+Maybe it's an event. Specific items (eg those that would leave behind glass) trigger an immediate_event, that removes that item from the registry and adds a new 'broken glass' item in its place. Similarly, things that burn can leave behind burned versions, etc.
+
+Simply something like
+
+  "glass jar": {
+    "on_death": "broken glass",
+
+and then set up the event accordingly.
+
+
+Have done this up for now, will need to edit event_defs around it:
+
+"item_leaves_broken_glass": {
+    "is_quick_event": true,
+    "repeats": false,
+    "starts_current": false,
+    "immediate_action": {
+        "attribute_trigger": {
+            "item_attribute": {"on_death": "broken_glass"},
+            "triggered_by": ["item_broken"]
+        }
+    },
+    "effects": {
+        "init_items": {
+            "0": {"item_name": "broken glass shards"}},
+        "remove_items": {
+            "0": {"item_name": "trigger_item"}}},
+
+    "messages": {
+        "start_msg": "As the [[]] breaks, it shatters into a clutter of glass shards."
+    }
+  }
+
+Which means I can't test it yet, because events are turned off entirely for the existing testing battery. So, once this is done.
+
+Running the testing battery one last time, anything that doesn't do what it should:
+
+'consume fish food'
+#   You decide to consume the fish food.
+#   something something consequences
+#   Failed parser: 'd05b2f77-d30b-4822-8827-0c67b49ad611'
+#   Press any key to continue to next.
+At some point it's got an item_id and doesn't know what to do with it.
+Fixed. It thought instances were stored as IDs in itemReg.instances, but they aren't.
+
+#   You throw the pretty rock at the window
+#   The window hits the window, but doesn't seem to damage it.
+Okay that error is pretty obvious...
+
+
+So I want to rejig the logic a bit for def take.
+
+Right now,
+#   remove batteries from TV set
+gets me:
+#   REASON: 5 / in inventory
+#   Sorry, you can't take the batteries right now.
+Which isn't an error necessarily, but also isn't the relevant part. Whether I'm already holding batteries or not, the point is first 'are there batteries in the TV and can I have them'. I can't let def take especially think I always mean the thing I'm holding, that's likely not the intended target.
+
+So, if I hit def take with two nouns and the dir_or_sem indicates I'm taking x from y, first I need to check
+    a) if y is a container
+    b) if y contains the thing I'm looking for
+
+Now the TV is tricky. I had to make it a container because it can take a DVD, but it's not a container in the typical sense. I have
+    "children_type_limited": [
+      "DVD"
+    ],
+so maybe if the child/potential_child is not that name, it treats it like it's not a container? So if I'm not a DVD, the TV is not a container in those interactions. Might work but it's still messy. I just use the container because for the parser, we're much more likely to say 'put the DVD into the tv' than 'combine the dvd with the tv'. (Though really we're probably say 'play the dvd on/with the tv')
+
+
+
+[[  separate costume jewellery  ]]
+
+get_dir_or_sem failed to find the dir/sem instance: {0: {'verb': {'instance': <verbInstance separate (3835521f-11b3-4477-a355-1c5d5f71e26d)>, 'str_name': 'separate', 'text': 'separate'}}, 1: {'noun': {'instance': <ItemInstance costume jewellery (60c03978-b1be-416d-9938-09dbb74fbe25)>, 'str_name': 'costume jewellery', 'text': 'costume'}}}
+inst: <ItemInstance costume jewellery (60c03978-b1be-416d-9938-09dbb74fbe25)> / meaning: accessible
+The costume jewellery is now in your inventory.
+This shouldn't work, the costume jewellery wasn't part of anything so the instruction makes no sense, it shouldn't just convert into 'take'.
+
+
+#   [[  leave graveyard  ]]
+#
+#   You're now in the graveyard, facing north.
+#
+#   You're in a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+#   The entrance gates are to the north. To the east sit a variety of headstones, to the south stands a mausoleum, and to the west is what looks like a work shed of some kind.
+#
+#   There's a dark fence blocking the horizon, prominently featuring .
+
+Two issues here - one, I didn't leave the graveyard, I went to it, I was in North Everything. Second, still need to fix the descriptin. I think it's because I moved all the items away, but doesn't the graveyard have no_items? Oh, it's north graveyard, so it has the gate etc whch I never expected to leave. Fair enough.
+
+
+#   {0: {'verb': {'instance': <verbInstance leave (5db74d47-2aa3-4f61-a36b-8f2d1a2a06ce)>, 'str_name': 'depart', 'text': 'depart'}}}
+#   [[  depart  ]]n dict_from_parser, error
+#
+#   Where do you want to go?
+#   Press any key to continue to next.
+#
+#   Failed parser: list index out of range
+
+Hm.
+
+#   {'verb': {'canonical': 'examine', 'text': 'examine'}}
+#   {'noun': {'canonical': 'damp newspaper', 'text': 'damp'}}
+#   reformed_dict {0: {'verb': {'canonical': 'examine', 'text': 'examine'}}, 1: {'noun': {'canonical': 'damp newspaper', 'text': 'damp'}}}, sequence ('verb', 'noun')
+#   After input_parser
+#   {0: {'verb': {'instance': <verbInstance look (f4eae8b0-b19b-4567-b816-d0723e49f78b)>, 'str_name': 'examine', 'text': 'examine'}}, 1: {'noun': {'instance': None, 'str_name': 'damp newspaper', 'text': 'damp'}}}
+#   About to return dict_from_parser, error
+#   Nothing found here by the name `damp`.
+
+Also hm.
+I think this comes into an earlier thing I mentioned, where I want to be able to match all parts of not-found input strings. So I don't want to return the whole 'damp newspaper' from instance name, because what if I only wrote 'key', I don't want it to give me the full name of a non-local key. But If I wrote 'damn newspaper', I don't just want it to give me 'cannot find 'damp'. Hmmmmmm.
+Maybe for parser/compound_words I need an extra thing of 'matched words', so it counts 'damp + newspaper' if both are matched, but not 'iron + key' if I only gave 'key'. Need to think on that.
+
+And it's weirdly inconsistent. Because then, next:
+
+{'verb': {'canonical': 'open', 'text': 'open'}}
+{'noun': {'canonical': 'glass jar', 'text': 'glass'}}
+reformed_dict {0: {'verb': {'canonical': 'open', 'text': 'open'}}, 1: {'noun': {'canonical': 'glass jar', 'text': 'glass'}}}, sequence ('verb', 'noun')
+After input_parser
+{0: {'verb': {'instance': <verbInstance open (e2180861-ec8c-4bd9-b6cd-2159c394250b)>, 'str_name': 'open', 'text': 'open'}}, 1: {'noun': {'instance': None, 'str_name': 'glass jar', 'text': 'glass'}}}
+[[  open glass jar  ]]rom_parser, error
+
+not confirmed inst: <ItemInstance glass jar (8ec72014-93f6-4a6b-b6b8-6304a2d7588d)> / meaning: not at current location}
+You can't open something you aren't nearby to...
+
+So the glass jar was selected as the instance, and the error came via verb_actions. But the damp newspaper errored inside of the parser. I'm assuming because the damp newspaper doesn't exist as an instance (I turned the parser test off, so it hasn't moved all the objects to the current loc). But it feels weird that it's not consistent.
+
+Well for the 'cannot find damp', maybe we check - if " " in canonical:/ not_found = list()/parts = canonical.split()/ for part in parts: if part in input_str: not_found.append(part) /
+if not_found: / token.text = " ".join(not_found)
+
+Will still have problems but might be better at least.
+
+Hm.
+
+About to return dict_from_parser, error
+ERROR: ("No found ItemInstance for {'instance': None, 'str_name': 'damp newspaper', 'text': 'damp'}", (1, 'noun'))
+inst_dict[idx][kind]: {'instance': None, 'str_name': 'damp', 'text': 'damp'}
+
+So the error isn't strictly accurate to what's actualyl found. BEcause 'damp newspaper' isn't the str_name anymore...
+Ah. I had hard-set str_name to be 'text', in an earlier attempt to not print unknown item names I think. Had forgotten about the existing text field. (Or no, I think the text field wasn't originally included.)
+
+Okay. Seems fixed:
+
+inst_dict[idx][kind]: {'instance': None, 'str_name': 'damp newspaper', 'text': 'damp'}
+PARTS: ['damp', 'newspaper']
+Nothing found here by the name `damp newspaper`.
+
+If you type 'damp newspaper', even if there's no such item in the location, if it knows that it /could be a noun/, and you typed all the parts, if gives it to you. Will test further.
+
+--------
+
+4.06pm
+'go to north graveyard'
+After input_parser
+{0: {'verb': {'instance': <verbInstance go (8d0b0dc4-0cee-46c5-9270-179ee5526685)>, 'str_name': 'go', 'text': 'go'}}, 1: {'direction': {'instance': None, 'str_name': 'to', 'text': 'to'}}, 2: {'cardinal': {'instance': None, 'str_name': 'north', 'text': 'north'}}, 3: {'location': {'instance': None, 'str_name': 'graveyard', 'text': 'graveyard'}}}
+Failed parser: tuple index out of range
+
+gives this error, and really shouldn't.
+
+next error:
+
+[[  go to shrine  ]]04-863c-9af307c45e49)>, 'str_name': 'shrine', 'text': 'shrine'}}}
+
+Failed parser: cannot access local variable 'end_type' where it is not associated with a valu
+
+That should fail because I haven't lifted the travel restriction yet. idk know why it's even looking for end_type.
+
+Oh, it's attempting the held msg:
+
+msg_type: held
+event: <eventInstance graveyard_gate_opens (61f1a346-2361-4222-bd2b-2cbbc090874e, event state: 1>
+Failed parser: cannot access local variable 'end_type' where it is not associated with a value
+
+
+Anyway. That's fixed now.
+
+I like my little fix for the 'damp' vs 'damp newspaper' thing. Testing now, and:
+
+PARTS: ['damp', 'newspaper']
+Nothing found here by the name `newspaper`.
+Because I only typed 'newspaper'.
+
+PARTS: ['damp', 'newspaper']
+Nothing found here by the name `damp newspaper`.
+because I typed 'damp newspaper'.
+
+PARTS: ['damp', 'newspaper']
+Nothing found here by the name `newspaper`.
+because I typed 'red newspaper'.
+
+Those are all expected. Good.

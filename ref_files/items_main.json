@@ -129,6 +129,7 @@
     "smash_defence": 5
   },
   "glass jar": {
+    "on_death": "broken glass",
     "can_be_added_to": true,
     "can_be_closed": false,
     "can_be_locked": false,
@@ -162,12 +163,10 @@
       "no_children": "an empty glass jar"
     },
     "requires_key": false,
-    "slice_attack": 5,
-    "slice_defence": 5,
-    "slice_threshold": 5,
+    "slice_attack": 0,
+    "slice_defence": 9,
     "smash_attack": 5,
-    "smash_defence": 5,
-    "smash_threshold": 5,
+    "smash_defence": 2,
     "starting_children": [
       "dried flowers"
     ]
@@ -455,10 +454,10 @@
       "tv"
     ],
     "can_be_added_to": true,
-    "can_be_charged": true,
-    "can_be_closed": true,
-    "can_be_locked": true,
-    "can_be_opened": true,
+    "can_be_charged": false,
+    "can_be_closed": false,
+    "can_be_locked": false,
+    "can_be_opened": false,
     "can_break": false,
     "can_examine": false,
     "children": null,
@@ -477,7 +476,7 @@
     },
     "has_batteries": false,
     "is_charged": false,
-    "is_locked": true,
+    "is_locked": false,
     "is_open": false,
     "item_type": [
       "container",
@@ -489,12 +488,12 @@
       "generic": "a television set"
     },
     "requires_key": false,
-    "slice_attack": 5,
-    "slice_defence": 5,
-    "smash_attack": 5,
-    "smash_defence": 5,
+    "slice_attack": 2,
+    "slice_defence": 8,
+    "smash_attack": 8,
+    "smash_defence": 6,
     "starting_children": null,
-    "takes_batteries": true
+    "takes_batteries": false
   },
   "window": {
     "can_be_closed": true,
@@ -872,7 +871,7 @@
     },
     "slice_attack": 5,
     "slice_defence": 5,
-    "smash_attack": 5,
+    "smash_attack": 7,
     "smash_defence": 5
   },
   "damp newspaper": {
@@ -1413,7 +1412,7 @@
   "old gold key": {
     "can_pick_up": true,
     "descriptions": {
-      "generic": null
+      "generic": "An old gold key, heavily used."
     },
     "is_key": true,
     "is_key_to": null,
@@ -1531,9 +1530,9 @@
       "generic": "a shed door"
     },
     "slice_attack": 5,
-    "slice_defence": 5,
-    "smash_attack": 5,
-    "smash_defence": 5
+    "slice_defence": 6,
+    "smash_attack": 2,
+    "smash_defence": 3
   },
   "curtains": {
     "can_be_closed": true,
