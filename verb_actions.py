@@ -66,14 +66,29 @@ def set_noun_attr(*values, noun:ItemInstance):
             from eventRegistry import events
             events.is_event_trigger(noun, noun.location, values)
 
+    from eventRegistry import trigger_acts, events
+    triggers = {}
+    for item in trigger_acts:
+        for k, v in trigger_acts[item].items():
+            triggers[k] = v
+
+
     for item_val in values:
         #print(f"Values: {values}")
         #print(f"item_val in values: {item_val}")
         item, val = item_val
+        print(f"TRIGGERs: {triggers}")
+        if item in triggers:
+            print(f"item in triggers: {item}")
+            if val == triggers[item]:
+
+                events.is_event_trigger(noun, noun.location, reason = values)
         setattr(noun, item, val)
-        if item in update_description_attrs and hasattr(noun, "descriptions") and noun.descriptions:
+
+        if item in update_description_attrs:
             from itemRegistry import registry
-            registry.init_descriptions(noun)
+            if hasattr(noun, "descriptions") and noun.descriptions and hasattr(noun, "event") and noun.event:
+                registry.init_descriptions(noun)
         #noun.event = None # Once it's served its purpose, stop it being an event obj. TODO add a proper function here to remove it from anywhere it's stored. Need to formalise the language for that first though. This works for now as the padlock can now be picked up.
 
 
@@ -92,41 +107,44 @@ def is_loc_current_loc(location=None, cardinal=None):
 def get_transition_noun(noun, format_tuple, input_dict, take_first=False):
     logging_fn()
     local_items_list = registry.get_item_by_location(loc.current)
-    print(f"local items in get_transition_noun: {local_items_list}")
+    #print(f"local items in get_transition_noun: {local_items_list}")
     if hasattr(noun, "is_loc_exterior"):
-        print(f"has noun.in_loc_ext: {noun.is_loc_exterior}")
+        #print(f"has noun.in_loc_ext: {noun.is_loc_exterior}")
         if hasattr(noun, "transition_objs"):
             if isinstance(noun.transition_objs, ItemInstance):
-                print(f"noun transition objs: {noun.transition_objs}")
+                #print(f"noun transition objs: {noun.transition_objs}")
                 noun = noun.transition_objs
                 return noun
 
             else:
                 if len(noun.transition_objs) == 1:
-                    print("1 noun.transition_objs")
+                    #print("1 noun.transition_objs")
                     for neW_noun in noun.transition_objs:
-                        print(f"neW_noun: {neW_noun}")
+                        #print(f"neW_noun: {neW_noun}")
                         return neW_noun
                 else:
                     print(f"More than one transition object for {noun}. Can't deal with this yet. Exiting.")
                     exit()
     if not noun:
-        print(f"Not noun: input_dict: {input_dict}")
+        #print(f"Not noun: input_dict: {input_dict}")
         if get_location(input_dict):
             location = get_location(input_dict)
+            if not location:
+                location = loc.current.place
             if hasattr(location, "entry_item"):
                 loc_item = location.entry_item
-                print(f"HAs loc item: {loc_item}")
+                #print(f"HAs loc item: {loc_item}")
                 if take_first:
                     return loc_item
-                if isinstance(loc_item, str):
+                if isinstance(loc_item, str) and local_items_list:
                     for loc_item in local_items_list:
                         if loc_item.name == loc_item:
                             noun = loc_item
                             return noun
 
-                elif isinstance(loc_item, ItemInstance):
-                    if local_items_list and loc_item in local_items_list:
+
+                elif isinstance(loc_item, ItemInstance) and local_items_list:
+                    if loc_item in local_items_list:
                         noun = loc_item
                         return noun
                     else:
@@ -135,6 +153,9 @@ def get_transition_noun(noun, format_tuple, input_dict, take_first=False):
                             local_names[item.name] = item
                         if loc_item.name in local_names: ## Fix this later, this should not be necessary.
                             return local_names[loc_item.name]
+
+        return None
+
 
     return noun
 
@@ -354,8 +375,6 @@ def get_dir_or_sem_if_singular(input_dict:dict) -> str:
         for kind, entry in data.items():
             if "direction" in kind or "sem" in kind:
                 return entry["str_name"]
-
-    print(f"get_dir_or_sem failed to find the dir/sem instance: {input_dict}")
 
 
 def get_meta(input_dict:dict) -> str:
@@ -888,7 +907,7 @@ def barricade(format_tuple, input_dict):
 
 def break_item(format_tuple, input_dict):
     logging_fn()
-
+    print_desc = False
     noun = verb_requires_noun(input_dict, "break", local=True)
     if not noun:
         return
@@ -900,7 +919,7 @@ def break_item(format_tuple, input_dict):
             print(f"What do you want to break the {assign_colour(noun)} with?")
             return
         #assume the ground is hard. ground isn't properly set up yet so we'll assume for now.
-        print(f"You smash the {assign_colour(noun)} on the ground.")
+        print(f"You smash the {assign_colour(noun)} on the ground.\n") # NOTE: added_printline
         set_noun_attr(("is_broken", True), noun=noun)
         if hasattr(noun, "children") and noun.children:
             noun_children = set()
@@ -913,9 +932,7 @@ def break_item(format_tuple, input_dict):
             for child in noun_children:
                 registry.move_item(inst=child, location=loc.current, old_container=noun, no_print=True)
 
-            print("What to do with broken things? Remove the original instance from itemReg and generate a new 'broken x' instead? Or should particular items leave specific parts, eg glass jar becomes 'broken glass shards'.")
             turn_cardinal(prospective_cardinal=loc.current, turning = False)
-
         return
 
 
@@ -1371,7 +1388,6 @@ def take(format_tuple, input_dict):
             return 1, added_to_inv
             #print(f"Reason code: {reason_val}")
         elif reason_val == 5:
-            print(f"{assign_colour(noun_inst)} is already in your inventory.")
             local_items = registry.get_item_by_location(loc.current)
             if local_items:
             #local_items = get_loc_items(loc.current) <- this was wrong, this made it try to move everything/generate everything again.
@@ -1381,15 +1397,22 @@ def take(format_tuple, input_dict):
                 #print(f"LOCAL ITEM NAMES: {list(local_item_names)}")
     #
                 if noun_inst.name in local_item_names:
-                    print(f"{noun_inst} is already in your inventory, but {local_item_names[noun_inst.name]} is local.")
+                    val, added_to_inv = can_take(local_item_names[noun_inst.name])
+                    return val, added_to_inv # if another one is found locally, use that instead.
+                    #print(f"{noun_inst} is already in your inventory, but {local_item_names[noun_inst.name]} is local.")
             else:
                 items_by_name = registry.by_name.get(noun_inst.name)
                 if items_by_name:
-                    print(f"Items matching {noun_inst.name}: \n{items_by_name}\nThis won't do anything yet, but later it should.")
+                    #print(f"Items matching {noun_inst.name}: \n{items_by_name}\nThis won't do anything yet, but later it should.")
+                    if items_by_name:
+                        for item in items_by_name:
+                            if item != noun_inst and item.location == loc.current:
+                                print(f"There's another {noun_inst.name} here, but it was not found in local_items. This means the item location wasn't assigned properly, something is broken.")
+
                     #for instance in items_by_name:
                         #print(f"Instance vars: {instance}\n{vars(instance)}")
                         #TODO: Do something else here. Currently this is failing due to other issues, but this still needs to be resolved; if I already have x in my inventory, check to see if x.2 is in the local area before giving up.
-
+            print(f"{assign_colour(noun_inst)} is already in your inventory.")
             return 1, added_to_inv
         else:
             #can_pickup = verb_membrane.check_noun_actions(noun_inst, "take")
@@ -1622,7 +1645,7 @@ def drop(format_tuple, input_dict):
             _, container, reason_val, meaning = registry.check_item_is_accessible(noun)
 
             if reason_val == 5:
-                registry.drop(noun, game.inventory)
+                registry.drop(noun)
                 print(f"Dropped the {assign_colour(noun)} onto the ground here at the {assign_colour(loc.current, card_type='ern_name')}")
 
 
@@ -1757,6 +1780,13 @@ def enter(format_tuple, input_dict, noun=None):
     if not noun or hasattr(noun, "is_loc_exterior") or hasattr(noun, "is_transition_obj"):
         noun = get_transition_noun(noun, format_tuple, input_dict)
 
+    if not noun:
+        noun = get_noun(input_dict, get_str=True)
+        if noun:
+            print(f"You can't enter a {assign_colour(noun)} here.")
+            return
+        print("There's nothing to enter here.")
+        return
     #print(f"NOUN after get_transition_noun: {noun}")
     if hasattr(noun, "enter_location"):
         #print(f"noun.enter_location: {noun.enter_location}")
@@ -1769,8 +1799,6 @@ def enter(format_tuple, input_dict, noun=None):
                     print()
                     # want like, recklessly/cautiously/quietly, depending on playstyle. Long way off that but wanted to note it.
                     return new_relocate(inside_location)
-                    sleep(.02)
-                    print("Done new_relocate")
 
                 else:
                     if noun.location == loc.current:
@@ -1790,7 +1818,7 @@ def enter(format_tuple, input_dict, noun=None):
                 else:
                     print(f"You're already in the {assign_colour(loc.current.place)}.")
             else:
-                print("You can't go through the door unless you're nearby to it.")
+                print("You can't go enter something unless you're nearby to it.")
                 return 1
     else:
         target_loc = find(format_tuple, input_dict)
@@ -1821,7 +1849,8 @@ def router(viable_format, inst_dict, input_str=None):
 
     if print_input_str:
         if input_str:
-            print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {input_str}  ]]\033[0m\n')
+            print(f'{MOVE_UP}\033[1;32m[[  {input_str}  ]]\033[0m\n')
+            #print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {input_str}  ]]\033[0m\n')
         else:
             print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {" ".join(input_strings)}  ]]\033[0m\n')
 

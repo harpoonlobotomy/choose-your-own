@@ -359,7 +359,7 @@ class itemRegistry:
                 self.by_alt_names[altname] = item_name
 
         if hasattr(inst, "starting_children") and getattr(inst, "starting_children"):
-            print(f"INST {inst} has starting children: {inst.starting_children}")
+            #print(f"INST {inst} has starting children: {inst.starting_children}")
             self.new_parents.add(inst.id)
             registry.generate_children_for_parent(parent=inst)
 
@@ -381,14 +381,22 @@ class itemRegistry:
 
 
     def delete_instance(self, inst: ItemInstance):
+        print(f"inst: {inst}")
+
+        if inst.location and inst.location in self.by_location:
+            print(f"inst {inst} has location: {inst.location}")
+            self.by_location[inst.location].remove(inst)
+            print(f"`{self.by_location[inst.location]}`")
+
+            if inst.location == loc.inv_place:
+                loc.inv_place.items.remove(inst)
+                print(f"loc.inv_place.items: {loc.inv_place.items}")
+        self.by_name.get(inst.name, list()).remove(inst)
+
 
         inst = self.instances.remove(inst)
         if not inst:
             return
-
-        if inst.location and inst.location in self.by_location:
-            self.by_location[inst.location].discard(inst)
-        self.by_name.get(inst.name, list()).remove(inst)
 
     def item_def_by_attr(self, attr_str="", loot_type=None, open=None, locked=None):
 
@@ -435,7 +443,7 @@ class itemRegistry:
 
         def get_children(parent:ItemInstance):
 
-            print("for child in parent.starting_children")
+            #print("for child in parent.starting_children")
             instance_children = []
             instance_count = 0
             target_child = None
@@ -445,14 +453,14 @@ class itemRegistry:
                 parent.starting_children = temp
 
             if parent.starting_children == None:
-                print(f"parent.starting_children None: {parent.starting_children}")
+                #print(f"parent.starting_children None: {parent.starting_children}")
                 return
-            print(f"parent.starting_children not == None: {parent.starting_children}")
+            #print(f"parent.starting_children not == None: {parent.starting_children}")
             if parent.starting_children != None and isinstance(parent.starting_children, list|set|tuple):
-                print(f"for child in parent.starting_children: {parent.starting_children}")
+                #print(f"for child in parent.starting_children: {parent.starting_children}")
 
                 for child in parent.starting_children:
-                    print(f"CHILD: {child}")
+                    #print(f"CHILD: {child}")
                     def find_or_make_children(child, parent, instance_count, instance_children):
 
                         if isinstance(child, ItemInstance):
@@ -465,15 +473,15 @@ class itemRegistry:
                         if child in self.item_defs:
                             if hasattr(self, "alt_names") and self.alt_names.get(child):
                                 #child = self.by_alt_names[child]
-                                new_child = self.alt_names[child]
-                                print(f"TARGET CHHILD: {child} # new_child: {new_child}")
-                            print(f"BY alt names: {self.alt_names}")
+                                new_child = self.alt_names[child] # what is this for. This isn't doign anything.
+                                #print(f"TARGET CHHILD: {child} # new_child: {new_child}")
+                            #print(f"BY alt names: {self.alt_names}")
                             target_child = self.init_single(child, self.item_defs[child])
                             all_item_names_generated.append((target_child, "generate_child from item_defs"))
                         else:
                             target_child = use_generated_items(child)
                             if not target_child:
-                                print(f"No target child, calling new_item_from_str for child {child} and parent {parent}")
+                                #print(f"No target child, calling new_item_from_str for child {child} and parent {parent}")
                                 target_child = new_item_from_str(item_name=child, in_container=parent)
                                 all_item_names_generated.append((child, "generate_child item_from_str"))
 
@@ -676,10 +684,10 @@ class itemRegistry:
             meaning = accessible_dict[reason]
 
             if confirmed_inst:
-                print(f"inst: {inst} / meaning: {meaning}")
+                #print(f"inst: {inst} / meaning: {meaning}")
                 return confirmed_inst, confirmed_container, reason, meaning
 
-            print(f"not confirmed inst: {inst} / meaning: {meaning}, item vars: {vars(inst)}")
+            #print(f"not confirmed inst: {inst} / meaning: {meaning}, item vars: {vars(inst)}")
             return None, confirmed_container, reason, meaning
 
         #if not isinstance(inst, ItemInstance):
@@ -904,7 +912,7 @@ class itemRegistry:
 
             if starting_children_only:
                 test = get_if_open(inst, "starting_children_only")
-                print(f"TEST: {test}")
+                #print(f"TEST: {test}")
                 if test:
                     description = test
 
@@ -918,7 +926,7 @@ class itemRegistry:
 
                     for child in inst.children:
                         long_desc.append(assign_colour(child, nicename=True))
-                        print(f"long_desc with child: {long_desc}")
+                        #print(f"long_desc with child: {long_desc}")
 
                     description = compile_long_desc(long_desc)
 
@@ -941,14 +949,14 @@ class itemRegistry:
                     description = inst.descriptions["if_closed"]
 
                 if inst.descriptions.get("if_singular"):
-                    print(f"IF SINGULAR: {inst.descriptions["if_singular"]}")
+                    #print(f"IF SINGULAR: {inst.descriptions["if_singular"]}")
                     if inst.has_multiple_instances == 1:
                         print("singular")
                         description = inst.descriptions["if_singular"]
                 if inst.descriptions.get("if_plural"):
-                    print(f"IF plural: {inst.descriptions["if_plural"]}")
+                    #print(f"IF plural: {inst.descriptions["if_plural"]}")
                     if inst.has_multiple_instances > 1:
-                        print("Plural")
+                        #print("Plural")
                         description = inst.descriptions["if_plural"]
 
                 elif inst.descriptions.get("generic"):
@@ -1240,7 +1248,7 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, part
     all_item_names_generated.append((inst, "new_item_from_str"))
     registry.temp_items.add(inst)
 
-    print(f"\nend of new_item_from_str for {inst}")
+    #print(f"\nend of new_item_from_str for {inst}")
     printing.print_green(text=vars(inst), bg=False, invert=True)
     return inst
 
@@ -1249,7 +1257,7 @@ def apply_loc_data_to_item(item, item_data, loc_data):
     if loc_data and isinstance(loc_data, dict):
         for field in loc_data:
             if field == item:
-                print(f"loc_data: {loc_data} // field: {field}")
+                #print(f"loc_data: {loc_data} // field: {field}")
                 for attr in loc_data[field]:
                     if attr == item:
                         continue
@@ -1341,11 +1349,11 @@ def get_loc_items(place=None, cardinal=None):
                             if not item_data.get("description"): ## only overwrite the item description if there isn't one written. Use location-descrip in location name, but item descrip in item descriptions. This works for now, might need to change it later. Not sure.
                                 if item_data.get("descriptions"):
                                     for entry in item_data["descriptions"]:
-                                        print(f"Entry: {entry} / {item_data["descriptions"][entry]}")
+                                        #print(f"Entry: {entry} / {item_data["descriptions"][entry]}")
                                         item_data["description"] = item_data["descriptions"][entry]
                                         break
                                 else:
-                                    print(f"No item data description for {item}")
+                                    #print(f"No item data description for {item}")
                                     item_data["description"] = loc_data["item_desc"].get(item)
                         item_data["starting_location"] = card_inst
                         apply_loc_data_to_item(item, item_data, loc_data["items"].get(item))
@@ -1356,9 +1364,9 @@ def get_loc_items(place=None, cardinal=None):
                         if item == None or item == "" or item in excluded_itemnames:
                             continue
                         if loc_data.get("item_desc") and item in loc_data["item_desc"]:
-                            if matched.get(item):
-                                print(f"Already found a match for {item}, will process as new.")
-                            else:
+                            if not matched.get(item):
+                                #print(f"Already found a match for {item}, will process as new.")
+                            #else:
                                 matched[item] = 1
                                 continue
 

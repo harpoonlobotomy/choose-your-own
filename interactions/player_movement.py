@@ -104,7 +104,7 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
     if is_same_card and is_same_loc:
         print(f"You're already at {assign_colour(loc.current, card_type="place_name")}")
         return
-
+    #print(f"new_relocate: TRAVEL_IS_LIMITED?: {events.travel_is_limited}")
     if events.travel_is_limited and not (to_loc and to_loc == loc.current.place):
         allowed_locations = events.check_movement_limits()
         if not allowed_locations.get(to_loc.name):
@@ -187,9 +187,9 @@ def turn_around(new_cardinal):
         if cardinal.place.missing_cardinal:
             print(assign_colour(new_cardinal.missing_cardinal, "event_msg"))
             return
-    print("Just before set_current in turn_around")
+    #print("Just before set_current in turn_around")
     loc.set_current(loc=None, cardinal=cardinal)
-    print(f"You turn to face the {assign_colour(loc.current, card_type="place_name")}")
+    print(f"You turn to face the {assign_colour(loc.current, card_type="place_name")}\n")
     get_loc_descriptions(place=loc.current.place, cardinal=loc.current)
     print(f"{loc.current.description}")
 

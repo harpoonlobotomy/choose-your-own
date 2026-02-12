@@ -107,6 +107,7 @@ class Parser:
         logging_fn()
 
         #print(f"\nCHECK COMPOUND WORDS: {word_type}\n")
+        #print(f"omit_next at top of compound_words: {omit_next}")
         canonical = potential_match = perfect_match = None
         compound_match = 0
         compound_matches = {}
@@ -117,46 +118,28 @@ class Parser:
         for compound_word, word_parts in parts_dict.items():
             if perfect_match:
                 break
-            if word == "tv":
-                word = "TV"
             #print(f"Word: {word} // word parts: {word_parts}")
             if word in word_parts:
-                #print(f"word parts: {word_parts}")
+                #print(f"word {word} in word parts: {word_parts}")
                 #test_print(f"MATCH IN PLURAL WORDS: `{word}` FOR COMPOUND WORD: {compound_word}", print_true=True)
                 matches_count = 0
                 for i, bit in enumerate(word_parts):
                     try:
                         #print(f"bit: {bit}, i+matches_count: {i+matches_count}, parts[idx + matches_count]: {parts[idx + matches_count]})")
                         #if len(parts) <= idx + matches_count and bit == parts[idx+matches_count]:
-                        if bit == parts[idx+matches_count]: # gives list out of range errors but does give the right results. Fix this later.
+                        if len(parts) > idx + matches_count and bit == parts[idx+matches_count]:
+                            #changed to the above line from the line below. Hopefully it doesn't break things, but the above does stop the out of range error.
+                        #if bit == parts[idx+matches_count]: # gives list out of range errors but does give the right results. Fix this later.
                             #print(f"Matching word segment: {bit}")
                             matches_count += 1
                             if matches_count == len(word_parts):# and matches_count == parts - idx:
                                 perfect_match = compound_word
-                                #print(f"Perfect match: {perfect_match}")
+                                #print(f"Perfect match: {perfect_match}, word parts len: {len(word_parts)}")
                                 break
-                        #if parts[idx+matches_count] and parts[idx+matches_count].lower() in word_parts:
-                        #    test_print(f"parts[{idx}+{matches_count}]: {parts[idx+matches_count]}", print_true=True)
-                        #    print(f"parts[idx+matches_count](BEFORE +1): {parts[idx+matches_count]}")
-                        #    matches_count += 1
-                        #    print(f"parts[idx+matches_count](AFTER +1): {parts.get(idx+matches_count)}")
-                        #    if parts.get(idx+matches_count) and parts[idx+matches_count].lower() in word_parts:
-                        #        print(f"Both parts of this word have been found: {word}")
-                        #        perfect_match = word
-                        #    print(f"parts[idx+matches_count]: {parts.get(idx+matches_count).lower()}")
-                        #elif parts[idx+matches_count].lower() == "magazine" and "mag" in word_parts: # hardcoded for magazines, they're an odd one.
-                        #    #TODO: later, put something like this in for general shorthand.
-                        #    test_print(f"parts[{idx}+{matches_count}]: {parts[idx+matches_count]}")#, print_true=True)
-                        #    matches_count += 1
 
-                        #else:
-                        #    if parts[idx+matches_count+1] and parts[idx+matches_count+1].lower() in word_parts:
-                        #        matches_count += 1
-                            #print(f"parts[idx+matches_count]: {parts[idx+matches_count].lower()}")
-                            #print(f"Part {matches_count+1} `{parts[idx+matches_count+1]}` does not match expected second word {word_parts[matches_count+1]}")
                     except Exception as e:
                         print(f"Failed: {e}")
-                        test_print(f"No matched word-parts after parts[{idx}+{matches_count}].", print_true=False)
+                        print(f"No matched word-parts after parts[{idx}+{matches_count}].")
                         break
                 compound_match += 1
                 compound_matches[compound_word]=tuple(((compound_match, len(word_parts)))) ## if input == 'paper scrap': "paper scrap with paper":(2,4)
@@ -174,8 +157,9 @@ class Parser:
                 #kinds = set()
             kinds.add(word_type)
             potential_match=True
+            #print(f"Word: {word} / omit_next before += matches_count: {omit_next}")
             omit_next += matches_count-1 ## Skip however many successful matches there were, so we don't re-test words confirmed to be part of a compound word.
-            print("omit_next: ", omit_next)
+            #print(f"Word: {word} / omit_next after [+= matches_count-1]: {omit_next} // matches_count = {matches_count}")
             #print(idx, word, kinds, canonical, potential_match, omit_next) NOTE: This part is useful to print for testing, but annoying in practice.
             return idx, word, kinds, canonical, potential_match, omit_next, perfect_match
 
@@ -210,16 +194,12 @@ class Parser:
                     match = test
             else:
                  for item in compound_matches: # this just takes the first match, so if 'gold key' and 'iron key' are both there, it will take gold key regardless.
-                    print(f"item in compound matches: {item}")
+                    #print(f"item in compound matches: {item}")
                     if local_named and item in local_named:
-                        print(f"item in local_named: {item}")
+                        #print(f"item in local_named: {item}")
                         if item in parts_dict:
                             #print(f"item in parts_dict: {item}")
-                            compound_word, word_parts in parts_dict.get(item)
-
-
-
-#{matches_count+1} `{parts[idx+matches_count+1]
+                            compound_word, word_parts in parts_dict.get(item) # what is this even here for. Honestly. It does nothing.
                         match = item
                         break
 
@@ -364,13 +344,13 @@ class Parser:
                     second_perfect = None
                     idx, word, kinds, canonical, potential_match, omit_next, perfect = Parser.check_compound_words(parts_dict = compound_nouns, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "noun", omit_next=omit_next, local_named=local_items)
                     second_perfect = None
-                    print(f"omit_next after first check compound words: {omit_next}")
+                    #print(f"omit_next after first check compound words: {omit_next}")
                     try:
                         second_idx, second_word, second_kinds, second_canonical, second_potential_match, second_omit_next, second_perfect = Parser.check_compound_words(parts_dict = compound_locs, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "location", omit_next=omit_next, local_named=local_items)
                     except Exception as e:
                         print(f"Could not get location: {e}")
 
-                    print(f"omit_next after second check compound words: {omit_next}")
+                    #print(f"omit_next after second check compound words: {omit_next}")
 
                     if perfect and not second_perfect:
                         kinds = (("noun",))
@@ -387,9 +367,9 @@ class Parser:
                     #    tokens.append(Token(second_idx, second_word, second_kinds, second_canonical))
                     #
 #
-                    elif perfect and second_perfect:
-                        print(f"Perfect for both noun and location: help? {idx}, {word} // {kinds}/{second_kinds} // {perfect} / {second_perfect} // {canonical} / {second_canonical}")
-                        exit()
+                    #elif perfect and second_perfect:
+                    #    #print(f"Perfect for both noun and location: help? {idx}, {word} // {kinds}/{second_kinds} // {perfect} / {second_perfect} // {canonical} / {second_canonical}")
+                    #    #exit() # arbitrarily setting this to location.
                     #    kinds = (("location",))
                     #    tokens.append(Token(second_idx, second_word, second_kinds, second_canonical))
                     #if perfect:
@@ -398,11 +378,11 @@ class Parser:
                         #continue
 
                     if canonical:
-                        print(f"CANONICAL AFTER PERFECT CHECKS: {canonical}")
+                        #print(f"CANONICAL AFTER PERFECT CHECKS: {canonical}")
                         tokens.append(Token(idx, word, kinds, canonical))
                         continue
 
-                    if not canonical and second_canonical:
+                    if (not canonical and second_canonical) or (perfect and second_perfect):
                         idx = second_idx
                         word = second_word
                         kinds = second_kinds
@@ -516,22 +496,22 @@ class Parser:
                     break
                 if token.kind != {"null"} and token.kind != set():
                     if sequence[matched] in token.kind:
-                        print(f"sequence[matched]: {sequence[matched]}, token.kind: {token.kind}")
+                        #print(f"sequence[matched]: {sequence[matched]}, token.kind: {token.kind}")
                         #print(f"This is {token.kind}")
                         #print(f"Token: {token}")
 
                         reformed_dict[matched] = {sequence[matched]: {"canonical": token.canonical, "text": token.text}}
-                        print(reformed_dict[matched])
+                        #print(reformed_dict[matched])
 
                         matched += 1
-                    else:
-                        print(f"NO MATCH: sequence[matched]: {sequence[matched]}, token.kind: {token.kind}")
+                    #else:
+                        #print(f"NO MATCH: sequence[matched]: {sequence[matched]}, token.kind: {token.kind}")
 
         if len(full_matches) > 1:
             print(f"More than one fully viable sequence:\n{full_matches}")
         elif len(full_matches) == 1:
             reformed_dict = full_matches
-        print(f"reformed_dict {reformed_dict}, sequence {sequence}")
+        #print(f"reformed_dict {reformed_dict}, sequence {sequence}")
         return reformed_dict, sequence
 
     def get_sequences_from_tokens(tokens) -> list:
@@ -568,13 +548,13 @@ class Parser:
             new_sequences = []
 
             for seq in sequences:
-                print(f"seq: {seq} // sequences: {sequences}")
+                #print(f"seq: {seq} // sequences: {sequences}")
                 for opt in options:
                     if opt is None:
                         new_sequences.append(seq)
                     else:
                         new_sequences.append(seq + [opt])
-                    print(f"after opt({opt}): {new_sequences}")
+                    #print(f"after opt({opt}): {new_sequences}")
 
             sequences = new_sequences
         #test_print(f"Sequences: {sequences}", print_true=True)
@@ -593,14 +573,14 @@ class Parser:
 
         def run_sequences(sequences, verb_instances):
             viable_sequences = []
-            for verb_entry in verb_instances:
-                for verb in verb_entry.values():
-                    if hasattr(verb, "formats"):
-                        print(f"VERB FORMATS: {verb.formats}")
+            #for verb_entry in verb_instances:
+                #for verb in verb_entry.values():
+                    #if hasattr(verb, "formats"):
+                        #print(f"VERB FORMATS: {verb.formats}")
 
             for seq in sequences:
                 if seq:
-                    print(f"SEQ: {seq}")
+                    #print(f"SEQ: {seq}")
                     if verb_instances:
                         for verb_entry in verb_instances:
                             for verb in verb_entry.values():
@@ -649,12 +629,12 @@ class Parser:
 
         viable_sequences = run_sequences(sequences, verb_instances)
         if not viable_sequences:
-            print(f"SEQUENCES: {sequences}")
+            #print(f"SEQUENCES: {sequences}")
             if "inventory" in strings and ("in" in strings or "at" in strings):
                 new_seq = list(sequences[0])
                 new_seq.remove("meta")
                 new_seq.append('location')
-                print(f"NEW SEQ: {new_seq}")
+                #print(f"NEW SEQ: {new_seq}")
                 #exit()
                 sequences.append(new_seq)
 
@@ -704,19 +684,19 @@ class Parser:
         dict_for_output = initial_dict
         #print(f"Format key: {format_key}")
         for i, item in enumerate(format_key):
-            print(f"Word type: {item}, type: {type(item)}")
-            print(f"Initial dict[i]: {initial_dict[i]}")
+            #print(f"Word type: {item}, type: {type(item)}")
+            #print(f"Initial dict[i]: {initial_dict[i]}")
             item_name = initial_dict[i][item].get("canonical")
             if item == "verb":
                 verb, _ = Parser.resolve_verb(tokens, item_name, format_key)
                 #resolve_verb(tokens, verb_name, format_key)
                 if verb:
-                    print(f"Verb::: {verb}, verb_name: {verb.name}")
+                    #print(f"Verb::: {verb}, verb_name: {verb.name}")
                     #dict_for_output[i]={item: verb}
                     dict_for_output[i]={item: {"instance":verb, "str_name":item_name, "text": initial_dict[i][item].get("text")}}
 
             else:
-                print(f"{initial_dict[i]}")
+                #print(f"{initial_dict[i]}")
                 dict_for_output[i]={item:{"instance":None, "str_name":item_name, "text": initial_dict[i][item].get("text")}}
 
         return dict_for_output, tokens # including tokens for any minor input detail that might matter later.

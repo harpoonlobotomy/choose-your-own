@@ -3,7 +3,7 @@
 
 enable_tui: bool = False
 
-run_tests = False
+run_tests = True
 parse_test = False#True #turns off events + location item generation, generates every item placed at Everywhere North instead.
 parser_tests_output_to_json = False#True
 

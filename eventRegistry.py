@@ -34,7 +34,7 @@ def load_json():
 
 event_dict = load_json()
 
-
+acts = ["is_broken"]
 trigger_acts = { # the k/v a verb action has to send in order to meet the trigger requirement.
     "item_broken": {"is_broken": True},
     "item_unlocked": {"is_locked": False},
@@ -42,7 +42,7 @@ trigger_acts = { # the k/v a verb action has to send in order to meet the trigge
 }
 
 event_effects = ["hold_item", "lock_item", "hide_item", "limit_travel"]
-event_effects = ["held_items", "locked_items", "hidden_items", "limit_travel", "init_items"]
+event_effects = ["held_items", "locked_items", "hidden_items", "limit_travel", "init_items", "remove_items"]
 
 effect_attrs = {
     "held_items": {
@@ -403,6 +403,14 @@ class eventRegistry:
 
         return event, event_attr
 
+    def clean_messages(self, event, noun=None):
+        messages = event.msgs
+        #print(f"MESSAGES: {messages}")
+        for part, message in messages.items():
+            if "[[]]" in message:
+                new_message = message.replace("[[]]", noun.name)
+                #print(f"CLEANED MESSAGE: {message}")
+                event.msgs[part] = new_message
 
     def get_all_item_instances(self, event:eventInstance, event_entry, noun=None):
         from itemRegistry import registry
@@ -457,6 +465,40 @@ class eventRegistry:
                 return event
         return
 
+
+    def get_event_name_by_attr_trigger(self, attr_trigger):
+
+        def get_parts_from_tuple(attr_trigger):
+            if isinstance(attr_trigger, tuple):
+                for tup in attr_trigger:
+                    #print(f"tup type: {type(tup)}")
+                    if isinstance(tup, tuple):
+                        get_parts_from_tuple(tup)
+                        return tup
+                    else:
+                        #print(f"tup: {tup}, type: {type(tup)}")
+                        #print(f"attr_trigger: {attr_trigger}")
+                        return attr_trigger
+
+
+        attr_trigger = get_parts_from_tuple(attr_trigger)
+        #print(f"attr_trigger after tuple: {attr_trigger}, type: {type(attr_trigger)}")
+        trigger, val = attr_trigger
+        for event in registrar.start_trigger_is_attr:
+            #print(f"EVENT: {event}")
+            #print(f"EVENT vars: {vars(event)}")
+            #print(f"Event.attr_triggers: {event.attr_triggers}")
+            #print(f"attr_trigger: {attr_trigger}")
+            for item in event.attr_triggers:
+                trig = trigger_acts.get(item)
+                if not trig:
+                    #print("No trig.")
+                    return None
+                #print(f"TRIG: {trig}, type: {type(trig)}")
+                if trig.get(trigger):
+                    if trig[trigger] == val:
+                        #print(f"event.name: {event.name}")
+                        return event.name
 
     def manage_constraint_tracking(event):
         """
@@ -513,6 +555,7 @@ class eventRegistry:
                     trig_data[entry] = getattr(event, trigger)[entry]
 
             #if event_entry.get(trigger):
+                #print(f"TRIG DATA: {trig_data}")
                 if trig_data.get("item_trigger"):
                     trigger_item = trig_data["item_trigger"]["trigger_item"]
                     if event.is_generated_event:
@@ -543,8 +586,17 @@ class eventRegistry:
                         trigger_dict["trigger_constraint"] = trig_data["item_trigger"]["trigger_constraint"]
 
 
+                elif event.is_generated_event:
+                    if trigger_check:
+                        trigger_item = trigger_check
+                        event.items.add(trigger_item)
+                        event.item_names.add(trigger_item.name)
+                        #print("Is generated events, trigger actions: ")
+                        trigger_actions = trig_data["attribute_trigger"]["triggered_by"]
+                        item_flags_on_start = item_flags_on_end = None
+
                 trigger_item_loc = (trigger_item.location if isinstance(trigger_item, ItemInstance) else None)
-                if not trigger_item_loc:
+                if not trigger_item_loc and trig_data.get("item_trigger"):
                     if trig_data["item_trigger"].get("trigger_item_location"):
                         trigger_item_loc = trig_data["item_trigger"]["trigger_item_location"]
 
@@ -552,7 +604,7 @@ class eventRegistry:
 
                 trigger_dict.update({
                     "event": event,
-                    "end_type": trig_data["item_trigger"].get("end_type"),
+                    "end_type": (trig_data["item_trigger"].get("end_type") if trig_data.get("item_trigger") else None),
                     "trigger_model": "item_trigger",
                     "trigger_type": trigger,
                     "trigger_item": trigger_item,
@@ -565,6 +617,17 @@ class eventRegistry:
                 if trig_data.get("item_trigger"):
                     event.event_keys.add(trigger_item)
                     event.triggers.add(Trigger(trigger_dict, event))
+
+
+                if trig_data.get("attribute_trigger"): # this is currently identical. Not sure if it'll need to change later or not.
+                    if event.is_generated_event:
+                        if trigger_check:
+                            trigger_item = trigger_check
+                            event.items.add(trigger_item)
+                            event.item_names.add(trigger_item.name)
+                    event.event_keys.add(trigger_item)
+                    event.triggers.add(Trigger(trigger_dict, event))
+
 
                 if trig_data.get("timed_trigger"):
                     #print("trig data timed trigger")
@@ -732,7 +795,7 @@ class eventRegistry:
                     #So I might not even be using this. Instead, it just checks if colour == event_msg, and if so checks for [[ in the string, and if it has it, it treats it like any other string with item instance, within assign_colour. It shouldn't break anything else, as the location descriptions that use [[]] parse it out before getting the loc colour.
 
                 if print_text:
-                    print(f"\n{assign_colour(msg, colour='event_msg')}")
+                    print(f"{assign_colour(msg, colour='event_msg')}")
                 return msg
 
 
@@ -753,6 +816,8 @@ class eventRegistry:
             print("Need to define event for start/end messages.")
             return ""
 
+        if not hasattr(event, "end_type"):
+            event.end_type = None
         end_type = event.end_type
         if msg_type in ("start", "end"):
             if msg_type == "end":
@@ -765,14 +830,14 @@ class eventRegistry:
 
         # To do immediate actions for immediate_action events. Will streamline this later maybe but this should do for now.
         if hasattr(event, "init_items") and event.init_items:
-            print(f"Event init_items: {event.init_items}")
+            #print(f"Event init_items: {event.init_items}")
             inst = None
             for each in event.init_items:
-                print(f"EACH: {each}")
+                #print(f"EACH: {each}")
                 for k, item_name in event.init_items[each].items():
                     if k == "item_name":
                         inst = None
-                        print(f"K: {k}, v: {item_name}")
+                        #print(f"K: {k}, v: {item_name}")
                         from itemRegistry import registry
                         if registry.item_defs.get(item_name):
                             inst = registry.init_single(item_name, registry.item_defs.get(item_name))
@@ -794,16 +859,39 @@ class eventRegistry:
                                             setattr(item, attr, effect_attrs[effect]["on_event_start"][attr])
                                             print(f"EFFECT: {effect}, item: {item}")
                             ## TODO this is half done. Finish this bit... Need to make sure the attributes are properly set to the new item, they may differ from item defs defaults.
-                            print("Initialised event item (inst)")
+                            #print(f"Initialised event item ({inst})")
+                        else:
+                            print(f"No item definition for {item_name}, cannot generate item for event {event}.")
+                            return None
 
-            if inst:
-                event.state = 1
-                self.play_event_msg("start_msg", event)
-                event.state = 0
-                for trig in event.triggers:
-                    trig.state = 0
-                return "Done"
+        if hasattr(event, "remove_items") and event.remove_items:
+            #print(f"event.remove_items: {event.remove_items}")
+            for each in event.remove_items:
+                for item in event.remove_items[each]:
+                    item = event.remove_items[each][item]
+                    if isinstance(item, str):
+                        if item == "trigger_item":
+                            items = set()
+                            for item in event.event_keys:
+                                items.add(item)
+                            print(f"ITEMS: {items}\nEVENT: {vars(event)}")
+                            for item in items:
+                                inst = item
+                                if isinstance(inst, ItemInstance):
+                                    registry.delete_instance(inst)
+                                    if inst in event.items:
+                                        event.items.remove(inst)
+                                    if inst in event.event_keys:
+                                        event.event_keys.remove(inst)
+                                else: print(f"Cannot remove {item} from event items, not present.")
 
+        if inst:
+            event.state = 1
+            self.play_event_msg("start_msg", event)
+            event.state = 0
+            for trig in event.triggers:
+                trig.state = 0
+            return "Done"
 
 
     def start_event(self, event_name:str, event:eventInstance=None):
@@ -984,6 +1072,27 @@ class eventRegistry:
         #return allowed_locations
         return allowed_locations_by_loc
 
+    def check_reason_tuple(self, reason, event, trig, noun_inst=None):
+        #print(f"REASON TUPLE: {reason}, len: {len(reason)}") # will it always need to go to inner? Not sure.
+        for inner in reason:
+            k, v = inner
+            for condition in trig.triggers:
+                if trigger_acts.get(condition) and trigger_acts[condition].get(k) == v:
+                    #print(f"EVENT VARS: {vars(event)}")
+                    if hasattr(event, "immediate_action_is_item") and event.immediate_action_is_item:
+                        print(f"[Is an immediate action event: {event}]")
+                        done = self.do_immediate_actions(event, trig)
+                        if done:
+                            return 1
+                    elif hasattr(event, "start_trigger_is_attr") and event.start_trigger_is_attr:
+                        #print("START TRIG IS ATTR TRUE")
+                        done = self.do_immediate_actions(event, trig)
+                        if done:
+                            return 1
+                    print(f"Condition [{k}: {v}] met for {noun_inst}. Will start event now.")
+                    self.start_event(event_name = event.name, event = event)
+                    return 1
+
     def is_event_trigger(self, noun_inst, noun_loc, reason = None) -> (int|None):
         logging_fn()
 
@@ -1024,35 +1133,22 @@ class eventRegistry:
 #event.no_item_restriction[self.item_inst.name].add(self.item_inst) #the eventInstance holds (this item name goes to these itemInstances)
             elif event.start_triggers:
                 for trig in event.start_triggers:
-                    print(f"start trigger: {vars(trig)}")
+                    #print(f"start trigger: {vars(trig)}")
                     if trig.is_item_trigger and trig.item_inst == noun:
-                        print(f"is_item_trigger == noun {noun}")
-
                         if isinstance(reason, str):
                             if reason in trig.triggers:
                                 reason = tuple((reason))
-                                print(f"Reason is in trig.triggers: {reason}")
+                                #print(f"Reason is in trig.triggers: {reason}")
                         if isinstance(reason, tuple):
-                            print(f"REASON TUPLE: {reason}, len: {len(reason)}") # will it always need to go to inner? Not sure.
-                            for inner in reason:
-                                k, v = inner
-                                for condition in trig.triggers:
-                                    if trigger_acts.get(condition) and trigger_acts[condition].get(k) == v:
-                                        if hasattr(event, "immediate_action_is_item") and event.immediate_action_is_item:
-                                            print(f"Is an immediate action event: {event}")
-                                            done = self.do_immediate_actions(event, trig)
-                                            if done:
-                                                return 1
+                            self.check_reason_tuple(reason, event, trig, noun_inst)
 
-                                        print(f"Condition [{k}: {v}] met for {noun_inst}. Will start event now.")
-                                        self.start_event(event_name = event.name, event = event)
-                                        return 1
 
         if noun_inst.event and hasattr(noun_inst, "is_event_key") and noun_inst.is_event_key:
 
             #print(f"This {noun_inst} already has an event tied to it: {noun_inst.event}")
             outcome = check_triggers(noun_inst.event, noun=noun_inst, reason=reason)
             return outcome
+
 
         if events.generate_events_from_itemname.get(noun_inst.name):
             existing_event = False
@@ -1081,6 +1177,17 @@ class eventRegistry:
                 check_triggers(event, noun=noun_inst, reason=reason)
                 return
 
+        if isinstance(reason, tuple):
+            for inner in reason:
+                reason_str, val = inner
+                if reason_str in acts:
+                    event_name = self.get_event_name_by_attr_trigger(reason)
+                    if not event_name:
+                        print(f"No event found with this attr trigger reason: {reason}. Cannot generate event. (Not a problem if it wasn't expected. Tailor this later.)")
+                        return
+                    #print(f"Event name: {event_name}")
+                    event = register_generated_event(event_name, noun_inst)
+                    check_triggers(event, noun=noun_inst, reason=reason)
         #if events.items_to_events.get(noun_inst): # turning this part off, should just be testing the noun, not this reverse check afterwards too.
         #    print(f"noun inst is in items_to_events: {events.items_to_events.get(noun_inst)}")
         #    event = events.items_to_events[noun_inst]
@@ -1113,6 +1220,8 @@ class eventIntake:
         self.name = event_name
         #self.attr = attr
         self.start_trigger_is_item = False
+        self.start_trigger_is_attr = False
+        self.attr_triggers = set()
         self.end_trigger_is_item = False
         self.item_names = set()
         self.item_name_to_loc = {}
@@ -1127,8 +1236,8 @@ class eventIntake:
 
         self.starts_current = attr.get("starts_current")
         self.start_trigger = attr.get("start_trigger")
-        if not self.start_trigger:
-            self.start_trigger = (attr.get("start_trigger"))
+        #if not self.start_trigger: # wut?
+        #    self.start_trigger = (attr.get("start_trigger"))
         self.end_trigger = attr.get("end_trigger")
 
         for trigger_type in ("start_trigger", "end_trigger", "immediate_action"):
@@ -1149,6 +1258,17 @@ class eventIntake:
                         if val.get("print_description_plain"):
                             for item in val["triggered_by"]:
                                 self.print_description_plain.add(item)
+                    if trig == "attribute_trigger":
+                        self.start_trigger_is_attr = True
+                        if trigger_type == "immediate_action":
+                            #print(f"Immediate action: {trigger_type}")
+                            if not self.start_trigger:
+                                self.start_trigger = (attr.get("immediate_action"))
+                        print(f"VAL: {val}")
+                        if val.get("triggered_by"):
+                            for item in val["triggered_by"]:
+                                self.attr_triggers.add(item)
+
 
         #if self.start_trigger:
         #    if attr["start_trigger"].get("item_trigger"):
@@ -1197,6 +1317,12 @@ class eventIntake:
                 self.match_item_to_name_only = attr["start_trigger"]["item_trigger"].get("match_item_by_name_only")
                 #events.generate_event_from_item[attr["start_trigger"]["item_trigger"]["item_name"]] = self
                 # Means location etc doesn't matter in this case, only that the item name matches start trigger.
+            elif self.start_trigger_is_attr:
+                if not attr.get("immediate_action"):
+                    print("Cannot deal with this yet. Currently only immediate_action triggers can be attr triggers.")
+                else:
+                    self.match_trigger_to_attr_only = attr["immediate_action"]["attribute_trigger"].get("item_attribute")
+                    self.match_trigger_to_attr_only = attr["immediate_action"]["attribute_trigger"].get("item_attribute")
             self.repeats = attr.get("repeats")
 
         if self.is_timed_event:
@@ -1278,6 +1404,7 @@ class eventRegistrar:
         self.by_name = dict()
         self.generate_events_from_itemname = dict()
         self.start_trigger_is_item = dict()
+        self.start_trigger_is_attr = dict()
         #generate_event_from_item
 
         #self.generated_events = set() # really should just be collections made from those event types. This is a bad idea.
@@ -1298,7 +1425,6 @@ class eventRegistrar:
         #print(f"EVENT.NAME: {event.name}, attr: \n{attr}")
         self.events.add(event)
 
-
         if event.is_generated_event:
             if event.start_trigger_is_item:
                 #self.generate_events_from_itemname[event.start_trigger["item_trigger"]["trigger_item"]] = event.name
@@ -1308,6 +1434,10 @@ class eventRegistrar:
         if event.start_trigger_is_item:
             if event.start_trigger:
                 self.start_trigger_is_item[event] = event.start_trigger["item_trigger"]["trigger_item"]
+
+        if event.start_trigger_is_attr:
+            if event.start_trigger:
+                self.start_trigger_is_attr[event] = event.attr_triggers
 
 
 
@@ -1330,12 +1460,14 @@ def register_generated_event(event_name, noun):
     event_inst, event_entry = events.add_event(intake_event.name, vars(intake_event))
     #print(f"About to get item instances for {event_inst}, using {noun}")
     events.get_all_item_instances(event_inst, event_entry, noun)
+    events.clean_messages(event_inst, noun)
     add_items_to_events(event_inst, noun)
     return event_inst
 
 
 def initialise_eventRegistry():
 
+    print("Initialising event registry...")
     for event_name in event_dict:
         registrar.add_to_intake(event_name, event_dict[event_name])
     """

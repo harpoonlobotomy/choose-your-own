@@ -53,7 +53,7 @@ def look_at_item(item_inst, entry): ## this is just using everything from regist
 
             print(f"You look at the {assign_colour(item_inst)}{extra}")
 
-            print(assign_colour(registry.describe(item_inst, caps=True), colour="description"))
+            print(f"\n   {assign_colour(registry.describe(item_inst, caps=True), colour="description")}")
             if hasattr(item_inst, "is_open") and item_inst.is_open:
                 verb_actions.print_children_in_container(item_inst)
 

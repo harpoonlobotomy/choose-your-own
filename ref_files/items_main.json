@@ -447,10 +447,10 @@
     "smash_attack": 5,
     "smash_defence": 5
   },
-  "TV": {
+  "TV set": {
     "alt_names": [
       "television",
-      "tv",
+      "tv set",
       "tv"
     ],
     "can_be_added_to": true,
@@ -1629,5 +1629,28 @@
     "slice_defence": 5,
     "smash_attack": 5,
     "smash_defence": 5
+  },
+  "broken glass shards": {
+    "alt_names": [],
+    "can_pick_up": true,
+    "descriptions": {
+      "if_singular": "a shard of broken glass.",
+      "if_plural": "a scattering of broken glass."
+    },
+    "has_multiple_instances": 3,
+    "item_size": "small_flat_things",
+    "item_type": [
+      "can_pick_up",
+      "is_cluster",
+      "standard"
+    ],
+    "nicenames": {
+      "if_singular": "a glass shard",
+      "if_plural": "a few shards of glass"
+    },
+    "slice_attack": 10,
+    "slice_defence": 4,
+    "smash_attack": 2,
+    "smash_defence": 2
   }
 }

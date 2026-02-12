@@ -145,8 +145,10 @@ def option(preamble=None):
     #    print(preamble)
     #print("\n")
     #test=user_input()
-
-    run_membrane()
+    from config import run_tests
+    end_loop = run_membrane(run_tests=run_tests)
+    if end_loop:
+        return
 
 
 def inner_loop(speed_mode=False):
@@ -192,7 +194,7 @@ def run():
     print()
     print(f"You wake up in {assign_colour(loc.currentPlace.a_name, 'loc')}, right around {game.time}. You find have a bizarrely good sense of cardinal directions; how odd.")
     print(f"`{game.playername}`, you think to yourself, `is it weird to be in {assign_colour(loc.currentPlace.the_name, 'loc')} at {game.time}, while it's {game.weather}?`")
-    print()
     from misc_utilities import look_around
     look_around()
+    print()
     inner_loop(speed_mode=test_mode)

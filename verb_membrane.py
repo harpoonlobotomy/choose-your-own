@@ -162,9 +162,9 @@ def get_noun_instances(dict_from_parser, viable_formats):
                     #print(f"Kind is cardinal: {entry}")
                     dict_from_parser = check_cardinals(entry, dict_from_parser, viable_formats)
 
-        print("About to return dict_from_parser, error")
+        #print("About to return dict_from_parser, error")
         return dict_from_parser, error
-    print("About to return dict_from_parser, error")
+    #print("About to return dict_from_parser, error")
     return None, "No dict_from_parser"
 
 class Membrane:
@@ -245,9 +245,9 @@ membrane = Membrane()
 
 test_input_list = ["take the paperclip", "take the paperclip", "pick up the glass jar", "put the paperclip in the wallet", "place the dried flowers on the headstone", "look at the moss", "examine the damp newspaper", "read the puzzle mag", "read the fashion mag in the city hotel room", "open the glass jar", "close the window", "pry open the TV set", "smash the TV set", "break the glass jar", "clean the watch", "clean the severed tentacle", "mix the unlabelled cream with the anxiety meds", "combine the fish food and the moss", "eat the dried flowers", "consume the fish food", "drink the unlabelled cream", "burn the damp newspaper", "burn the fashion mag in the graveyard", "throw the pretty rock", "lob the pretty rock at the window", "chuck the glass jar into the glass jar", "drop the wallet", "discard the paper scrap with number", "remove the batteries from the TV set", "add the batteries to the mobile phone", "put the car keys in the plastic bag", "set the watch", "lock the window", "unlock the window", "shove the TV set", "move the headstone", "barricade the window with the TV set", "separate the costume jewellery", "investigate the exact thing", "observe the graveyard", "watch the watch", "leave the graveyard", "depart", "go", "take the exact thing", "put the severed tentacle in the glass jar", "open the wallet with the paperclip", "read the mail order catalogue at the forked tree branch", "pick the moss", "pick the watch", "pick up moss", "throw anxiety meds", "put batteries into watch", "clean a glass jar"]
 
-#test_input_list = ["go west", "go north", "go to shed", "go north", "go to work shed", "go north", "go to shed door", "go to work shed door", "open door", "close door", "open shed door", "close shed door", "go into shed", "open door", "go into work shed", "go into work shed", "leave shed", "inventory", "drop mag", "take mag", "drop mag at church", "go into work shed", "open work shed door", "open door", "go into shed", "take map", "take key", "go to north graveyard", "use key on padlock", "lock padlock with key", "unlock padlock with key", "take padlock"]
+#test_input_list = ["go west", "go north", "go to shed", "go north", "go to work shed", "go north", "go to shed door", "go to work shed door", "open door", "close door", "open shed door", "close shed door", "go into shed", "open door", "go into work shed", "go into work shed", "leave shed", "inventory", "drop mag", "take mag", "drop mag at church", "go into work shed", "open work shed door", "open door", "go into shed", "take map", "take key", "go to north graveyard", "use key on padlock", "lock padlock with key", "unlock padlock with key", "take padlock", "go to city hotel room", "find tv set", "look at tv set"]
 
-#test_input_list = ["logging args", "go west", "open door", "enter shed", "take map", "take key", "go to north graveyard", "look at gate", "unlock padlock with key", "look at gate", "pick up padlock", "open gate"]
+test_input_list = ["go west", "open door", "enter shed", "take map", "take key", "go to north graveyard", "look at gate", "unlock padlock with key", "look at gate", "pick up padlock", "go to city hotel room", "find tv set", "go to east graveyard", "take jar", "logging args", "break jar"]
 
 #test_input_list = ["inventory", "logging args", "read mag for a while", "read catalogue for a while"]
 #test_input_list = ["logging args", "take stick", "approach the forked tree branch", "look around"]
@@ -273,7 +273,7 @@ input_outcome_dict = {}
 import config
 to_json = config.parser_tests_output_to_json
 
-def run_membrane(input_str=None):
+def run_membrane(input_str=None, run_tests=False):
     #if run_tests:
     #    def loop(input_str, i)
     def loop(input_str):
@@ -283,7 +283,7 @@ def run_membrane(input_str=None):
 
         response = (None, None)
 
-        while input_str == None:
+        while input_str == None or input_str == "":
             input_str = input("\n")
 
         while "logging" in input_str:
@@ -309,7 +309,7 @@ def run_membrane(input_str=None):
             #print("Before input_parser")
             try:
                 viable_format, dict_from_parser = Parser.input_parser(Parser, input_str)
-                print(f"After input_parser\n{dict_from_parser}")
+                #print(f"After input_parser\n{dict_from_parser}")
                 if not viable_format:
                     return None
             except Exception as e:
@@ -320,7 +320,7 @@ def run_membrane(input_str=None):
             except Exception as e:
                 print(f"Failed get_noun_instances: {e}")
 
-            print(f"error: {error} // inst_dict: {inst_dict}")
+            logging_fn(f"error: {error} // inst_dict: {inst_dict}")
             if error:
                 if isinstance(error, str):
                     print(f"Error: {error}")
@@ -385,35 +385,30 @@ def run_membrane(input_str=None):
         except Exception as e:
             print(f"Failed parser: {e}")
 
-    from config import run_tests
     if run_tests:
-        print("run tests on")
+        #print("run tests on")
         from time import sleep
         test_inputs = test_input_list#["get scroll", "open scroll", "go to east graveyard", "get glass jar", "put glass jar in scroll", "put scroll in glass jar"]
         for i, input_str in enumerate(test_inputs):
             #input_outcome_dict[str(i, input_str)] = None
             #print_yellow(f"#    input str: `{input_str}`")
+            print()
             loop(input_str)
 
             sleep(.05)
-            input("Press any key to continue to next.")
+            #input("Press any key to continue to next.")
 
-            print()
             if i == len(test_inputs)-1:
-                run_tests = False
+                config.run_tests = False
+                #run_tests = False
+            else:
+                print()
 
     else:
         #import json
         #test_file = "test_31_1_26.json"
         #with open(test_file, 'w') as file:
         #    json.dump(input_outcome_dict, file, indent=2)
-        if run_tests:
-            print(f"input_outcome_dict: ")
-            pprint.pprint(input_outcome_dict)
-            print("\n\n")
-
-            print()
-            exit("Exiting, please check JSON file.")
         #loop(input_str, i)
         loop(input_str)
 

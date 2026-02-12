@@ -1098,3 +1098,227 @@ how did omit_next get to -1?
 Maybe this is why I had to set to only work when it was at least 1. Need to figure out why it does that though.
 
 Tomorrow. Too tired today.
+
+11:04am 12/2/16
+
+Have just changed 'tv set' to be 'TV'. It's a cheap cop-out but I don't have the brain right now.
+
+Not sure why omit_next is like that. Really do need to figure it out.
+
+Okay. So, 'go to work shed' now causes an error, because it /isn't properly skipping/.
+
+it finds 'work shed' as both noun and location, and I set it to pick location when that's the case. But then it comes out with the sequences of
+
+#   SEQUENCES: [['verb', 'direction', 'noun', 'location'], ['verb', 'direction', 'location', 'location']]
+
+neither of which are valid.
+It finds the perfect answer with 'work shed'.
+
+The omits look like this:
+
+omit_next:  1
+omit_next after first check compound words: 1
+omit_next:  2
+omit_next after second check compound words: 1
+CANONICAL AFTER PERFECT CHECKS: work shed
+
+That '2' is wrong, need to figure out why. And I like that it checks both noun and location, otherwise it never finds perfect locations.
+
+Hm.
+
+Okay so editing the top line and moving the decision to here:
+                    if (not canonical and second_canonical) or (perfect and second_perfect):
+                        idx = second_idx
+                        word = second_word
+                        kinds = second_kinds
+                        canonical = second_canonical
+                        potential_match = second_potential_match
+                        omit_next = second_omit_next
+                        tokens.append(Token(idx, word, kinds, canonical))
+                        continue
+makes it work properly.
+
+OH.
+It's because the previous one added two tokens, that's why. The original token from `if perfect and second_perfect`, and the second one for if not canonical and second_canonical. By moving the job only into that second function (and making it `if (not canonical and second_canonical) or (perfect and second_perfect):` instead of just the first part), it only makes one token and it just has to pick between location and noun for that one token, so it works.
+
+I wonder if 'tv set' would work again now...
+
+Hmph. Now `go to shed door` doesn't work. I assume it did before.
+Yeah I think it did, right?
+
+Though I get the confusion with that one. the obj is 'wooden door', and the obj/location is 'work shed'.
+
+So maybe adding 'noun dir loc noun' isn't too bad, I can just check if noun is in/trans obj for loc within the func. Not sure why I didn't have to before though? Wish my brain wasn't so insanely foggy and I could just... figure it out. Bleh.
+
+I think beforehand I was using 'go to shed' or similar though. Will leave it for now.
+
+changed 'tv set' back to 'tv set' from 'tv'.
+
+CANONICAL AFTER PERFECT CHECKS: TV set
+(  Func:  verbReg_Reciever    )
+values: ('Tokenise: idx: 2, word: set, omit_next: -1',)
+
+parts: ['find', 'tv', 'set']
+idx: 1
+word_type: noun
+local_named: {'local map', 'iron key', 'puzzle mag', 'severed tentacle', 'paperclip', 'padlock'}
+omit_next:  -1
+omit_next after first check compound words: -1
+
+Oh, it's not finding the TV because I didn't add the object to the location, I only wrote that it was there. Haven't updated the city loc in /ages/. But that doesn't explain omit_next getting to /minus one/. No reason for that at all, that needs fixing even if this particular error is because I don't have a TV obj for it to find.
+
+So maybe I re-remove the local_named from the parser. I really prefer it not to exclude/include words based on what is around, but when I have things like 'find x' for searching the local area, it makes sense to have it. Because I arrive in the hotel room to the north, there's nothing there, and it fails to parse 'find tv set'.
+
+Maybe it /does/ recognise 'tv set' as a noun, but maybe because it's not local it doesn't consider it perfect? Let me check what actually makes it count for perfection.
+
+Okay so perfect_match only requires both parts of the name are found, so it's not that.
+
+Looking at omit_next:
+
+omit_next at top of compound_words: 0
+Word: TV / omit_next before += matches_count: 0
+Word: TV / omit_next after [+= matches_count-1]: -1 // matches_count = 0
+omit_next after first check compound words: -1
+
+Oh. I think it's because 'TV' is a valid alt_name for 'tv set', so... but shouldn't 'matches_count' be 1?
+
+OK, so I fixed it, ish.
+It was erroring in this specific way because I had 'if word == tv, word = TV' at the top. And the compound_word entry is 'tv set', so it never found the compound word, and so matches_count never added anything.
+
+So without that, now it works:
+#   omit_next at top of compound_words: 0
+#   word tv in word parts: ('tv', 'set')
+#   Matching word segment: tv
+#   Matching word segment: set
+#   Perfect match: tv set, word parts len: 2
+#   Word: tv / omit_next before += matches_count: 0
+#   Word: tv / omit_next after [+= matches_count-1]: 1 // matches_count = 2
+#   omit_next after first check compound words: 1
+
+and it properly works:
+#   [[  find tv set  ]]
+#   There's a tv set at east city hotel room, is that what you were looking for?
+
+Okay. Now I'm going to get rid of some of the many extraneous print lines that I hopefully don't need anymore.
+
+Also it does properly recognise 'city hotel room', which is a relief.
+
+word city in word parts: ('city', 'hotel', 'room')
+Matching word segment: city
+Matching word segment: hotel
+Matching word segment: room
+Perfect match: city hotel room, word parts len: 3
+
+5.03pm
+I'm not sure why
+
+There's a tv set at east city hotel room, is that what you were looking for?
+[[  look at tv set  ]]
+
+You can't see the tv set right now.
+
+[[  go west  ]]
+
+You turn to face the west city hotel room
+There's a standard hotel room door, with the fire escape route poster on the back and an empty coat hook.
+[[  open door  ]]
+
+the spacing is off.
+Why does 'You can't see the tv set right now' get a newline after it, but the description doesn't.
+
+Also, the test has started repeating infinitely. Not sure why. It just loops forever.
+Oh, because I made run_tests import inside the loop, so it's always true or always false. Right.
+
+3.33pm
+Okay, new thing.
+
+I cleaned the print lines, and have been trying to get the input_str line alignment right.
+In the loop test, it prints correctly;
+#   [[  look around  ]]
+prints over the top of
+#   look around
+
+But then, once the loop is over, it prints like this:
+
+#   look around
+#
+#   [[  look around  ]]
+
+I know how to fix it, I just need to add the MOVE_UP back to the print line.
+But why doesn't the loop print need it??
+
+When running run_test, input str is just
+
+loop(input_str)
+
+Oh, I guess
+
+        while input_str == None or input_str == "":
+            input_str = input("\n")
+
+would be part of it, but not the second newline...
+
+Nope. If I remove that newline, it still prints
+
+#   look around
+#
+#   [[  look around  ]]
+
+I can't see why the loop would remove newlines.
+
+Anyway. Have made some minor edits to compensate, and it works now regardless. Assumedly it was the user input that threw it out of alignment even though I'm not convinced that should add two lines. But I guess the evidence says it does, regardless.
+
+4.19pm
+Okay, that's done. And removed those excess print lines, so it's the proper output again now.
+
+So, next: I want to set up the 'broken glass' immediate_event for when glass-type things break.
+
+Need to implement
+
+        "attribute_trigger": {
+            "item_attribute": {"on_death": "broken_glass"},
+
+data in event_intake:
+
+#   self.match_trigger_to_attr_only = attr["immediate_action"]["attribute_trigger"].get("item_attribute")
+
+#   if trig == "attribute_trigger":
+#       setattr(self, f"start_trigger_is_attr", True)
+#       if trigger_type == "immediate_action":
+#           #print(f"Immediate action: {trigger_type}")
+#           if not self.start_trigger:
+#               self.start_trigger = (attr.get("immediate_action"))
+#       self.attr_triggers.add(val.get("item_attribute"))
+
+Finding the events triggered by an attr trigger:
+use this function:
+get_event_by_attr_trigger(self, attr_trigger)
+
+Need to add this to events that use attr_trigger:
+                        print(f"VAL: {val}")
+                        if val.get("triggered_by"):
+                            for item in val["triggered_by"]:
+                                self.attr_triggers.add(item)
+
+Hm.
+
+(  Func:  get_current_loc    )
+
+
+(  Func:  loop    )
+
+get_current_loc adds two lines even if it doesn't do anything. Not ideal.
+
+Okay.
+So, glass shard is... working?
+Break glass jar, it is removed, and 'broken glass shards' is added in its place.
+
+One issue though:
+
+You're facing east. You see a variety of headstones, most quite worn, and decorated by clumps of moss, a glass shard, and some dried flowers.
+
+[[  pick up glass  ]]
+
+The broken glass shards is now in your inventory.
+
+It has 'a glass shard' in location descrip, and 'broken glass shards' in text desc. It's the issue of plurals, I haven't actually implemented the 'cluster' thing yet so this is expected. But that's something to fix next.

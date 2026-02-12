@@ -20,6 +20,9 @@
       "items": {
         "curtains": {
           "not_in_loc_desc": true
+        },
+        "tv set": {
+          "not_in_loc_desc": true
         }
       }
     },
@@ -204,7 +207,7 @@
     "missing_cardinal": "There's not much else to see around here. Dusty and largely disused, nothing really catches your eye.",
     "north": {
       "item_desc": {
-        "generic": "A simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's ",
+        "generic": "The work shed is simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's ",
         "local map": "a yellowed [[]] showing the region surrounding the graveyard",
         "iron key": "an old [[]], mottled with age",
         "no_items": "not much of any real interest."

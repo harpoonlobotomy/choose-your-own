@@ -134,7 +134,8 @@ def item_def_from_str(item_name:str, item_dict=None):
         new_str = set([input_str])
 
     else:
-        print(f"No valid input [`{input_str}`]. Defaulting to item_type = ['static']")
+        if input_str.strip() != "":
+            print(f"No valid input [`{input_str}`]. Defaulting to item_type = ['static']")
         new_str = set(["static"])
 
     if not new_item_dict.get("name"):
@@ -178,16 +179,16 @@ def get_item_data(item_name, incoming_data=None): # note: no locations here. Thi
     elif item_name in gen_items:
         item_data = gen_items[item_name]
 
-    else:
-        print(f"{item_name} not in item_defs or gen_items")
-
     if not item_data:
-        print(f"Generator.alt_names: {generator.alt_names}")
+        #print(f"Generator.alt_names: {generator.alt_names}")
         if generator.alt_names.get(item_name):
-            print(f"generator.alt_names get item_name [{item_name}]: {item_defs[generator.alt_names[item_name]]}")
+            #print(f"generator.alt_names get item_name [{item_name}]: {item_defs[generator.alt_names[item_name]]}")
             item_data = item_defs[generator.alt_names[item_name]]
         else:
             item_data = item_def_from_str(item_name)
+
+    if not item_data:
+        print(f"{item_name} not in item_defs or gen_items")
 
     for field in item_data:
         cleaned_dict[field] = item_data[field]
@@ -342,8 +343,8 @@ def init_item_dict():
         if item_defs[item].get("alt_names"):
             for name in item_defs[item]["alt_names"]:
                 alt_names_dict[name] = item
-                print(f"NAME: {name} // item: {item}")
-                
+                #print(f"NAME: {name} // item: {item}")
+
     generator.alt_names = alt_names_dict
 
     get_loc_items_dict(loc=None, cardinal=None)

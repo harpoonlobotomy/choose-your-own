@@ -99,7 +99,8 @@
   },
 "item_leaves_broken_glass": {
     "is_quick_event": true,
-    "repeats": false,
+    "is_generated_event": true,
+    "repeats": "forever",
     "starts_current": false,
     "immediate_action": {
         "attribute_trigger": {
