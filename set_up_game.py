@@ -32,7 +32,7 @@ def test_for_weird():
 def set_inventory():
 
     if game.w_value != 0:
-        registry.pick_up("severed tentacle", game.inventory, starting_objects=True)
+        registry.pick_up("severed tentacle", starting_objects=True)
         game.weirdness = True
 
 def loadout():
@@ -40,13 +40,13 @@ def loadout():
     paperclip_inst = registry.get_item_from_defs("paperclip")
     #paperclip_list = registry.instances_by_name("paperclip")
 
-    _, game.inventory = registry.pick_up(paperclip_inst, game.inventory, starting_objects=True)
+    registry.pick_up(paperclip_inst, starting_objects=True)
 
     ### Need to get list of item def entries with 'magazine'
     magazines = registry.item_def_by_attr(loot_type="magazine")
     #print(f"MAGAZINES: {magazines}")
     mag_choice = random.choice(magazines)
-    _, game.inventory = registry.pick_up(mag_choice, game.inventory, starting_objects=True)
+    registry.pick_up(mag_choice, starting_objects=True)
     game.carryweight = 12
 
     starting_items = registry.instances_by_category("starting") ## starting items ==
@@ -59,7 +59,7 @@ def loadout():
         for item in temp_inventory:
             if item == None:
                 continue
-            _, game.inventory = registry.pick_up(item, game.inventory, starting_objects=True)
+            registry.pick_up(item, starting_objects=True)
 
 def calc_emotions():
     counter = 0

@@ -10,7 +10,7 @@ if the padlock is unlocked or broken, it falls to the ground and the gate creaks
 import pprint
 import uuid
 
-from itemRegistry import ItemInstance, get_loc_items
+from itemRegistry import ItemInstance
 from logger import logging_fn
 from misc_utilities import assign_colour
 

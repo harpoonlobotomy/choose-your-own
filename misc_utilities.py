@@ -182,14 +182,15 @@ def get_inst_list_names(inventory_inst_list) -> list:
 
     return inventory_names_list
 
-def from_inventory_name(test:str, inst_inventory:list=None) -> ItemInstance:
+def from_inventory_name(test:str) -> ItemInstance:
     logging_fn()
     if isinstance(test, ItemInstance):
         test = test.name
 
-    if inst_inventory == None:
-        from set_up_game import game ## might break
-        inst_inventory = game.inventory
+    from env_data import locRegistry
+    inst_inventory = locRegistry.inv_place.items
+        #from set_up_game import game ## might break
+        #inst_inventory = game.inventory
 
     cleaned_name,_ = check_name(test)
     #print(f"Test: {test}, cleaned_name: {cleaned_name}")
@@ -203,13 +204,13 @@ def from_inventory_name(test:str, inst_inventory:list=None) -> ItemInstance:
     input()
 
 
-def is_item_in_container(item, inventory_list=None):
+def is_item_in_container(item):
 
     inst = None
     if isinstance(item, ItemInstance) and item != None:
         inst = item
     elif isinstance(item, str) and item != None:
-        inst = from_inventory_name(item, inventory_list)
+        inst = from_inventory_name(item)
 
     if inst == None:
         print(f"Failed to get instance for {item}, type: {type(item)}")
@@ -227,15 +228,18 @@ def is_item_in_container(item, inventory_list=None):
 def generate_clean_inventory(inventory_inst_list=None, will_print = False, coloured = False):
 
     from itemRegistry import registry
+    from env_data import locRegistry as loc
     from tui.tui_update import update_text_box
     from config import enable_tui
     tui_enabled = enable_tui
 
     if inventory_inst_list == None:
-        from set_up_game import game
-        inventory_inst_list = game.inventory
+        inventory_inst_list = loc.inv_place.items
+        #from set_up_game import game
+        #inventory_inst_list = game.inventory
 
     no_xval_inventory_names = []
+
     inv_list = get_inst_list_names(inventory_inst_list)
     dupe_items = list()
     checked = set()
@@ -264,9 +268,9 @@ def generate_clean_inventory(inventory_inst_list=None, will_print = False, colou
                 no_xval_inventory_names.append(item_name)
             """
             children=None
-            has_parent, child_inst = is_item_in_container(item_name, inventory_inst_list) # is it a child
+            has_parent, child_inst = is_item_in_container(item_name) # is it a child
             if not has_parent:
-                inst = from_inventory_name(item_name, inventory_inst_list)
+                inst = from_inventory_name(item_name)
                 if registry.by_container.get(inst):
                     children = registry.instances_by_container(inst)
                 if children:
@@ -320,10 +324,10 @@ def separate_loot(child_input=None, parent_input=None, inventory=[]): ## should 
 
         if children:
             for item in children:
-                inventory, result = registry.move_from_container_to_inv(item, inventory, parent)
+                inventory, result = registry.move_from_container_to_inv(item, parent)
 
     else:
-        inventory, result = registry.move_from_container_to_inv(child, inventory, parent)
+        inventory, result = registry.move_from_container_to_inv(child, parent)
 
     clean_separation_result(result, to_print=True)
 
@@ -448,7 +452,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
 
             plain_name, val = check_name(item)
             if val > 0:
-                item_instance = from_inventory_name(plain_name, None)
+                item_instance = from_inventory_name(plain_name)
                 colour, _, bld = check_instance_col(item_instance)
 
             else:

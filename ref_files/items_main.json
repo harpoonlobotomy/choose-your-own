@@ -447,10 +447,10 @@
     "smash_attack": 5,
     "smash_defence": 5
   },
-  "TV set": {
+  "TV": {
     "alt_names": [
       "television",
-      "tv set",
+      "tv",
       "tv"
     ],
     "can_be_added_to": true,
@@ -1531,8 +1531,8 @@
     },
     "slice_attack": 5,
     "slice_defence": 6,
-    "smash_attack": 2,
-    "smash_defence": 3
+    "smash_attack": 4,
+    "smash_defence": 6
   },
   "curtains": {
     "can_be_closed": true,

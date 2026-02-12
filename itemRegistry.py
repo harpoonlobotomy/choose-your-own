@@ -2,9 +2,8 @@
 import random
 import uuid
 
-from env_data import cardinalInstance, placeInstance, locRegistry
+from env_data import cardinalInstance, placeInstance, locRegistry as loc
 from logger import logging_fn, traceback_fn
-from env_data import locRegistry as loc
 import printing
 
 global all_item_names_generated, all_items_generated
@@ -215,7 +214,7 @@ Note on descriptions: if self.descriptions, will have different descriptions dep
         self.starting_location:dict = attr.get("starting_location") # currently is styr
         self.verb_actions = set()
 
-        self.location:cardinalInstance = None
+        self.location:cardinalInstance = loc.no_place
         self.event = None
         self.is_event_key = False
 
@@ -350,7 +349,6 @@ class itemRegistry:
                 self.by_location.setdefault(location, set()).add(inst)
 
             elif not hasattr(inst, "contained_in") or inst.contained_in == None:
-                from env_data import locRegistry as loc
                 cardinal_inst = loc.by_cardinal_str(location)
                 self.by_location.setdefault(cardinal_inst, set()).add(inst)
                 inst.location = cardinal_inst
@@ -605,12 +603,12 @@ class itemRegistry:
             if hasattr(inst, "is_hidden") and inst.is_hidden == True:
                 return inst, None, 9, accessible_dict[9]
 
-            from set_up_game import game
-            inventory_list = game.inventory
+            #from set_up_game import game
+            inventory_list = self.get_item_by_location(loc.inv_place)# game.inventory # using place instead of game.inventory for item storage. Not sure how I feel about it yet but trying it out.
 
             local_items_list = self.get_item_by_location(loc.current)
             #print(f"Local_items_list in run_check: {local_items_list}")
-            container, inst = is_item_in_container(inst, inventory_list)
+            container, inst = is_item_in_container(inst)
 
             if inst in inventory_list and not container:
                 confirmed_inst = inst
@@ -713,6 +711,9 @@ class itemRegistry:
             if self.by_location.get(old_loc):
                 self.by_location[old_loc].discard(inst)
                 inst.location = None
+            if old_loc == loc.inv_place:
+                old_loc.items.remove(inst)
+                inst.location = None
 
         ## MOVE TO NEW LOCATION IF PROVIDED
         if location != None:
@@ -723,6 +724,8 @@ class itemRegistry:
             if not self.by_location.get(location):
                 self.by_location[location] = set()
             self.by_location[location].add(inst)
+            if location == loc.inv_place:
+                location.items.add(inst)
 
         if old_container or new_container or hasattr(inst, "contained_in"):
             return_text = []
@@ -756,13 +759,12 @@ class itemRegistry:
             if return_text:
                 return return_text
 
-    def move_from_container_to_inv(self, inst:ItemInstance, inventory:list, parent:ItemInstance=None) -> tuple[list,list]:
+    def move_from_container_to_inv(self, inst:ItemInstance, parent:ItemInstance=None) -> tuple[list,list]:
         logging_fn()
         if parent == None:
             parent = inst.contained_in
-        result = self.move_item(inst, old_container=parent)
-        inventory.append(inst)
-        return inventory, result
+        result = self.move_item(inst, location = loc.inv_place, old_container=parent)
+        return result
 
 
     # -------------------------
@@ -1017,7 +1019,7 @@ class itemRegistry:
 
         return inst.name
 
-    def pick_up(self, inst:str|ItemInstance, inventory_list=None, location=None, starting_objects=False) -> tuple[ItemInstance, list]:
+    def pick_up(self, inst:str|ItemInstance, location=None, starting_objects=False) -> tuple[ItemInstance, list]:
         logging_fn()
 
         item_name = None
@@ -1062,23 +1064,24 @@ class itemRegistry:
         if not starting_objects and not hasattr(inst, "can_pick_up"):
             print(f"[[Cannot pick up {inst.name} (according to inst.flags)]]")
             print(f"inst.flags: {inst.flags}")
-            return None, inventory_list
+            return None
 
-        if inst in inventory_list: ## TODO: Add a check so this only applies to items that can be duplicated. Though really those that can't should not still remain in the world when picked up... so the problem lies in the original pick up in that case, not the dupe.
+        if inst in loc.inv_place.items: ## TODO: Add a check so this only applies to items that can be duplicated. Though really those that can't should not still remain in the world when picked up... so the problem lies in the original pick up in that case, not the dupe.
             #print("Item already in inventory. Creating new...") ## Not sure about this.
             attr = self.item_defs.get(inst.name)
             inst = self.init_single(inst.name, attr)
 
-        self.move_item(inst)
-        inventory_list.append(inst)
+        self.move_item(inst, location = loc.inv_place)
 
         if not hasattr(self, "starting_location"): # so it only updates once, instead of being the 'last picked up at'. Though that could be useful tbh. Hm.
             self.starting_location = {location} # just temporarily, not in use yet. Needs formalising how it's going to work.
 
-        return inst, inventory_list
+        return inst
 
-    def drop(self, inst: ItemInstance, inventory_list):
+    def drop(self, inst: ItemInstance):
         logging_fn()
+        inventory_list = loc.inv_place.items
+
         if inst not in inventory_list:
             return None, inventory_list
 
@@ -1090,7 +1093,6 @@ class itemRegistry:
     def complete_location_dict(self):
         logging_fn()
 
-        from env_data import locRegistry as loc
         for placeInstance in loc.places:
             for cardinal in loc.cardinals[placeInstance]:
                 self.by_location.setdefault(cardinal, set())
@@ -1287,7 +1289,7 @@ def apply_loc_data_to_item(item, item_data, loc_data):
     return inst
 
 
-def get_loc_items(loc=None, cardinal=None):
+def get_loc_items(place=None, cardinal=None):
 
     from item_dict_gen import generator, excluded_itemnames
     import json
@@ -1297,7 +1299,6 @@ def get_loc_items(loc=None, cardinal=None):
         loc_dict = json.load(file)
 
     loc_items_dict = {}
-    from env_data import locRegistry
 
     if config.parse_test:
         everything_entry = loc_dict["everything"]
@@ -1306,29 +1307,29 @@ def get_loc_items(loc=None, cardinal=None):
         #print(f"Everything entry: {everything_entry}")
         #print(f"Everything entry north items: {everything_entry["north"]["items"]}")
 
-        north_everything = locRegistry.by_cardinal_str("north everything")
+        north_everything = loc.by_cardinal_str("north everything")
 
-    def get_cardinal_items(loc, cardinal):
+    def get_cardinal_items(place, cardinal):
         name_to_inst_tmp = {}
 
-        def from_single_cardinal(loc, cardinal, name_to_inst_tmp):
+        def from_single_cardinal(place, cardinal, name_to_inst_tmp):
 
-            if isinstance(loc, placeInstance):
-                loc = loc.name
+            if isinstance(place, placeInstance):
+                place = place.name
             if isinstance(cardinal, cardinalInstance):
                 cardinal = cardinal.name
 
-            if not loc_dict.get(loc.lower()):
+            if not loc_dict.get(place.lower()):
                 return name_to_inst_tmp
 
-            def create_base_items(loc=None, cardinal=None, loc_data={}):
+            def create_base_items(place=None, cardinal=None, loc_data={}):
                 matched = {}
 
-                if loc == None:
-                    loc = locRegistry.currentPlace
+                if place == None:
+                    place = loc.currentPlace
                 if  cardinal == None:
-                    cardinal = locRegistry.current
-                card_inst = locRegistry.by_cardinal_str(cardinal, loc)
+                    cardinal = loc.current
+                card_inst = loc.by_cardinal_str(cardinal, place)
 
                 if loc_data.get("item_desc"):
                     for item in loc_data["item_desc"]:
@@ -1336,7 +1337,7 @@ def get_loc_items(loc=None, cardinal=None):
                             continue
                         item_data = generator.item_defs.get(item)
                         if item_data:
-                            print(f"ITEM DATA: {item_data}")
+                            #print(f"ITEM DATA: {item_data}")
                             if not item_data.get("description"): ## only overwrite the item description if there isn't one written. Use location-descrip in location name, but item descrip in item descriptions. This works for now, might need to change it later. Not sure.
                                 if item_data.get("descriptions"):
                                     for entry in item_data["descriptions"]:
@@ -1350,7 +1351,7 @@ def get_loc_items(loc=None, cardinal=None):
                         apply_loc_data_to_item(item, item_data, loc_data["items"].get(item))
 
                 if loc_data.get("items"):
-                    print(f"loc_data.get('items'): {loc_data["items"]}")
+                    #print(f"loc_data.get('items'): {loc_data["items"]}")
                     for item in loc_data["items"]:
                         if item == None or item == "" or item in excluded_itemnames:
                             continue
@@ -1365,17 +1366,17 @@ def get_loc_items(loc=None, cardinal=None):
                         item_data["starting_location"] = card_inst
                         apply_loc_data_to_item(item, item_data, loc_data["items"])
 
-            if loc_dict[loc.lower()].get(cardinal):
-                if loc_dict[loc.lower()][cardinal].get("item_desc") or loc_dict[loc.lower()][cardinal].get("items"):
-                    create_base_items(loc.lower(), cardinal, loc_dict[loc.lower()][cardinal])
+            if loc_dict[place.lower()].get(cardinal):
+                if loc_dict[place.lower()][cardinal].get("item_desc") or loc_dict[place.lower()][cardinal].get("items"):
+                    create_base_items(place.lower(), cardinal, loc_dict[place.lower()][cardinal])
 
             return name_to_inst_tmp
 
         if cardinal == None:
             for cardinal in CARDINALS:
-                name_to_inst_tmp = from_single_cardinal(loc, cardinal, name_to_inst_tmp)
+                name_to_inst_tmp = from_single_cardinal(place, cardinal, name_to_inst_tmp)
         else:
-            name_to_inst_tmp = from_single_cardinal(loc, cardinal, name_to_inst_tmp)
+            name_to_inst_tmp = from_single_cardinal(place, cardinal, name_to_inst_tmp)
 
     if config.parse_test:
         get_cardinal_items(north_everything.place, north_everything)
@@ -1384,15 +1385,14 @@ def get_loc_items(loc=None, cardinal=None):
             if hasattr(item, "location") and item.location != None and item.location != north_everything:
                 registry.move_item(item, north_everything)
 
-
     if not config.parse_test:
-        if loc == None:
-            for loc in loc_dict:
-                loc_items_dict[loc] = {}
-                get_cardinal_items(loc, cardinal)
+        if place == None:
+            for place in loc_dict:
+                loc_items_dict[place] = {}
+                get_cardinal_items(place, cardinal)
         else:
-            loc_items_dict[loc] = {}
-            get_cardinal_items(loc, cardinal)
+            loc_items_dict[place] = {}
+            get_cardinal_items(place, cardinal)
 
     registry.clean_relationships()
 

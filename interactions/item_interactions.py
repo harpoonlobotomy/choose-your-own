@@ -31,15 +31,16 @@ def show_map(noun):
     import os
     os.startfile(map_file)
 
-def look_at_item(item_inst): ## this is just using everything from registry. Should really just be in registry....
-
+def look_at_item(item_inst, entry): ## this is just using everything from registry. Should really just be in registry....
     if isinstance(item_inst, ItemInstance):
 
         #print(f"item_inst.location: {item_inst.location}")
         confirmed, container, reason_val, meaning = registry.check_item_is_accessible(item_inst)
         #print(f"Look at item MEANING: {meaning}")
         if reason_val not in (0, 5, 8):
-            print(f"You can't see that right now.")
+            text = entry["text"]
+            print(f"You can't see the {assign_colour(text)} right now.")
+            return
         else:
             if reason_val == 8:
                 turn_around(item_inst.location)

@@ -35,8 +35,11 @@ class cardinalInstance:
         self.place_name = cardinal + " " + loc.name # eg "east graveyard"        },
         self.ern_name = cardinal + "ern " + loc.name # eg "eastern graveyard"
         self.in_loc_facing_card = f"the {loc.name}, facing {self.name}"
-        self.place = loc
+        self.place:placeInstance = loc
         self.alt_names = (loc_dict[loc.name].get("alt_names") if loc_dict[loc.name].get("alt_names") else None)
+
+        if (self.place_name == config.inv_loc_str or self.place_name == config.no_place_str):
+            self.items = set() # purely for my own convenience. Maybe a bad idea but going to do it anyway for now.
 
         self.colour = cardinal_cols.get(self.name)
 
@@ -109,15 +112,16 @@ class placeRegistry:
         self.by_name = {}
         self.by_alt_name = {}
         self.route = list() # store everywhere you go for a game, in order. Could be interesting to use later.
-        self.last_loc = None # used for history tracking, just track place, not card.
+        self.last_loc:placeInstance = None # used for history tracking, just track place, not card.
         self.cardinals = {} # locRegistry.cardinals[place_instance_obj][cardinal_direction_str]
-        self.current = None # cardinal instance
-        self.currentPlace = None
-        self.inv_place = None
-        self.no_place = None
+        self.current:cardinalInstance = None # cardinal instance
+        self.currentPlace:placeInstance = None
+        self.inv_place:cardinalInstance = None
+        self.no_place:cardinalInstance = None
 
 
-    def add_cardinals(self, locationInstance):
+    def add_cardinals(self, locationInstance) -> dict:
+
         cardinals_dict = dict()
 
         for card in cardinals_list:
@@ -162,7 +166,7 @@ class placeRegistry:
                 self.currentPlace = loc
                 if not self.current:
                     print("env_data/ No current_cardinal, defaulting to 'north'.")
-                    current_card = "north"
+                    current_card = config.starting_facing_direction
                 else:
                     current_card = self.current.name
                 new_card = self.cardinals[self.currentPlace][current_card]
@@ -195,6 +199,11 @@ class placeRegistry:
 
     def place_by_name(self, loc_name):
         logging_fn()
+
+        if loc_name == "inventory":
+            loc_name = config.inv_loc_str
+            loc_name = loc_name.replace(f"{config.key_dir} ", "")
+            print(f"loc_name: {loc_name}, type: {type(loc_name)}")
         #print(f"Loc name in place_by_name: {loc_name}")
         loc_inst = self.by_name.get(loc_name.lower())
         if not loc_inst:

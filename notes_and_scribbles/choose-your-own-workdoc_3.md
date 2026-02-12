@@ -1008,3 +1008,93 @@ Nothing found here by the name `newspaper`.
 because I typed 'red newspaper'.
 
 Those are all expected. Good.
+
+
+Okay.
+5.01pm
+So, task.
+
+Going to implement inv_place into all the scripts, starting with itemRegistry.
+Also - itemReg sometimes uses 'locRegistry', and sometimes uses 'loc', and sometimes uses 'loc' for other things. So I need to change that first.
+
+place = placeinstance
+loc = locRegistry imported as loc
+
+
+6.04pm
+Think that's mostly done tbh.
+
+Running into an odd issue while testing though:
+
+
+open jar in inventory
+omit_next:  0
+omit_next after first check compound words: 0
+#   Failed parser: 0
+> interesting failure.
+
+open jar
+omit_next:  0
+omit_next after first check compound words: 0
+{'verb': {'canonical': 'open', 'text': 'open'}}
+{'noun': {'canonical': 'glass jar', 'text': 'jar'}}
+reformed_dict {0: {'verb': {'canonical': 'open', 'text': 'open'}}, 1: {'noun': {'canonical': 'glass jar', 'text': 'jar'}}}, sequence ('verb', 'noun')
+After input_parser
+{0: {'verb': {'instance': <verbInstance open (27299f76-f160-43d4-b057-a6d6f3746a48)>, 'str_name': 'open', 'text': 'open'}}, 1: {'noun': {'instance': None, 'str_name': 'glass jar', 'text': 'jar'}}}
+About to return dict_from_parser, error
+error: None // inst_dict: {0: {'verb': {'instance': <verbInstance open (27299f76-f160-43d4-b057-a6d6f3746a48)>, 'str_name': 'open', 'text': 'open'}}, 1: {'noun': {'instance': <ItemInstance glass jar (81575b44-8e45-4[[  open glass jar  ]]>, 'str_name': 'glass jar', 'text': 'jar'}}}
+
+# You can't open the glass jar
+>  this one is accurate.
+
+open jar in graveyard
+omit_next:  0
+# [ Couldn't find anything to do with the input `open jar in graveyard`, sorry. <after get_sequences_from_tokens>]
+After input_parser
+None
+About to return dict_from_parser, error
+error: No dict_from_parser // inst_dict: None
+Error: No dict_from_parser
+
+So open jar in graveyard and open jar in inventory both fail in different ways, which is interesting.
+
+
+Reminder - currently location is added to the sequence but not the dict, so it just fails slightly later. May need to rethink this fix method but it might work.
+
+I nee to be able to reference the inventory, as in 'remove x from inventory'. Currently that just fails, because it only references inventory in the sense of 'type inventory and it shows you the inventory'. But I'm trying to make 'inventory' more... sensible.
+
+Might actually remove 'inventory' from the meta setup and just divert it from location. Might mess with the formatting too much tho. Idk.
+
+
+Think I fixed the above. Seems to be fixed, will test more tomorrow.
+
+Also, have added a little more depth to the verb_action functions.
+
+Added 'find x'. find() will look for a given noun in the current area and report back if that item is found there. If a location  is given, will look there. 'go' also diverts to 'find'; previously, 'go to noun' only worked if the noun was a transition obj. Now, if you say 'go to gate', it tells you `There's a gate at north graveyard, is that what you were looking for?`, and if  that's where you currently are, describes the gate to you. If it's at another location, it tells you that.
+
+Or at least it should. This is odd:
+
+"find tv set":
+#   CANONICAL AFTER PERFECT CHECKS: TV set
+#   seq: [] // sequences: [[]]
+#   seq: ['verb'] // sequences: [['verb']]
+#   seq: ['verb', 'noun'] // sequences: [['verb', 'noun']]
+#   VERB FORMATS: [('verb', 'noun'), ('verb', 'noun', 'direction', 'location'), ('verb', 'location')]
+#   VERB FORMATS: [('verb', 'noun', 'direction'), ('verb', 'noun', 'sem', 'noun'), ('verb', 'noun')]
+#   SEQUENCES: [['verb', 'noun', 'sem'], ['verb', 'noun', 'verb']]
+#   VERB FORMATS: [('verb', 'noun'), ('verb', 'noun', 'direction', 'location'), ('verb', 'location')]
+#   [ Couldn't find anything to do with the input `find tv set`, sorry. <after get_sequences_from_tokens>]
+
+
+Oooh. 'find tv set' breaks things because 'set' is also a verb and a semantic, so  it comes out weird.
+
+Also,
+find tv set
+omit_next:  -1
+omit_next after first check compound words: -1
+omit_next after second check compound words: -1
+how did omit_next get to -1?
+
+Maybe this is why I had to set to only work when it was at least 1. Need to figure out why it does that though.
+
+Tomorrow. Too tired today.

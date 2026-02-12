@@ -11,7 +11,7 @@ test_mode = True # True == skip player name, intro
 
 white_bg = True
 print_items_in_area = False#True
-print_input_str = False#True
+print_input_str = True
 
 map_file = r"ref_files\map.png"
 
@@ -21,15 +21,16 @@ loc_data = r"ref_files\loc_data.json"
 event_data = r"ref_files\event_defs.json"
 
 
-starting_location_str = r"everything"
+starting_location_str = "graveyard"#r"everything"
 starting_facing_direction = "north"
 
 # verbregistry/verb_membrane/parsing
-show_reciever = False#True#False
+show_reciever = True#False
 
 add_new_words_if_missing = False
 
 require_firesource = True
 
-no_place_str = "north no_place"
-inv_loc_str = "north inventory_place"
+key_dir = "north"
+no_place_str = f"{key_dir} no_place"
+inv_loc_str = f"{key_dir} inventory_place"

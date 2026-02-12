@@ -89,7 +89,7 @@ def is_loc_current_loc(location=None, cardinal=None):
             return 1, current_location, current_cardinal
     return 0, current_location, current_cardinal # 0 if not matching. Always returns current.
 
-def get_transition_noun(noun, format_tuple, input_dict):
+def get_transition_noun(noun, format_tuple, input_dict, take_first=False):
     logging_fn()
     local_items_list = registry.get_item_by_location(loc.current)
     print(f"local items in get_transition_noun: {local_items_list}")
@@ -117,6 +117,8 @@ def get_transition_noun(noun, format_tuple, input_dict):
             if hasattr(location, "entry_item"):
                 loc_item = location.entry_item
                 print(f"HAs loc item: {loc_item}")
+                if take_first:
+                    return loc_item
                 if isinstance(loc_item, str):
                     for loc_item in local_items_list:
                         if loc_item.name == loc_item:
@@ -356,11 +358,25 @@ def get_dir_or_sem_if_singular(input_dict:dict) -> str:
     print(f"get_dir_or_sem failed to find the dir/sem instance: {input_dict}")
 
 
-def verb_requires_noun(input_dict, verb_name):
+def get_meta(input_dict:dict) -> str:
+    logging_fn()
+    # x_noun: 1 == 1st noun, 2 == "2nd noun", etc. Otherwise will always return the first found.
+
+    for data in input_dict.values():
+        for kind, entry in data.items():
+            if "meta" in kind:
+                return entry["text"]
+
+def verb_requires_noun(input_dict, verb_name, local=False):
 
     noun = get_noun(input_dict)
     if not noun:
         print(f"What do you want to {verb_name}?")
+    if local:
+        if noun:
+            if noun.location == loc.current or noun.location == loc.inv_place:
+                return noun
+        print(f"There's no {assign_colour(noun)} around here to {verb_name}.")
         return
     return noun
 
@@ -629,6 +645,10 @@ def look(format_tuple=None, input_dict=None):
         look_around()
         return
 
+    if get_meta(input_dict) == "inventory":
+        meta(format_tuple, input_dict)
+        return
+
     verb_entry, noun_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
     noun = get_noun(input_dict)
 
@@ -649,7 +669,7 @@ def look(format_tuple=None, input_dict=None):
             #if hasattr(noun, "description_detailed"):
             #    read(format_tuple, input_dict)
             #else:
-            item_interactions.look_at_item(noun)
+            item_interactions.look_at_item(noun, noun_entry)
         elif location_entry:
             from misc_utilities import look_around
             look_around()
@@ -661,9 +681,14 @@ def look(format_tuple=None, input_dict=None):
             #if hasattr(noun, "description_detailed"):
             #    read(format_tuple, input_dict)
             #else:
-            item_interactions.look_at_item(noun)
-        elif format_tuple[2] == "cardinal" and format_tuple[1] == "direction":
+            item_interactions.look_at_item(noun, noun_entry)
+            return
+        if format_tuple[2] == "cardinal" and format_tuple[1] == "direction":
             turn_cardinal(inst_from_idx(input_dict[2], "cardinal"), turning = False)
+            return
+        if format_tuple[1] == "sem" and semantic_entry["text"] == "for":
+            find(format_tuple, input_dict)
+            return
 
     elif len(format_tuple) == 4:
         if cardinal_entry and location_entry:
@@ -679,47 +704,93 @@ def look(format_tuple=None, input_dict=None):
     else:
         print(f"Cannot process {input_dict} in def look(): \n{format_tuple} \n{input_dict}")
 
+def find(format_tuple, input_dict):
+    """
+    look around the current location's cardinals to find the object of interest. Might cut this later.
+    """
+    noun = get_noun(input_dict)
+    location = get_location(input_dict)
+    if not noun:
+        noun = get_transition_noun(None, format_tuple, input_dict, take_first=True)
+        if not noun:
+            print("I can only look for nouns at the moment.")
+            return
+
+    if not location:
+        location = loc.current.place
+    if not isinstance(location, placeInstance):
+        if isinstance(location, cardinalInstance):
+            location = location.place
+
+    local_items = set()
+    items_at = {}
+    for card in location.cardinals:
+        cardinal_inst = loc.by_cardinal_str(card, location)
+        items = registry.get_item_by_location(cardinal_inst)
+        if items:
+            local_items = local_items | set(items)
+            items_at[cardinal_inst] = set(items)
+
+    if local_items:
+        if noun in local_items:
+            for card in items_at:
+                if noun in items_at[card]:
+                    print(f"There's a {assign_colour(noun)} at {assign_colour(card.place_name, "loc")}, is that what you were looking for?")
+                    return card
+            print(f"Somehow {noun.name} wasn't found in the location dict, but is in local_items. Something broke.")
+    print("end of def find(); something must have gone wrong.")
+
 
 def read(format_tuple, input_dict):
     logging_fn()
     verb_inst = get_verb(input_dict)
     noun_inst = get_noun(input_dict)
 
-    if hasattr(noun_inst, "description_detailed"):
-        if noun_inst.description_detailed.get("is_tested"):
-            from rolling import roll_risk
-            outcome = roll_risk()
-            print(f"Outcome: {outcome}")
-            if outcome > 1:
-                test = noun_inst.description_detailed.get("crit")
-                if not test:
-                    test = noun_inst.description_detailed.get(1)
-                    #NOTE: have not accounted for various degrees of success here. Need to.
-                print(assign_colour(test, "b_yellow"))
+    if hasattr(noun_inst, "location") and noun_inst.location == (loc.current or loc.inv_place):
+
+        if hasattr(noun_inst, "description_detailed"):
+            if noun_inst.description_detailed.get("is_tested"):
+                from rolling import roll_risk
+                outcome = roll_risk()
+                print(f"Outcome: {outcome}")
+                if outcome > 1:
+                    test = noun_inst.description_detailed.get("crit")
+                    if not test:
+                        test = noun_inst.description_detailed.get(1)
+                        #NOTE: have not accounted for various degrees of success here. Need to.
+                    print(assign_colour(test, "b_yellow"))
+                else:
+                    test = noun_inst.description_detailed.get("failure")
+                    if not test:
+                        test = noun_inst.description_detailed.get(4)
+                    print(assign_colour(test, "b_yellow"))
             else:
-                test = noun_inst.description_detailed.get("failure")
-                if not test:
-                    test = noun_inst.description_detailed.get(4)
-                print(assign_colour(test, "b_yellow"))
-        else:
-            to_print = noun_inst.description_detailed.get("print_str")
-            print(assign_colour(to_print, "b_yellow"))
+                to_print = noun_inst.description_detailed.get("print_str")
+                print(assign_colour(to_print, "b_yellow"))
 
-        if hasattr(noun_inst, "is_map"):
-            from interactions.item_interactions import show_map
-            show_map(noun_inst)
+            if hasattr(noun_inst, "is_map"):
+                from interactions.item_interactions import show_map
+                show_map(noun_inst)
 
-        if hasattr(noun_inst, "can_pick_up") and hasattr(noun_inst, "location") and noun_inst.location != None:
-            take(format_tuple, input_dict)
-        else:
+            #if hasattr(noun_inst, "can_pick_up") and hasattr(noun_inst, "location") and noun_inst.location != None:
+            #    take(format_tuple, input_dict)
+            #else:
             if hasattr(noun_inst, "event"):
                 from eventRegistry import events
                 events.is_event_trigger(noun_inst, noun_inst.location, "item_is_read") # just check, in case it's a street sign or something that you can't pick up but might still be a trigger. Unlikely but silly to exclude it arbitrarily.
 
-    else:
-        look(format_tuple, input_dict)
-        #print(f"It seems like you can't read the {assign_colour(noun_inst)}") # just look at it instead of saying this.
-        return
+        else:
+            look(format_tuple, input_dict)
+            #print(f"It seems like you can't read the {assign_colour(noun_inst)}") # just look at it instead of saying this.
+            return
+
+    for idx in input_dict.values():
+        for kind, entry in idx.items():
+            if kind == "noun":
+                noun_entry = entry
+                if noun_entry:
+                    noun = noun_entry.get("text")
+    print(f"You can't see a {assign_colour(noun)} to read.")
 
 
 def eat(format_tuple, input_dict):
@@ -818,7 +889,7 @@ def barricade(format_tuple, input_dict):
 def break_item(format_tuple, input_dict):
     logging_fn()
 
-    noun = verb_requires_noun(input_dict, "break")
+    noun = verb_requires_noun(input_dict, "break", local=True)
     if not noun:
         return
 
@@ -1074,12 +1145,27 @@ def open_close(format_tuple, input_dict):
 def simple_open_close(format_tuple, input_dict):
     logging_fn()
 
+    if get_meta(input_dict) == "inventory":
+        meta(format_tuple, input_dict)
+
     verb_inst = get_verb(input_dict)
     noun_inst = get_noun(input_dict)
 
     if len(format_tuple) > 3:
-        use_item_w_item(format_tuple, input_dict)
-        return
+        if ('verb', 'noun', 'direction', 'location') == format_tuple:
+            location = get_location(input_dict)
+            if (location == loc.inv_place or loc.inv_place.place):
+                print("The location is actually the inventory.")
+                if noun_inst.location != loc.inv_place:
+                    print(f"The {assign_colour(noun_inst)} isn't in your inventory...")
+                    return
+                print("The item is in your inventory, continue.")
+            elif location != loc.current and location != loc.current.place:
+                print(f"You aren't at {assign_colour(location, colour="loc")}, so how can you open {assign_colour(noun_inst)}?")
+                return
+        else:
+            use_item_w_item(format_tuple, input_dict)
+            return
 
     interactable, val, meaning = can_interact(noun_inst) # succeeds if accessible
     if not interactable:
@@ -1173,7 +1259,7 @@ def combine(format_tuple, input_dict):
 def separate(format_tuple, input_dict):
     logging_fn()
 
-    noun = verb_requires_noun(input_dict, "separate")
+    noun = verb_requires_noun(input_dict, "separate", local=True)
     if not noun:
         return
     noun2 = get_noun(input_dict, 2)
@@ -1273,7 +1359,7 @@ def turn(format_tuple, input_dict):
 def take(format_tuple, input_dict):
     from eventRegistry import events
     logging_fn()
-    noun = verb_requires_noun(input_dict, "break")
+    noun = verb_requires_noun(input_dict, "take", local=True)
     added_to_inv = False
 
     def can_take(noun_inst):
@@ -1298,8 +1384,8 @@ def take(format_tuple, input_dict):
                     print(f"{noun_inst} is already in your inventory, but {local_item_names[noun_inst.name]} is local.")
             else:
                 items_by_name = registry.by_name.get(noun_inst.name)
-                #if items_by_name:
-                    #print(f"Items matching {noun_inst.name}: \n{items_by_name}")
+                if items_by_name:
+                    print(f"Items matching {noun_inst.name}: \n{items_by_name}\nThis won't do anything yet, but later it should.")
                     #for instance in items_by_name:
                         #print(f"Instance vars: {instance}\n{vars(instance)}")
                         #TODO: Do something else here. Currently this is failing due to other issues, but this still needs to be resolved; if I already have x in my inventory, check to see if x.2 is in the local area before giving up.
@@ -1310,15 +1396,15 @@ def take(format_tuple, input_dict):
             if noun_inst.can_pick_up:
                 if hasattr(noun_inst, "can_pick_up") and noun_inst.can_pick_up == True:
                     if reason_val in (3, 4):
-                        registry.move_from_container_to_inv(noun_inst, inventory=game.inventory, parent=container)
+                        registry.move_from_container_to_inv(noun_inst, parent=container)
                         if noun_inst in game.inventory:
                             added_to_inv = True
                             return 0, added_to_inv
                     elif reason_val == 0:
                         #print("About to try to pick up")
-                        registry.pick_up(noun_inst, inventory_list=game.inventory) ## the can_take function shouldn't be doing this part.
+                        registry.pick_up(noun_inst, location = loc.inv_place) ## the can_take function shouldn't be doing this part.
                         #print("Did pick_up")
-                        if noun_inst in game.inventory:
+                        if noun_inst in loc.inv_place.items:
                             added_to_inv = True
                             return 0, added_to_inv
                 else:
@@ -1368,7 +1454,7 @@ def take(format_tuple, input_dict):
                     print(f"{assign_colour(noun)} is already in your inventory.")
             else:
                 if container == container_inst and reason_val in (3, 4):
-                    registry.move_from_container_to_inv(noun, inventory=game.inventory, parent=container)
+                    registry.move_from_container_to_inv(noun, parent=container)
                     if noun in game.inventory:
                         added_to_inv = True
                     else:
@@ -1391,27 +1477,27 @@ def put(format_tuple, input_dict, location=None):
     logging_fn()
     action_word = "You put"
 
-    noun_1 = get_noun(input_dict)
-    noun_2 = get_noun(input_dict, 2)
+    noun = verb_requires_noun(input_dict, "place", local=True)
+    noun2 = get_noun(input_dict, 2)
     sem_or_dir = get_dir_or_sem_if_singular(input_dict)
 
-    if noun_2:
+    if noun2:
 
-        if hasattr(noun_2, "contained_in") and noun_1 == noun_2.contained_in:
-                print(f"Cannot put {assign_colour(noun_1)} in {assign_colour(noun_2)}, as {assign_colour(noun_2)} is already inside {assign_colour(noun_1)}. You'll need to remove it first.")
+        if hasattr(noun2, "contained_in") and noun == noun2.contained_in:
+                print(f"Cannot put {assign_colour(noun)} in {assign_colour(noun2)}, as {assign_colour(noun2)} is already inside {assign_colour(noun)}. You'll need to remove it first.")
                 return
 
-        if noun_1 == noun_2:
-            print(f"You cannot put the {assign_colour(noun_1)} in itself.")
+        if noun == noun2:
+            print(f"You cannot put the {assign_colour(noun)} in itself.")
             return
         if sem_or_dir in ("in", "to", "into", "inside") and len(format_tuple) == 4:
-            if hasattr(noun_1, "contained_in") and noun_2 == noun_1.contained_in:
-                print(f"{noun_2.name} is already in {noun_1}")
+            if hasattr(noun, "contained_in") and noun2 == noun.contained_in:
+                print(f"{noun2.name} is already in {noun}")
                 return
             registry.move_item(inst=get_noun(input_dict), new_container=(get_noun(input_dict, 2)))
-            if noun_1 in game.inventory:
+            if noun in game.inventory:
                 game.inventory.remove(get_noun(input_dict))
-                if noun_1 in game.inventory:
+                if noun in game.inventory:
                     exit(f"{assign_colour(get_noun(input_dict))} still in inventory, something went wrong.")
             else:
                 from misc_utilities import smart_capitalise
@@ -1421,12 +1507,12 @@ def put(format_tuple, input_dict, location=None):
 
     else:
         if sem_or_dir:
-            if not noun_2:
+            if not noun2:
                 move_a_to_b(a=a, b=location, action=action_word, current_loc=location)
                 return
 
         if sem_or_dir in down_words:
-            move_a_to_b(a=noun_1, b=location, action=action_word, current_loc=location)
+            move_a_to_b(a=noun, b=location, action=action_word, current_loc=location)
             return
 
         if len(format_tuple) == 5:
@@ -1435,12 +1521,12 @@ def put(format_tuple, input_dict, location=None):
                 move_a_to_b(a=a, b=b, action=action_word, direction=sem_or_dir, current_loc=location)
                 return
 
-    print(f"You can't put {assign_colour(noun_1)} on {assign_colour(noun_2)}; I just haven't programmed it yet.")
+    print(f"You can't put {assign_colour(noun)} on {assign_colour(noun2)}; I just haven't programmed it yet.")
 
 def throw(format_tuple, input_dict):
     logging_fn()
 
-    noun = get_noun(input_dict)
+    noun = verb_requires_noun(input_dict, "throw", local=True)
 
     if not noun:
         print("What do you want to throw?")
@@ -1522,30 +1608,30 @@ def drop(format_tuple, input_dict):
     #print("This is the drop function.")
 
     _, location = get_current_loc() # don't know if separating the tuple is making life harder for myself here...
-    noun_1 = get_noun(input_dict)
+    noun = verb_requires_noun(input_dict, "drop", local=True)
 
     if len(input_dict) == 3:
         direction = get_dir_or_sem_if_singular(input_dict)
-        if noun_1 and direction and (direction == "here" or direction in down_words):
+        if noun and direction and (direction == "here" or direction in down_words):
             input_dict.pop(2, None)
 
     #print(f"FORMAT: {format_tuple}\n INPUT DICT: \n{input_dict}\n")
     if len(input_dict) == 2:
         #print(f"location: {location}")
         if input_dict[1].get("noun"):
-            _, container, reason_val, meaning = registry.check_item_is_accessible(noun_1)
+            _, container, reason_val, meaning = registry.check_item_is_accessible(noun)
 
             if reason_val == 5:
-                registry.drop(noun_1, game.inventory)
-                print(f"Dropped the {assign_colour(noun_1)} onto the ground here at the {assign_colour(loc.current, card_type='ern_name')}")
+                registry.drop(noun, game.inventory)
+                print(f"Dropped the {assign_colour(noun)} onto the ground here at the {assign_colour(loc.current, card_type='ern_name')}")
 
 
             elif reason_val == 3:
-                print(f"You can't drop the {assign_colour(noun_1)}; you'd need to get it out of the {assign_colour(container)} first.")
+                print(f"You can't drop the {assign_colour(noun)}; you'd need to get it out of the {assign_colour(container)} first.")
                 return
 
             else:
-                print(f"You can't drop the {assign_colour(noun_1)}; you aren't holding it.")
+                print(f"You can't drop the {assign_colour(noun)}; you aren't holding it.")
                 return
 
     elif len(input_dict) == 4:
@@ -1555,27 +1641,27 @@ def drop(format_tuple, input_dict):
         if dir_or_sem in ["in", "into", "on", "onto", "at"]:
             if get_location(input_dict):
                 if get_location(input_dict) != loc.current:
-                    print(f"You can't drop the {assign_colour(noun_1)} at {assign_colour(get_location(input_dict))} because you aren't there.")
+                    print(f"You can't drop the {assign_colour(noun)} at {assign_colour(get_location(input_dict))} because you aren't there.")
                     return
 
-            _, container, reason_val, meaning = registry.check_item_is_accessible(noun_1)
+            _, container, reason_val, meaning = registry.check_item_is_accessible(noun)
             print(f"meaning: {meaning}")
             if reason_val in (0, 3, 4, 5):
                 if get_noun(input_dict, 2):
-                    registry.move_item(noun_1, new_container=get_noun(input_dict, 2))
+                    registry.move_item(noun, new_container=get_noun(input_dict, 2))
                     #move_a_to_b(a=item_to_place, b=container_or_location, action=action_word, direction=direction)
                     item_interactions.add_item_to_loc()
 
             else:
-                print(f"Couldn't move {noun_1.name} because {meaning}")
+                print(f"Couldn't move {noun.name} because {meaning}")
         else:
             print(f"Cannot process {input_dict} in def drop(); 4 long but direction str is not suitable.")
             return
 
-    if noun_1 not in game.inventory:
-        if hasattr(noun_1, "event"):
+    if noun not in game.inventory:
+        if hasattr(noun, "event"):
             from eventRegistry import events
-            events.is_event_trigger(noun_1, noun_1.location, reason = "item_not_in_inv")
+            events.is_event_trigger(noun, noun.location, reason = "item_not_in_inv")
             return
 
     print(f"Cannot process {input_dict} in def drop() End of function, unresolved.")
@@ -1585,7 +1671,7 @@ def set_action(format_tuple, input_dict):
     logging_fn()
     verb = get_verb(input_dict)
     if verb.name == "set":
-        noun = get_noun(input_dict)
+        noun = verb_requires_noun(input_dict, "set", local=True)
         if noun:
             if len(format_tuple) == 2:
                 if "watch" == noun.name or "watch" in noun.name:
@@ -1611,7 +1697,7 @@ def use_item_w_item(format_tuple, input_dict):
     dir_or_sem = get_dir_or_sem_if_singular(input_dict)
 
     verb = get_verb(input_dict)
-    actor_noun = get_noun(input_dict)
+    actor_noun = verb_requires_noun(input_dict, verb.name, local=True)
     target_noun = get_noun(input_dict, 2)
     if not target_noun:
         print(f"No second noun: {format_tuple} should not be in use_item_w_item function. Check routing.")
@@ -1644,7 +1730,7 @@ def use_item(format_tuple, input_dict):
         use_item_w_item(format_tuple, input_dict)
         return
 
-    noun = get_noun(input_dict)
+    noun = verb_requires_noun(input_dict, "use", local=True)
     if "map" in noun.name:
         from interactions.item_interactions import show_map
         show_map(noun)
@@ -1665,13 +1751,13 @@ def enter(format_tuple, input_dict, noun=None):
             noun = get_noun(input_dict, 2)
         else:
             noun = get_noun(input_dict)
-    print(f"NOUN: {noun}")
+    #print(f"NOUN: {noun}")
     #if hasattr(noun, "is_loc_exterior"):
     #    print(f"{noun} is a location exterior object, this will work later.")
     if not noun or hasattr(noun, "is_loc_exterior") or hasattr(noun, "is_transition_obj"):
         noun = get_transition_noun(noun, format_tuple, input_dict)
 
-    print(f"NOUN after get_transition_noun: {noun}")
+    #print(f"NOUN after get_transition_noun: {noun}")
     if hasattr(noun, "enter_location"):
         #print(f"noun.enter_location: {noun.enter_location}")
         inside_location = noun.enter_location ## Noun must have both enter loc and exit_to_loc if it has either.
@@ -1707,7 +1793,14 @@ def enter(format_tuple, input_dict, noun=None):
                 print("You can't go through the door unless you're nearby to it.")
                 return 1
     else:
-
+        target_loc = find(format_tuple, input_dict)
+        if target_loc:
+            if target_loc == loc.current:
+                look(format_tuple, input_dict)
+                return
+            else:
+                print("You'll have to go there first.")
+                return
         print(f"This {noun} doesn't lead anywhere")
 
 
@@ -1724,10 +1817,13 @@ def router(viable_format, inst_dict, input_str=None):
             input_strings.append(data["text"])
     MOVE_UP = "\033[A"
 
-    from config import print_input_str # currently input_str is never sent through so this never applies.
+    from config import print_input_str
 
     if print_input_str:
-        print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {" ".join(input_strings)}  ]]\033[0m\n')
+        if input_str:
+            print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {input_str}  ]]\033[0m\n')
+        else:
+            print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {" ".join(input_strings)}  ]]\033[0m\n')
 
     else: #print processed str
         print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {" ".join(quick_list)}  ]]\033[0m\n')
@@ -1748,6 +1844,7 @@ def router(viable_format, inst_dict, input_str=None):
         "leave": go,
 
         "look": look,
+        "find": find,
 
         "read": read,
         "eat": eat,
@@ -1780,19 +1877,24 @@ def router(viable_format, inst_dict, input_str=None):
         "time": wait
     }
 
-    if isinstance(verb_inst, str):
-        func = function_dict["meta"]
-    elif len(viable_format) in (1, 2) and list(inst_dict[0].keys())[0] in ("location", "direction", "cardinal"):
-        func = function_dict["go"]
-    else:
-        func = function_dict[verb_inst.name]
+    can_be_not_local = ["find", "go", "move", "enter"]
 
-    if func != function_dict["go"] and get_location(inst_dict):
-        mentioned_loc = get_location(inst_dict)
-        if mentioned_loc != loc.current and mentioned_loc != loc.current.place:
-            print(f"You want to {verb_inst.name} at {assign_colour(mentioned_loc)} but you aren't there...")
-            return
+    try:
+        if isinstance(verb_inst, str):
+            func = function_dict["meta"]
+        elif len(viable_format) in (1, 2) and list(inst_dict[0].keys())[0] in ("location", "direction", "cardinal"):
+            func = function_dict["go"]
+        else:
+            func = function_dict[verb_inst.name]
 
-    response = func(format_tuple = viable_format, input_dict = inst_dict)
+        if func != function_dict["go"] and get_location(inst_dict):
+            mentioned_loc = get_location(inst_dict)
+            if mentioned_loc != loc.current and mentioned_loc != loc.current.place and mentioned_loc != loc.inv_place.place:
+                if func.__name__ not in can_be_not_local:
+                    print(f"You want to {verb_inst.name} at {assign_colour(mentioned_loc)} but you aren't there...")
+                    return
 
-    return response
+        response = func(format_tuple = viable_format, input_dict = inst_dict)
+        return response
+    except Exception as e:
+        print(f"Failed to find the correct function to use for {verb_inst}: {e}")

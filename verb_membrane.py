@@ -224,9 +224,10 @@ class Membrane:
         from itemRegistry import registry
         from env_data import locRegistry
 
-        inventory = game.inventory
+        #inventory = game.inventory
         #print(f"inventory: {inventory}")
         #print(f"locRegistry.current: {locRegistry.current}")
+        inventory = registry.get_item_by_location(locRegistry.inv_place)
         current_loc_items = registry.get_item_by_location(locRegistry.current)
         #print(f"current_loc_items: {current_loc_items}")
         local_named = set()
@@ -306,11 +307,19 @@ def run_membrane(input_str=None):
         try:
             from verbRegistry import Parser
             #print("Before input_parser")
-            viable_format, dict_from_parser = Parser.input_parser(Parser, input_str)
-            print(f"After input_parser\n{dict_from_parser}")
-            if not viable_format:
-                return None
-            inst_dict, error = get_noun_instances(dict_from_parser, viable_format)
+            try:
+                viable_format, dict_from_parser = Parser.input_parser(Parser, input_str)
+                print(f"After input_parser\n{dict_from_parser}")
+                if not viable_format:
+                    return None
+            except Exception as e:
+                print(f"Failed to run input_parser: {e}")
+
+            try:
+                inst_dict, error = get_noun_instances(dict_from_parser, viable_format)
+            except Exception as e:
+                print(f"Failed get_noun_instances: {e}")
+
             print(f"error: {error} // inst_dict: {inst_dict}")
             if error:
                 if isinstance(error, str):
@@ -336,6 +345,7 @@ def run_membrane(input_str=None):
 
                 print(f"Nothing found here by the name \033[1;33m`{text}`\033[0m.")
                 return None
+
             if not inst_dict:
                 MOVE_UP = "\033[A"
                 print(f"{MOVE_UP}\033[1;31m[ Couldn't find anything to do with the input `{input_str}`, sorry. ]\033[0m")
@@ -359,17 +369,19 @@ def run_membrane(input_str=None):
             #    json.dump(input_outcome_dict, file, indent=2)
             #print(f"input_outcome_dict: ")
             #pprint.pprint(input_outcome_dict)
+            try:
+                if inst_dict:
+                    from verb_actions import router
+                    response = router(viable_format, inst_dict, input_str)
+                    if to_json:
+                        test = input("Did it do what you wanted? Make notes here.\n")
+                        if test:
+                            inst_dict.update({f"OUTCOME": test})
+                            input_outcome_dict[(str(i) + " " + input_str)] = inst_dict
 
-            if inst_dict:
-                from verb_actions import router
-                response = router(viable_format, inst_dict)
-                if to_json:
-                    test = input("Did it do what you wanted? Make notes here.\n")
-                    if test:
-                        inst_dict.update({f"OUTCOME": test})
-                        input_outcome_dict[(str(i) + " " + input_str)] = inst_dict
-
-                return response
+                    return response
+            except Exception as e:
+                print(f"Failed to send to process in router correctly: {e}")
         except Exception as e:
             print(f"Failed parser: {e}")
 
