@@ -1419,8 +1419,9 @@ def take(format_tuple, input_dict):
             if noun_inst.can_pick_up:
                 if hasattr(noun_inst, "can_pick_up") and noun_inst.can_pick_up == True:
                     if reason_val in (3, 4):
+
                         registry.move_from_container_to_inv(noun_inst, parent=container)
-                        if noun_inst in game.inventory:
+                        if noun_inst in loc.inv_place.items:
                             added_to_inv = True
                             return 0, added_to_inv
                     elif reason_val == 0:

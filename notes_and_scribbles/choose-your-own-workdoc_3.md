@@ -1357,3 +1357,20 @@ How do I separate them?
 Maybe if I try to pick up a cluster, it generates a new one (if I'm not already holding one), and subtracts one from the original cluster, unless the multiple_instances count == 1 in which case it just picks it up and adds it to however many I'm holding.
 
 Now sure how to go about picking up/dropping all at once, maybe I add 'all' as a semantic and deal with it in verb_actions. Will do that later though.
+
+10.42am
+
+Basic intent for when a cluster item is picked up:
+
+ if hasattr(inst, "has_multiple_instances") and inst.has_multiple_instances > 1:
+#    generate a new item (new_inst) with multiple_instances = inst.multiple_instances -1
+#    reduce inst.multiple_instances by 1
+#    add new_inst to old_loc/old_container
+#    update descriptions for inst and new_inst.
+#    Add both to updated set so that descriptions/nicenames are updated immediately.
+so: The original is the thing picked up (important so that the check to make sure it arrived in the inventory still passes). The new one is left behind.
+
+Going to do this in a separate function and just refer clusters there on pickup/drop.
+On drop, it's going to behave... differently. If you have a cluster of glass pieces in your inv, and you say 'drop glass', are you intending to drop all or one?
+
+Def going to have to add 'drop all glass' or 'drop single glass' (noone would use that wording though). This is the same isue I have for all plural items though. (I think) currently it just drops one at a time.

@@ -713,6 +713,9 @@ class itemRegistry:
         logging_fn()
         from misc_utilities import assign_colour
 
+        updated = set()
+        was_in_container = False # using this as a check to see if the cluster should use old_loc or parent.
+
         ## REMOVE FROM ORIGINAL LOCATION ##
         old_loc = inst.location
         if old_loc and old_loc != None:
@@ -744,6 +747,7 @@ class itemRegistry:
                 else:
                     parent = inst.contained_in
                 if parent:
+                    was_in_container = True
                     #print(f"parent.children: {parent.children}")
                     parent.children.remove(inst)
                     #print(f"parent.children: {parent.children} (should be removed now)")
@@ -751,19 +755,28 @@ class itemRegistry:
                     return_text.append((f"Item `[{inst}]` removed from old container `[{parent}]`", inst, parent))
                     if not no_print:
                         print(f"Removed {assign_colour(inst)} from {assign_colour(parent)}.")
-                    self.init_descriptions(parent)
+                    updated.add(parent)
 
             if new_container:
                 if not hasattr(new_container, "children") or new_container.children == None:
                     new_container.children = set()
                 new_container.children.add(inst) # Added this, it wasn't adding items as children to containers.
                 inst.contained_in = new_container
-                self.init_descriptions(new_container)
+                updated.add(new_container)
 
                 return_text.append((f"Added [{inst}] to new container [{new_container}]", inst, new_container))
                 print(f"Added {assign_colour(inst)} to {assign_colour(new_container)}.")
 
-
+            if "is_cluster" in inst.item_type:
+                if hasattr(inst, "has_multiple_instances") and inst.has_multiple_instances > 1:
+                    #generate a new item (new_inst) with multiple_instances = inst.multiple_instances -1
+                    # add new_inst to old_loc/old_container
+                    # reduce inst.multiple_instances by 1
+                    # update descriptions for inst and new_inst.
+                    ## so: The original is the thing picked up, important so that the check to make sure it arrived in the inventory still passes. The new one is left behind.
+                    pass
+            for item in updated:
+                self.init_descriptions(item)
             if return_text:
                 return return_text
 
