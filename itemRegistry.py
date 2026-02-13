@@ -948,20 +948,29 @@ class itemRegistry:
                 elif hasattr(inst, "is_open") and not getattr(inst, "is_open") and inst.descriptions.get("if_closed"):
                     description = inst.descriptions["if_closed"]
 
-                if inst.descriptions.get("if_singular"):
+                if inst.descriptions.get("if_singular") and inst.has_multiple_instances == 1:
                     #print(f"IF SINGULAR: {inst.descriptions["if_singular"]}")
-                    if inst.has_multiple_instances == 1:
-                        print("singular")
+                        #print("if_singular desc in init_descriptions")
                         description = inst.descriptions["if_singular"]
-                if inst.descriptions.get("if_plural"):
+                if inst.descriptions.get("if_plural") and inst.has_multiple_instances > 1:
                     #print(f"IF plural: {inst.descriptions["if_plural"]}")
-                    if inst.has_multiple_instances > 1:
-                        #print("Plural")
+                        #print("if_plural desc in init_descriptions")
                         description = inst.descriptions["if_plural"]
 
                 elif inst.descriptions.get("generic"):
                     description = inst.descriptions["generic"]
                     inst.description = description
+
+        ## Update nicenames ##
+        if inst.nicenames.get("if_singular") and inst.has_multiple_instances == 1:
+            #print(f"IF SINGULAR: {inst.descriptions["if_singular"]}")
+                #print("if_singular nicename in init_descriptions")
+                inst.nicename = inst.nicenames["if_singular"]
+        if inst.nicenames.get("if_plural") and inst.has_multiple_instances > 1:
+            #print(f"IF plural: {inst.descriptions["if_plural"]}")
+                #print("if_plural nicename in init_descriptions")
+                inst.nicename = inst.nicenames["if_plural"]
+
 
         if description:
             #print(f"DESCRIPTION: {description}")
@@ -986,6 +995,15 @@ class itemRegistry:
             if not inst.children:
                 return inst.name_children_removed
 
+        # often it just uses nicename directly and doesn't pass through this function. Need to update the nicenames when I update the descriptions.
+        if inst.nicenames.get("if_singular") and inst.has_multiple_instances == 1:
+            #print(f"IF SINGULAR: {inst.descriptions["if_singular"]}")
+                print("if_singular nicename in def nicename()")
+                inst.nicename = inst.nicenames["if_singular"]
+        if inst.nicenames.get("if_plural") and inst.has_multiple_instances > 1:
+            #print(f"IF plural: {inst.descriptions["if_plural"]}")
+                print("if_plural nicename in def nicename()")
+                inst.nicename = inst.nicenames["if_plural"]
         if not inst:
             print("[NICENAME] No such item.")
             return None

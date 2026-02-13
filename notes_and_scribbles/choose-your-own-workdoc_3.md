@@ -1322,3 +1322,38 @@ You're facing east. You see a variety of headstones, most quite worn, and decora
 The broken glass shards is now in your inventory.
 
 It has 'a glass shard' in location descrip, and 'broken glass shards' in text desc. It's the issue of plurals, I haven't actually implemented the 'cluster' thing yet so this is expected. But that's something to fix next.
+
+10.11am, 13/2/26
+Okay. So I want to try to fix the 'cluster' noun name printing etc. And also set up the plural item pickup.
+Notes:
+    * Do not apply the cluster name printing in the inventory. In inventory, treat it as multiple single items.
+
+    * In location descriptions, always use the cluster descriptions.
+    * in pick up, use the multiple_instances number as availability.
+    * in look at, use the cluster descriptions.
+
+
+Currently:
+location description:
+    You see a variety of headstones, most quite worn, and decorated by clumps of moss, some dried flowers, and a glass shard.
+
+Description:
+   A scattering of broken glass.
+
+Now, 'a glass shard' == nicenames[if_singular]
+
+while 'a scattering of broken glass' == descriptions[if_plural]
+
+So I guess I need to update nicenames, because apparently descriptions is already doing it.
+
+10.26am
+Okay, nicenames now update when descriptions update.
+
+Now I just need to deal with the multiple instances on pickup part.
+Right now, 'broken glass shards' is just one item.
+So... what do I do.
+How do I separate them?
+
+Maybe if I try to pick up a cluster, it generates a new one (if I'm not already holding one), and subtracts one from the original cluster, unless the multiple_instances count == 1 in which case it just picks it up and adds it to however many I'm holding.
+
+Now sure how to go about picking up/dropping all at once, maybe I add 'all' as a semantic and deal with it in verb_actions. Will do that later though.
