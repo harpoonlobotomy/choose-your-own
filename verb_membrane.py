@@ -23,6 +23,7 @@ from logger import logging_fn
 from printing import print_yellow
 from verbRegistry import VerbInstance
 
+MOVE_UP = "\033[A"
 movable_objects = ["put", "take", "combine", "separate", "throw", "push", "drop", "set", "move"]
 
 flag_actions = {
@@ -117,9 +118,11 @@ def get_noun_instances(dict_from_parser, viable_formats):
 
         for idx, data in dict_from_parser.items():
             for kind, entry in data.items():
-
+                requires_noun = False
                 #print(f"GET NOUN INSTANCES::: Kind: {kind}, entry: {entry}")
                 if kind == "noun":
+                    requires_noun = True
+                    noun_name = None
                     name = entry["str_name"]
                     noun_inst = registry.instances_by_name(name) ## NOTE: This won't hold for long. Different instances may have different attr.
                     if not noun_inst:
@@ -135,16 +138,46 @@ def get_noun_instances(dict_from_parser, viable_formats):
                         #print(f"Noun inst: {noun_inst}")
                         if not isinstance(noun_inst, ItemInstance):
                             noun_inst = noun_inst[0]
-
-                        noun_name = check_noun_actions(noun_inst, verb)
-                        if noun_name:
-                            dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": name, "text": entry["text"]})
-                            suitable_nouns += 1
-                        else:
+                        noun_name = name
+                        dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": name, "text": entry["text"]})
+                        #noun_name = check_noun_actions(noun_inst, verb)
+                        #if noun_name:
+                        #    dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": name, "text": entry["text"]})
+                        #    suitable_nouns += 1
+                        #else:
     ## NOTE: Added this here so all nouns pass even if they will fail later, which entirely removes the point of the allowed noun_actions. But, I can better tailor failure messages within each later action-fn. So I think I'm going with it for now.
-                            dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": name, "text": entry["text"]})
-                            #print(f"You can't `{verb.name}` the {entry["str_name"]}")
-                            suitable_nouns -= 10
+                          #  dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": name, "text": entry["text"]})
+                          #  #print(f"You can't `{verb.name}` the {entry["str_name"]}")
+                          #  suitable_nouns -= 10
+                    if noun_inst and "is_cluster" in noun_inst.item_type:
+                        from env_data import locRegistry
+                        #TODO HERE.
+                        if hasattr(noun_inst, "has_multiple_instances") and hasattr(noun_inst, "single_identifier") and hasattr(noun_inst, "plural_identifier"):
+                            #print("Cluster has identifiers.")
+                            if noun_inst.plural_identifier in entry["text"]:
+                                #and noun_inst.has_multiple_instances > 1:
+                                ## REMINDER: This is not to set the name, that is a biproduct. It's to find the correct instance if there is one.
+                                local_named_items = registry.get_local_items(include_inv=True, by_name=noun_inst.name)
+                                if local_named_items:
+                                    print(f"Found more than one local item with name {noun_inst.name}. Checking input text for plural identifier `{noun_inst.plural_identifier}` to identify the correct one.")
+                                    for item in local_named_items:
+                                        if item.has_multiple_instances > 1:
+                                            noun_inst = item
+                                            registry.set_print_name(noun_inst, noun_inst.plural_identifier)
+                                            break
+
+                            elif noun_inst.single_identifier in entry["text"]:
+                                local_named_items = registry.get_local_items(include_inv=True, by_name=noun_inst.name)
+                                if local_named_items:
+                                    for item in local_named_items:
+                                        if item.has_multiple_instances == 1:
+                                            noun_inst = item
+                                            registry.set_print_name(noun_inst, noun_inst.single_identifier)
+                                            break
+
+                            dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": noun_inst.name, "text": entry["text"]})
+                            print(dict_from_parser[idx][kind])
+                        print("If more than one locally (inc inventory), check input text for plural/singular and use the correct one. (single_identifier: shard, plural_identifier: shards, for example.)")
 
                 elif kind == "location":
                     from env_data import locRegistry
@@ -162,6 +195,10 @@ def get_noun_instances(dict_from_parser, viable_formats):
                     #print(f"Kind is cardinal: {entry}")
                     dict_from_parser = check_cardinals(entry, dict_from_parser, viable_formats)
 
+                if requires_noun == True: # Not sure this'll ever come up, as a thing will likely fail at the initial parser stage. Maybe delete this later.
+                    if not noun_name:
+                        print(f"{MOVE_UP}\033[1;31m[ Couldn't find anything to do with the input `{name}`, sorry. ]\033[0m")
+                    requires_noun = False
         #print("About to return dict_from_parser, error")
         return dict_from_parser, error
     #print("About to return dict_from_parser, error")
@@ -182,12 +219,12 @@ class Membrane:
         self.locations = list(loc_dict.keys())
 
         self.nouns_list = list(registry.item_defs.keys())
-        plural_word_dict = {}
-
-        for item_name in self.nouns_list:
-            if len(item_name.split()) > 1:
-                plural_word_dict[item_name] = tuple(item_name.split())
-
+        #plural_word_dict = {}
+#
+        #for item_name in self.nouns_list:
+        #    if len(item_name.split()) > 1:
+        #        plural_word_dict[item_name] = tuple(item_name.split())
+#
         self.plural_words_dict = registry.plural_words
 
         compound_locs = {}
@@ -249,6 +286,7 @@ test_input_list = ["take the paperclip", "take the paperclip", "pick up the glas
 
 test_input_list = ["go west", "open door", "enter shed", "take map", "take key", "go to north graveyard", "look at gate", "unlock padlock with key", "look at gate", "pick up padlock", "go to city hotel room", "find tv set", "go to east graveyard", "take jar", "logging args", "break jar"]
 
+test_input_list = ["go east", "take glass jar", "break jar", "pick up glass shard", "drop glass shard"]
 #test_input_list = ["inventory", "logging args", "read mag for a while", "read catalogue for a while"]
 #test_input_list = ["logging args", "take stick", "approach the forked tree branch", "look around"]
 
@@ -347,7 +385,6 @@ def run_membrane(input_str=None, run_tests=False):
                 return None
 
             if not inst_dict:
-                MOVE_UP = "\033[A"
                 print(f"{MOVE_UP}\033[1;31m[ Couldn't find anything to do with the input `{input_str}`, sorry. ]\033[0m")
                 return None
             #print("after get_noun_instances")

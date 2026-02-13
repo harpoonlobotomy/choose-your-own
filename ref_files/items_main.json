@@ -107,12 +107,15 @@
     "starting_children": null
   },
   "moss": {
+    "alt_names": ["clumps of moss", "clump of moss"],
     "can_pick_up": true,
     "descriptions": {
       "if_singular": "a small clump of moss, mostly green with brown specks.",
       "if_plural": "a few clumps of mostly green moss."
     },
     "has_multiple_instances": 3,
+    "single_identifier": "moss",
+    "plural_identifier": "clumps of moss",
     "item_size": "a_few_marbles",
     "item_type": [
       "can_pick_up",
@@ -1630,14 +1633,16 @@
     "smash_attack": 5,
     "smash_defence": 5
   },
-  "broken glass shards": {
-    "alt_names": [],
+  "broken glass shard": {
+    "alt_names": ["broken glass shards", "shards of glass", "shard of glass", "shard", "shards"],
     "can_pick_up": true,
     "descriptions": {
       "if_singular": "a shard of broken glass.",
       "if_plural": "a scattering of broken glass."
     },
     "has_multiple_instances": 3,
+    "single_identifier": "shard",
+    "plural_identifier": "shards",
     "item_size": "small_flat_things",
     "item_type": [
       "can_pick_up",

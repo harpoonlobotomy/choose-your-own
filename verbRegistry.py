@@ -401,8 +401,8 @@ class Parser:
 
                         from config import add_new_words_if_missing
                         if not add_new_words_if_missing:
-                            MOVE_UP = "\033[A"
-                            print(f"{MOVE_UP}\033[1;31m[ Couldn't find anything to do with the input `{input_str}`, sorry. ]\033[0m")
+                            #MOVE_UP = "\033[A"
+                            #print(f"{MOVE_UP}\033[1;31m[ Couldn't find anything to do with the input `{input_str}`, sorry. ]\033[0m")
                             continue
                         print(f"No canonical for idx `{idx}`, word `{word}`")
                         print("Please enter a word type if you would like to add a new noun/verb/location")

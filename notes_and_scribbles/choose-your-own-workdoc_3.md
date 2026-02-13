@@ -1374,3 +1374,188 @@ Going to do this in a separate function and just refer clusters there on pickup/
 On drop, it's going to behave... differently. If you have a cluster of glass pieces in your inv, and you say 'drop glass', are you intending to drop all or one?
 
 Def going to have to add 'drop all glass' or 'drop single glass' (noone would use that wording though). This is the same isue I have for all plural items though. (I think) currently it just drops one at a time.
+
+"""
+NOTE:
+(  Func:  move_item    )
+inst: <ItemInstance paperclip (af8bf3cf-eae6-4d5c-ade8-1359e9fdb9a9)>
+location: <cardinalInstance east graveyard (603e07ab-6784-4e89-bab3-9703aaf1d9de)>
+Failed to find the correct function to use for <verbInstance drop (388ff9da-bb2b-457d-abe3-7b39e3642cfc)>: <ItemInstance paperclip (af8bf3cf-eae6-4d5c-ade8-1359e9fdb9a9)>
+
+Currently erroring this in move_item. Not sure why.
+
+Okay, fixed. It's because it was trying to remove it from inv_place.items twice.
+
+And yes, can confirm it drops a single paperclip. Intended behaviour. Just trickier with clusters because they can be intentionally grouped.
+
+Also, the parser can't deal with plurals. If I say 'drop paperclips' it can't do anything because 'paperclips' isn't a noun.
+
+Maybe I can do a plural check after it's checked compounds. If it's not found /anything/ by that point, then we check if endswith("s"), if so we cut off the s and check for item names.
+"""
+
+11.22am
+My meds still aren't here. Not ideal.
+
+But.
+Clusters are set up at the minimum. new instance is generated on pickup, instance counts are correct, but the descriptions aren't updating properly.
+
+multiple_instances count: 1
+item location: <cardinalInstance north inventory_place (2c2ba815-07e5-4a3f-95de-7082d670e045)>
+the one in the inventory has one, the instance in the graveyard has 2. Correct. And yet:
+
+iron key
+padlock
+broken glass shards
+paperclip x2
+local map
+mail order catalogue
+severed tentacle
+
+Oh. Because inventory uses name, not nicename. So that doesn't update. Hmmmmm.
+
+So how... do I do this.
+I guess I can just... rename it when the description updates? Because so many things do search by name. 'glass' or 'broken glass' would find it anyway...
+
+Maybe I do need that 'print_name'. But idk, that feels like it'll jsut cause more problems. It solves: the item name changing. It breaks: if the print_name diverges from the item_name, and you type the item_name perfectly, it might not find it. Not good.
+
+Okay. So - I quite like it saying 'broken glass shard x2' in the inventory.
+So perhaps in the inventory, we keep them as individual multiple_instance = 1 items. But when they're dropped, we merge them with any named item at that card_inst. So it's a cluster on the ground, it's 3x glass shards in the inventory. I like that.
+
+Do still need to rename it though.
+
+Or... if the only place that really prints the bare name is inventory, maybe just name it for the single. So the location description etc all finds it as plural.
+But then if you type 'glass shards' it wouldn't find it.
+Alt_name. That should work. Okay.
+
+Okay, basically works. Had to pull in the generator dict for it to find the item def, but it works. Should probably just bring that generaor.alt_names dict directly in to the original item defs but it works as proof of concept.
+
+Issue with the parser:
+#   [[  look at shards of glass  ]]with the input `look at shards of glass`, sorry. ]
+#
+#   You look at the broken glass shard:
+
+It was partially overwritten but it's the error
+print(f"{MOVE_UP}\033[1;31m[ Couldn't find anything to do with the input `{input_str}`, sorry. ]\033[0m")
+from ln 405, verbRegistry.
+
+The issue is that it prints if there's no cardinal, but that can happen and still have it find the item from other input_str parts.
+
+If I don't have that print, then I get
+
+#   [[  look at shards  ]]
+#
+#
+
+with no error message. If I have it printing but it's found somewhere else, then I get that overlap error but a successful outcome.
+
+Added a fn but it doesn't trigger as the error is too early.
+
+Also, the 'inventory' bits I added in the parser don't work as broadly as I need them to:
+#   [ Couldn't find anything to do with the input `look at glass in inventory`, sorry. <after get_sequences_from_tokens>]
+
+'look at inventory' works fine, but I want to be able to specify 'look at thing in inventory'.
+
+`look at shard of glass` doesn't work, but `look at shards of glass` does.
+
+Both are given as alt_names, so I'm not sure why only one works:
+
+"broken glass shards", "shards of glass", "shards of glass, "shard", "shards"
+
+Okay:
+So, in the parser, 'look at shard of glass' gets
+
+'verb', 'direction', 'noun', 'noun'
+
+but 'look at shards of glass' gets
+values: ("sequences after sequencer: [('verb', 'direction', 'noun')]",)
+
+looking at the parser passes, it's because it's looking at the compound_word, and apparently compound_words doesn't include compounded alt_names. So because 'shard' is in the item_name, it gets found even if 'shard of glass'.
+
+So, looking into it:
+compound_nouns = membrane.plural_words_dict
+
+which comes from
+        self.plural_words_dict = registry.plural_words
+
+lmao wtf is this
+    def add_plural_words(self, plural_words_dict):
+        self.plural_words = plural_words_dict
+
+So that's everything in item_defs at init.
+
+So I need to update that... But that won't update membrane. Hmph.
+
+Maybe I shouldn't init plural_words in membrane and should just get it directly from itemReg on call.
+
+Okay. so, when I init a new item (possibly only when I have to use the generater def to do it), I check if it's in item_defs, if not, we check for compound word. And we have to include alt_names in compound words, because I don't think I do at all, currently.
+
+Oh shit. Just doing it on the initial intake was all it needed, it was just that I never included alt_names in plural_words.
+
+look at shards/look at shard now both work correctly.
+
+# Slight potential improvement:
+Currently, either way it returns 'a scattering of broken glass'. I want to run a check to see if local_items (inc inv) has > 1 broken glass, and if so, use the single/plural depending on whether it's plural or not. So if I say 'look at shard' and I'm holding a singular shard, it should look at that and use the singular desc.
+That's gonna be messy but I want it anyway.
+
+Have added
+    "single_identifier": "shard"
+    "plural_identifier": "shards"
+
+will add them to item_defs for compounds. Then, if noun_entry.text contains plural, noun_inst == singular.
+
+Oh I could probably do that within gen_noun_instances actually. Would be better than doing it in look_at_item.
+
+Added
+get_local_items(self, include_inv = False)
+
+So it can optionally get inv items too. Also, added a return for includes_inv, which only returns true if include_inv was true /and/ items were found. So it should be multipurpose. Should save me getting both parts separately all the time.
+
+Also I need to rename 'get_loc_items', because it's an init fn.
+
+1.06pm
+Okay. Getting there.
+
+Currently the issue is with the line 'you look at the broken glass shard'. It's just the item name. Maybe I really do need that print_name, but we just make it so that print_name is always either the def key or an alt_name.
+
+The 'you look at' is just taken from
+print(f"You look at the {assign_colour(item_inst)}{extra}"), so whatever change I make here really needs to be done in assign_colour.
+
+1.12pm
+## this one needs fixing:
+currently, 'take moss' picks up the moss, but 'take moss' again /puts down the moss/. This is bad. Need to update 'take' so it can never remove from inv (unless it's like 'take moss from inventory' but you'd never write that.)
+
+Also:
+loc_descriptions breaks here.
+
+#   You're facing east. You see a variety of headstones, most quite worn, and not too much else - , a few shards of glass, and some dried flowers.
+
+That comma is bad. Maybe I just need to remove 'and not too much else', otherwise fix it some other way.
+
+Also picking up the moss doesn't trigger multiple_instances, and it should. Need to figure out why not.
+
+Hm. Now it does. No idea why not before. Maybe I hadn't restarted the run?
+
+
+1.51pm
+okay this is good though:
+
+# look at shard
+#
+# You look at the shard:
+#
+#   A shard of broken glass.
+#
+# look at shards
+#
+# You look at the shards:
+#
+#   A scattering of broken glass.
+
+2.35pm
+okay so the separate/combine clusters works. I'm honestly excited.
+
+Break the glass, it becomes a cluster of glass shards (single item with 3 multiple_instances). Pick up glass, you have 'shard of glass' in inventory, and 'cluster of glass shards' has 2 multiple_instances. Drop the one  you're holding, the inventory one is deleted and you just have the cluster, with 3 multiple_instances again.
+But, pick up 2, and you have 'shards of glass x2'.
+And the names update properly in line, and if you have a shard in your inventory and a cluster on the ground, 'look at shards' will describe the cluster, not the single shard, and the inverse applies as well.
+
+Really pleased with this. It's so tiny and probably not something anyone will ever notice (if they even play this) but I'm proud tbh.

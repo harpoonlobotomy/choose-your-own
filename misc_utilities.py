@@ -422,8 +422,10 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
             if entry and entry.colour != None:
                 colour=entry.colour
                 bld=True
-                if not isinstance(item, cardinalInstance):
+                if isinstance(item, placeInstance):
                     item=item.name
+                if isinstance(item, ItemInstance):
+                    item = item.print_name
             else:
                 colour=cardinals[Colours.colour_counter%len(cardinals)]
                 colour=cardinal_cols[colour] # TODO: is there any reason fo this to be separate? Can't we just use the %len directly against cardinal_cols?
@@ -434,7 +436,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
                     bld=True
                 elif isinstance(item, placeInstance|cardinalInstance):
                     item.colour=colour
-                    if not isinstance(item, cardinalInstance):
+                    if not isinstance(item, cardinalInstance): # why is cardinalInstance treated so differently here?
                         item = item.name
                     bld=True
 
@@ -469,6 +471,9 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
             if nicename and held_name: # Need to check here to make sure nicename exists and isn't None. Maybe the issue with the matchbox?
                 item = held_name
 
+            if isinstance(item, ItemInstance):
+                print(f"ITEM INSTANCE PRINT_NAME: {item.print_name}/name: {item.name}")
+                item = item.print_name
 
         elif isinstance(colour, (int, float)):
             colour=int(colour)%len(cardinals)

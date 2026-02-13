@@ -429,12 +429,16 @@ class eventRegistry:
             if not noun:
                 if event.item_name_to_loc.get(item):
                     item_loc = event.item_name_to_loc[item]
-                    loc_items = registry.get_item_by_location(item_loc)
-                    for loc_item in loc_items:
+                    #loc_items, _ = registry.get_local_items(include_inv = True)# Any reason not to include inv here? update: Well not to exclude inv, but because get_item_by_location does the loc str conversion and this one doesn't currently.
+                    #print(f"ITEM LOC: {item_loc}")
+                    loc_items = registry.get_item_by_location(item_loc) #don't think it will cause issues to include inv. Undo it later if so.
+                    for loc_item in loc_items: # we loop through them all but only add one. Why?
                         if loc_item.name in event.item_names: # instead of just the given item, add any matches found at once.#== item:
                             #print(f"Found instance for {loc_item.name} in {item_loc}: {loc_item}")
                             instance = loc_item
                             event.item_name_to_inst[loc_item.name] = instance
+                            event.items.add(instance) # vv
+                            instance.event = event ## ^^ These were not added previously. I'm pretty sure they should be.
 
             if noun:
                 instance = noun
@@ -445,7 +449,7 @@ class eventRegistry:
             if not instance:
                 if event_entry:
                     print(f"EVENT ENTRY: \n{event_entry}, no instance found")
-                loc_items = registry.get_item_by_location(item_loc)
+                #loc_items = registry.get_item_by_location(item_loc) # this will error if no item was found. Why even try to get it at this point?
                 print(f"No instance found by location for {item}")
 
         missing = list(i for i in event.item_names if i not in event.item_name_to_inst)
@@ -839,6 +843,19 @@ class eventRegistry:
                         inst = None
                         #print(f"K: {k}, v: {item_name}")
                         from itemRegistry import registry
+                        if not registry.item_defs.get(item_name):
+
+                            test = registry.by_alt_names.get(item_name)
+                            #print(f"Alt name? : {test}")
+                            if not test:
+                                #print(f"Registry.by_alt_names: {registry.by_alt_names}")
+                                from item_dict_gen import generator
+                                generator_alt_name = generator.alt_names.get(item_name)
+                                if generator_alt_name:
+                                    item_name = generator_alt_name
+                                    print(f"Item in generator alt names: {generator_alt_name}")
+                                else:
+                                    print(f"No name found for item_name: {item_name}")
                         if registry.item_defs.get(item_name):
                             inst = registry.init_single(item_name, registry.item_defs.get(item_name))
 

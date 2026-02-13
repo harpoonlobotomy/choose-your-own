@@ -754,6 +754,7 @@ def find(format_tuple, input_dict):
         if noun in local_items:
             for card in items_at:
                 if noun in items_at[card]:
+                    #if len(items_at) == 1:
                     print(f"There's a {assign_colour(noun)} at {assign_colour(card.place_name, "loc")}, is that what you were looking for?")
                     return card
             print(f"Somehow {noun.name} wasn't found in the location dict, but is in local_items. Something broke.")
