@@ -40,8 +40,12 @@ trigger_acts = { # the k/v a verb action has to send in order to meet the trigge
     "item_unlocked": {"is_locked": False},
     "item_opened": {"is_open": True}
 }
+## very similar to the one above but slightly different and worth it to keep them separate. Later events may make them diverge further, at which point I'll make it clearer.
+# the action name from verb_actions that needs to be in trig.triggers.
+trigger_actions = ["item_in_inv", "item_broken", "item_unlocked", "item_not_in_inv"]
 
-event_effects = ["hold_item", "lock_item", "hide_item", "limit_travel"]
+requires_end_trigger_loc = ["none yet", "just a placeholder", "for something that needs you to be in a specific place."]
+
 event_effects = ["held_items", "locked_items", "hidden_items", "limit_travel", "init_items", "remove_items"]
 
 effect_attrs = {
@@ -69,6 +73,7 @@ class eventInstance:
         self.id = str(uuid.uuid4())
         if attr.get("starts_current"):
             self.state:int = 1
+            print(f"Event {self.name} starts current: {self.state}")
         else:
             self.state:int = 2
         self.triggers = set() #all triggers, delineate start/end after this point.
@@ -110,9 +115,6 @@ class eventInstance:
 
     def __repr__(self):
         return f"<eventInstance {self.name} ({self.id}, event state: {self.state}>"#, all attributes: {self.attr})>"
-
-trigger_actions = ["item_in_inv", "item_broken", "item_unlocked", "item_not_in_inv"]
-
 
 
 #not sure about this whole thing. Might make it worse, not better.
@@ -323,6 +325,8 @@ class eventRegistry:
         for state in event_states.values():
             self.by_state[state] = set()
 
+        self.remove_event_on_failure = set() #add instances with remove_event_on_failure: true here, delete them and their triggers (and item.event assignement) when failed. Mostly things like the moss, which will stop/start and have no impact. Not standard, usually I'll keep them around and just not marked as event_keys.
+
     def add_event(self, event_name, event_attr):
 
         event = eventInstance(event_name, event_attr)
@@ -332,12 +336,12 @@ class eventRegistry:
             self.by_name[event.name] = set()
         self.by_name[event.name].add(event)
 
-        if hasattr(event, "starts_current") and getattr(event, "starts_current"):
-            self.by_state[1].add(event)
-            event.state = 1 # (current event)
-
         if event.limits_travel:
             self.travel_is_limited = True
+
+        if hasattr(event, "starts_current") and event.starts_current:
+            self.by_state[1].add(event)
+            event.state = 1 # (current event)
 
         else:
             #print(f"Event not starts_current: {event}")
@@ -1054,21 +1058,25 @@ class eventRegistry:
     def is_event_trigger(self, noun_inst, noun_loc, reason = None) -> (int|None):
         logging_fn()
 
+        print("Start of is_event_trigger: \n", noun_inst, noun_loc, reason)
 
         def check_triggers(event:eventInstance, noun:ItemInstance, reason) -> (int|None):
 
             if event.end_triggers:
                 for trig in event.end_triggers:
+                    print(f"TRIG in event.end_triggers: {trig}\nvars: \n{vars(trig)}\n\n")
                     if hasattr(trig, "constraint_tracking"):
                         print("Whether the event ends or not depends on this constraint. Maybe it should be checked earlier, I feel like I do this check in item_interactions. Needs to be one or the other.")
                         exit()
 
                     if trig.is_item_trigger and trig.item_inst == noun:
+                        print(f"INST IS TRIG ITEM: {noun}")
                         if isinstance(reason, str):
                             if reason in trig.triggers:
-                                #print(f"reason in trig.triggers: {trig.triggers}")
-                                if hasattr(trig, "item_inst_loc") and getattr(trig, "item_inst_loc") != None and trig.item_inst_loc != noun_loc:
-                                    continue # fail if the fail should have a location but doesn't. Doesn't apply to any current ones, but if you have to read a book under a specific tree, this would apply.
+                                print(f"reason in trig.triggers: {trig.triggers}")
+                                if reason in requires_end_trigger_loc:
+                                    if hasattr(trig, "item_inst_loc") and getattr(trig, "item_inst_loc") != None and trig.item_inst_loc != noun_loc:
+                                        continue # fail if the fail should have a location but doesn't. Doesn't apply to any current ones, but if you have to read a book under a specific tree, this would apply.
                                 #print("ENDING EVENT VIA IS_EVENT_TRIGGER")
                                 self.end_event(event, trig, noun_loc)
                                 return 1
@@ -1101,11 +1109,15 @@ class eventRegistry:
                             self.check_reason_tuple(reason, event, trig, noun_inst)
 
 
-        if noun_inst.event and hasattr(noun_inst, "is_event_key") and noun_inst.is_event_key:
+        if noun_inst.event:
+            print(f"Noun {noun_inst} has event: {noun_inst.event}")
 
-            #print(f"This {noun_inst} already has an event tied to it: {noun_inst.event}")
-            outcome = check_triggers(noun_inst.event, noun=noun_inst, reason=reason)
-            return outcome
+            if noun_inst.event and hasattr(noun_inst, "is_event_key") and noun_inst.is_event_key:
+                #print(f"This {noun_inst} already has an event tied to it: {noun_inst.event}")
+                outcome = check_triggers(noun_inst.event, noun=noun_inst, reason=reason)
+                return outcome
+            else:
+                print(f"Noun {noun_inst} has event but is not event key.")
 
 
         if events.generate_events_from_itemname.get(noun_inst.name):
@@ -1174,6 +1186,7 @@ class eventIntake:
         self.print_description_plain = set() # stores trigger instances; triggers in this set are printed plain.
         self.is_generated_event = attr.get("is_generated_event")
         self.is_timed_event = attr.get("is_timed_event")
+        self.remove_event_on_failure = attr.get("remove_event_on_failure")
 
         self.starts_current = attr.get("starts_current")
         self.start_trigger = attr.get("start_trigger")

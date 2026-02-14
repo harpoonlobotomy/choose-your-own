@@ -1,11 +1,11 @@
 {
  "reveal_iron_key": {
-        "starts_current":true,
-        "end_trigger":
-        {"item_trigger": {
-            "trigger_item": "local map",
-            "trigger_location": "north work shed",
-            "triggered_by": ["item_in_inv", "item_is_read", "item_opened"]}},
+    "starts_current":true,
+    "end_trigger":
+    {"item_trigger": {
+        "trigger_item": "local map",
+        "trigger_location": "north work shed",
+        "triggered_by": ["item_in_inv", "item_is_read", "item_opened"]}},
     "effects": {
         "hidden_items": {
             "0": {
@@ -47,6 +47,7 @@
 
   "moss_dries": {
       "is_generated_event": true,
+      "remove_event_on_failure": true,
       "is_timed_event": true,
       "repeats": "forever",
 

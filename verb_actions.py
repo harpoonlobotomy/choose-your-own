@@ -1690,8 +1690,6 @@ def drop(format_tuple, input_dict):
             print(f"DROPPED(really): {dropped}")
             print(f"Dropped the {assign_colour(noun)} onto the ground here at the {assign_colour(loc.current, card_type='ern_name')}")
             print(f"DROPPED INST: {noun}")
-            print("")
-            return
 
         elif reason_val == 3:
             print(f"You can't drop the {assign_colour(noun)}; you'd need to get it out of the {assign_colour(container)} first.")

@@ -1942,3 +1942,80 @@ this is failing.
 Yeah it's trying to generate a cluster from the shard in the inventory instead of just putting it down.
 
 Okay. So - I need to keep a separate 'drop' function so these two don't get tangled, at least for now. It wouldn't be an issue if it wasn't failing earlier but it's just a pain.
+
+12.33pm
+Gradually working through it.
+Improving; now removes the compound inst once it's exhausted.
+
+Correction to make:
+reason val: 5, meaning: in inventory, for item: <ItemInstance moss (8d4b6be2-5c79-44c3-b44f-908158a98307) east graveyard // 1>
+
+<ItemInstance moss (8d4b6be2-5c79-44c3-b44f-908158a98307) east graveyard // 1> is not in inv_place. This is bad, how are we combining if not removing from inventory?
+
+It found the item in the inventory, but it's not in inv_place. Given it's a moss clump that was created by separate_cluster, that means it's not properly adding to inv_place.
+
+Oh - it's because I had shard.location added as loc.no_place, but it should just go to loc.inv_place. Fixed now.
+
+12.39pm
+
+Okay, so
+
+BY_ALT_NAME[NAME]:
+[<ItemInstance moss (d2d7a248-c562-4c22-965a-bb7b75b80313) north no_place // 0>, <ItemInstance moss (ec5bf7a4-7aaa-4f0e-b921-eb315e4014c1) east graveyard // 3>, <ItemInstance moss (95bd70ea-bdf5-459b-9966-6858cc50d867) north no_place // 0>]
+
+Two of the moss instances still exist, though nowhere.
+
+0313 was the last instance I droppped, and d867 was the second to last.
+So it's not properly removing the shards after they're combined into the cluster. Doesn't really matter but it's bad practice to just have them hanging around so will fix it now.
+
+Okay, better -
+
+IMMEDIATE COMMAND: print named items
+Entry name here:  moss
+BY_ALT_NAME[NAME]:
+[<ItemInstance moss (f3a4c54d-a383-4dd4-acda-fb9d98f8753a) east graveyard // 3>]
+
+Now, if there's a shard and compound_inst after combine_cluster and both are the appropriate type, it delete the shard.
+
+So the main thing now is to set it up again so it works with the events.
+
+12.51pm
+Hmmmmm. This is interesting...
+
+
+event.state and event_by_state give different results:
+event_by_state(1):
+[<eventInstance reveal_iron_key (5bd8a8e3-199f-4d2c-89a5-9ca310bbb4a3, event state: 2>, <eventInstance graveyard_gate_opens (809caf12-5638-4b04-82e6-e9b8a3f808b9, event state: 1>]
+
+event.state == 1:
+[<eventInstance graveyard_gate_opens (809caf12-5638-4b04-82e6-e9b8a3f808b9, event state: 1>]
+
+Reveal_iron_key shouldn't be there. Or possibly should have its state set to one but hasn't.
+
+Well both events are "starts_current":true, so both should be 1.
+
+Oh, I think I'd added a subclause in add_event that broke things.
+Instead of 'if starts_current, ... else: event.state=2'
+it was 'if starts_current, ... if unrelated: ... else: event.state=2
+
+Doesn't really explain why event_by_state is correct, but hopefulyl it's fixed now anyway.
+
+Yes, both are now correctly current.
+Good.
+
+Wrote myself def immediate_commands(input_str): for specific tests. Instead of the broad logging args (which has great usefulness to be fair), print local items/print inventory items/print named items/print current events lets me get specific details when I need them. handy lil thing. Doesn't go through the parser at all which is just nice. Really should move 'meta' etc to here too really, deal with that outside of the parser. Well no, because then 'look at inventory' wouldn't work. Eh. Anyway.
+
+Okay, so where was I.
+Right. Ending the events correctly.
+
+Now the compound instances are working far better than they were, time to realign verb_actions.
+ Well def take is fine. It's def drop that needs the update.
+
+Oh, nice surprise. The shards do all have the event properly assigned.
+(This example is moss, not glass shards, but 'cluster' and 'shard' is just pleasant.)
+
+The moss event now properly ends when you drop the moss.
+
+Setting it up now to delete the event + its assignments if it's failed. May do it for all generated events perhaps, but for now I'm keeping it as non-standard and just using the "remove_event_on_failure" flag added to event_defs.
+
+    

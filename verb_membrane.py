@@ -18,6 +18,7 @@
 import pprint
 from env_data import cardinalInstance, placeInstance
 from eventRegistry import eventInstance
+import eventRegistry
 from itemRegistry import ItemInstance, registry
 from logger import logging_fn
 from printing import print_yellow
@@ -278,6 +279,48 @@ class Membrane:
 membrane = Membrane()
 # excluded for not being relevant right now. "go to the graveyard", , "go to a city hotel room", "go to the pile of rocks", "approach the forked tree branch"
 
+
+def immediate_commands(input_str):
+# immediate_commands = ["print local items", "print inventory items", "print named items"]
+    print_yellow(f"IMMEDIATE COMMAND: {input_str}")
+    from env_data import locRegistry
+    if input_str == "print local items":
+        local_items = registry.by_location.get(locRegistry.current)
+        print(f"LOCAL ITEMS:\n{local_items}\n")
+
+    if input_str == "print inventory items":
+        inv_items = locRegistry.inv_place.items
+        print(f"INV_PLACE.ITEMS:\n{inv_items}\n")
+        inv_items_2 = registry.by_location.get(locRegistry.inv_place)
+        print(f"\nBY_LOCATION[LOC.INV_PLACE]:\n{inv_items_2}\n")
+
+    if input_str == "print named items":
+        item_name = input("Entry name here:  ")
+        initial_names = registry.by_name.get(item_name)
+        print(f"BY_ALT_NAME[NAME]:\n{initial_names}\n")
+        alt_names = registry.by_alt_names.get(item_name)
+        print(f"BY_ALT_NAME[NAME]:\n{alt_names}\n")
+
+    if input_str == "print current events":
+        current_by_inst_state = []
+        for event in eventRegistry.events.events:
+            if event.state == 1:
+                current_by_inst_state.append(event)
+        current_by_event_by_state = []
+        for event in eventRegistry.events.event_by_state(1):
+            current_by_event_by_state.append(event)
+        print(f"\nevent_by_state(1):\n{current_by_event_by_state}\n\nevent.state == 1:\n{current_by_inst_state}\n")
+
+
+    print_yellow("Exiting immediate_commands.\n")
+    input_str = input()
+    return input_str
+
+
+
+
+
+
 test_input_list = ["take the paperclip", "take the paperclip", "pick up the glass jar", "put the paperclip in the wallet", "place the dried flowers on the headstone", "look at the moss", "examine the damp newspaper", "read the puzzle mag", "read the fashion mag in the city hotel room", "open the glass jar", "close the window", "pry open the TV set", "smash the TV set", "break the glass jar", "clean the watch", "clean the severed tentacle", "mix the unlabelled cream with the anxiety meds", "combine the fish food and the moss", "eat the dried flowers", "consume the fish food", "drink the unlabelled cream", "burn the damp newspaper", "burn the fashion mag in the graveyard", "throw the pretty rock", "lob the pretty rock at the window", "chuck the glass jar into the glass jar", "drop the wallet", "discard the paper scrap with number", "remove the batteries from the TV set", "add the batteries to the mobile phone", "put the car keys in the plastic bag", "set the watch", "lock the window", "unlock the window", "shove the TV set", "move the headstone", "barricade the window with the TV set", "separate the costume jewellery", "investigate the exact thing", "observe the graveyard", "watch the watch", "leave the graveyard", "depart", "go", "take the exact thing", "put the severed tentacle in the glass jar", "open the wallet with the paperclip", "read the mail order catalogue at the forked tree branch", "pick the moss", "pick the watch", "pick up moss", "throw anxiety meds", "put batteries into watch", "clean a glass jar"]
 
 #test_input_list = ["go west", "go north", "go to shed", "go north", "go to work shed", "go north", "go to shed door", "go to work shed door", "open door", "close door", "open shed door", "close shed door", "go into shed", "open door", "go into work shed", "go into work shed", "leave shed", "inventory", "drop mag", "take mag", "drop mag at church", "go into work shed", "open work shed door", "open door", "go into shed", "take map", "take key", "go to north graveyard", "use key on padlock", "lock padlock with key", "unlock padlock with key", "take padlock", "go to city hotel room", "find tv set", "look at tv set"]
@@ -316,11 +359,15 @@ def run_membrane(input_str=None, run_tests=False):
     #def loop(input_str):
 
         logging_fn()
-
-        response = (None, None)
-
         while input_str == None or input_str == "":
             input_str = input("\n")
+
+        immediate_command = ["print local items", "print inventory items", "print named items", "print current events"]
+        print(f"\ninput_STR:::: {input_str}\n")
+        if input_str in immediate_command:
+            while input_str in immediate_command:
+                input_str = immediate_commands(input_str)
+        response = (None, None)
 
         while "logging" in input_str:
             if input_str != None and "logging" in input_str:
@@ -445,5 +492,6 @@ def run_membrane(input_str=None, run_tests=False):
         #with open(test_file, 'w') as file:
         #    json.dump(input_outcome_dict, file, indent=2)
         #loop(input_str, i)
+        print(f"Starting new loop with input_str: {input_str}")
         loop(input_str)
 
