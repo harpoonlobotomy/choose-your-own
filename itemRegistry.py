@@ -727,7 +727,25 @@ class itemRegistry:
         logging_fn()
         inst.print_name = new_print_name
 
-    def combine_clusters(self, singular_inst:ItemInstance):
+    def get_parent_details(inst, old_container, new_container)->tuple[ItemInstance, bool, ItemInstance]:
+        was_in_container = False
+        parent = None
+        if hasattr(inst, "contained_in"):
+            #print(f"inst.contained in: {inst}.{inst.contained_in}")
+            if old_container != None:
+                parent = old_container
+            else:
+                parent = inst.contained_in
+            if parent:
+                was_in_container = True
+        if new_container:
+            if not hasattr(new_container, "children") or new_container.children == None:
+                new_container.children = set()
+
+        return parent, was_in_container, new_container
+
+
+    def combine_clusters(self, singular_inst:ItemInstance, target: (cardinalInstance|ItemInstance)):
         logging_fn()
         # combine == dropping item from inv to local cluster.
 
@@ -810,47 +828,31 @@ class itemRegistry:
     # Movement
     # -------------------------
 
-    def move_cluster_item(self, inst:ItemInstance, location:cardinalInstance=None, new_container:ItemInstance=None, old_container:ItemInstance=None, is_drop=False)->ItemInstance:
+    def move_cluster_item(self, inst:ItemInstance, location:cardinalInstance=None, new_container:ItemInstance=None, old_container:ItemInstance=None)->ItemInstance:
+
+        old_loc = inst.location
+        parent, was_in_container, new_container = self.get_parent_details(inst, old_container, new_container)
+
+        is_drop = "unconfirmed"
+
+        if location == loc.inv_place:
+            is_drop = False
 
         if is_drop:
+            target = None
+            if location:
+                target = location
+            if new_container:
+                target = new_container
+            if not target:
+                print(f"No target: in move_cluster_items for {inst}, but no location or new_container was given.")
+            # The following only applies if move to location. Need to also get the logic in for containers.
+            singular_inst, compound_target = self.combine_clusters(inst, target)
+            print(f"original inst: {inst}, location: {inst.location}\nSingular inst: {singular_inst}, location: {singular_inst.location}\nSingular inst: {compound_target}, location: {compound_target.location}")
             print("moving shard from inv to current loc, if cluster at current loc, combine shard w cluster and remove shard from inv and instances.")
             return
-
-        print("if not drop, assume pick up - we have a cluster in a location, need to separate a shard, add it to inv, and adjust cluster counts accordingly.")
-
-
-    def move_item(self, inst:ItemInstance, location:cardinalInstance=None, new_container:ItemInstance=None, old_container:ItemInstance=None, no_print=False)->ItemInstance:
-        logging_fn()
-        from misc_utilities import assign_colour
-
-        updated = set()
-        was_in_container = False # using this as a check to see if the cluster should use old_loc or parent.
-
-        ## REMOVE FROM ORIGINAL LOCATION ##
-        old_loc = inst.location
-        if old_loc and old_loc != None:
-            if self.by_location.get(old_loc):
-                self.by_location[old_loc].discard(inst)
-            #inst.location = None
-            #if old_loc == loc.inv_place and inst in loc.inv_place.items:
-            #    loc.inv_place.items.remove(inst)
-            #else:
-            #    inst.location = location
-            #inst.location = None
-            if old_loc == loc.inv_place:
-                if inst in loc.inv_place.items:
-                    loc.inv_place.items.remove(inst)
-                inst.location = loc.no_place ## We don't add items to by_location for no_place, this is purely so the location data can be printed in print lines.
-        ## MOVE TO NEW LOCATION IF PROVIDED
-        done = False
-        if location != None:
-            if not isinstance(location, cardinalInstance):
-                traceback_fn()
-                exit(f"move_item requires location to be cardinalInstance. Recieved `{location}` of type `{type(location)}`.")
-            if not self.by_location.get(location):
-                self.by_location[location] = set()
-
-            if "is_cluster" in inst.item_type:
+        #original:
+            """if "is_cluster" in inst.item_type:
                 print("is cluster and location is not none.")
                 if self.get_local_items(by_name=inst.name):
                     print(f"there are local items with this name: {self.get_local_items(by_name=inst.name)}.")
@@ -870,43 +872,13 @@ class itemRegistry:
                                 self.by_location[location].remove(inst)
                             inst.location = loc.no_place
                             if inst in loc.inv_place.items:
-                                loc.inv_place.items.remove(inst)
+                                loc.inv_place.items.remove(inst)"""
 
-            else:
-                inst.location = location
-            if not done:
-                self.by_location[location].add(inst)
-
-        return_text = []
-        if old_container or new_container or hasattr(inst, "contained_in"):
-            if hasattr(inst, "contained_in"):
-                #print(f"inst.contained in: {inst}.{inst.contained_in}")
-                if old_container != None:
-                    parent = old_container
-                else:
-                    parent = inst.contained_in
-                if parent:
-                    was_in_container = True
-                    #print(f"parent.children: {parent.children}")
-                    parent.children.remove(inst)
-                    #print(f"parent.children: {parent.children} (should be removed now)")
-                    inst.contained_in = None
-                    return_text.append((f"Item `[{inst}]` removed from old container `[{parent}]`", inst, parent))
-                    if not no_print:
-                        print(f"Removed {assign_colour(inst)} from {assign_colour(parent)}.")
-                    updated.add(parent)
-
-            if new_container:
-                if not hasattr(new_container, "children") or new_container.children == None:
-                    new_container.children = set()
-                new_container.children.add(inst) # Added this, it wasn't adding items as children to containers.
-                inst.contained_in = new_container
-                updated.add(new_container)
-
-                return_text.append((f"Added [{inst}] to new container [{new_container}]", inst, new_container))
-                print(f"Added {assign_colour(inst)} to {assign_colour(new_container)}.")
-
-        if "is_cluster" in inst.item_type: # holy shit, it seems to work. Dropping a glass shard to a location where one already exists makes them combine, but picking them up keeps them separate. And referring to them by sing/plur works in all tests I've tried so far. Sheeeeit.
+        print("if not drop, assume pick up - we have a cluster in a location, need to separate a shard, add it to inv, and adjust cluster counts accordingly.")
+        # Need parents etc. eeeeh.
+        self.separate_cluster(inst, origin=parent if was_in_container else old_loc, origin_type="container" if was_in_container else "location")
+    # original:
+        """if "is_cluster" in inst.item_type: # holy shit, it seems to work. Dropping a glass shard to a location where one already exists makes them combine, but picking them up keeps them separate. And referring to them by sing/plur works in all tests I've tried so far. Sheeeeit.
             separated = False
             print(f"Item {inst} is cluster.")
             if not done:
@@ -929,25 +901,74 @@ class itemRegistry:
                 #print(f"inst: {inst}, vars: {vars(inst)}")
                 if inst in self.instances:
                     self.delete_instance(inst)
-                    print(f"delted {inst} from instances")
-            #else:
-                #print("inst not separated.")
+                    print(f"delted {inst} from instances")"""
+        return inst #or whatever is the correct output for the case. Likely
+
+    def move_item(self, inst:ItemInstance, location:cardinalInstance=None, new_container:ItemInstance=None, old_container:ItemInstance=None, no_print=False)->ItemInstance:
+        logging_fn()
+        from misc_utilities import assign_colour
+
+        if "is_cluster" in inst.item_type:
+            return self.move_cluster_item(inst, location, new_container, old_container)
+        # so there are no cluster items being processed from here on out. So I need to make sure that everything done here is also done there.
+        """
+        remove inst from original location, set to loc.no_place after recording old_loc. If old_loc == loc.inv_place, remove from inv_place.items.
+        """
+        updated = set()
+        was_in_container = False # using this as a check to see if the cluster should use old_loc or parent.
+
+        ## REMOVE FROM ORIGINAL LOCATION ##
+        old_loc = inst.location
+        if old_loc and old_loc != None:
+            if self.by_location.get(old_loc):
+                if inst not in self.by_location[old_loc]:
+                    print("Inst has a location but isn't in by_location. FIX THIS.")
+                else:
+                    self.by_location[old_loc].discard(inst)
+
+            if old_loc == loc.inv_place:
+                if inst in loc.inv_place.items:
+                    loc.inv_place.items.remove(inst)
+                inst.location = loc.no_place ## We don't add items to by_location for no_place, this is purely so the location data can be printed in print lines.
+
+        ## MOVE TO NEW LOCATION IF PROVIDED
+        if location != None:
+            if not self.by_location.get(location):
+                self.by_location[location] = set()
+
+            inst.location = location
+            self.by_location[location].add(inst)
+
+        return_text = []
+        if old_container or new_container or hasattr(inst, "contained_in"):
+            parent, was_in_container, new_container = self.get_parent_details(inst, old_container, new_container)
+            if parent and was_in_container:
+                #print(f"parent.children: {parent.children}")
+                parent.children.remove(inst)
+                #print(f"parent.children: {parent.children} (should be removed now)")
+
+                return_text.append((f"Item `[{inst}]` removed from old container `[{parent}]`", inst, parent))
+                if not no_print:
+                    print(f"Removed {assign_colour(inst)} from {assign_colour(parent)}.")
+                updated.add(parent)
+
+            if new_container:
+                new_container.children.add(inst) # Added this, it wasn't adding items as children to containers.
+                inst.contained_in = new_container
+                updated.add(new_container)
+
+                return_text.append((f"Added [{inst}] to new container [{new_container}]", inst, new_container))
+                print(f"Added {assign_colour(inst)} to {assign_colour(new_container)}.")
+            else:
+                inst.contained_in = None
 
         for item in updated:
-            #print(f"Updating item descriptions for item {item}")
             self.init_descriptions(item)
-            #if "is_cluster" in inst.item_type:
-                #print(f"multiple_instances count: {item.has_multiple_instances}, item location: {item.location}")
-
-        if not done:
-            done = inst
 
         if location == loc.inv_place:
-            location.items.add(done)
-        print(f"DONE: {done}")
-        return done # done == singular instance if pick up/separate,
-        #if return_text:
-        #    return return_text
+            location.items.add(inst)
+
+        return inst
 
     def move_from_container_to_inv(self, inst:ItemInstance, parent:ItemInstance=None) -> ItemInstance:
         logging_fn()
