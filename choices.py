@@ -53,15 +53,15 @@ trip_over={"any": ["some poorly lit hazard", "your own feet"],
            "inside": ["a small pile of clothes"]}
 
 
-def get_hazard():
-    logging_fn()
-    inside = getattr(loc.current, "inside")
-    if inside:
-        options = trip_over["any"] + trip_over["inside"]
-    else:
-        options = trip_over["any"] + trip_over["outside"]
-    hazard = random.choice(options)
-    return hazard
+#def get_hazard():
+#    logging_fn()
+#    inside = getattr(loc.current, "inside")
+#    if inside:
+#        options = trip_over["any"] + trip_over["inside"]
+#    else:
+#        options = trip_over["any"] + trip_over["outside"]
+#    hazard = random.choice(options)
+#    return hazard
 
 
 def set_choices():

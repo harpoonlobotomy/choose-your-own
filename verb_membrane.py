@@ -176,8 +176,6 @@ def get_noun_instances(dict_from_parser, viable_formats):
                                             break
 
                             dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": noun_inst.name, "text": entry["text"]})
-                            print(dict_from_parser[idx][kind])
-                        print("If more than one locally (inc inventory), check input text for plural/singular and use the correct one. (single_identifier: shard, plural_identifier: shards, for example.)")
 
                 elif kind == "location":
                     from env_data import locRegistry
@@ -286,8 +284,8 @@ test_input_list = ["take the paperclip", "take the paperclip", "pick up the glas
 
 test_input_list = ["go west", "open door", "enter shed", "take map", "take key", "go to north graveyard", "look at gate", "unlock padlock with key", "look at gate", "pick up padlock", "go to city hotel room", "find tv set", "go to east graveyard", "take jar", "logging args", "break jar"]
 
-test_input_list = ["go east", "take glass jar", "break jar", "pick up glass shard", "drop glass shard"]
-#test_input_list = ["inventory", "logging args", "read mag for a while", "read catalogue for a while"]
+#test_input_list = ["go east", "take glass jar", "break jar", "pick up glass shard", "drop glass shard", "go west", "open door", "enter shed", "take map", "read map"]
+test_input_list = ["east graveyard", "take moss", "take moss", "take moss"]
 #test_input_list = ["logging args", "take stick", "approach the forked tree branch", "look around"]
 
 import json

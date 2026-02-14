@@ -362,7 +362,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
     from tui.colours import Colours
     string = item
     if colour == "event_msg":
-        if "[[" in item:
+        if "[[" in item and not "[[]]" in item:
             return get_itemname_from_sqrbrkt(string)
 
     bg = None

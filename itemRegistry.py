@@ -266,7 +266,7 @@ Note on descriptions: if self.descriptions, will have different descriptions dep
             setattr(self.exit_to_location, "exit_item", self)
 
     def __repr__(self):
-        return f"<ItemInstance {self.name} ({self.id})>"
+        return f"<ItemInstance {self.name} ({self.id}) {self.location.place_name} // {(self.has_multiple_instances if hasattr(self, 'has_multiple_instances') else '')}>"
 
 
 class itemRegistry:
@@ -380,18 +380,13 @@ class itemRegistry:
 
 
     def delete_instance(self, inst: ItemInstance):
-        print(f"inst: {inst}")
 
         if inst.location and inst.location in self.by_location:
-            print(f"inst {inst} has location: {inst.location}")
             self.by_location[inst.location].remove(inst)
-            print(f"`{self.by_location[inst.location]}`")
 
             if inst.location == loc.inv_place:
                 loc.inv_place.items.remove(inst)
-                print(f"loc.inv_place.items: {loc.inv_place.items}")
         self.by_name.get(inst.name, list()).remove(inst)
-
 
         inst = self.instances.remove(inst)
         if not inst:
@@ -443,10 +438,9 @@ class itemRegistry:
         includes_inv = False
 
         location_items = self.by_location.get(loc.current)
+        print(f"location items in get_local_items: {location_items}")
         if location_items:
-            print(f"Location items: {location_items}")
             local_items = local_items | set(location_items)
-            print(f"local items: {local_items}")
 
         if include_inv and loc.inv_place.items:
             local_items = local_items | loc.inv_place.items
@@ -458,7 +452,9 @@ class itemRegistry:
                 #print("get local items by name.")
                 local_items = list(local_items)
                 local_items = set(i for i in local_items if i.name == by_name)
-        print("returning local items")
+                print(f"\nlocal items: {local_items}")
+            else:
+                return None
         return local_items#, includes_inv #not that useful perhaps. Anywhere it matters I'd need the lists separately, so maybe we leave this off.
 
     def generate_children_for_parent(self, parent=None):
@@ -635,7 +631,7 @@ class itemRegistry:
                 return inst, None, 9, accessible_dict[9]
 
             #from set_up_game import game
-            inventory_list = self.get_item_by_location(loc.inv_place)# game.inventory # using place instead of game.inventory for item storage. Not sure how I feel about it yet but trying it out.
+            inventory_list = loc.inv_place.items# game.inventory # using place instead of game.inventory for item storage. Not sure how I feel about it yet but trying it out.
 
             local_items_list = self.get_item_by_location(loc.current)
             #print(f"Local_items_list in run_check: {local_items_list}")
@@ -731,54 +727,76 @@ class itemRegistry:
         logging_fn()
         inst.print_name = new_print_name
 
-    def combine_clusters(self, inst:ItemInstance, inst_at_target:ItemInstance):
+    def combine_clusters(self, singular_inst:ItemInstance):
         logging_fn()
+        # combine == dropping item from inv to local cluster.
 
-        if not hasattr(inst, "has_multiple_instances") or not hasattr(inst_at_target, "has_multiple_instances"):
-            return False
+        # get cluster:
+        cluster = self.get_local_items(by_name=singular_inst.name)
+        if cluster:
+            print(f"CLUSTER OPTIONS: ({cluster})")
+            for item in cluster:
+                print(f"ITEM in cluster list: {item}, name: {item.name}, has_multiple_instances: {(item.has_multiple_instances if hasattr(item, 'has_multiple_instances') else 'no has_multiple_instances')}")
+            if len(cluster) > 1:
+                print(f"Multiple items in cluster with name {singular_inst.name}. This should not be possible, as I should be combining with the first one found and then returning that one, so I should never get to a point where there's more than one. Cluster list: {cluster}. Incoming inst is {singular_inst}")
+                exit()
+            else:
+                compound_target = list(cluster)[0]
+        else:
+            return False, False
 
-        if inst.name != inst_at_target.name:
-            return False
+        if not hasattr(singular_inst, "has_multiple_instances") or not hasattr(compound_target, "has_multiple_instances"):
+            return False, False
 
-        if inst.has_multiple_instances > 1:
-            print("How can the inst I want to combine has multiple instances? This should not be possible, I can't move from loc to loc if not loc.inv_place so it should be coming from inv, this singular.")
+        if singular_inst.name != compound_target.name:
+            return False, False
+
+        if singular_inst.has_multiple_instances > 1:
+            print(f"How can the inst I want to combine has multiple instances? This should not be possible, I can't move from loc to loc if not loc.inv_place so it should be coming from inv, this singular. {singular_inst}: has_multiple_instances: {singular_inst.has_multiple_instances}")
             exit()
-            return False
-        total_instances = inst.has_multiple_instances + inst_at_target.has_multiple_instances
-        inst_at_target.has_multiple_instances = total_instances
-        inst.has_multiple_instances = 0
+            return False, False
+        total_instances = singular_inst.has_multiple_instances + compound_target.has_multiple_instances
+        print("total_instances: ", total_instances, "inst.has_multiple_instances: ", singular_inst.has_multiple_instances, "+ inst_at_target: ", compound_target.has_multiple_instances)
+        compound_target.has_multiple_instances = total_instances
+        singular_inst.has_multiple_instances = 0
 
-        #print(f"Combined clusters. New instance count: {total_instances}")
-        return inst_at_target
+        print(f"Combined clusters. New instance count: {total_instances}")
+        return singular_inst, compound_target
 
-    def separate_cluster(self, inst:ItemInstance, origin, origin_type:str):
+    def separate_cluster(self, compound_inst:ItemInstance, origin, origin_type:str):
         logging_fn()
-
-        if not (hasattr(inst, "has_multiple_instances") and inst.has_multiple_instances > 1):
+        print(f"ORIGIN: {origin}")
+        if not hasattr(compound_inst, "has_multiple_instances"):
             return False, None
 
-        new_def = registry.item_defs.get(inst.name)
+        new_def = registry.item_defs.get(compound_inst.name)
         if origin_type == "location":
             new_def["exceptions"] = {"starting_location": origin}
 
-        new_inst = registry.init_single(inst.name, new_def)
-        #print(f"New inst {new_inst} generated from cluster {inst}")
+        singular_inst = registry.init_single(compound_inst.name, new_def)
+        print(f"New inst {singular_inst} generated from cluster {compound_inst}")
         # checks #
         if origin_type == "location":
-            if new_inst.location != origin:
-                print(f"Failed to set location for new cluster instance. Expected {origin}, got {new_inst.location}.")
-                exit() # catastropic failure.
+            print(f"Origin type loc, origin: {origin}")
+            #if new_inst.location != origin:
+            #    print(f"Failed to set location for new cluster instance. Expected {origin}, got {new_inst.location}.")
+            #    exit() # catastropic failure.
             #print(f"new inst location set at {inst.location}")
+            #self.by_location[singular_inst.location].add(singular_inst) # should not be adding the singular, this is what is being removed and added to inv.
+            self.by_location[origin].add(compound_inst)
+            if singular_inst in self.by_location[origin]:
+                self.by_location[origin].remove(singular_inst)
+            singular_inst.location = loc.no_place
 
         elif origin_type == "container":
-            new_inst.contained_in = origin
-            new_inst.location = None
+            singular_inst.contained_in = origin
+            singular_inst.location = loc.no_place
             #print(f"New inst {new_inst} contained in {new_inst.contained_in}, expecting {origin}, location: {new_inst.location} (should be 'None')")
 
-        starting_instance_count = inst.has_multiple_instances
+        starting_instance_count = compound_inst.has_multiple_instances
         #print(f"starting instance count: {starting_instance_count}")
-        inst.has_multiple_instances = 1
-        new_inst.has_multiple_instances = starting_instance_count - 1  #No wait. Need to check if there's an instance at the destination before I do this. Will do that first. #no wait no wait - this is putting something back where it was removed to. That check does need to happen but earlier in move_item, not here.
+        compound_inst.has_multiple_instances = starting_instance_count - 1
+        singular_inst.has_multiple_instances = 1  #No wait. Need to check if there's an instance at the destination before I do this. Will do that first. #no wait no wait - this is putting something back where it was removed to. That check does need to happen but earlier in move_item, not here.
         #print(f"Ending counts: original inst: {inst.has_multiple_instances}, new inst: {new_inst.has_multiple_instances}")
         #generate a new item (new_inst) with multiple_instances = inst.multiple_instances -1
         # add new_inst to old_loc/old_container
@@ -786,13 +804,22 @@ class itemRegistry:
         # update descriptions for inst and new_inst.
         ## so: The original is the thing picked up, important so that the check to make sure it arrived in the inventory still passes. The new one is left behind.
 
-        return True, new_inst # <- separated, new_cluster
+        return True, singular_inst # <- separated, new_singular
 
     # -------------------------
     # Movement
     # -------------------------
 
-    def move_item(self, inst:ItemInstance, location:cardinalInstance=None, new_container:ItemInstance=None, old_container:ItemInstance=None, no_print=False)->list:
+    def move_cluster_item(self, inst:ItemInstance, location:cardinalInstance=None, new_container:ItemInstance=None, old_container:ItemInstance=None, is_drop=False)->ItemInstance:
+
+        if is_drop:
+            print("moving shard from inv to current loc, if cluster at current loc, combine shard w cluster and remove shard from inv and instances.")
+            return
+
+        print("if not drop, assume pick up - we have a cluster in a location, need to separate a shard, add it to inv, and adjust cluster counts accordingly.")
+
+
+    def move_item(self, inst:ItemInstance, location:cardinalInstance=None, new_container:ItemInstance=None, old_container:ItemInstance=None, no_print=False)->ItemInstance:
         logging_fn()
         from misc_utilities import assign_colour
 
@@ -804,35 +831,51 @@ class itemRegistry:
         if old_loc and old_loc != None:
             if self.by_location.get(old_loc):
                 self.by_location[old_loc].discard(inst)
-                inst.location = None
+            #inst.location = None
+            #if old_loc == loc.inv_place and inst in loc.inv_place.items:
+            #    loc.inv_place.items.remove(inst)
+            #else:
+            #    inst.location = location
+            #inst.location = None
             if old_loc == loc.inv_place:
                 if inst in loc.inv_place.items:
                     loc.inv_place.items.remove(inst)
-                inst.location = None
-
+                inst.location = loc.no_place ## We don't add items to by_location for no_place, this is purely so the location data can be printed in print lines.
         ## MOVE TO NEW LOCATION IF PROVIDED
         done = False
         if location != None:
             if not isinstance(location, cardinalInstance):
                 traceback_fn()
                 exit(f"move_item requires location to be cardinalInstance. Recieved `{location}` of type `{type(location)}`.")
-            inst.location = location
             if not self.by_location.get(location):
                 self.by_location[location] = set()
 
-            if "is_cluster" in inst.item_type and self.get_local_items(by_name=inst.name) and location != loc.inv_place:
+            if "is_cluster" in inst.item_type:
+                print("is cluster and location is not none.")
+                if self.get_local_items(by_name=inst.name):
+                    print(f"there are local items with this name: {self.get_local_items(by_name=inst.name)}.")
+                    if location != loc.inv_place: ## == am dropping, so combine inst with local cluster.
+                        print(f"location is not inv place. Need to add {inst} to local cluster if found.")
                 #print("is cluster, passed first get_local_items")
-                combined_inst = self.combine_clusters(inst, list(self.get_local_items(by_name=inst.name))[0])
-                if combined_inst:
-                    #print(f"Combined_inst: {combined_inst}")
-                    done = True
-                    updated.add(combined_inst)
-                    self.by_location[location].add(inst)
+                        print(f"list(self.get_local_items(by_name=inst.name))[0]: {list(self.get_local_items(by_name=inst.name))[0]}")
+                        singular_inst, combined_inst = self.combine_clusters(inst)
+                        print(f"AFTER COMBINE_CLUSTER: \n Original inst: {inst}, location: {inst.location}\n Singular inst: {singular_inst}, location: {singular_inst.location}\nCombined inst: {combined_inst}, location: {combined_inst.location}\n")
+                        if combined_inst:
+                            print(f"Combined inst: {combined_inst}, location: {combined_inst.location}")
+                            print(f"Original inst: {inst}, location: {inst.location}")
+                            #print(f"Combined_inst: {combined_inst}")
+                            done = combined_inst
+                            updated.add(combined_inst)
+                            if inst in self.by_location[location]:
+                                self.by_location[location].remove(inst)
+                            inst.location = loc.no_place
+                            if inst in loc.inv_place.items:
+                                loc.inv_place.items.remove(inst)
 
+            else:
+                inst.location = location
             if not done:
                 self.by_location[location].add(inst)
-            if location == loc.inv_place:
-                location.items.add(inst)
 
         return_text = []
         if old_container or new_container or hasattr(inst, "contained_in"):
@@ -865,16 +908,20 @@ class itemRegistry:
 
         if "is_cluster" in inst.item_type: # holy shit, it seems to work. Dropping a glass shard to a location where one already exists makes them combine, but picking them up keeps them separate. And referring to them by sing/plur works in all tests I've tried so far. Sheeeeit.
             separated = False
-            #print(f"Item {inst} is cluster.")
-            if done != True:
+            print(f"Item {inst} is cluster.")
+            if not done:
                 #print("Not done, probably wasn't dropping from inv to loc.")
-                separated, new_cluster = self.separate_cluster(inst, origin=parent if was_in_container else old_loc, origin_type="container" if was_in_container else "location")
+                separated, single_inst = self.separate_cluster(inst, origin=parent if was_in_container else old_loc, origin_type="container" if was_in_container else "location")
                 #print(f"inst: {inst}, new_cluster: {new_cluster}")
                 if separated:
                 #print("inst separated")
-                    updated.add(new_cluster)
+                    updated.add(single_inst)
+                    updated.add(inst)
+                    done = single_inst
+                    print(f"Done (new single): {done}, old cluster: {inst}")
+
             if inst.has_multiple_instances == 0:
-                #print(f"This instance [{inst}] has no multiples left; deleting.")
+                print(f"This instance [{inst}] has no multiples left; deleting.")
                 #if done:
                 if inst in updated:
                     updated.remove(inst)
@@ -882,21 +929,27 @@ class itemRegistry:
                 #print(f"inst: {inst}, vars: {vars(inst)}")
                 if inst in self.instances:
                     self.delete_instance(inst)
-                    #print(f"delted {inst} from instances")
-            elif separated:
-                updated.add(inst)
+                    print(f"delted {inst} from instances")
             #else:
                 #print("inst not separated.")
 
         for item in updated:
-            print(f"Updating item descriptions for item {item}")
+            #print(f"Updating item descriptions for item {item}")
             self.init_descriptions(item)
-            if "is_cluster" in inst.item_type:
-                print(f"multiple_instances count: {item.has_multiple_instances}, item location: {item.location}")
-        if return_text:
-            return return_text
+            #if "is_cluster" in inst.item_type:
+                #print(f"multiple_instances count: {item.has_multiple_instances}, item location: {item.location}")
 
-    def move_from_container_to_inv(self, inst:ItemInstance, parent:ItemInstance=None) -> tuple[list,list]:
+        if not done:
+            done = inst
+
+        if location == loc.inv_place:
+            location.items.add(done)
+        print(f"DONE: {done}")
+        return done # done == singular instance if pick up/separate,
+        #if return_text:
+        #    return return_text
+
+    def move_from_container_to_inv(self, inst:ItemInstance, parent:ItemInstance=None) -> ItemInstance:
         logging_fn()
         if parent == None:
             parent = inst.contained_in
@@ -992,6 +1045,8 @@ class itemRegistry:
             from misc_utilities import smart_capitalise
             description = smart_capitalise(description)
 
+        if "[[]]" in description:
+            description = description.replace("[[]]", f"{inst.print_name}")
         if description:
             return description
 
@@ -1226,25 +1281,25 @@ class itemRegistry:
         #     attr = self.item_defs.get(inst.name)
         #     inst = self.init_single(inst.name, attr)
 
-        self.move_item(inst, location = loc.inv_place)
+        new_inst = self.move_item(inst, location = loc.inv_place)
 
         if not hasattr(self, "starting_location"): # so it only updates once, instead of being the 'last picked up at'. Though that could be useful tbh. Hm.
             self.starting_location = {location} # just temporarily, not in use yet. Needs formalising how it's going to work.
-
+        if isinstance(new_inst, ItemInstance) and new_inst != inst:
+            print(f"Picked up {new_inst} instead of {inst}.")
+            inst = new_inst
         return inst
 
     def drop(self, inst: ItemInstance):
         logging_fn()
-        inventory_list = loc.inv_place.items
-
-        if inst not in inventory_list:
-            return None, inventory_list
-        print(f"inst in drop: {inst}")
-        inventory_list.remove(inst)
-        print(f"inst in drop after remove from inv list: {inst}")
+        #inventory_list = loc.inv_place.items
+#
+        #if inst not in inventory_list:
+        #    print(f"{inst} not in inventory, cannot drop.")
+        #    return None, inventory_list
+        #inventory_list.remove(inst)
         self.move_item(inst, location = loc.current)
-        print(f"inst in drop after move: {inst}")
-        return inst, inventory_list
+        return inst#, inventory_list
 
 
     def complete_location_dict(self):

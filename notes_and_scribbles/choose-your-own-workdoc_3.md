@@ -1559,3 +1559,386 @@ But, pick up 2, and you have 'shards of glass x2'.
 And the names update properly in line, and if you have a shard in your inventory and a cluster on the ground, 'look at shards' will describe the cluster, not the single shard, and the inverse applies as well.
 
 Really pleased with this. It's so tiny and probably not something anyone will ever notice (if they even play this) but I'm proud tbh.
+
+NOTE: Shouldn't update plural_identifier during the parser, should do it during description update along with the name. Which I think I already do, in which case the parser update is just a dupe and should be removed regardless.
+
+Moving most of the readme text to here, I never update it so it's just taking up space. Wrote a little summary of the project to sit there instead.
+
+"""
+NOTES:
+- 'locations' only needs to contain basic data for initial setup and (currently disabled) location nesting. All detailed location data, descriptions etc is handled in 'env_data', along with weather and whatnot. Potentially it'd be better to do away with 'locations' entirely and do it all within env_data, but for now that's how it is.
+
+'choose_a_path' is the script that actually runs the 'game'. This isn't clear at all, I realise now.
+
+
+THOUGHTS:
+
+I'm not sure if 'choices' and 'env_data' should merge. Is it better to keep minimal external files, or to keep clarity between their function? At this scale I'm sure it doesn't matter, but I'm not sure what the answer actually is.
+
+Need to so some actual story planning. So far it's just been vague outlines of locations, with no through-roads between.
+Will draw out some plot ideas and how the locations contribute.
+Theoretically I'd like 3 layered plots, independent but interlinked (at least thematically). Had the idea of basically colour-coding the clues; everything for plot A is somehow blue, everything for plot b is somehow green, etc. Not sure how to work it in but it'd be a way to differentiate between the clues, but with the colour-coding itself needing to be recognised as significant. Will think on it.
+
+----------
+Well it's 21/1/26, and while I've worked on this a lot, I've not updated this at all.
+The game is now instance-based, and while I'm reworking how the locations + items work again at present, it's coming along well. Currently there's still no game, but once the established (basic) mechanics are sturdy, then I'll start working on that.
+
+---
+
+3/2/26
+Wow I've been terrible at updating this readme.
+
+Currently working on:
+    * Reworking item_defs and loc_data so they can both serve their roles better, currently there's bits of data coming from random places and it needs to be better defined.
+
+Planned things:
+    * mini events, things that start, do a task and then end in the same turn. Current function won't allow for that, so just need to write an additional route for one-turn events. (There aren't really "turns", but it makes sense thematically.)
+    * randomised item placement for generic required items (minor locked item requires a key, key is placed in one of a selection of items and/or places when the locked item is init'), could be useful.
+    * moving a bunch of files. Need to put all my definitions files in one place, and move a bunch of old ones to archives or bin them.
+
+13/2/26
+    * Mini events implemented (`immediate_events`).
+
+"""
+
+3.17pm
+Hm.
+
+[[  read map  ]]
+
+You can't see a map to read.
+
+[[  look at map  ]]
+
+You look at the local map:
+
+=======
+Also, it's not properly fixing the description, at some point I broke it slightly:
+ A yellowed [[]] showing the region surrounding the graveyard.
+
+So this is where the [[]] is coming from:
+print(f"\n   {assign_colour(registry.describe(item_inst, caps=True), colour="description")}")
+
+4.15pm
+description fixed.
+
+4.21pm fixed 'read map' not working. Had a logic error.
+
+So, next:
+I want to set up the timed events. For that I need to set up the passage of time again, which has been completely removed I think.
+
+I thought I had a 'world state' class or smth but I can't see it. Maybe it was removed.
+
+Might rename set_up_game and the game class to be worldstate.
+
+Or maybe not. Maybe it's better to have it just be the startup.
+
+I'm not sure. I mean it doesn't do much.
+
+4.55
+So this is... odd.
+
+[[  take glass  ]]
+
+The broken glass shard is now in your inventory.
+
+[[  take glass  ]]
+
+The broken glass shard is now in your inventory.
+
+[[  take moss  ]]
+
+The moss is now in your inventory.
+Event must have condition maintained until completion of 3 days.
+Add something to set_up_game to manage 'when day changes, add to duration'.
+I feel like the duration should be tracked on the event, not the trigger, though.
+You pick up the moss, and feel it squish a little between your fingers.
+
+[[  take moss  ]]
+
+The moss is now in your inventory.
+You put down the still-damp moss.
+
+I'm still holding moss x2. I didn't put it down.
+
+Okay, so with logging on - Oooh. It's the cluster. The specific moss that was the event trigger left my inventory because it joined the cluster? But it doesn't cluster in the inventory...
+
+[imagine lots of logs here]
+
+Oooooh. The event is being triggered by the one we try to pick up, so /it/ isn't in the inventory.
+
+'is_event_trigger' is using
+noun_inst: <ItemInstance moss (b9163d57-49c8-45eb-b7f4-9ef7e1333420)>
+which is the original, but should use
+
+inst: <ItemInstance moss (5e712f4e-7dfb-4dc3-aba2-33d69725bb1e)>
+which is the produced individual instance in the inventory.
+
+Also, verb_actions is still using game.inventory everywhere. Need to fix that.
+
+
+#   [[  take moss  ]]
+#
+#   The moss is now in your inventory.
+#   Event must have condition maintained until completion of 3 days.
+#   Add something to set_up_game to manage 'when day changes, add to duration'.
+#   I feel like the duration should be tracked on the event, not the trigger, though.
+#   You pick up the moss, and feel it squish a little between your fingers.
+#
+#   [[  take moss  ]]
+#
+#   The moss is now in your inventory.
+#   You put down the still-damp moss.
+#
+#   [[  take moss  ]]
+#
+#   The moss is now in your inventory.
+#   Event must have condition maintained until completion of 3 days.
+#   Add something to set_up_game to manage 'when day changes, add to duration'.
+#   I feel like the duration should be tracked on the event, not the trigger, though.
+#   You pick up the moss, and feel it squish a little between your fingers.
+
+
+Why every other time. What on earth...
+
+Ugh. So I don't know why it's every other time yet (I assume having one already in the inventory changes things, but why not the second time?), will keep looking, but another note:
+
+[[  drop moss  ]]
+
+You can't drop the moss; you aren't holding it.
+
+inventory
+
+severed tentacle
+moss x2
+fashion mag
+paperclip
+
+
+So - 'drop' needs to check inventory first and choose from those named items.
+
+'take' needs to look only at items not in inventory.
+
+Take moss:
+
+
+[[  take moss  ]]
+
+CAN_TAKE: <ItemInstance moss (84fbba5f-4b48-4175-b86c-ba5c9374df35)> / meaning: accessible / reason_val: 0
+The moss is now in your inventory.
+ITEM: <ItemInstance moss (84fbba5f-4b48-4175-b86c-ba5c9374df35)>
+
+You pick up the moss, and feel it squish a little between your fingers.
+
+[[  take moss  ]]
+
+CAN_TAKE: <ItemInstance moss (84fbba5f-4b48-4175-b86c-ba5c9374df35)> / meaning: in inventory / reason_val: 5
+LOCAL ITEM NAMES: {'moss': <ItemInstance moss (df9abb25-96d7-4967-a83f-dfdc71080b76)>, 'glass jar': <ItemInstance glass jar (8ead9c76-609b-44e0-aacf-34e43a9fa1ed)>, 'desiccated skeleton': <ItemInstance desiccated skeleton (7264c008-5f20-4339-8bc0-2bdb96a90b5b)>}
+CAN_TAKE: <ItemInstance moss (df9abb25-96d7-4967-a83f-dfdc71080b76)> / meaning: accessible / reason_val: 0
+The moss is now in your inventory.
+ITEM: <ItemInstance moss (84fbba5f-4b48-4175-b86c-ba5c9374df35)>
+You put down the still-damp moss.
+
+[[  take moss  ]]
+
+CAN_TAKE: <ItemInstance moss (af2c6c90-c04a-4889-b011-abe3af03455e)> / meaning: accessible / reason_val: 0
+The moss is now in your inventory.
+ITEM: <ItemInstance moss (af2c6c90-c04a-4889-b011-abe3af03455e)>
+Event must have condition maintained until completion of 3 days.
+Add something to set_up_game to manage 'when day changes, add to duration'.
+I feel like the duration should be tracked on the event, not the trigger, though.
+You pick up the moss, and feel it squish a little between your fingers.
+
+Current plan:
+Smuggle the new single instance/local noun_inst through 'added to inv', then run the trigger check on that. Because it's /finding/ the new single instance, but still running the trigger check on the original noun.
+
+Not sure why it's doing something different on the third one. I'm not sure where af2c6c90-c04a-4889-b011-abe3af03455e is even coming from.
+
+5.38pm
+Okay, that seems to work.
+Now moss x3 in inventory, all with the /start/ of the event, not intermittent. No event ending.
+
+5.54pm but ending the events is still wrong.
+Hm.
+
+So,
+[[  drop moss  ]]
+
+Dropped the moss onto the ground here at the eastern graveyard
+DROPPED INST: <ItemInstance moss (6e5ccc5a-4ddd-478a-9f8d-05bf3e70b0bc)>
+Noun has event; <ItemInstance moss (6e5ccc5a-4ddd-478a-9f8d-05bf3e70b0bc)> / <eventInstance moss_dries (7fae74f1-30d7-4e97-ae77-00abe5b579fd, event state: 1>
+
+Dropping does trigger that it's an event. But it's not actually ending here.
+
+But if I take the moss again,
+
+[[  take moss  ]]
+
+CAN_TAKE: <ItemInstance moss (fb8695ec-8567-410d-ac16-862b0461e7d6)> / meaning: accessible / reason_val: 0
+You put down the still-damp moss.
+
+Okay, so - when I take that last bit of moss, that's the 'cluster' that it found initially.  So it fails because it realises that moss (the cluster) is not in inv.
+
+Weirdly, if I then drop the moss again,
+
+[[  drop moss  ]]
+
+Dropped the moss onto the ground here at the eastern graveyard
+DROPPED INST: <ItemInstance moss (fb8695ec-8567-410d-ac16-862b0461e7d6)>
+Noun has event; <ItemInstance moss (fb8695ec-8567-410d-ac16-862b0461e7d6)> / <eventInstance moss_dries (e7c70554-ddfc-43d0-9749-e4a94e3013a9, event state: 2>
+Failed to find the correct function to use for <verbInstance drop (f5c59d58-2e73-4ae0-8d61-81a9cf964d21)>: cannot access local variable 'event' where it is not associated with a value
+
+So...
+Tracking the moss to see exactly where I need to switch them out.
+
+The original moss clump(s):
+
+<ItemInstance moss (6942db98-4250-4fe3-8f0f-afb9afaea023)>
+
+We find we can take it:
+CAN_TAKE: <ItemInstance moss (6942db98-4250-4fe3-8f0f-afb9afaea023)> / meaning: accessible / reason_val: 0
+
+realise it's a cluster:
+(  Func:  separate_cluster    )
+inst: <ItemInstance moss (6942db98-4250-4fe3-8f0f-afb9afaea023)>
+
+But then it's the original that gets sent through to check event triggers
+(  Func:  is_event_trigger    )
+noun_inst: <ItemInstance moss (6942db98-4250-4fe3-8f0f-afb9afaea023)>
+
+6.23pm
+
+Hm.
+
+Done (new cluster): <ItemInstance moss (0f735c90-f7ea-47a3-a881-a8fd29370699)>
+DONE: <ItemInstance moss (0f735c90-f7ea-47a3-a881-a8fd29370699)>
+Picked up <ItemInstance moss (0f735c90-f7ea-47a3-a881-a8fd29370699)> instead of <ItemInstance moss (082c9a2a-e62a-4373-a28b-3541bed618f9)>.
+Outcome: <ItemInstance moss (0f735c90-f7ea-47a3-a881-a8fd29370699)>, noun_inst: <ItemInstance moss (082c9a2a-e62a-4373-a28b-3541bed618f9)>
+noun_inst is in inventory.
+
+So, it makes the new instance. Recognises it as separate. But apparently the outcome is /not/ the one in the inventory.
+
+It's breaking somewher in pick_up.
+
+Though honestly why do I need pick_up at all? Why not just
+
+self.move_item(inst, location = loc.inv_place)?
+
+6.53pm
+okay. Removed pick_up, just using move directly.
+
+Some improvement - drop now drops reliably, although I have this issue:
+
+#   You're facing east. You see a variety of headstones, most quite worn, and decorated by clumps of moss, decorated by clumps of moss, and a glass jar being used as a vase in front of one of the headstones, with some dried flowers left long ago.
+
+So it's not combining properly.
+
+7.02
+because:
+list(self.get_local_items(by_name=inst.name))[0]: <ItemInstance glass jar (43e33721-b1a1-4c3f-b490-f977ca4c6aed)>
+
+it's only finding the glass jar, and not the two mosses still present. So they're not being properly added to the location.
+
+Now it's getting all recursive. Bleh.
+
+Need to... make sure it's settting location properly. At some point I think I've twisted things so it's thinking one is the singular when it's actually the compound.
+
+So to remind myself:
+
+separate_cluster(self, inst:ItemInstance, origin, origin_type:str)
+
+==
+
+inst.has_multiple_instances = 1
+new_inst.has_multiple_instances = starting_instance_count - 1
+
+the output of separate_cluster /is the singleton/, not the cluster. The input is the cluster.
+
+
+8.11, 14/2/26
+
+Working on the multiple_instances again.
+
+Currently it errors here:
+
+local items: {<ItemInstance moss (464b466e-db32-4023-ae88-80679778d7b0) north inventory_place // 1>, <ItemInstance moss (d1446f4a-b110-4aaa-aac7-c5a2d02b1e03) east graveyard // 1>}
+Combined inst: <ItemInstance moss (464b466e-db32-4023-ae88-80679778d7b0) north inventory_place // 2>, location: <cardinalInstance north inventory_place (3dff0621-bd4d-4cf7-9eb0-e68871618ad1)>
+Original inst: <ItemInstance moss (e59a3192-3727-4d4c-b5a2-3afd8db81f5a) east graveyard // 0>, location: <cardinalInstance east graveyard (32650f16-d179-4a9a-9575-f7bec9431393)>
+This instance [<ItemInstance moss (e59a3192-3727-4d4c-b5a2-3afd8db81f5a) east graveyard // 0>] has no multiples left; deleting.
+DONE: <ItemInstance moss (464b466e-db32-4023-ae88-80679778d7b0) north inventory_place // 2>
+DROPPED(really): <ItemInstance moss (e59a3192-3727-4d4c-b5a2-3afd8db81f5a) east graveyard // 0>
+
+Cannot process {0: {'verb': {'instance': <verbInstance drop (50064d1d-ce5f-4953-8e20-49740267e943)>, 'str_name': 'drop', 'text': 'drop'}}, 1: {'noun': {'instance': <ItemInstance moss (464b466e-db32-4023-ae88-80679778d7b0) north inventory_place // 2>, 'str_name': 'moss', 'text': 'moss'}}} in def drop() End of function, unresolved.
+
+### summary:
+There should be a total of 3 multiple_instances in local_items if including inventory. One's gone missing at some point I guess. Will look into it today, was too braindead to look into it yesterday.
+
+8.38am
+okay so:
+
+I go east, I pick up two pieces of moss.
+
+inventory:
+paperclip
+moss x2
+gardening mag
+
+great.
+
+look around:
+
+You're facing east. You see a variety of headstones, most quite worn, and decorated by clumps of moss, decorated by clumps of moss, decorated by clumps of moss, and a glass jar being used as a vase in front of one of the headstones, with some dried flowers left long ago.
+
+so I'm guessing it's adding the picked up inst to the loc. Will find that portion.
+
+[[  take moss  ]]emInstance moss (34365ba3-e992-486e-a4e8-0e9b1c619c18) east graveyard // 3>}
+
+CAN_TAKE: <ItemInstance moss (34365ba3-e992-486e-a4e8-0e9b1c619c18) east graveyard // 3> / meaning: accessible / reason_val: 0
+is cluster and location is not none.
+there are local items with this name: {<ItemInstance desiccated skeleton (5b1fe450-8150-4dd7-9e63-aaba2ff43c5e) east graveyard // >, <ItemInstance glass jar (27fdcead-7c14-449e-bae4-493c738f9061) east graveyard // >}.
+New inst <ItemInstance moss (913c9a51-cd4d-4815-a8d9-40dd13076361) east graveyard // 3> generated from cluster <ItemInstance moss (34365ba3-e992-486e-a4e8-0e9b1c619c18) north inventory_place // 3>
+Done (new cluster): <ItemInstance moss (913c9a51-cd4d-4815-a8d9-40dd13076361) east graveyard // 1>
+DONE: <ItemInstance moss (913c9a51-cd4d-4815-a8d9-40dd13076361) east graveyard // 1>
+Outcome: <ItemInstance moss (913c9a51-cd4d-4815-a8d9-40dd13076361) east graveyard // 1>, noun_inst: <ItemInstance moss (34365ba3-e992-486e-a4e8-0e9b1c619c18) north inventory_place // 2>
+
+Yeah they're being switched. north inventory_place instances should only ever be singular.
+
+9.11am
+okay, straight errors are fixed but still,
+
+You're facing east. You see a variety of headstones, most quite worn, and decorated by clumps of moss, decorated by clumps of moss, decorated by clumps of moss, and a glass jar being used as a vase in front of one of the headstones, with some dried flowers left long ago.
+
+fashion mag
+paperclip
+severed tentacle
+moss x2
+
+Okay so that's fixed, but now when I drop them they don't remove from the inventory. Well, the first does, but not later ones.
+
+First one goes through the whole local items/combine cluster.
+
+But the later ones:
+
+[[  drop moss  ]]emInstance moss (c3364b3d-a13b-434d-9d13-7087529aa15e) east graveyard // 1>, <ItemInstance moss (410817c9-1390-4080-b12d-1e9d980ec5a7) north no_place // 1>}
+
+reason val: 5, meaning: in inventory, for item: <ItemInstance moss (c3364b3d-a13b-434d-9d13-7087529aa15e) east graveyard // 1>
+is cluster and location is not none.
+Item <ItemInstance moss (c3364b3d-a13b-434d-9d13-7087529aa15e) east graveyard // 1> is cluster.
+ORIGIN: <cardinalInstance east graveyard (88bd1817-de56-40d6-b2e9-f6e114c7717b)>
+DONE: <ItemInstance moss (c3364b3d-a13b-434d-9d13-7087529aa15e) east graveyard // 1>
+DROPPED(really): <ItemInstance moss (c3364b3d-a13b-434d-9d13-7087529aa15e) east graveyard // 1>
+Dropped the moss onto the ground here at the eastern graveyard
+DROPPED INST: <ItemInstance moss (c3364b3d-a13b-434d-9d13-7087529aa15e) east graveyard // 1>
+
+So drop moss is trying to /separate/ a cluster...?
+I guess that means it failed to combine earlier, because it means Done failed. Which tracks.
+
+Okay so
+
+                if self.get_local_items(by_name=inst.name):
+                    print(f"there are local items with this name: {self.get_local_items(by_name=inst.name)}.")
+this is failing.
+
+Yeah it's trying to generate a cluster from the shard in the inventory instead of just putting it down.
+
+Okay. So - I need to keep a separate 'drop' function so these two don't get tangled, at least for now. It wouldn't be an issue if it wasn't failing earlier but it's just a pain.

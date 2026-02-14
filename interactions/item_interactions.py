@@ -62,7 +62,7 @@ def look_at_item(item_inst, entry): ## this is just using everything from regist
             if hasattr(item_inst, "is_map"):
             #from set_up_game import game
             #if item_inst == game.map_item:
-                print("item inst is map")
+                #print("item inst is map")
                 show_map(item_inst)
 
 
