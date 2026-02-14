@@ -339,31 +339,31 @@ def separate_loot(child_input=None, parent_input=None, inventory=[]): ## should 
 
 ### COLOUR ASSIGNMENT
 
-def get_itemname_from_sqrbrkt(string):
+def get_itemname_from_sqrbrkt(string, noun):
 
     parts = string.split("[[")
     other_parts = parts[1].split("]]")
-    #print(f"Parts[0]: {parts[0]}, other_parts: {other_parts}")
     item_name_raw = other_parts[0].strip()
-    item_name = assign_colour(item_name_raw)
-    #print(f"item_name: {item_name}")
+    if noun and noun != None and (noun.name == item_name_raw or item_name_raw in noun.print_name):
+        item_name = assign_colour(item = noun)
+    else:
+        item_name = assign_colour(item_name_raw)
     joined = [parts[0], item_name]
     for part in other_parts:
         if part == item_name_raw:
             continue
         joined.append(part.strip())
     compiled_str = "".join(joined)
-    #print(f"joined: {compiled_str}")
     return compiled_str
 
 
-def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=False, not_bold=False, caps=False, card_type = None):
-    #logging_fn()
+def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=False, not_bold=False, caps=False, card_type = None, noun=None):
+    
     from tui.colours import Colours
     string = item
     if colour == "event_msg":
-        if "[[" in item and not "[[]]" in item:
-            return get_itemname_from_sqrbrkt(string)
+        if "[[" in string and not "[[]]" in string:
+            return get_itemname_from_sqrbrkt(string, noun)
 
     bg = None
     bld = ita = u_line = invt = False

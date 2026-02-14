@@ -568,6 +568,40 @@ def meta(format_tuple, input_dict):
         meta_control(format_tuple, noun, location, cardinal)
         return
 
+def move_through_trans_obj(noun, input_dict):
+    #print(f"noun.enter_location: {noun.enter_location}")
+    inside_location = noun.enter_location ## Noun must have both enter loc and exit_to_loc if it has either.
+    outside_location = noun.exit_to_location
+    if hasattr(noun, "exit_to_location"):
+        if outside_location == loc.current.place:
+            if hasattr(noun, "is_open") and noun.is_open == True:
+                print(assign_colour("The door creaks, but allows you to head inside.", colour="event_msg"))
+                print()
+                # want like, recklessly/cautiously/quietly, depending on playstyle. Long way off that but wanted to note it.
+                return new_relocate(inside_location)
+
+            else:
+                if noun.location == loc.current:
+                    print("You can't enter through a closed door.")
+                else:
+                    turn_around(new_cardinal = noun.location)
+                return 1
+        elif inside_location == loc.current.place:
+            if not get_location(input_dict) or (get_location(input_dict) and get_location(input_dict) != loc.current):
+                if hasattr(noun, "is_open") and noun.is_open == True:
+                    print(assign_colour("You head back out through the door.", colour="event_msg"))
+                    new_relocate(outside_location)
+                    return 1
+                else:
+                    print("You can't leave through a closed door.")
+                    return 1
+            else:
+                print(f"You're already in the {assign_colour(loc.current.place)}.")
+        else:
+            print("You can't go enter something unless you're nearby to it.")
+            return 1
+
+
 def go(format_tuple, input_dict): ## move to a location/cardinal/inside
     logging_fn()
 
@@ -579,9 +613,14 @@ def go(format_tuple, input_dict): ## move to a location/cardinal/inside
 
     verb_entry, noun_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
 
+    if len(format_tuple) == 2 and noun_entry:
+        noun = noun_entry["instance"]
+        if hasattr(noun, "enter_location"):
+            return move_through_trans_obj(noun, input_dict)
+
     if (direction_entry and direction_entry["str_name"] in to_words and len(format_tuple) < 5) or (not direction_entry and len(format_tuple) < 4) or (direction_entry and not cardinal_entry and not location_entry):
         if location_entry and not cardinal_entry:
-
+            print(f"Location entry, not cardinal enter: {location_entry}")
             if location_entry["instance"] == loc.currentPlace:
                 if input_dict[0].get("verb") and input_dict[0]["verb"]["str_name"] == "leave":
                     if hasattr(loc.current.place, "entry_item"):
@@ -592,9 +631,9 @@ def go(format_tuple, input_dict): ## move to a location/cardinal/inside
                     return
 
             if hasattr(location_entry["instance"], "entry_item"):
-
+                print(f"hasattr location_entry[instance], entry_item: {location_entry["instance"].entry_item}")
                 if not get_noun(input_dict):
-                    input_dict[len(format_tuple)] = {}
+                    #input_dict[len(format_tuple)] = {}
                     input_dict[len(format_tuple)]["noun"] = ({"instance": location_entry["instance"].entry_item, "str_name": location_entry["instance"].entry_item.name})
 
                 enter(format_tuple, input_dict) # Anything that needs you to go through a door goes via enter.
@@ -1381,7 +1420,7 @@ def take(format_tuple, input_dict):
         added_to_inv = False
 
         inst, container, reason_val, meaning = registry.check_item_is_accessible(noun_inst)
-        print(f"CAN_TAKE: {noun_inst} / meaning: {meaning} / reason_val: {reason_val}")
+        #print(f"CAN_TAKE: {noun_inst} / meaning: {meaning} / reason_val: {reason_val}")
         if reason_val not in (0, 3, 4, 5):
             print(f"Sorry, you can't take the {assign_colour(noun_inst)} right now.")
             return 1, added_to_inv
@@ -1394,7 +1433,7 @@ def take(format_tuple, input_dict):
                 for loc_item in local_items:
                     if loc_item != noun_inst:
                         local_item_names[loc_item.name] = loc_item
-                print(f"LOCAL ITEM NAMES: {local_item_names}")
+                #print(f"LOCAL ITEM NAMES: {local_item_names}")
     #
                 if noun_inst.name in local_item_names:
                     val, added_to_inv = can_take(local_item_names[noun_inst.name])
@@ -1421,28 +1460,27 @@ def take(format_tuple, input_dict):
                     if reason_val in (3, 4):
 
                         outcome = registry.move_from_container_to_inv(noun_inst, parent=container)
-                        if outcome != noun_inst:
-                            print(f"Outcome: {outcome}, noun_inst: {noun_inst}")
-                            if outcome in loc.inv_place.items:
-                                print("Outcome is in inventory (line 1426).")
-                                return 0, outcome
-                            if noun_inst in loc.inv_place.items:
-                                print("noun_inst is in inventory.")
-                        added_to_inv = noun_inst
-                        print("added to inv, returning.")
+                        #if outcome != noun_inst:
+                            #print(f"Outcome: {outcome}, noun_inst: {noun_inst}")
+                            #if outcome in loc.inv_place.items:
+                                #print("Outcome is in inventory (line 1466).")
+                                #return 0, outcome
+                            #if noun_inst in loc.inv_place.items:
+                                #print("noun_inst is in inventory. line 1469")
+                        added_to_inv = outcome
+                        #print("added to inv, returning.")
                         return 0, added_to_inv
                     elif reason_val == 0:
                         #print("About to try to pick up")
-                        outcome = registry.move_item(inst, location = loc.inv_place)
+                        outcome = registry.move_item(noun_inst, location = loc.inv_place)
+                        #outcome = registry.move_item(inst, location = loc.inv_place)
                         #outcome = registry.pick_up(noun_inst, location = loc.inv_place) ## the can_take function shouldn't be doing this part.
                         #print("Did pick_up")
-                        if outcome != noun_inst:
-                            print(f"Outcome: {outcome}, noun_inst: {noun_inst}")
                         if outcome in loc.inv_place.items:
-                            print("Outcome is in inventory. (line 1441)")
+                            #print("Outcome is in inventory. (line 1480)")
                             return 0, outcome
-                        if noun_inst in loc.inv_place.items:
-                            print("noun_inst is in inventory.")
+                        if noun_inst in loc.inv_place.items: # Once confirmed, remove the
+                            #print("noun_inst is in inventory. line 1483")
                             added_to_inv = noun_inst
                             return 0, added_to_inv
                 else:
@@ -1458,7 +1496,7 @@ def take(format_tuple, input_dict):
 
         noun_loc = noun.location
         cannot_take, added_to_inv = can_take(noun)
-        print(f"after can_take: cannot_take: {cannot_take} // added_to_inv: {added_to_inv}")
+        #print(f"after can_take: cannot_take: {cannot_take} // added_to_inv: {added_to_inv}")
 
 
         if cannot_take and hasattr(noun, "can_consume"):
@@ -1511,14 +1549,14 @@ def take(format_tuple, input_dict):
         return
 
     if added_to_inv:
-        print(f"ADDED TO INV: {added_to_inv}")
+        #print(f"ADDED TO INV: {added_to_inv}")
         if isinstance(added_to_inv, ItemInstance): # added_to_inv smuggles out the single/local instance I actually want to pick up. So here we just swap them if needed. added_to_inv, if successful, is either the existing noun, or the corrected output.
             if added_to_inv != noun:
                 noun = added_to_inv
         #print(f"{assign_colour(noun_inst)} is now in your inventory.") # original
-        #print(f"The {assign_colour(noun)} {is_plural_noun(noun)} now in your inventory.")
         #print(f"ITEM: {noun}")
-        events.is_event_trigger(noun, noun_loc, reason = "item_in_inv")
+        if not events.is_event_trigger(noun, noun_loc, reason = "item_in_inv"):
+            print(f"The {assign_colour(noun)} {is_plural_noun(noun)} now in your inventory.")
         return
 
 def put(format_tuple, input_dict, location=None):
@@ -1664,13 +1702,12 @@ def drop(format_tuple, input_dict):
 
     if noun not in loc.inv_place.items:
         inv_items = loc.inv_place.items
-        print(f"inv items: {inv_items}")
+        #print(f"inv items: {inv_items}")
         if inv_items:
             for item in inv_items:
                 if hasattr(item, "is_hidden") and item.is_hidden:
                     continue
                 if item.name == noun.name:
-                    print(f"item.name: {item.name}")
                     noun=item
                     break
 
@@ -1683,13 +1720,10 @@ def drop(format_tuple, input_dict):
     if len(input_dict) == 2:
         #print(f"location: {location}")
         _, container, reason_val, meaning = registry.check_item_is_accessible(noun)
-        print(f"reason val: {reason_val}, meaning: {meaning}, for item: {noun}")
+        #print(f"reason val: {reason_val}, meaning: {meaning}, for item: {noun}")
         if reason_val == 5:
             dropped = registry.drop(noun)
             ## dropped does not seem to remove from inventory. Need to be explicit about that. I think it's because it's sharing with 'move', I need to modify the shape of the whole thing so it follows the right path.
-            print(f"DROPPED(really): {dropped}")
-            print(f"Dropped the {assign_colour(noun)} onto the ground here at the {assign_colour(loc.current, card_type='ern_name')}")
-            print(f"DROPPED INST: {noun}")
 
         elif reason_val == 3:
             print(f"You can't drop the {assign_colour(noun)}; you'd need to get it out of the {assign_colour(container)} first.")
@@ -1725,9 +1759,11 @@ def drop(format_tuple, input_dict):
 
     if noun not in loc.inv_place.items:
         if hasattr(noun, "event") and noun.event:
-            print(f"Noun has event; {noun} / {noun.event}")
+            #print(f"Noun has event; {noun} / {noun.event}")
             from eventRegistry import events
-            events.is_event_trigger(noun, noun.location, reason = "item_not_in_inv")
+            triggered = events.is_event_trigger(noun, noun.location, reason = "item_not_in_inv")
+            if not triggered:
+                print(f"Dropped the {assign_colour(noun)} onto the ground here at the {assign_colour(loc.current, card_type='ern_name')}")
             return
 
     print(f"Cannot process {input_dict} in def drop() End of function, unresolved.")
@@ -1832,37 +1868,8 @@ def enter(format_tuple, input_dict, noun=None):
         return
     #print(f"NOUN after get_transition_noun: {noun}")
     if hasattr(noun, "enter_location"):
-        #print(f"noun.enter_location: {noun.enter_location}")
-        inside_location = noun.enter_location ## Noun must have both enter loc and exit_to_loc if it has either.
-        outside_location = noun.exit_to_location
-        if hasattr(noun, "exit_to_location"):
-            if outside_location == loc.current.place:
-                if hasattr(noun, "is_open") and noun.is_open == True:
-                    print(assign_colour("The door creaks, but allows you to head inside.", colour="event_msg"))
-                    print()
-                    # want like, recklessly/cautiously/quietly, depending on playstyle. Long way off that but wanted to note it.
-                    return new_relocate(inside_location)
+        return move_through_trans_obj(noun, input_dict)
 
-                else:
-                    if noun.location == loc.current:
-                        print("You can't enter through a closed door.")
-                    else:
-                        turn_around(new_cardinal = noun.location)
-                    return 1
-            elif inside_location == loc.current.place:
-                if not get_location(input_dict) or (get_location(input_dict) and get_location(input_dict) != loc.current):
-                    if hasattr(noun, "is_open") and noun.is_open == True:
-                        print(assign_colour("You head back out through the door.", colour="event_msg"))
-                        new_relocate(outside_location)
-                        return 1
-                    else:
-                        print("You can't leave through a closed door.")
-                        return 1
-                else:
-                    print(f"You're already in the {assign_colour(loc.current.place)}.")
-            else:
-                print("You can't go enter something unless you're nearby to it.")
-                return 1
     else:
         target_loc = find(format_tuple, input_dict)
         if target_loc:

@@ -311,6 +311,11 @@ def immediate_commands(input_str):
             current_by_event_by_state.append(event)
         print(f"\nevent_by_state(1):\n{current_by_event_by_state}\n\nevent.state == 1:\n{current_by_inst_state}\n")
 
+    if input_str == "print all events":
+        all_events = []
+        for event in eventRegistry.events.events:
+            all_events.append(event)
+        print(f"\nALL EVENTS: {all_events}")
 
     print_yellow("Exiting immediate_commands.\n")
     input_str = input()
@@ -362,8 +367,8 @@ def run_membrane(input_str=None, run_tests=False):
         while input_str == None or input_str == "":
             input_str = input("\n")
 
-        immediate_command = ["print local items", "print inventory items", "print named items", "print current events"]
-        print(f"\ninput_STR:::: {input_str}\n")
+        immediate_command = ["print local items", "print inventory items", "print named items", "print current events", "print all events"]
+        #print(f"\ninput_STR:::: {input_str}\n")
         if input_str in immediate_command:
             while input_str in immediate_command:
                 input_str = immediate_commands(input_str)
@@ -424,7 +429,6 @@ def run_membrane(input_str=None, run_tests=False):
                                 not_found.append(part)
                     if not_found:
                         text = " ".join(not_found)
-
 
                 print(f"Nothing found here by the name \033[1;33m`{text}`\033[0m.")
                 return None
@@ -492,6 +496,5 @@ def run_membrane(input_str=None, run_tests=False):
         #with open(test_file, 'w') as file:
         #    json.dump(input_outcome_dict, file, indent=2)
         #loop(input_str, i)
-        print(f"Starting new loop with input_str: {input_str}")
         loop(input_str)
 

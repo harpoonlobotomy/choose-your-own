@@ -155,7 +155,6 @@ def generate_new_location(loc_name = None):
     cardinal_format = {
             "item_desc": {},
             "short_desc": "",
-            "long_desc": "",
             "items": {}
         }
 
@@ -165,28 +164,27 @@ def generate_new_location(loc_name = None):
         "north": {
             "item_desc": {},
             "short_desc": "",
-            "long_desc": "",
             "items": {}
         },
         "east": {
             "item_desc": {},
             "short_desc": "",
-            "long_desc": "",
             "items": {}
         },
         "south": {
             "item_desc": {},
             "short_desc": "",
-            "long_desc": "",
             "items": {}
         },
         "west": {
             "item_desc": {},
             "short_desc": "",
-            "long_desc": "",
             "items": {}
         },
-        "descrip": ""
+        "descrip": "",
+        "inside": False,
+        "electricity": False,
+        "nature": True
         }
     }
 

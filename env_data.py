@@ -214,6 +214,7 @@ class placeRegistry:
             #print(f"loc_inst.name in place_by_name: {loc_inst.name}")
             return loc_inst
 
+        print(f"loc name: {loc_name}")
         print(f"self.by_name: {self.by_name}")
         print(f"by_alt_name: {self.by_alt_name}")
         print(f"LOC INST: {loc_inst}, type: {type(loc_inst)}")

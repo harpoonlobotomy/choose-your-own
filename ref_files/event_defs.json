@@ -72,11 +72,13 @@
                 "trigger_item": "moss",
                 "trigger_location": null,
                 "triggered_by": ["item_not_in_inv"],
+                "exceptions": ["current_loc_is_inside"],
                 "end_type": "failure",
                 "print_description_plain": true}
             },
     "messages": {
         "start_msg": "You pick up the [[moss]], and feel it squish a little between your fingers.",
+        "exception_msg": "You put the still-damp [[moss]] down in a nice dry spot.",
         "end_msg": "After a few days, you realise the [[moss]] you've been carrying around has tried out. Damn. Or maybe you wanted some dry [[moss]]...?",
         "failure_msg": "You put down the still-damp [[moss]]."}},
 

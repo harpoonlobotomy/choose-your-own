@@ -597,13 +597,13 @@ class Parser:
                                 elif set(seq) == verb.kind and seq not in viable_sequences:
                                     viable_sequences.append(seq)
                                 elif isinstance(seq, list) and len(seq) == 1: ## Added to allow 'meta' to work. Not sure why it was needed, though.
-                                    print("is seq list and len == 1")
+                                    #print("is seq list and len == 1")
                                     if seq[0] in verb.kind:
                                         viable_sequences.append(seq)
 
                         if not viable_sequences:
                             meta = meta_instances[0]
-                            print(f"META: {meta}")
+                            #print(f"META: {meta}")
                             token = meta[list(meta)[0]] # only works if the meta is the first entry.
                             instance = Parser.get_viable_verb(token)
                             if hasattr(instance, "formats"):

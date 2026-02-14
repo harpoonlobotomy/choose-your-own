@@ -5,7 +5,6 @@
     ],
     "north": {
       "item_desc": {
-
         "generic": "The bed looks nice enough - nothing fancy, but not a disaster either. Two pillows, a spare blanket at the foot of the bed. There's a small bedside drawer to each side, and a painting above the bed."
       },
       "short_desc": "There's a queen-size bed, simple but clean looking,",
@@ -40,7 +39,10 @@
       "short_desc": "the door out of the room, likely to the hallway",
       "items": {}
     },
-    "descrip": "You're in a 'budget' PPPhotel roomEEE; small but pleasant enough, at least to sleep in. The sound of traffic tells you you're a couple of floors up at least, and the carpet is well-trod"
+    "descrip": "You're in a 'budget' PPPhotel roomEEE; small but pleasant enough, at least to sleep in. The sound of traffic tells you you're a couple of floors up at least, and the carpet is well-trod",
+    "inside": true,
+    "electricity": true,
+    "nature": false
   },
   "forked tree branch": {
     "alt_names": [],
@@ -72,7 +74,10 @@
       "short_desc": "what looks like a a western tree part",
       "items": {}
     },
-    "descrip": "You've climbed up a gnarled old tree to a PPPforked tree branchEEE, and found a relatively safe place to sit in its broad branches."
+    "descrip": "You've climbed up a gnarled old tree to a PPPforked tree branchEEE, and found a relatively safe place to sit in its broad branches.",
+    "inside": false,
+    "electricity": false,
+    "nature": true
   },
   "graveyard": {
     "alt_names": [],
@@ -140,7 +145,10 @@
         }
       }
     },
-    "descrip": "You're in a rather poorly kept PPPgraveyardEEE - smaller than you might have expected given the scale of the gate and fences"
+    "descrip": "You're in a rather poorly kept PPPgraveyardEEE - smaller than you might have expected given the scale of the gate and fences",
+    "inside": false,
+    "electricity": false,
+    "nature": true
   },
   "shrine": {
     "alt_names": [],
@@ -168,7 +176,10 @@
       "short_desc": "open air, the ground wet from the overspray of the waterfall that conceals this place",
       "items": {}
     },
-    "descrip": "Sheltered from the rain you see a small PPPshrineEEE, built into the underhang of a cliff face, mostly hidden behind a waterfall."
+    "descrip": "Sheltered from the rain you see a small PPPshrineEEE, built into the underhang of a cliff face, mostly hidden behind a waterfall.",
+    "inside": true,
+    "electricity": false,
+    "nature": true
   },
   "church": {
     "alt_names": [],
@@ -200,7 +211,10 @@
       "short_desc": "",
       "items": {}
     },
-    "descrip": "It's a PPPchurchEEE."
+    "descrip": "It's a PPPchurchEEE.",
+    "inside": true,
+    "electricity": false,
+    "nature": false
   },
   "work shed": {
     "alt_names": [],
@@ -227,7 +241,10 @@
         }
       }
     },
-    "descrip": "Around you, you see the interior of a rather run-down looking PPPwork shedEEE, previously boarded up but seemingly, not anymore."
+    "descrip": "Around you, you see the interior of a rather run-down looking PPPwork shedEEE, previously boarded up but seemingly, not anymore.",
+    "inside": true,
+    "electricity": false,
+    "nature": false
   },
   "everything": {
     "alt_names": [],
@@ -250,7 +267,10 @@
       "short_desc": "Everything starts here.",
       "items": {}
     },
-    "descrip": "Where all things start, and where no things should stay."
+    "descrip": "Where all things start, and where no things should stay.",
+    "inside": true,
+    "electricity": true,
+    "nature": true
   },
   "inventory_place": {
     "alt_names": [],
@@ -262,6 +282,9 @@
       "short_desc": "An inventory.",
       "items": {}
     },
-    "descrip": "Player Inventory [not actually a location]."
+    "descrip": "Player Inventory [not actually a location].",
+    "inside": false,
+    "electricity": false,
+    "nature": false
   }
 }

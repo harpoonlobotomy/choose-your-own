@@ -2018,4 +2018,127 @@ The moss event now properly ends when you drop the moss.
 
 Setting it up now to delete the event + its assignments if it's failed. May do it for all generated events perhaps, but for now I'm keeping it as non-standard and just using the "remove_event_on_failure" flag added to event_defs.
 
-    
+Okay, done I believe. Events with the appropriate flag are now removed from events, their items removed from event.items and triggers from event.triggers. I'm not sure if those last two are entirely pointless or not, will look it up later. (~ln 1030 eventReg.) But it does mean that once you've dropped the moss, it's entirely gone, not just 'completed'. For many quests this is not the desired outcome, but for disposable quests like this is it.
+I may at some point change the moss quest so it tracks individual mosses through pick_up/put_down, but not sure.
+
+Oh. I should really amend it to 'if put down outside'. So you can put it down inside and the counter continues.....
+
+So if not_in_inv and loc.current == is_inside=False. That's good.
+
+Oh right. I was going to add the time back in.
+
+1.55pm
+... Just realised I was running move_item on noun, not noun_inst. Shouldn't change anything because it was getting noun from the parent fn but goddamn.
+
+Have added
+    "inside": false,
+    "electricity": false,
+    "nature": true
+to the locations.
+
+2.19pm
+that works now. If you drop the moss in the shed, the event doesn't end.
+Notes:
+currently the prints are different; if the event ended, it has the end_event line, otherwise it has the 'you drop the {item} at {placename}'. Really if it's the event drop it should play that instead of the drop printline.
+Also maybe an 'if exception' print, which in this case would be the same as the failure end; 'you drop the still-damp moss'.
+
+Also:
+It's still printing a few moss clumps if you drop the moss at the shed, even if there's only one multiple_instances count.
+
+ <ItemInstance moss / (95015684-05df-4ab4-8bf4-d828350f2057)
+
+Start of is_event_trigger:
+ <ItemInstance moss / (fb087d3d-21c1-4a19-bfa6-4934093edc51) / north inventory_place / None/ 1> <cardinalInstance north work shed (c355b91b-8c52-4f8e-8ffb-f04ab3efe76e)> item_in_inv
+Trigger exceptions:
+Ooooh.
+Right.
+So, even though there was no cluster to combine it with, it still deleted the 'cluster' and generated a new instance. That's just unnecessary.
+So, #TODO, if no existing cluster, just change the attrs on the existing one, don't do the whole init session.
+It works out okay, because the new instance (dc51) is still connected to the event (e1c5).
+I wonder if I drop it outside will it break though, because it's not the item in event.items...
+Testing.
+
+Oh dammit.
+
+LOC INST: None, type: <class 'NoneType'>
+Failed to get placeInstance for shed door. Please investigate. Exiting from env_data.
+
+'leave shed' failed. Bleeeeh.
+Okay will check that first, that's a worse failure.
+
+Ah,
+leave shed
+loc name: shed door
+That'd be why.
+
+So 'enter shed' checks for the transition_obj properly, 'leave shed' doesn't. Noted, will fix.
+
+
+enter shed:
+
+input_dict: {0: {'verb': {'instance': <verbInstance enter (0f004c05-7f22-45e8-a7a3-5dbe6d5d44c6)>, 'str_name': 'enter', 'text': 'enter'}}, 1: {'location': {'instance': <placeInstance work shed (c23f1151-5c50-465d-a694-10ac44ee063b)>, 'str_name': 'work shed', 'text': 'shed'}}}
+values: ("Tokens after tokenise: [Token(idx=0, text='enter', kind={'verb'}, canonical='enter'), Token(idx=1, text='shed', kind={'noun', 'location'}, canonical='work shed')]",)
+(  Func:  verbReg_Reciever    )
+values: ("tokens before sequencer: [Token(idx=0, text='enter', kind={'verb'}, canonical='enter'), Token(idx=1, text='shed', kind={'noun', 'location'}, canonical='work shed')]",)
+
+leave shed:
+
+
+
+values: ("sequences after sequencer: [('verb', 'location')]",)
+values: ("token_role_options: Token(idx=1, text='shed', kind={'noun', 'location'}, canonical='shed door') // kinds: {'noun', 'location'}",)
+
+
+I updated the verb defs but that wasn't the issue.
+
+From inside, it always finds shed door as canonical. But because it has both  noun and location, if it takes the location kind (which I told it to do by default if it's ever unclear), it ends up looking for the location 'shed door'.
+Maybe we check if canonical if first or second canonical when we set that arbitrary kind.
+
+Well adding 'verb noun' to 'leave' defs actually made it worse:
+
+[[  leave shed  ]]
+
+verb_entry, noun_entry, direction_entry, cardinal_entry, location_entry, semantic_entry:  {'instance': <verbInstance leave (16d004a5-2763-4344-a68b-bb2f3fa7159d)>, 'str_name': 'leave', 'text': 'leave'} {'instance': <ItemInstance wooden door / (c6e46dd3-bd81-4849-b3df-e4e24c4de3d7) / west graveyard / None/ >, 'str_name': 'shed door', 'text': 'shed'} None None None None
+
+
+And nothing after that.
+
+Okay, fixed. Moved the move through transition obj part to a separate function and added it to the top of go, now you enter/leave the exact same way and it seems to work well. Previously I had 'go /to/ shed' working, but not 'leave shed', so just an oversight.
+
+Okay:
+You're facing north. The work shed is simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's a yellowed local map showing the region surrounding the graveyard, a clump of moss, and a pair of secateurs.
+Singular description works now. Goodgood.  I just wasn't updating it because it was routed back to the regular move_items and wasn't added to updated set().
+
+3.16
+
+Ehhh. Got the instance colours working with the event msg prints. Now it sends the noun inst through to the print command, and assign_colour applies the specific noun, not just the noun_name it finds first from registry. Previously it only worked if the noun inst was 'item', it couldn't have other str. Now, it applies the noun into the str. (In this case, 'you drop the [[moss]]' finds it by the `[[`.) Really pleased with that.
+
+So yes. Now the event tracking will track an individual piece of moss, not end the event unless the moss is put down outside (later can add weather to that if I feel like it, the system exists it's just not plugged in/updated to all the changes, like time passage), and even use the correct instance's colour in the event print lines. I'm pleased with that. Did some good work today.
+
+We'll see in a couple of hours how much I broke and haven't noticed yet, but it feels pretty solid.
+
+Oh, and moved the drop print line so it only prints if the event didn't succeed, which works for now. Can output a specific 'print verb text' if I need to but this works for now.
+
+Note:
+'take x' should print... it's not.
+
+Fixed.
+
+Next:
+
+You're facing east. You see a variety of headstones, most quite worn, and decorated by clumps of moss, a few shards of glass, and some dried flowers.
+
+[[  take glass  ]]
+
+The broken glass shard is now in your inventory.
+
+[[  look around  ]]
+
+
+You're in a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+The entrance gates are to the north. To the east sit a variety of headstones, to the south stands a mausoleum, and to the west is what looks like a work shed of some kind.
+
+You're facing east. You see a variety of headstones, most quite worn, and decorated by clumps of moss, and some dried flowers.
+
+Now in this last description before all the shards are picked up, it should be singular in the loc description, but it's not. Need to make an adjustment.
+Oh, currently if multiple_instances == 0 we delete it, but should be if == 1 we update description. Thought we did, but I guess that's the item desc, not the loc desc.

@@ -154,11 +154,8 @@ class timedTrigger:
 
         self.persistent_condition = timed_dict["persistent_condition"]  # true,
 
-        if self.persistent_condition:
-            print(f"Event must have condition maintained until completion of {self.full_duration} {self.time_unit}s.")
-            print("Add something to set_up_game to manage 'when day changes, add to duration'.")
-            print("I feel like the duration should be tracked on the event, not the trigger, though.")
-
+        #if self.persistent_condition:
+            #print(f"[Event must have condition maintained until completion of {self.full_duration} {self.time_unit}s.]")
         self.required_condition = timed_dict["required_condition"]
 
         self.condition_item_is_start_trigger = timed_dict["condition_item_is_start_trigger"]
@@ -241,6 +238,7 @@ class Trigger:
         self.state = event.state
 
         self.triggers = set() #item_broken, 'item_in_inv', etc.
+        self.exceptions = set()
         """
         trigger_dict = {
             "event": event,
@@ -251,6 +249,7 @@ class Trigger:
             "trigger_actions": trigger_actions,
             "item_flags_on_start": item_flags_on_start,
             "item_flags_on_end": item_flags_on_end
+            "trigger_exceptions": trigger_exceptions
             }
             """
         if trigger_dict["trigger_type"] == "end_trigger":
@@ -293,6 +292,12 @@ class Trigger:
         else:
             for action in trigger_dict["trigger_actions"]:
                 self.triggers.add(action)
+        if self.triggers:
+            if trigger_dict.get("trigger_exceptions"):
+                for exception in trigger_dict["trigger_exceptions"]:
+                    self.exceptions.add(exception)
+            else:
+                self.exceptions = set()
         event.triggers.add(self)
 
     def __repr__(self):
@@ -325,7 +330,7 @@ class eventRegistry:
         for state in event_states.values():
             self.by_state[state] = set()
 
-        self.remove_event_on_failure = set() #add instances with remove_event_on_failure: true here, delete them and their triggers (and item.event assignement) when failed. Mostly things like the moss, which will stop/start and have no impact. Not standard, usually I'll keep them around and just not marked as event_keys.
+        #self.remove_event_on_failure = set() #add instances with remove_event_on_failure: true here, delete them and their triggers (and item.event assignement) when failed. Mostly things like the moss, which will stop/start and have no impact. Not standard, usually I'll keep them around and just not marked as event_keys. # Just storing it on the event instead, makes more sense.
 
     def add_event(self, event_name, event_attr):
 
@@ -508,9 +513,11 @@ class eventRegistry:
                 for entry in getattr(event, trigger):
                     trig_data[entry] = getattr(event, trigger)[entry]
 
+                trigger_exceptions = set() # has to be here otherwise it bugs.
             #if event_entry.get(trigger):
                 #print(f"TRIG DATA: {trig_data}")
                 if trig_data.get("item_trigger"):
+
                     trigger_item = trig_data["item_trigger"]["trigger_item"]
                     if event.is_generated_event:
                         if trigger_check:
@@ -531,6 +538,7 @@ class eventRegistry:
                             # Assumes that an item of that name will be correct by default. Not ideal. Should probably check it has the event tag, but here we're ruling those /out/ instead of prioritising them. TODO: Will work on this later.
 
                     trigger_actions = trig_data["item_trigger"]["triggered_by"]
+                    trigger_exceptions = trig_data["item_trigger"].get("exceptions")
 
 
                     item_flags_on_start = trig_data["item_trigger"].get("on_event_start")
@@ -565,7 +573,8 @@ class eventRegistry:
                     "trigger_item_loc": trigger_item_loc,
                     "trigger_actions": trigger_actions,
                     "item_flags_on_start": item_flags_on_start,
-                    "item_flags_on_end": item_flags_on_end
+                    "item_flags_on_end": item_flags_on_end,
+                    "trigger_exceptions": trigger_exceptions
                     })
 
                 if trig_data.get("item_trigger"):
@@ -729,12 +738,11 @@ class eventRegistry:
                             print(event.msgs["held_msg"])
                         return event.msgs["held_msg"]
 
-    def play_event_msg(self, msg_type="held", event=None, print_txt=True):
+    def play_event_msg(self, msg_type="held", event=None, print_txt=True, noun=None):
         logging_fn()
 
 
-        def print_current(event, state_type="held", print_text=False):
-
+        def print_current(event, state_type="held", print_text=False, noun=noun):
             if not event.msgs:
                 print(f"NO EVENT MESGS: {event}")
                 return
@@ -744,7 +752,7 @@ class eventRegistry:
                     #So I might not even be using this. Instead, it just checks if colour == event_msg, and if so checks for [[ in the string, and if it has it, it treats it like any other string with item instance, within assign_colour. It shouldn't break anything else, as the location descriptions that use [[]] parse it out before getting the loc colour.
 
                 if print_text:
-                    print(f"{assign_colour(msg, colour='event_msg')}")
+                    print(f"{assign_colour(msg, colour='event_msg', noun=noun)}")
                 return msg
 
 
@@ -754,12 +762,16 @@ class eventRegistry:
             msg_type = msg_type.replace("_msg", "")
 
 
+        if msg_type == "exception":
+            return print_current(event, state_type=msg_type, print_text=print_txt, noun=noun)
+
+
         if msg_type == "held":
             if self.travel_is_limited:
                 if event == None:
                     event = self.held_at.get("held_by")
 
-                return print_current(event, state_type=msg_type, print_text=print_txt)
+                return print_current(event, state_type=msg_type, print_text=print_txt, noun=noun)
 
         if not event:
             print("Need to define event for start/end messages.")
@@ -773,14 +785,14 @@ class eventRegistry:
                 if end_type and end_type == "failure":
                     msg_type = "failure"
 
-        return print_current(event, state_type=msg_type, print_text=print_txt)
+        return print_current(event, state_type=msg_type, print_text=print_txt, noun=noun)
 
     def do_immediate_actions(self, event:eventInstance, trig):
 
         # To do immediate actions for immediate_action events. Will streamline this later maybe but this should do for now.
+        inst = None
         if hasattr(event, "init_items") and event.init_items:
             #print(f"Event init_items: {event.init_items}")
-            inst = None
             for each in event.init_items:
                 #print(f"EACH: {each}")
                 for k, item_name in event.init_items[each].items():
@@ -848,7 +860,7 @@ class eventRegistry:
 
         if inst:
             event.state = 1
-            self.play_event_msg("start_msg", event)
+            self.play_event_msg("start_msg", event, noun=inst)
             print()
             event.state = 0
             for trig in event.triggers:
@@ -856,7 +868,7 @@ class eventRegistry:
             return "Done"
 
 
-    def start_event(self, event_name:str, event:eventInstance=None):
+    def start_event(self, event_name:str, event:eventInstance=None, noun=None):
         logging_fn()
 
 
@@ -910,7 +922,7 @@ class eventRegistry:
         to_be_current.state = 1
 
         if to_be_current in self.by_state.get(1): # redundant but just in case anything went super wrong:
-            self.play_event_msg("start_msg", to_be_current)
+            self.play_event_msg("start_msg", to_be_current, noun=noun)
             #if hasattr(to_be_current, "start_msg") and getattr(to_be_current, "start_msg"): ## 'get' here excludes if null, which in this case is what I want.
             #    print(to_be_current.start_msg)
             #else:
@@ -923,11 +935,11 @@ class eventRegistry:
             if to_be_current.effects.get("limit_travel"):
                 print(f"Started event limits travel: {to_be_current.effects["limit_travel"]}")# {"cannot_leave": "graveyard"}}
                 if getattr(to_be_current, "msgs"):
-                    self.play_event_msg("start_msg", to_be_current)
+                    self.play_event_msg("start_msg", to_be_current, noun=noun)
                     #if to_be_current.msgs.get("start_msg"):
 
 
-    def end_event(self, event_name, trigger:Trigger=None, noun_loc=None):
+    def end_event(self, event_name, trigger:Trigger=None, noun_loc=None, noun=None):
         logging_fn()
 
         print_desc_again = False # Use to reprint the local description if items have become unhidden. Do it in a better way later, for now this will do.
@@ -935,6 +947,11 @@ class eventRegistry:
             event_to_end = self.event_by_name(event_name)
         else:
             event_to_end = event_name
+
+        #if hasattr(event_to_end, "remove_event_on_failure"):
+        #    print(f"REMOVE EVENT ON FAILURE TRUE FOR {event_to_end}")
+        #else:
+        #    print(f"NO :: REMOVE EVENT ON FAILURE FOR {event_to_end}")
 
         if event_to_end in self.event_by_state(1):
             self.by_state[1].remove(event_to_end)
@@ -1004,11 +1021,11 @@ class eventRegistry:
             #print(f"MESSAGES: {event_to_end.msgs}")
             #print(f"VARS EVENT: {vars(event_to_end)}")
             if hasattr(event_to_end, "end_type") and event_to_end.end_type == "failure":
-                self.play_event_msg(msg_type="failure", event=event_to_end, print_txt=True)
+                self.play_event_msg(msg_type="failure", event=event_to_end, print_txt=True, noun=noun)
 
             else:
                 print("")
-                self.play_event_msg(msg_type="end", event=event_to_end, print_txt=True)
+                self.play_event_msg(msg_type="end", event=event_to_end, print_txt=True, noun=noun)
 
             if trigger:
                 trigger.state = 0
@@ -1016,6 +1033,23 @@ class eventRegistry:
                 from env_data import get_loc_descriptions
                 get_loc_descriptions(event_to_end.end_trigger_location)
                 print(f"\nYou're facing {assign_colour(event_to_end.end_trigger_location.name)}. {event_to_end.end_trigger_location.description}")
+
+            if hasattr(event_to_end, "end_type") and event_to_end.end_type == "failure" and hasattr(event_to_end, "remove_event_on_failure") and event_to_end.remove_event_on_failure:
+        ## Genuinely not sure how useful or needed this is. If I just remove the event from events.events and remove the flag from the items, would that be enough? Idk. Will loko it up later. for now, this.
+                triggers_to_remove = set()
+                for trigger in event_to_end.triggers:
+                    triggers_to_remove.add(trigger)
+                for trigger in triggers_to_remove:
+                    event_to_end.triggers.remove(trigger)
+                if event_to_end.items:
+                    remove_items = set()
+                    for item in event_to_end.items:
+                        remove_items.add(item)
+                    for item in remove_items:
+                        event_to_end.items.remove(item)
+                        item.event = None
+
+                events.events.remove(event_to_end)
         else:
             print(f"Cannot set event {event_name} as ended event, because it is not present in current_events: {self.event_by_state(1)} (type: { type(self.event_by_state(1))})")
             exit()
@@ -1052,33 +1086,41 @@ class eventRegistry:
                         if done:
                             return 1
                     #print(f"Condition [{k}: {v}] met for {noun_inst}. Will start event now.")
-                    self.start_event(event_name = event.name, event = event)
+                    self.start_event(event_name = event.name, event = event, noun=noun_inst)
                     return 1
 
     def is_event_trigger(self, noun_inst, noun_loc, reason = None) -> (int|None):
         logging_fn()
 
-        print("Start of is_event_trigger: \n", noun_inst, noun_loc, reason)
-
         def check_triggers(event:eventInstance, noun:ItemInstance, reason) -> (int|None):
 
             if event.end_triggers:
                 for trig in event.end_triggers:
-                    print(f"TRIG in event.end_triggers: {trig}\nvars: \n{vars(trig)}\n\n")
+                    #print(f"TRIG in event.end_triggers: {trig}\nvars: \n{vars(trig)}\n\n")
                     if hasattr(trig, "constraint_tracking"):
                         print("Whether the event ends or not depends on this constraint. Maybe it should be checked earlier, I feel like I do this check in item_interactions. Needs to be one or the other.")
                         exit()
 
                     if trig.is_item_trigger and trig.item_inst == noun:
-                        print(f"INST IS TRIG ITEM: {noun}")
+                        #print(f"INST IS TRIG ITEM: {noun}")
                         if isinstance(reason, str):
                             if reason in trig.triggers:
-                                print(f"reason in trig.triggers: {trig.triggers}")
+                                #print(f"reason in trig.triggers: {trig.triggers}")
                                 if reason in requires_end_trigger_loc:
                                     if hasattr(trig, "item_inst_loc") and getattr(trig, "item_inst_loc") != None and trig.item_inst_loc != noun_loc:
                                         continue # fail if the fail should have a location but doesn't. Doesn't apply to any current ones, but if you have to read a book under a specific tree, this would apply.
+                                if hasattr(trig, "exceptions") and trig.exceptions:
+                                    for exception in trig.exceptions:
+                                        if exception == "current_loc_is_inside":
+                                            from env_data import locRegistry
+                                            if locRegistry.current.place.inside:
+                                                self.play_event_msg(self, msg_type="exception", event=None, print_txt=True, noun=noun)
+                                                #print("Not ending because you're inside.")
+                                                return 0
+
+
                                 #print("ENDING EVENT VIA IS_EVENT_TRIGGER")
-                                self.end_event(event, trig, noun_loc)
+                                self.end_event(event, trig, noun_loc, noun)
                                 return 1
 
                         elif isinstance(reason, tuple):
@@ -1110,14 +1152,14 @@ class eventRegistry:
 
 
         if noun_inst.event:
-            print(f"Noun {noun_inst} has event: {noun_inst.event}")
+            #print(f"Noun {noun_inst} has event: {noun_inst.event}")
 
             if noun_inst.event and hasattr(noun_inst, "is_event_key") and noun_inst.is_event_key:
                 #print(f"This {noun_inst} already has an event tied to it: {noun_inst.event}")
                 outcome = check_triggers(noun_inst.event, noun=noun_inst, reason=reason)
                 return outcome
-            else:
-                print(f"Noun {noun_inst} has event but is not event key.")
+            #else:
+                #print(f"Noun {noun_inst} has event but is not event key.")
 
 
         if events.generate_events_from_itemname.get(noun_inst.name):
@@ -1137,7 +1179,7 @@ class eventRegistry:
                             if reason in intake_event.start_trigger["item_trigger"].get("triggered_by"):
                                 #print("The reason is correct, the event should be started.")
                                 event = register_generated_event(event_name, noun_inst)
-                                self.start_event(event_name = event.name, event = event)
+                                self.start_event(event_name = event.name, event = event, noun=noun_inst)
                                 #print("Finished adding event")
                                 return
 
