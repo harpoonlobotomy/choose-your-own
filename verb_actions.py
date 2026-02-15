@@ -1723,7 +1723,6 @@ def drop(format_tuple, input_dict):
         #print(f"reason val: {reason_val}, meaning: {meaning}, for item: {noun}")
         if reason_val == 5:
             dropped = registry.drop(noun)
-            ## dropped does not seem to remove from inventory. Need to be explicit about that. I think it's because it's sharing with 'move', I need to modify the shape of the whole thing so it follows the right path.
 
         elif reason_val == 3:
             print(f"You can't drop the {assign_colour(noun)}; you'd need to get it out of the {assign_colour(container)} first.")
@@ -1744,7 +1743,7 @@ def drop(format_tuple, input_dict):
                     return
 
             _, container, reason_val, meaning = registry.check_item_is_accessible(noun)
-            print(f"meaning: {meaning}")
+            #print(f"meaning: {meaning}")
             if reason_val in (0, 3, 4, 5):
                 noun2 = get_noun(input_dict, 2)
                 if noun2 and "container" in noun2.item_type:
@@ -1758,13 +1757,14 @@ def drop(format_tuple, input_dict):
             return
 
     if noun not in loc.inv_place.items:
+        triggered = None
         if hasattr(noun, "event") and noun.event:
-            #print(f"Noun has event; {noun} / {noun.event}")
             from eventRegistry import events
             triggered = events.is_event_trigger(noun, noun.location, reason = "item_not_in_inv")
-            if not triggered:
-                print(f"Dropped the {assign_colour(noun)} onto the ground here at the {assign_colour(loc.current, card_type='ern_name')}")
-            return
+            #print(f"Triggered: {triggered}")
+        if not triggered:
+            print(f"Dropped the {assign_colour(noun)} onto the ground here at the {assign_colour(loc.current, card_type='ern_name')}")
+        return
 
     print(f"Cannot process {input_dict} in def drop() End of function, unresolved.")
 

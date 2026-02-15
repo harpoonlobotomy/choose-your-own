@@ -37,7 +37,6 @@ type_defaults = {
         {f"descriptions": {"generic": None}, "nicenames": {}, "slice_defence": 5, "smash_defence": 5, "slice_attack": 5, "smash_attack": 5,},
     "static":
         {"can_examine": False, "can_break": False},
-    #"all_items": {"starting_location": None, "current_loc": None, "alt_names": {}, "is_hidden": False},
     "can_open":
         {"is_open": False, "can_be_opened": True, "can_be_closed": True},
         "descriptions":
@@ -1576,20 +1575,20 @@ def apply_loc_data_to_item(item, item_data, loc_data):
 
         item_data["starting_location"] = loc_data["starting_location"]
 
-    inst = registry.init_single(item, item_data)
+    item = registry.init_single(item, item_data)
 
-    all_item_names_generated.append((inst, "apply_loc_data_to_item"))
-    if hasattr(inst, "starting_children") and getattr(inst, "starting_children"):
+    all_item_names_generated.append((item, "apply_loc_data_to_item"))
+    if hasattr(item, "starting_children") and getattr(item, "starting_children"):
         if not hasattr(registry, "check_for_children"):
             registry.check_for_children = []
-        registry.check_for_children.append(inst)
+        registry.check_for_children.append(item)
 
-    if hasattr(inst, "requires_key") and getattr(inst, "requires_key"):
+    if hasattr(item, "requires_key") and getattr(item, "requires_key"):
         if not hasattr(registry, "requires_key"):
             registry.requires_key = []
-        registry.requires_key.append(inst)
+        registry.requires_key.append(item)
 
-    return inst
+    return item
 
 
 def init_loc_items(place=None, cardinal=None):

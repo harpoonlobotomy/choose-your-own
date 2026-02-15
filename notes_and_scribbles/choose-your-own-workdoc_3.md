@@ -2142,3 +2142,15 @@ You're facing east. You see a variety of headstones, most quite worn, and decora
 
 Now in this last description before all the shards are picked up, it should be singular in the loc description, but it's not. Need to make an adjustment.
 Oh, currently if multiple_instances == 0 we delete it, but should be if == 1 we update description. Thought we did, but I guess that's the item desc, not the loc desc.
+
+Fixed now.
+
+2.44pm 15/2/26
+
+Want to remove 'is_burned': False from flammable objects. When an object is burned, it should have an event that replaces it.
+Well, maybe use is_burned as an item name, instead of a bool? Or no. Not sure.
+Options:
+    * provide is_burned name
+    * provide (becomes_burned_item, and then it autogenerates "burned {itemname}" item) or ("becomes_ashpile", and if the item is burned it generates item 'ash pile'.)
+        > If the former, maybe 'burned_item' becomes_ashpile if it is burned again?
+
