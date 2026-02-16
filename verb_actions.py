@@ -9,7 +9,7 @@ from env_data import cardinalInstance, locRegistry as loc, placeInstance
 from interactions import item_interactions
 from interactions.player_movement import new_relocate, turn_around
 from itemRegistry import ItemInstance, registry
-from misc_utilities import assign_colour, col_list, generate_clean_inventory, is_plural_noun
+from misc_utilities import assign_colour, col_list, generate_clean_inventory, is_plural_noun, smart_capitalise
 from printing import print_yellow
 from set_up_game import game
 from verb_definitions import directions, semantics, formats
@@ -57,6 +57,40 @@ def get_current_loc():
     cardinal = locRegistry.current
     return location, cardinal
 
+def format_list_neatly(list_to_neaten):
+    # just a ripoff of def compile_long_desc(long_desc):
+    if len(list_to_neaten) == 1:
+        formatted_list = assign_colour(list_to_neaten[0], caps=True)
+    elif len(list_to_neaten) == 2:
+        formatted_list = (f"{assign_colour(list_to_neaten[0], caps=True)} and {assign_colour(list_to_neaten[1])}")
+    else:
+        formatted_list = (f"{assign_colour(list_to_neaten[0], caps=True)}{', '.assign_colour(list_to_neaten[1:-1])}, and {assign_colour(list_to_neaten[-1])}")
+
+    #new_desc = f"You're facing {assign_colour(cardinal)}. " + item_description
+    #if not formatted_list.endswith("."):
+    #    formatted_list = formatted_list + "."
+    #print(f"Formatted list: {formatted_list}")
+    return formatted_list
+
+
+def print_moved_children(moved_children, noun, reason):
+    from eventRegistry import acts
+    if isinstance(moved_children, set):
+        moved_children = list(moved_children)
+    reason_str = acts.get(reason)
+    if moved_children:
+        reason_str = list(reason_str["moved_children"])[0]
+    children_str = format_list_neatly(moved_children)
+    if len(moved_children) == 1 and not is_plural_noun(moved_children[0], bool_test=True):
+        action = "falls"
+    else:
+        action = "fall"
+
+    reason_str = reason_str.replace("[[children]]", children_str)
+    reason_str = reason_str.replace("<fall>", action)
+    reason_str = reason_str.replace("[[noun]]", assign_colour(noun))
+    print(reason_str)
+
 def set_noun_attr(*values, noun:ItemInstance):
     logging_fn()
     """
@@ -64,7 +98,10 @@ def set_noun_attr(*values, noun:ItemInstance):
     """
     from eventRegistry import trigger_acts, events
     if hasattr(noun, "event") and getattr(noun, "event") and hasattr(noun, "is_event_key") and noun.is_event_key:
-            events.is_event_trigger(noun, noun.location, values)
+            outcome, moved_children = events.is_event_trigger(noun, noun.location, values)
+            if moved_children:
+                print_moved_children(moved_children, noun, values)
+
 
     else:
         triggers = {}
@@ -81,8 +118,10 @@ def set_noun_attr(*values, noun:ItemInstance):
                 #print(f"item in triggers: {item}")
                 if val == triggers[item]:
 
-                    events.is_event_trigger(noun, noun.location, reason = values)
-            setattr(noun, item, val)
+                    _, moved_children = events.is_event_trigger(noun, noun.location, reason = values)
+                    if moved_children:
+                        print_moved_children(moved_children, noun, item)
+                    setattr(noun, item, val)
 
         if item in update_description_attrs:
             from itemRegistry import registry
@@ -383,16 +422,25 @@ def get_meta(input_dict:dict) -> str:
             if "meta" in kind:
                 return entry["text"]
 
-def verb_requires_noun(input_dict, verb_name, local=False):
+def verb_requires_noun(input_dict, verb_name, x_noun=None, local=False):
     logging_fn()
-    noun = get_noun(input_dict)
-    if not noun:
+    if x_noun:
+        if not isinstance(x_noun, int):
+            x_noun = int(x_noun)
+        noun = get_noun(input_dict, x_noun=x_noun)
+    else:
+        noun = get_noun(input_dict)
+    if not noun and not x_noun:
         print(f"What do you want to {verb_name}?")
         return
-    if local:
+    if local and noun:
         if noun and noun.location == loc.current or noun.location == loc.inv_place:
             return noun
-        print(f"There's no {assign_colour(noun)} around here to {verb_name}.")
+        if noun and x_noun:
+            noun = get_noun(input_dict, x_noun=x_noun, get_str=True)
+            print(f"There's no {assign_colour(noun)} around here to {verb_name} anything with.")
+        else:
+            print(f"There's no {assign_colour(noun)} around here to {verb_name}.")
         return
     return noun
 
@@ -831,7 +879,10 @@ def read(format_tuple, input_dict):
             #else:
             if hasattr(noun, "event"):
                 from eventRegistry import events
-                events.is_event_trigger(noun, noun.location, "item_is_read") # just check, in case it's a street sign or something that you can't pick up but might still be a trigger. Unlikely but silly to exclude it arbitrarily.
+                outcome, moved_children = events.is_event_trigger(noun, noun.location, "item_is_read")
+                if moved_children:
+                    print_moved_children(moved_children, noun, outcome)
+                 # just check, in case it's a street sign or something that you can't pick up but might still be a trigger. Unlikely but silly to exclude it arbitrarily.
             return
 
         else:
@@ -951,46 +1002,47 @@ def break_item(format_tuple, input_dict):
     noun = verb_requires_noun(input_dict, "break", local=True)
     if not noun:
         return
-
-    noun_2 = get_noun(input_dict, 2)
-
-    if not noun_2:
+    broken = None
+    if not format_tuple.count("noun") == 2:
         if noun.smash_defence > 4:
             print(f"What do you want to break the {assign_colour(noun)} with?")
             return
         #assume the ground is hard. ground isn't properly set up yet so we'll assume for now.
         print(f"You smash the {assign_colour(noun)} on the ground.\n") # NOTE: added_printline
-        set_noun_attr(("is_broken", True), noun=noun)
-        if hasattr(noun, "children") and noun.children:
+        broken = noun
+
+    else:
+        noun_2 = verb_requires_noun(input_dict, "break", x_noun=2, local=True)
+        if noun_2:
+            dir_or_sem = get_dir_or_sem_if_singular(input_dict)
+            if dir_or_sem and dir_or_sem in ("with", "using", "on", "against"):
+                for attack in ('smash', 'slice'):
+                    if getattr(noun_2, f"{attack}_attack") > getattr(noun, f"{attack}_defence"):
+                        print(f"You {attack} the {assign_colour(noun)} with the {assign_colour(noun_2)}, and it breaks.")
+                        broken = noun#set_noun_attr(("is_broken", True), noun=noun)
+                        return
+                    if getattr(noun, f"{attack}_attack") < getattr(noun_2, f"{attack}_defence"):
+                        print(f"You {attack} the {assign_colour(noun)} with the {assign_colour(noun_2)}, but {assign_colour(noun_2)} was weaker - {assign_colour(noun_2)} breaks.")
+                        broken = noun_2#set_noun_attr(("is_broken", True), noun=noun_2)
+                        return
+                    if getattr(noun, f"{attack}_attack") == getattr(noun_2, f"{attack}_defence"):
+                        print(f"You {attack} the {assign_colour(noun)} with the {assign_colour(noun_2)}, but the {assign_colour(noun)} and the {assign_colour(noun_2)} are evenly matched; nothing happens.")
+                        return
+    if broken:
+        set_noun_attr(("is_broken", True), noun=broken)
+        if hasattr(broken, "children") and broken.children:
             noun_children = set()
-            for child in noun.children:
+            for child in broken.children:
                 noun_children.add(child)
     #NOTE: This move does not trigger the event trigger checks. If an item being removed from a container etc is a trigger, registry.move_item will not check it. So for now I do a manual line just to notify, but this is not a solution.
                 if hasattr(child, "event") and child.event:
                     print(f"{child.name} is connected to an event: {child.event.name}")
 
             for child in noun_children:
-                registry.move_item(inst=child, location=loc.current, old_container=noun, no_print=True)
+                registry.move_item(inst=child, location=loc.current, old_container=broken, no_print=True)
 
             turn_cardinal(prospective_cardinal=loc.current, turning = False)
-        return
-
-
-    dir_or_sem = get_dir_or_sem_if_singular(input_dict)
-    if dir_or_sem and dir_or_sem in ("with", "using", "on", "against"):
-        for attack in ('smash', 'slice'):
-            if getattr(noun_2, f"{attack}_attack") > getattr(noun, f"{attack}_defence"):
-                print(f"You {attack} the {assign_colour(noun)} with the {assign_colour(noun_2)}, and it breaks.")
-                set_noun_attr(("is_broken", True), noun=noun)
-                return
-            if getattr(noun, f"{attack}_attack") < getattr(noun_2, f"{attack}_defence"):
-                print(f"You {attack} the {assign_colour(noun)} with the {assign_colour(noun_2)}, but {assign_colour(noun_2)} was weaker - {assign_colour(noun_2)} breaks.")
-                set_noun_attr(("is_broken", True), noun=noun_2)
-                return
-            if getattr(noun, f"{attack}_attack") == getattr(noun_2, f"{attack}_defence"):
-                print(f"You {attack} the {assign_colour(noun)} with the {assign_colour(noun_2)}, but the {assign_colour(noun)} and the {assign_colour(noun_2)} are evenly matched; nothing happens.")
-                return
-
+    return
     print()
     print(f"Cannot process {input_dict} in def break_item() End of function, unresolved. (Function not yet written)")
 
@@ -1535,7 +1587,8 @@ def take(format_tuple, input_dict):
                 noun = added_to_inv
         #print(f"{assign_colour(noun_inst)} is now in your inventory.") # original
         #print(f"ITEM: {noun}")
-        if not events.is_event_trigger(noun, noun_loc, reason = "item_in_inv"):
+        outcome, moved_children = events.is_event_trigger(noun, noun_loc, reason = "item_in_inv")
+        if not outcome:
             print(f"The {assign_colour(noun)} {is_plural_noun(noun)} now in your inventory.")
         return
 
@@ -1681,6 +1734,7 @@ def drop(format_tuple, input_dict):
         return
 
     if noun not in loc.inv_place.items:
+        found = False
         inv_items = loc.inv_place.items
         #print(f"inv items: {inv_items}")
         if inv_items:
@@ -1689,7 +1743,12 @@ def drop(format_tuple, input_dict):
                     continue
                 if item.name == noun.name:
                     noun=item
+                    found = True
                     break
+        if not found:
+            print(f"No noun to drop. Rewrite this bit. ({noun})")
+            return
+
 
     if len(input_dict) == 3:
         direction = get_dir_or_sem_if_singular(input_dict)
@@ -1740,7 +1799,9 @@ def drop(format_tuple, input_dict):
         triggered = None
         if hasattr(noun, "event") and noun.event:
             from eventRegistry import events
-            triggered = events.is_event_trigger(noun, noun.location, reason = "item_not_in_inv")
+            triggered, moved_children = events.is_event_trigger(noun, noun.location, reason = "item_not_in_inv")
+            if moved_children:
+                print_moved_children(moved_children, noun, triggered)
             #print(f"Triggered: {triggered}")
         if not triggered:
             print(f"Dropped the {assign_colour(noun)} onto the ground here at the {assign_colour(loc.current, card_type='ern_name')}")

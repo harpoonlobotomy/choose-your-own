@@ -2428,3 +2428,13 @@ Item already is_broken, continuing.
 So the def_break prints before the event has time to respond. Can fix that alright, most of the way there.
 
 now break. 1.45pm
+
+6.56pm
+Currently,
+[[  break flowers with hammer  ]]
+
+You smash the dried flowers with the god hammer, and it breaks.
+
+but the dried flowers stay there, no change. Need to refix it.
+
+Working on the break messages, passing moved children back out to print after the event is done. Will fix the dried flower instance after.
