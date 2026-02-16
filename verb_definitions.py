@@ -42,7 +42,7 @@ directions = ["down", "up", "left", "right", "away", "toward", "towards", "close
 ## "in front of"?? Need to be able to cope with that.
 
 nulls = ["the", "a", "an"]
-semantics = ["with", "and", "around", "for", "while", "set"]
+semantics = ["with", "and", "around", "for", "while", "set", "on"]
 
 null_sem_combinations = ["a while"]
 

@@ -132,7 +132,6 @@
     "smash_defence": 5
   },
   "glass jar": {
-    "on_death": "broken glass",
     "can_be_added_to": true,
     "can_be_closed": false,
     "can_be_locked": false,
@@ -160,6 +159,7 @@
       "fragile",
       "standard"
     ],
+    "material_type": "glass",
     "nicenames": {
       "starting_children_only": "a glass jar with dried flowers",
       "any_children": "a simple glass jar",
@@ -311,8 +311,9 @@
       "container",
       "standard"
     ],
+    "material_type": "ceramic",
     "nicenames": {
-      "generic": "an ivory-coloured jar"
+      "generic": "an ivory-coloured pot"
     },
     "requires_key": "wire cutters",
     "slice_attack": 5,
@@ -1555,6 +1556,7 @@
       "standard",
       "static"
     ],
+    "material_type": "fabric",
     "nicenames": {
       "generic": "a pair of curtains"
     },
@@ -1634,7 +1636,7 @@
     "smash_defence": 5
   },
   "broken glass shard": {
-    "alt_names": ["broken glass shards", "shards of glass", "shard of glass", "shard", "shards"],
+    "alt_names": ["broken glass shards", "glass shards", "shards of glass", "shard of glass", "shard", "shards"],
     "can_pick_up": true,
     "descriptions": {
       "if_singular": "a shard of broken glass.",
@@ -1657,5 +1659,53 @@
     "slice_defence": 4,
     "smash_attack": 2,
     "smash_defence": 2
+  },
+"broken ceramic shard": {
+    "alt_names": ["broken ceramic shards", "ceramic shards", "shards of ceramic", "shard of ceramic", "shard", "shards"],
+    "can_pick_up": true,
+    "descriptions": {
+      "if_singular": "a shard of ceramic glass.",
+      "if_plural": "a scattering of ceramic glass."
+    },
+    "has_multiple_instances": 3,
+    "single_identifier": "shard",
+    "plural_identifier": "shards",
+    "item_size": "small_flat_things",
+    "item_type": [
+      "can_pick_up",
+      "is_cluster",
+      "standard"
+    ],
+    "nicenames": {
+      "if_singular": "a ceramic shard",
+      "if_plural": "a few shards of ceramic"
+    },
+    "slice_attack": 10,
+    "slice_defence": 4,
+    "smash_attack": 2,
+    "smash_defence": 2
+  },
+  "god hammer": {
+    "can_pick_up": "True",
+    "descriptions": {
+      "generic": "An incredible hammer that breaks anything (breakable)."
+    },
+    "item_size": "4",
+    "item_type": ["standard", "can_pick_up"],
+    "nicenames": {},
+    "slice_attack": 2,
+    "slice_defence": 10,
+    "smash_attack": 11,
+    "smash_defence": 10
+  },
+  "mobile passcode": {
+    "password_value": "0288",
+    "can_pick_up": "false",
+    "descriptions": {
+      "generic": "The passcode to a mobile phone."
+    },
+    "item_size": "0",
+    "item_type": ["data_noun"],
+    "nicenames": {}
   }
 }

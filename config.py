@@ -3,7 +3,8 @@
 
 enable_tui: bool = False
 
-run_tests = False#True
+run_tests = False
+test_location = True
 parse_test = False#True #turns off events + location item generation, generates every item placed at Everywhere North instead.
 parser_tests_output_to_json = False#True
 
@@ -21,7 +22,10 @@ loc_data = r"ref_files\loc_data.json"
 event_data = r"ref_files\event_defs.json"
 
 
-starting_location_str = "graveyard"#r"everything"
+usual_start = "graveyard"
+test_start = "testing grounds"
+
+starting_location_str = (test_start if test_location else usual_start)
 starting_facing_direction = "north"
 
 # verbregistry/verb_membrane/parsing
@@ -34,3 +38,5 @@ require_firesource = True
 key_dir = "north"
 no_place_str = f"{key_dir} no_place"
 inv_loc_str = f"{key_dir} inventory_place"
+
+godmode = False

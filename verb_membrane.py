@@ -1,12 +1,4 @@
-
-
-
-### So the idea for this is, the verbRegistry identifies parts and figures out what the active verb is. Then it sends the command here, where it's processed according to that parsed data.
-
-## I kinda want to have this in a separate script from the pure 'def move():' type functions.
-
-#Maybe I should move this section into the verbRegistry, and then direct it to this script which just holds the verb actions themselves, not the registry.
-# idk I like the idea of the verb-word-objects being different from the verb-action-objects. One's grammatical, one's an action-driver. With the third that is actually a list of functions for specific verbs.
+#I like the idea of the verb-word-objects being different from the verb-action-objects. One's grammatical, one's an action-driver. With the third that is actually a list of functions for specific verbs.
 
 ### input_membrane, now.
 # Takes the raw input.
@@ -15,7 +7,6 @@
 # Checks the nouns are viable for the verb.
 # Then sends the format and dict onward to verb_actions.
 
-import pprint
 from env_data import cardinalInstance, placeInstance
 from eventRegistry import eventInstance
 import eventRegistry
@@ -138,7 +129,18 @@ def get_noun_instances(dict_from_parser, viable_formats):
                     else:
                         #print(f"Noun inst: {noun_inst}")
                         if not isinstance(noun_inst, ItemInstance):
-                            noun_inst = noun_inst[0]
+                            if len(noun_inst) > 1:
+                                loc_found = False
+                                from env_data import locRegistry
+                                for noun in noun_inst:
+                                    if noun.location == locRegistry.current:
+                                        noun_inst = noun
+                                        loc_found = True
+                                        break
+                                if not loc_found: # just take the first if none are local.
+                                    noun_inst = noun_inst[0]
+                            else:
+                                noun_inst = noun_inst[0]
                         noun_name = name
                         dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": name, "text": entry["text"]})
                         #noun_name = check_noun_actions(noun_inst, verb)
@@ -317,9 +319,59 @@ def immediate_commands(input_str):
             all_events.append(event)
         print(f"\nALL EVENTS: {all_events}")
 
+    if "god" in input_str:
+        where = input('"add" or "add item" to add an item. "move" to force move an item to a location.')
+        if where in ("add", "add item", "add_item"):
+            test = input("Enter <item_name> to spawn an item at your location. This is the only option at present.\n")
+            if test == "":
+                print("Nothing entered; returning")
+                return input()
+            if test in registry.item_defs:
+                print(f"registry.item_defs[test]: {registry.item_defs[test]}")
+                created_item = registry.init_single(test, registry.item_defs[test])
+            else:
+                print(f"No item named `{test}`. Do you want to create a new item?")
+                new_test = input("y/yes for yes, anything else to return.")
+                if new_test not in ("y", "yes"):
+                    print("Returning.")
+                    return input()
+                from itemRegistry import new_item_from_str
+                created_item = new_item_from_str(test, input_str=None, loc_cardinal=locRegistry.current.place_name)
+            registry.move_item(created_item, location=locRegistry.current)
+            print(f"Generated item ``{created_item}``.")
+
+        elif "move" in where:
+            itemname = input("Enter name of item you wish to move.")
+            item = registry.by_name.get(itemname)
+            if not item:
+                print(f"No item by the name {itemname}, returning.")
+                return input()
+            if isinstance(item, list):
+                for inst in item:
+                    test = input(f"Do you want to move item {inst}?")
+                    if test in ("y", "yes"):
+                        item = inst
+                        break
+            else:
+                if isinstance(item, ItemInstance):
+                    item = item
+
+            new_loc_str = input("Enter the name of the location, as <location>, <cardinal location> or 'current'.")
+            if new_loc_str == "current":
+                location = locRegistry.current
+            else:
+                location = locRegistry.by_cardinal_str(new_loc_str)
+            if not location:
+                print(f"No location found from `{new_loc_str}`, returning.")
+            else:
+                registry.move_item(item, location=location)
+                print(f"Moved item: {item}")
+                print(f"New location: {item.location}")
+
+        #created_item = registry.init_single(test, apply_location=locRegistry.current)
+
     print_yellow("Exiting immediate_commands.\n")
-    input_str = input()
-    return input_str
+    return
 
 
 
@@ -332,8 +384,8 @@ test_input_list = ["take the paperclip", "take the paperclip", "pick up the glas
 
 test_input_list = ["go west", "open door", "enter shed", "take map", "take key", "go to north graveyard", "look at gate", "unlock padlock with key", "look at gate", "pick up padlock", "go to city hotel room", "find tv set", "go to east graveyard", "take jar", "logging args", "break jar"]
 
-#test_input_list = ["go east", "take glass jar", "break jar", "pick up glass shard", "drop glass shard", "go west", "open door", "enter shed", "take map", "read map"]
-test_input_list = ["east graveyard", "take moss", "take moss", "take moss"]
+#test_input_list = ["go east", "take glass jar", "break jar", "pick up glass shard", "drop glass shard", "go west", "open door", "enter shed", "take map", "take key", "north graveyard", "use key on padlock"]
+test_input_list = ["take hammer", "break pot with hammer"]
 #test_input_list = ["logging args", "take stick", "approach the forked tree branch", "look around"]
 
 import json
@@ -362,16 +414,16 @@ def run_membrane(input_str=None, run_tests=False):
     #    def loop(input_str, i)
     def loop(input_str):
     #def loop(input_str):
-
         logging_fn()
+
+        immediate_command = ["print local items", "print inventory items", "print named items", "print current events", "print all events", "godmode", "god mode"]
         while input_str == None or input_str == "":
             input_str = input("\n")
-
-        immediate_command = ["print local items", "print inventory items", "print named items", "print current events", "print all events"]
+            if input_str in immediate_command:
+                while input_str in immediate_command:
+                    immediate_commands(input_str)
+                    input_str = input()
         #print(f"\ninput_STR:::: {input_str}\n")
-        if input_str in immediate_command:
-            while input_str in immediate_command:
-                input_str = immediate_commands(input_str)
         response = (None, None)
 
         while "logging" in input_str:

@@ -127,6 +127,8 @@ def edit_noun(noun):
     if not isinstance(noun, ItemInstance):
         if isinstance(noun, str):
             noun = select_noun(noun)
+    else:
+        noun = select_noun(noun.name)
 
     fields_to_pop = set()
     new_vars = {}

@@ -1,5 +1,6 @@
 import uuid
 from pprint import pprint
+from env_data import cardinalInstance, placeInstance
 from itemRegistry import ItemInstance
 from misc_utilities import assign_colour
 import printing
@@ -116,7 +117,6 @@ def check_all_flags_present():
                     missing_tags[item][tag]=type_defaults[def_type].get(tag)
 
     print("Missing tags per item: ")
-    from pprint import pprint
     pprint(missing_tags)
 
     for item, field in item_defs_dict.items():
@@ -226,11 +226,7 @@ class tempDatastore:
         self.confirmed_items = {}
         self.updated = set()
 
-item_defs = r"ref_files\items_main.json"
-with open(item_defs, 'r') as file:
-    item_data = json.load(file)
 
-testReg = tempDatastore(item_data)
 
 """
 indexed view:
@@ -255,9 +251,9 @@ So indexed view is definitely what I need. The duplication and even deep nesting
 ### Okay so I need to apply defaults first, guaranteed, then apply exceptions. I think that's why event_key is failing.
 
 
-if __name__ == "__main__":
+
     #init_testreg()
-    """
+"""
     def get_loc_items(loc, cardinal=None):
 
         Now currently, items are stored and they tell env_data where they live. It does make more sense to place them via location not via the item itself.
@@ -657,7 +653,7 @@ if __name__ == "__main__":
 from item_dict_gen import item_type_descriptions
 from itemRegistry import type_defaults
 
-def get_all_default_flags(item):
+def get_all_default_flags(item, testReg:tempDatastore):
 
     print(f"\nITEM: {item}")
     def clean_types(types, attr):
@@ -743,8 +739,9 @@ def get_all_default_flags(item):
     #    print("item def descriptions != type_default standard descriptions")
     testReg.updated_defs[item] = item_def
     #print(f"item_def: {item_def}")
+    return testReg
 
-def flags_not_in_default(item):
+def flags_not_in_default(item, testReg):
 
     ignored_flags = ["nicename", "item_type", "descriptions"]
     all_flags = set()
@@ -804,7 +801,7 @@ def flags_not_in_default(item):
             else:
                 testReg.flags_to_amend.add(flag)
 
-
+    return testReg
                 #flags_to_really_check.add(flag)
     #for flag in all_flags:
     #    if flag not in item_defs:
@@ -812,7 +809,7 @@ def flags_not_in_default(item):
     #if flags_to_really_check:
         #print(f"\n\nFlags to check in {item} defs:\n{flags_to_really_check}\n{testReg.item_defs[item]}")
 
-def update_ref_file(json_file, updated=True):
+def update_ref_file(testReg, json_file, updated=True):
 
     if updated:
         dictionary = testReg.updated_defs
@@ -823,42 +820,92 @@ def update_ref_file(json_file, updated=True):
         json.dump(dictionary, file, indent=2)
 
 def serialise_item_defs(dictionary):
+    print("serialise_item_defs")
     for item, field in dictionary.items():
-        for k, v in field.items():
-            if isinstance(v, set):
-                temp_list = list(v)
-                dictionary[item][k] = sorted(temp_list)
+        if isinstance(field, dict):
+            dictionary[item] = serialise_item_defs(field)
+        else:
+        #print(f"item: {item} / field: {field}, field_type: {type(field)}")
+        #for k, v in field.items():
+            if isinstance(field, set):
+                temp_list = list(field)
+                dictionary[item] = sorted(temp_list)
                 #dictionary[item][k] = list(v)
+            if isinstance(field, ItemInstance|placeInstance):
+                dictionary[item] = field.name
+            if isinstance(field, cardinalInstance):
+                dictionary[item] = field.place_name
+            else:
+                dictionary[item] = str(field)
 
+    return dictionary
 
 def order_dict(dictionary):
+    print("order_dict")
     for item in dictionary:
         dictionary[item] = dict(sorted(dictionary[item].items()))
 
     dictionary = dict(sorted(dictionary.items()))
 
+    return dictionary
 
-def fix_flags():
-    for item in testReg.item_defs:
-        get_all_default_flags(item)
-        flags_not_in_default(item)
-
+def fix_flags(dictionary, testReg:tempDatastore):
+    print("fix_flags")
+    for item in dictionary:
+        if not testReg.item_defs.get(item):
+            testReg.item_defs[item] = dictionary[item]
+        testReg = get_all_default_flags(item, testReg)
+        testReg = flags_not_in_default(item, testReg)
 
 # this first bit is just so I have a direct comparison of entries before/after the change.
-generated_file = r"ref_files\generated_items.json"
 
-dictionary = testReg.item_defs
-order_dict(dictionary)
-#
-#check_all_flags_present()
+def the_gamut(output_to_main=False, add_single=None):
+    print("the gamut\n")
+    if add_single:
+        item_defs = r"dynamic_data\generated_items.json"
+    else:
+        item_defs = r"ref_files\items_main.json"
 
-update_ref_file(generated_file, updated=False)
-dictionary = testReg.updated_defs
-fix_flags()
-serialise_item_defs(dictionary)
-order_dict(dictionary)
+    with open(item_defs, 'r') as file:
+        item_data = json.load(file)
 
-#json_file = r"dynamic_data\temp_defs.json" # currently using temp_defs until I'm sure I want to keep it.
-json_file = r"ref_files\items_main.json" # may break things
-update_ref_file(json_file, updated=True)
-#print(testReg.flags_to_amend)
+    testReg = tempDatastore(item_data)
+
+    if add_single:
+        dictionary = add_single
+    else:
+        dictionary = testReg.item_defs
+
+    generated_file = r"ref_files\generated_items.json"
+    main_file = r"dynamic_data\generated_items.json"
+
+    #order_dict(dictionary)
+
+    #update_ref_file(generated_file, updated=False)
+    #dictionary = testReg.updated_defs
+    fix_flags(dictionary, testReg)
+    testReg.updated_defs = serialise_item_defs(testReg.updated_defs)
+    testReg.updated_defs = order_dict(testReg.updated_defs)
+
+    if output_to_main:
+        json_file = main_file
+    else:
+        json_file = generated_file
+    #json_file = r"dynamic_data\temp_defs.json" # currently using temp_defs until I'm sure I want to keep it.
+    #json_file = r"ref_files\items_main.json" # may break things
+    update_ref_file(testReg, json_file, updated=True)
+    #print(testReg.flags_to_amend)
+    return f"Output corrected dict to {json_file}"
+
+def add_new_item(item_name, item_def):
+
+    #Right now the_gamut does full dicts, not single elements.
+    new_item = {}
+    new_item[item_name] = item_def
+    result = the_gamut(add_single=new_item)
+    print(f"Result: {result}")
+
+
+#if __name__ == "__main__":
+
+

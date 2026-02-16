@@ -74,7 +74,7 @@ type_defaults = {
     "flammable":
         {"is_burned": False},
     "books_paper":
-        {'print_on_investigate': True, 'flammable': True, 'is_burned': False, 'can_read': True},
+        {'print_on_investigate': True, 'flammable': True, 'is_burned': False, 'can_read': True, 'material_type': 'paper'},
     "electronics":
         {"can_be_charged": True, "is_charged": False, "takes_batteries": True, "has_batteries": False},
     "battery": {"can_be_charged": True, "is_charged": True},
@@ -94,10 +94,27 @@ type_defaults = {
         "has_multiple_instances": 2, "single_identifier": None, "plural_identifier": None},
     "firesource": {"firesource": True},
     "data_noun": {"is_not_physical": True}
+}
 
     #{"special_traits: set("dirty", "wet", "panacea", "dupe", "weird", "can_combine")}, # aka random attr storage I'm not using yet
     #"exterior": {"is_interior": False} ## Can be set scene-wide, so 'all parts of 'graveyard east' are exterior unless otherwise mentioned'. (I say 'can', I mean 'will be when I set it up')
+
+material_type = {
+    "generic": {"on_break": f"broken [[item_name]]"},
+    "glass": {"on_break": "broken glass shard"},
+    "paper": {"on_break": "ash pile"},
+    "fabric": {"on_break": "torn [[item_name]]"},
+    "ceramic": {"on_break": "broken ceramic shard"}
 }
+
+material_msgs = {
+    "generic": "it crumples into a broken echo of its former self.",
+    "glass": "it shatters into a clutter of glass shards",
+    "paper": "it is torn, left a shadow of its former self.",
+    "fabric": "it is torn, left a shadow of its former self.",
+    "ceramic": "it shatters into a clutter of ceramic shards"
+    }
+
 
 plant_type = ["tuber", "legume", "arctic carrot"]
 
@@ -116,7 +133,7 @@ detail_data = { #moved this from item_definitions.
 
 "mail_order_catalogue_details": {"is_tested":False, "print_str": "A mail order catalogue, with the reciever's address sticker ripped off. Clothes, homegoods, toys, gadgets - could be a nice way to wait out a couple of hours if you ever wanted to."},
 
-"local_map_details": {"is_tested":False, "print_str": "A dated but pretty detailed map of the local area. Could be good for finding new places to go should you have a destination in mind."},
+"local_map_details": {"is_tested":False, "print_str": "A dated but pretty detailed map of the local area. Could be good for finding new places to go..."},
 
 "damp_newspaper": {"is_tested":True, 1: "Despite your best efforts, the newspaper is practically disintegrating in your hands. You make out something about an event in ballroom, but nothing beyond that..", 3: "After carefully dabbing off as much of the mucky water and debris as you can, you find the front page is a story about the swearing in of a new regional governor, apparenly fraught with controversy.", 4: "Something about a named official and a contraversy from years ago where a young man went missing in suspicious circumstances."} ## no idea where this would go, but I need some placeholder text so here it is.
 }
@@ -187,6 +204,8 @@ class ItemInstance:
         #print(f"\n\n@@@@@@@@@@@@@@@@@ITEM {definition_key} in INIT ITEMINANCE@@@@@@@@@@@@@@@\n\n")
         #print(f"definition_key: {definition_key}, attr: {attr}")
         self.id = str(uuid.uuid4())  # unique per instance
+        self.material_type = "generic"
+        self.on_break = "generic"
         for attribute in attr:
             setattr(self, attribute, attr[attribute])
 
@@ -204,6 +223,10 @@ class ItemInstance:
         self.item_type = self.clean_item_types(attr["item_type"])
         self.colour = None
         self.descriptions:dict = attr.get("descriptions") # dict of different descriptions for different item states.
+
+
+
+
         """
 Note on descriptions: if self.descriptions, will have different descriptions depending on type, flags. Will automate it with a dict later (which flags determine which description options). Not sure yet if all items will always have descriptions, or or simple objects with no alternate names will only ever have 'description' and use that always. Will allow for self.description as-is for now.
         """
@@ -308,7 +331,7 @@ class itemRegistry:
     # Creation / deletion
     # -------------------------
 
-    def init_single(self, item_name, item_entry = None):
+    def init_single(self, item_name, item_entry = None, apply_location = None):
         #print(f"\n\n[init_single] ITEM NAME: {item_name}")
         #print(f"[init_single] ITEM ENTRY: {item_entry}\n\n")
         if not item_entry:
@@ -351,6 +374,11 @@ class itemRegistry:
                 self.by_location.setdefault(cardinal_inst, set()).add(inst)
                 inst.location = cardinal_inst
 
+        if apply_location:
+            if not isinstance(apply_location, cardinalInstance):
+                apply_location = loc.by_cardinal_str(apply_location)
+            self.by_location.setdefault(apply_location, set()).add(inst)
+            inst.location = apply_location
 
         if item_entry.get("alt_names"):
             for altname in item_entry.get("alt_names"):
@@ -750,6 +778,35 @@ class itemRegistry:
 
         return parent, was_in_container, new_container
 
+    def generate_alt_state_item(self, item_name, noun):
+        print(f"\nITEM NAME: {item_name} // generate_alt_state_items\n")
+        item_def = self.item_defs.get(noun.name)
+        if not item_def:
+            print(f"No item def found for {noun.name}.")
+            exit()
+        new_name = item_name.replace("[[item_name]]", noun.name)
+        import copy
+        new_def = copy.deepcopy(item_def)
+        for k, v in new_def.items():
+            if noun.name in k:
+                k = k.replace(noun.name, new_name)
+            if isinstance(v, dict):
+                for val, val2 in item_def[k].items():
+                    if noun.name in val:
+                        val = val.replace(noun.name, new_name)
+                    if noun.name in val2:
+                        val2 = val2.replace(noun.name, new_name)
+
+            else:
+                if noun.name in v:
+                    v = v.replace(noun.name, new_name)
+        new_def["is_broken"] = True
+        new_def["starting_location"] = noun.location.place_name
+
+        self.item_defs[new_name] = new_def
+        print(f"ITEM DEF: {item_def}")
+        print(f"NEW DEF: {new_def}")
+        return new_def
 
     def combine_clusters(self, shard:ItemInstance, target: (cardinalInstance|ItemInstance)):
         ## DROPPING TO CLUSTER IN LOCATION/CONTAINER
@@ -1151,9 +1208,6 @@ class itemRegistry:
 
         if self.alt_names.get(inst.name):
             descriptions = self.item_defs.get(self.alt_names.get(inst.name)).get("descriptions")
-            #if descriptions:
-                #print(f"Descriptions from alt_names: {descriptions}")
-                #print(f"inst.descriptions: {inst.descriptions}")
             if not hasattr(inst, "descriptions") or not inst.descriptions:
                 inst.descriptions = descriptions
 
@@ -1269,13 +1323,10 @@ class itemRegistry:
             if not inst.children:
                 return inst.name_children_removed
 
-        # often it just uses nicename directly and doesn't pass through this function. Need to update the nicenames when I update the descriptions.
         if inst.nicenames.get("if_singular") and inst.has_multiple_instances == 1:
-            #print(f"IF SINGULAR: {inst.descriptions["if_singular"]}")
                 print("if_singular nicename in def nicename()")
                 inst.nicename = inst.nicenames["if_singular"]
         if inst.nicenames.get("if_plural") and inst.has_multiple_instances > 1:
-            #print(f"IF plural: {inst.descriptions["if_plural"]}")
                 print("if_plural nicename in def nicename()")
                 inst.nicename = inst.nicenames["if_plural"]
         if not inst:
@@ -1291,7 +1342,6 @@ class itemRegistry:
             print("[GET_NAME] No such item.")
             return None
         return inst.name
-
 
 
     def get_duplicate_details(self, inst, inventory_list):
@@ -1472,6 +1522,8 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, part
     if partial_dict:
         if partial_dict.get(item_name):
             partial_dict = partial_dict[item_name]
+        if partial_dict.get("item_type"):
+            input_str = partial_dict["item_type"]
 
     new_item_dict = {}
 
@@ -1479,8 +1531,6 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, part
         print('Item name is `""` .')
         print(f"item_name: {item_name}, input_str: {input_str}, loc_cardinal: {loc_cardinal}, partial_dict: {partial_dict}")
 
-    if partial_dict.get("item_type"):
-        input_str = partial_dict["item_type"]
     if not input_str:
         print("\n")
         printing.print_green(f"Options: {list(type_defaults)}", invert=True)
@@ -1497,24 +1547,21 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, part
     if " " in input_str.strip():
         input_str = input_str.replace(",", "")
         parts = input_str.strip().split(" ")
-        parts = set(i for i in parts if i != None and i in list(type_defaults))
+        parts = list(i for i in parts if i != None and i in list(type_defaults))
         print(f"PARTS: {parts}, type: {type(parts)}")
         if len(parts) > 1:
             print(f"Parts len >1 : {parts}, type: {type(parts)}")
-            new_str = set(parts)
+            new_str = list(parts)
         else:
-            if isinstance(parts, set):
-                new_str = parts
-            else:
-                new_str = set([parts])
+            new_str = list([parts])
 
-    elif input_str in list(type_defaults):
+    elif input_str in type_defaults:
         print(f"Input str in type_defaults: {input_str}, type: {type(input_str)}")
-        new_str = set([input_str])
+        new_str = list([input_str])
 
     else:
         print(f"No valid input [`{input_str}`]. Defaulting to item_type = ['static']")
-        new_str = set(["static"])
+        new_str = list(["static"])
 
     if not loc_cardinal:
         loc_cardinal = "graveyard north"
@@ -1538,9 +1585,14 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, part
 
     new_item_dict["exceptions"] = {"starting_location": loc_cardinal}
 
+    registry.item_defs[item_name] = new_item_dict
     inst = registry.init_single(item_name, new_item_dict)
     all_item_names_generated.append((inst, "new_item_from_str"))
     registry.temp_items.add(inst)
+
+    if registry.temp_items:
+        from edit_item_defs import add_new_item
+        add_new_item(item_name, new_item_dict)
 
     #print(f"\nend of new_item_from_str for {inst}")
     printing.print_green(text=vars(inst), bg=False, invert=True)

@@ -111,11 +111,14 @@
     },
     "south": {
       "item_desc": {
-        "generic": "There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble.",
+        "generic": "There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble. ",
         "matchbox": "Amongst the weeds, you see a weather-worn [[]]."
       },
       "short_desc": "stands a mausoleum",
-      "items": {}
+      "items": {
+        "god hammer": {},
+        "ivory pot": {}
+      }
     },
     "west": {
       "item_desc": {
@@ -286,5 +289,18 @@
     "inside": false,
     "electricity": false,
     "nature": false
-  }
+  },
+  "testing grounds": {
+    "alt_names": [],
+    "north": {
+        "item_desc": {"generic": "A place to test things. Nothing here by default."},
+        "short_desc": "It's a place for testing, with nothing",
+        "items": {}
+    },
+    "descrip": "~~TESTING GROUNDS~~.",
+    "inside": true,
+    "electricity": false,
+    "nature": false
+    }
+
 }

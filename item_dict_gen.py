@@ -100,6 +100,25 @@ def get_type_tags(new_str, item_dict):
     return item_dict
 
 
+def set_material_types(item_name, cleaned_dict):
+
+    from itemRegistry import material_type as material_type_ref
+    item_material = cleaned_dict.get("material_type")
+    if not item_material:
+        item_material = "generic"
+
+    if not material_type_ref.get(item_material):
+        print(f"No match in material_type_ref for {item_material}.")
+
+    cleaned_dict["material_type"] = item_material
+    for k, v in material_type_ref.get(item_material).items():
+        if k != "on_break":
+            print(f"Expected 'on_break' in material_type but didn't find it: `{k}`")
+        cleaned_dict[k] = v
+
+    return cleaned_dict
+
+
 def item_def_from_str(item_name:str, item_dict=None):
 
     if item_dict:
@@ -204,9 +223,7 @@ def get_item_data(item_name, incoming_data=None): # note: no locations here. Thi
         cleaned_dict = item_def_from_str(item_name, cleaned_dict)
         cleaned_dict = get_type_tags(cleaned_dict.get("item_type"), cleaned_dict)
 
-    #for field in ("started_contained_in", "contained_in", "starting_location", "current_loc"):
-    #    if field in cleaned_dict:
-    #        cleaned_dict.pop(field)
+    cleaned_dict = set_material_types(item_name, cleaned_dict)
 
     generator.item_defs[item_name] = cleaned_dict
     return cleaned_dict
@@ -367,13 +384,7 @@ def init_item_dict():
         for item, field in generator.item_defs.items():
             for k, v in field.items():
                 if isinstance(v, set):
-                    generator.item_defs[item][k] = str(v) # hate that I'm making this a string but the sets aren't serialisable for json apparently.
-                    #print(f"k: {k}, type: {type(k)}")
-                    #print(f"v: {generator.item_defs[item][k]}, type: {type(generator.item_defs[item][k])}")
-            #print(f"item {item}, field: {field}, type: {type(field)}")
-            #print(f"item {item}, field: {field}, type: {type(item[field])}")
-
-
+                    generator.item_defs[item][k] = list(v)
     update_gen_items = False # This should be changed, I shouldn't be turning the actual dict to all strings, itemReg just has to turn it back again and that's the priority. If I want to output to generated, do it to a new dict.
     if update_gen_items:
         serialise_item_defs()

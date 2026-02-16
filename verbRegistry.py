@@ -128,13 +128,10 @@ class Parser:
                         #print(f"bit: {bit}, i+matches_count: {i+matches_count}, parts[idx + matches_count]: {parts[idx + matches_count]})")
                         #if len(parts) <= idx + matches_count and bit == parts[idx+matches_count]:
                         if len(parts) > idx + matches_count and bit == parts[idx+matches_count]:
-                            #changed to the above line from the line below. Hopefully it doesn't break things, but the above does stop the out of range error.
-                        #if bit == parts[idx+matches_count]: # gives list out of range errors but does give the right results. Fix this later.
-                            #print(f"Matching word segment: {bit}")
                             matches_count += 1
-                            if matches_count == len(word_parts):# and matches_count == parts - idx:
+                            #print(f"Matches_count: {matches_count}")
+                            if matches_count == len(word_parts):
                                 perfect_match = compound_word
-                                #print(f"Perfect match: {perfect_match}, word parts len: {len(word_parts)}")
                                 break
 
                     except Exception as e:
@@ -153,14 +150,9 @@ class Parser:
             if isinstance(kinds, str):
                 if kinds == "No match":
                     kinds = set()
-            #if perfect_match:
-                #kinds = set()
             kinds.add(word_type)
             potential_match=True
-            #print(f"Word: {word} / omit_next before += matches_count: {omit_next}")
-            omit_next += matches_count-1 ## Skip however many successful matches there were, so we don't re-test words confirmed to be part of a compound word.
-            #print(f"Word: {word} / omit_next after [+= matches_count-1]: {omit_next} // matches_count = {matches_count}")
-            #print(idx, word, kinds, canonical, potential_match, omit_next) NOTE: This part is useful to print for testing, but annoying in practice.
+            omit_next += matches_count-1 ## Skip however many successful matches there were, so we don't re-test words confirmed to be part of the compound word.
             return idx, word, kinds, canonical, potential_match, omit_next, perfect_match
 
 
@@ -207,7 +199,7 @@ class Parser:
                 canonical = match
                 kinds.add(word_type)
                 potential_match=True
-                omit_next = matches_count
+                omit_next += matches_count -1
 
             else:
                 if not matches:
@@ -216,7 +208,7 @@ class Parser:
                 print(f"Compound matches: {compound_match}")
                 print(f"Content: {compound_matches}")
                 print_red("More than one potential compound match, the system can't cope with that yet.")
-
+        "idx, word, kinds, canonical, potential_match, omit_next, perfect_match: {idx, word, kinds, canonical, potential_match, omit_next, perfect_match}"
         return idx, word, kinds, canonical, potential_match, omit_next, perfect_match
 
     def tokenise(input_str, nouns_list, locations, directions, cardinals, membrane):
@@ -360,8 +352,8 @@ class Parser:
                     #    continue
 
                     elif second_perfect and not perfect:
-                        kinds = (("location",))
-                        tokens.append(Token(second_idx, second_word, second_kinds, second_canonical))
+                        kinds = (("location",)) # made this but was still adding second_kinds. bleh.
+                        tokens.append(Token(second_idx, second_word, kinds, second_canonical))
                         omit_next = second_omit_next
                         continue
                     #    tokens.append(Token(second_idx, second_word, second_kinds, second_canonical))
