@@ -104,7 +104,8 @@ material_type = {
     "glass": {"on_break": "broken glass shard"},
     "paper": {"on_break": "ash pile"},
     "fabric": {"on_break": "torn [[item_name]]"},
-    "ceramic": {"on_break": "broken ceramic shard"}
+    "ceramic": {"on_break": "broken ceramic shard"},
+    "already_broken": {None: None}
 }
 
 material_msgs = {
@@ -112,7 +113,8 @@ material_msgs = {
     "glass": "it shatters into a clutter of glass shards",
     "paper": "it is torn, left a shadow of its former self.",
     "fabric": "it is torn, left a shadow of its former self.",
-    "ceramic": "it shatters into a clutter of ceramic shards"
+    "ceramic": "it shatters into a clutter of ceramic shards",
+    "already_broken": "it can't be broken any further."
     }
 
 
@@ -332,8 +334,8 @@ class itemRegistry:
     # -------------------------
 
     def init_single(self, item_name, item_entry = None, apply_location = None):
-        #print(f"\n\n[init_single] ITEM NAME: {item_name}")
-        #print(f"[init_single] ITEM ENTRY: {item_entry}\n\n")
+        print(f"\n\n[init_single] ITEM NAME: {item_name}")
+        print(f"[init_single] ITEM ENTRY: {item_entry}\n\n")
         if not item_entry:
             if self.item_defs.get(item_name):
                 item_entry = self.item_defs[item_name]
@@ -385,7 +387,6 @@ class itemRegistry:
                 self.by_alt_names[altname] = item_name
 
         if hasattr(inst, "starting_children") and getattr(inst, "starting_children"):
-            #print(f"INST {inst} has starting children: {inst.starting_children}")
             self.new_parents.add(inst.id)
             registry.generate_children_for_parent(parent=inst)
 
@@ -417,7 +418,8 @@ class itemRegistry:
         inst.location = loc.no_place
         if hasattr(inst, "contained_in"):
             container = inst.contained_in
-            container.children.remove(inst)
+            if hasattr(container, "children"):
+                container.children.remove(inst)
             inst.contained_in = None
         self.by_name.get(inst.name, list()).remove(inst)
 
@@ -779,7 +781,7 @@ class itemRegistry:
         return parent, was_in_container, new_container
 
     def generate_alt_state_item(self, item_name, noun):
-        print(f"\nITEM NAME: {item_name} // generate_alt_state_items\n")
+        print(f"\nITEM NAME: {item_name} // NOUN: {noun} // in generate_alt_state_items\n")
         item_def = self.item_defs.get(noun.name)
         if not item_def:
             print(f"No item def found for {noun.name}.")
@@ -787,24 +789,37 @@ class itemRegistry:
         new_name = item_name.replace("[[item_name]]", noun.name)
         import copy
         new_def = copy.deepcopy(item_def)
+        print(f"NEW_DEF: {new_def}")
+        if not new_def:
+            print(f"NO NEWDEF in generate_alt_state_item. Itemdef: {item_def}")
         for k, v in new_def.items():
+            print(f"k: {k}, v: {v}, v.type: {type(v)}")
             if noun.name in k:
                 k = k.replace(noun.name, new_name)
-            if isinstance(v, dict):
-                for val, val2 in item_def[k].items():
+            if isinstance(v, bool|int):
+                new_def[k] = v
+            elif isinstance(v, dict):
+                for val, val2 in v.items():
                     if noun.name in val:
                         val = val.replace(noun.name, new_name)
                     if noun.name in val2:
                         val2 = val2.replace(noun.name, new_name)
+            elif isinstance(v, str):
+                if k == "material_type":
+                    mat_type = v
+                    noun_type = noun.material_type
+                    print(f"mat type for new instance: {mat_type}, noun type: {noun_type}")
 
+   # "generic": {"on_break": f"broken [[item_name]]"}
             else:
                 if noun.name in v:
                     v = v.replace(noun.name, new_name)
+
         new_def["is_broken"] = True
         new_def["starting_location"] = noun.location.place_name
-
-        self.item_defs[new_name] = new_def
-        print(f"ITEM DEF: {item_def}")
+        print(f"Applying to item_Defs: {new_def}")
+        #self.item_defs[new_name] = new_def
+        #print(f"ITEM DEF: {item_def}")
         print(f"NEW DEF: {new_def}")
         return new_def
 
@@ -1234,10 +1249,11 @@ class itemRegistry:
 
             if has_and_true(inst, "children") and has_and_true(inst, "starting_children"):
                 starting_children_only = True
-                for child in inst.children:
-                    if not child in inst.starting_children or has_and_true(child, "hidden"):
-                        starting_children_only = False
-
+                if inst.children:
+                    for child in inst.children:
+                        if not child in inst.starting_children or has_and_true(child, "hidden"):
+                            starting_children_only = False
+            print("if container:")
             if starting_children_only:
                 test = get_if_open(inst, "starting_children_only")
                 #print(f"TEST: {test}")
@@ -1277,12 +1293,8 @@ class itemRegistry:
                     description = inst.descriptions["if_closed"]
 
                 if inst.descriptions.get("if_singular") and inst.has_multiple_instances == 1:
-                    #print(f"IF SINGULAR: {inst.descriptions["if_singular"]}")
-                        #print("if_singular desc in init_descriptions")
                         description = inst.descriptions["if_singular"]
                 if inst.descriptions.get("if_plural") and inst.has_multiple_instances > 1:
-                    #print(f"IF plural: {inst.descriptions["if_plural"]}")
-                        #print("if_plural desc in init_descriptions")
                         description = inst.descriptions["if_plural"]
 
                 elif inst.descriptions.get("generic"):
@@ -1291,12 +1303,8 @@ class itemRegistry:
 
         ## Update nicenames ##
         if inst.nicenames.get("if_singular") and inst.has_multiple_instances == 1:
-            #print(f"IF SINGULAR: {inst.descriptions["if_singular"]}")
-                #print("if_singular nicename in init_descriptions")
                 inst.nicename = inst.nicenames["if_singular"]
         if inst.nicenames.get("if_plural") and inst.has_multiple_instances > 1:
-            #print(f"IF plural: {inst.descriptions["if_plural"]}")
-                #print("if_plural nicename in init_descriptions")
                 inst.nicename = inst.nicenames["if_plural"]
 
 

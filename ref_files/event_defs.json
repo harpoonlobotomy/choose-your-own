@@ -109,12 +109,12 @@
     },
     "effects": {
         "init_items": {
-            "0": {"item_name": "on_break_item"}},
+            "0": {"item_name": "is_broken"}},
         "remove_items": {
             "0": {"item_name": "trigger_item"}}},
 
     "messages": {
-        "start_msg": "As the [[]] breaks, <material_msg>."
+        "start_msg": "As the [[]] breaks, <material_msg>"
     }
   }
 }

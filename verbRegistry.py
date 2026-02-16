@@ -117,6 +117,7 @@ class Parser:
         #print(f"parts dict:: type: {type(parts_dict)}")
         for compound_word, word_parts in parts_dict.items():
             if perfect_match:
+                print(f"PERFECT MATCH: {perfect_match}")
                 break
             #print(f"Word: {word} // word parts: {word_parts}")
             if word in word_parts:
@@ -152,7 +153,7 @@ class Parser:
                     kinds = set()
             kinds.add(word_type)
             potential_match=True
-            omit_next += matches_count-1 ## Skip however many successful matches there were, so we don't re-test words confirmed to be part of the compound word.
+            omit_next += matches_count-1
             return idx, word, kinds, canonical, potential_match, omit_next, perfect_match
 
 
@@ -172,10 +173,10 @@ class Parser:
             match = None
             #print(f"Compound matches: {compound_matches}")
 
-            for item_name in compound_matches: # this just takes the first match, so if 'gold key' and 'iron key' are both there, it will take gold key regardless.
-                #print(f"item name in compound matches: {item_name}")
-                matches.add(item_name)
-                match = item_name
+            #for item_name in compound_matches: # replaced with the local_named test below, so it won't randomly select from the potential options but will always choose locally. (local_named includes inventory.)
+            #    #print(f"item name in compound matches: {item_name}")
+            #    matches.add(item_name)
+            #    match = item_name
 
             if not match and len(matches) > 1:
                 print("There are multiple items here you could be talking about. Please enter which one you mean:")
@@ -185,13 +186,9 @@ class Parser:
                 if test in matches:
                     match = test
             else:
-                 for item in compound_matches: # this just takes the first match, so if 'gold key' and 'iron key' are both there, it will take gold key regardless.
-                    #print(f"item in compound matches: {item}")
-                    if local_named and item in local_named:
+                 for item in compound_matches:
+                    if local_named and item in local_named and item in parts_dict:# still just reports the first found, but that works if it's the first local. Later can add a check for the portion of word-parts found relative to len.
                         #print(f"item in local_named: {item}")
-                        if item in parts_dict:
-                            #print(f"item in parts_dict: {item}")
-                            compound_word, word_parts in parts_dict.get(item) # what is this even here for. Honestly. It does nothing.
                         match = item
                         break
 
@@ -203,7 +200,12 @@ class Parser:
 
             else:
                 if not matches:
-                    print(f"Nothing found here by the name \033[1;33m`{word}`\033[0m.")
+                    if compound_matches:
+                        for item_name in compound_matches: # if nothing found, take whatever you find as a last resort. Might delete this later
+                            #print(f"item name in compound matches: {item_name}")
+                            matches.add(item_name)
+                            match = item_name
+                    print(f"Nothing found here by the name \033[1;33m`{word}.{(f"Did you mean: [{matches}?]") if matches else ""}`\033[0m.")
                     return idx, word, "No match", canonical, potential_match, omit_next, perfect_match
                 print(f"Compound matches: {compound_match}")
                 print(f"Content: {compound_matches}")
@@ -346,6 +348,7 @@ class Parser:
 
                     if perfect and not second_perfect:
                         kinds = (("noun",))
+                        word = canonical # testing this out.
                         tokens.append(Token(idx, word, kinds, canonical))
                         continue
                     #    tokens.append(Token(idx, word, kinds, canonical))
@@ -353,6 +356,7 @@ class Parser:
 
                     elif second_perfect and not perfect:
                         kinds = (("location",)) # made this but was still adding second_kinds. bleh.
+                        second_word = second_canonical
                         tokens.append(Token(second_idx, second_word, kinds, second_canonical))
                         omit_next = second_omit_next
                         continue

@@ -1417,7 +1417,10 @@ def take(format_tuple, input_dict):
         inst, container, reason_val, meaning = registry.check_item_is_accessible(noun_inst)
         #print(f"CAN_TAKE: {noun_inst} / meaning: {meaning} / reason_val: {reason_val}")
         if reason_val not in (0, 3, 4, 5):
-            print(f"Sorry, you can't take the {assign_colour(noun_inst)} right now.")
+            for item, value in input_dict.items():
+                if 'noun' in value:
+                    text = input_dict[item]["noun"].get("text")
+            print(f"Sorry, you can't take a {assign_colour(text)} right now.")
             return 1, added_to_inv
             #print(f"Reason code: {reason_val}")
         elif reason_val == 5:
@@ -1430,37 +1433,23 @@ def take(format_tuple, input_dict):
 
                 if noun_inst.name in local_item_names:
                     val, added_to_inv = can_take(local_item_names[noun_inst.name])
-                    return val, added_to_inv # if another one is found locally, use that instead.
-                    #print(f"{noun_inst} is already in your inventory, but {local_item_names[noun_inst.name]} is local.")
+                    return val, added_to_inv
             else:
                 items_by_name = registry.by_name.get(noun_inst.name)
                 if items_by_name:
                     #print(f"Items matching {noun_inst.name}: \n{items_by_name}\nThis won't do anything yet, but later it should.")
                     if items_by_name:
                         for item in items_by_name:
-                            if item != noun_inst and item.location == loc.current:
+                            if item != noun_inst and item.location == loc.current: # maybe I should replace the above with this. Don't worry about the whole 'make a dict of local names' thing, just check the location of inst by name directly.
                                 print(f"There's another {noun_inst.name} here, but it was not found in local_items. This means the item location wasn't assigned properly, something is broken.")
 
-                    #for instance in items_by_name:
-                        #print(f"Instance vars: {instance}\n{vars(instance)}")
-                        #TODO: Do something else here. Currently this is failing due to other issues, but this still needs to be resolved; if I already have x in my inventory, check to see if x.2 is in the local area before giving up.
             print(f"{assign_colour(noun_inst)} is already in your inventory.")
             return 1, added_to_inv
         else:
-            #can_pickup = verb_membrane.check_noun_actions(noun_inst, "take")
-            #print("can_take, 'else' before pick_up check.")
-            #print(f'if hasattr(noun_inst), "can_pick_up": {hasattr(noun_inst, "can_pick_up")}')
             if hasattr(noun_inst, "can_pick_up") and noun_inst.can_pick_up:
                 #print(f"{noun_inst} can be picked up.")
                 if reason_val in (3, 4):
                     outcome = registry.move_from_container_to_inv(noun_inst, parent=container)
-                    #if outcome != noun_inst:
-                        #print(f"Outcome: {outcome}, noun_inst: {noun_inst}")
-                        #if outcome in loc.inv_place.items:
-                            #print("Outcome is in inventory (line 1466).")
-                            #return 0, outcome
-                        #if noun_inst in loc.inv_place.items:
-                            #print("noun_inst is in inventory. line 1469")
                     added_to_inv = outcome
                     #print("added to inv, returning.")
                     return 0, added_to_inv

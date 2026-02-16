@@ -13,6 +13,7 @@ import uuid
 from itemRegistry import ItemInstance
 from logger import logging_fn
 from misc_utilities import assign_colour
+from testing_coloured_descriptions import init_loc_descriptions
 
 event_states = {
     "past": 0,
@@ -35,6 +36,7 @@ def load_json():
 event_dict = load_json()
 
 acts = ["is_broken"]
+
 trigger_acts = { # the k/v a verb action has to send in order to meet the trigger requirement.
     "item_broken": {"is_broken": True},
     "item_unlocked": {"is_locked": False},
@@ -42,6 +44,7 @@ trigger_acts = { # the k/v a verb action has to send in order to meet the trigge
 }
 ## very similar to the one above but slightly different and worth it to keep them separate. Later events may make them diverge further, at which point I'll make it clearer.
 # the action name from verb_actions that needs to be in trig.triggers.
+
 trigger_actions = ["item_in_inv", "item_broken", "item_unlocked", "item_not_in_inv"]
 
 requires_end_trigger_loc = ["none yet", "just a placeholder", "for something that needs you to be in a specific place."]
@@ -358,14 +361,21 @@ class eventRegistry:
 
         return event, event_attr
 
-    def clean_messages(self, event, noun=None):
-        messages = event.msgs
-        #print(f"MESSAGES: {messages}")
-        for part, message in messages.items():
-            if "[[]]" in message:
-                new_message = message.replace("[[]]", noun.name)
-                #print(f"CLEANED MESSAGE: {message}")
-                event.msgs[part] = new_message
+    def clean_messages(self, event, noun=None, msg = None):
+
+        if msg == None:
+            messages = event.msgs
+            #print(f"MESSAGES: {messages}")
+            print(f"event: {event}, noun: {noun}")
+            for part, message in messages.items():
+                if "[[]]" in message:
+                    new_message = message.replace("[[]]", noun.name)
+                    #print(f"CLEANED MESSAGE: {message}")
+                    event.msgs[part] = new_message
+        else:
+            if "[[]]" in msg:
+                new_message = msg.replace("[[]]", noun.name)
+                return new_message
 
     def get_all_item_instances(self, event:eventInstance, event_entry, noun=None):
         from itemRegistry import registry
@@ -459,6 +469,40 @@ class eventRegistry:
                         #print(f"event.name: {event.name}")
                         return event.name
 
+
+    def clean_altered_state_def(self, item_name, item_entry, state_change):
+        """
+    "state_change" == "already_broken"/"already_burned", etc.
+        Removes attrs etc from the existing item entry and creates a new modified entry for the item.
+        To remove:
+                for k, item_name in event.init_items[each].items():
+                    if k == "item_name":
+                        inst = None
+                        if item_name == "on_break_item" and noun:
+        Basically, strip out all the parts that make it possible for a thing to be broken. Also those things should be /far/ better defined than they are. Jeez.
+        """
+        print(f"clean atered state def \n item name: {item_name} / item entry:\n{item_entry}")
+        """
+Dict of broken glass as it arrives:
+{'alt_names': ['broken glass shards', 'glass shards', 'shards of glass', 'shard of glass', 'shard', 'shards'], 'can_pick_up': True, 'descriptions': {'if_singular': 'a shard of broken glass.', 'if_plural':
+'a scattering of broken glass.'}, 'has_multiple_instances': 3, 'single_identifier': 'shard', 'plural_identifier': 'shards', 'item_size': 'small_flat_things', 'item_type': ['can_pick_up', 'is_cluster', 'standard'], 'nicenames': {'if_singular': 'a glass shard', 'if_plural': 'a few shards of glass'}, 'slice_attack': 10, 'slice_defence': 4, 'smash_attack': 2, 'smash_defence': 2, 'material_type': 'generic', 'on_break': 'broken [[item_name]]'}
+
+So I just need to change {material_type}: {on_break: broken_name} to "already_broken": {None:None}. Most straightforward way.
+
+'material_type': 'generic', 'on_break': 'broken [[item_name]]'}
+        """
+        from itemRegistry import material_type
+        if state_change == "is_broken":
+            state_change = "already_broken"
+            action = "on_break"
+        print(f"state change: {state_change}")
+        print(f'item_entry["material_type"] = material_type[state_change]: {material_type.get(state_change)}')
+        item_entry["material_type"] = state_change
+        item_entry[action] = material_type[state_change]
+        item_entry["nicenames"] = {"generic": f"some {item_name}"}
+        return item_entry
+
+
     def manage_constraint_tracking(event):
         """
         Call this from the day/time management (set_up_game, probably) to check if any time-based events have completed.
@@ -479,7 +523,6 @@ class eventRegistry:
     def get_event_triggers(self, event, event_name = None, trigger_check = None):
         logging_fn()
 
-        from env_data import locRegistry as loc
         from itemRegistry import registry
 
         if event:
@@ -542,10 +585,6 @@ class eventRegistry:
                     item_flags_on_start = trig_data["item_trigger"].get("on_event_start")
                     item_flags_on_end = trig_data["item_trigger"].get("on_event_end")
 
-                    if trig_data["item_trigger"].get("trigger_constraint"):
-                        trigger_dict["trigger_constraint"] = trig_data["item_trigger"]["trigger_constraint"]
-
-
                 elif event.is_generated_event:
                     if trigger_check:
                         trigger_item = trigger_check
@@ -559,8 +598,6 @@ class eventRegistry:
                 if not trigger_item_loc and trig_data.get("item_trigger"):
                     if trig_data["item_trigger"].get("trigger_item_location"):
                         trigger_item_loc = trig_data["item_trigger"]["trigger_item_location"]
-
-
 
                 trigger_dict.update({
                     "event": event,
@@ -757,6 +794,7 @@ class eventRegistry:
                 #if event.print_description_plain:
                     #So I might not even be using this. Instead, it just checks if colour == event_msg, and if so checks for [[ in the string, and if it has it, it treats it like any other string with item instance, within assign_colour. It shouldn't break anything else, as the location descriptions that use [[]] parse it out before getting the loc colour.
 
+                msg = events.clean_messages(event, noun, msg)
                 if print_text:
                     print(f"{assign_colour(msg, colour='event_msg', noun=noun)}")
                 return msg
@@ -801,64 +839,90 @@ class eventRegistry:
             #print(f"Event init_items: {event.init_items}")
             for each in event.init_items:
                 #print(f"EACH: {each}")
-                for k, item_name in event.init_items[each].items():
+                for k, outcome_name in event.init_items[each].items():
+                    print(f"K: {k}, item_name: {outcome_name}")
                     if k == "item_name":
+                        entry = None
                         inst = None
-                        if item_name == "on_break_item" and noun:
-                            target_itemname = noun.on_break
-                            if not target_itemname:
-                                print(f"No target_itemname for {noun}.")
-                                target_itemname == "detritus"
-                            item_name = target_itemname
-                            #from itemRegistry import material_type
-                            #mat_type = noun.material_type
-                            #outcome = material_type.get(mat_type)
-                            #if not outcome:
-                            #    print(f"{mat_type} not in material types, using 'generic' instead.")
-                            #    outcome = material_type["generic"]
+                        item_name = None
+                        if outcome_name in acts and noun:
+                            if hasattr(noun, "on_break"):
+                                target_itemname = noun.on_break
+                                print(f"Target_itemname: {target_itemname}")
+                                if not target_itemname:
+                                    print(f"No target_itemname for {noun}.")
+                                    target_itemname == "detritus"
+                                item_name = target_itemname
+                                from itemRegistry import registry
+                                #mat_type = noun.material_type
+                                #outcome = material_type.get(mat_type)
+                                #if not outcome:
+                                #    print(f"{mat_type} not in material types, using 'generic' instead.")
+                                #    outcome = material_type["generic"]
 
-                            #print(f"TRIG: {trig}")
-                            if "[[item_name]]" in item_name:
-                                new_def = registry.generate_alt_state_item(item_name, noun)## This is not implemented yet###
-
-                        #print(f"K: {k}, v: {item_name}")
+                                #print(f"TRIG: {trig}")
+                                if "[[item_name]]" in item_name:
+                                    item_name = item_name.replace("[[item_name]]", noun.name)
+                                    entry = registry.generate_alt_state_item(item_name, noun)
+                                    print(f"Entry after [[item_name]]: {entry}")
+                                    #from itemRegistry import registry
+                                    #new_def = registry.generate_alt_state_item(item_name, noun)## This is not implemented yet###
                         from itemRegistry import registry
-                        if not registry.item_defs.get(item_name):
+                        print(f"ITem name: {item_name}/ outcome_name: {outcome_name}")
+                        if not item_name:
+                            item_name = outcome_name
+                        if not entry:
+                            entry = registry.item_defs.get(item_name)
+                        #print(f"K: {k}, v: {item_name}")
+                            if not entry:
+                                entry = registry.by_alt_names.get(item_name)
+                                #print(f"Alt name? : {test}")
+                                if not entry:
+                                    #print(f"Registry.by_alt_names: {registry.by_alt_names}")
+                                    from item_dict_gen import generator
+                                    generator_alt_name = generator.alt_names.get(item_name)
+                                    if generator_alt_name:
+                                        item_name = generator_alt_name
+                                        #print(f"Item in generator alt names: {generator_alt_name}")
+                                        if registry.item_defs.get(item_name):
+                                            entry = registry.item_defs.get(item_name)
 
-                            test = registry.by_alt_names.get(item_name)
-                            #print(f"Alt name? : {test}")
-                            if not test:
-                                #print(f"Registry.by_alt_names: {registry.by_alt_names}")
-                                from item_dict_gen import generator
-                                generator_alt_name = generator.alt_names.get(item_name)
-                                if generator_alt_name:
-                                    item_name = generator_alt_name
-                                    #print(f"Item in generator alt names: {generator_alt_name}")
-                                else:
-                                    print(f"No name found for item_name: {item_name}")
-                        if registry.item_defs.get(item_name):
-                            inst = registry.init_single(item_name, registry.item_defs.get(item_name))
-                            if not inst:
-                                print(f"Failed to generate instance for {item_name}")
-                                exit()
+                        if not entry:
+                            print("No item def to use as a basis. Exiting.")
+                            exit()
+                            #print("Truly no definition found for this new name. Oops. Taking from noun instead.")
+                            #new_def = registry.generate_alt_state_item(item_name, noun)## This is not implemented yet###
 
-                            event.items.add(inst)
-                            inst.event = event
-                            inst.is_event_key = False
-                            from env_data import locRegistry
-                            inst.location = locRegistry.current
-                            registry.by_location[locRegistry.current].add(inst)
-                            if event.effects_on_start:
-                                for effect, item in event.effects_on_start.items():
-                                    if effect_attrs[effect].get("on_event_start"):
-                                        for attr in effect_attrs[effect]["on_event_start"]:
-                                            setattr(item, attr, effect_attrs[effect]["on_event_start"][attr])
-                                            print(f"EFFECT: {effect}, item: {item}")
-                            ## TODO this is half done. Finish this bit... Need to make sure the attributes are properly set to the new item, they may differ from item defs defaults.
-                            #print(f"Initialised event item ({inst})")
-                        else:
-                            print(f"No item definition for {item_name}, cannot generate item for event {event}.")
-                            return None
+                        entry = self.clean_altered_state_def(item_name, entry, outcome_name)
+                        print(f"after clean altered state: {entry}")
+                        registry.item_defs[item_name] = entry
+                        plural_words_dict = registry.plural_words
+                        if len(item_name.split()) > 1:
+                            plural_words_dict[item_name] = tuple(item_name.split())
+                        inst = registry.init_single(item_name, entry)
+                        if not inst:
+                            print(f"Failed to generate instance for {item_name}")
+                            exit()
+
+                        event.items.add(inst)
+                        inst.event = event
+                        inst.is_event_key = False
+                        from env_data import locRegistry
+                        inst.location = locRegistry.current
+                        registry.by_location[locRegistry.current].add(inst)
+                        if event.effects_on_start:
+                            for effect, item in event.effects_on_start.items():
+                                if effect_attrs[effect].get("on_event_start"):
+                                    for attr in effect_attrs[effect]["on_event_start"]:
+                                        setattr(item, attr, effect_attrs[effect]["on_event_start"][attr])
+                                        print(f"EFFECT: {effect}, item: {item}")
+
+                        init_loc_descriptions(locRegistry.current)
+                        ## TODO this is half done. Finish this bit... Need to make sure the attributes are properly set to the new item, they may differ from item defs defaults.
+                        #print(f"Initialised event item ({inst})")
+                    else:
+                        print(f"No item definition for {item_name}, cannot generate item for event {event}.")
+                        return None
 
         if hasattr(event, "remove_items") and event.remove_items:
             #print(f"event.remove_items: {event.remove_items}")
@@ -869,25 +933,30 @@ class eventRegistry:
                         items = set()
                         for item in event.event_keys:
                             items.add(item)
-                        #print(f"ITEMS: {items}\nEVENT: {vars(event)}")
+                        print(f"ITEMS: {items}\nEVENT: {event}")
                         for item in items:
                             inst = item
                             if isinstance(inst, ItemInstance):
-                                if inst.children:
+                                print("end hasattr children")
+                                if hasattr(inst, "children") and inst.children:
                                     children = set()
                                     for child in inst.children:
                                         children.add(child)
-                                    for child in children:
-                                        registry.move_item(child, inst.location, old_container=inst)
-                                registry.delete_instance(inst)
+                                    if children:
+                                        for child in children:
+                                            registry.move_item(child, inst.location, old_container=inst)
                                 if inst in event.items:
                                     event.items.remove(inst)
                                 if inst in event.event_keys:
                                     event.event_keys.remove(inst)
+                                registry.delete_instance(inst)
+                                inst = noun
+                                print(f"noun: {noun}")
                             else: print(f"Cannot remove {item} from event items, not present.")
 
         if inst:
             event.state = 1
+            print(f"inst: {inst}")
             self.play_event_msg("start_msg", event, noun=inst)
             print()
             event.state = 0
@@ -1221,6 +1290,10 @@ class eventRegistry:
             for inner in reason:
                 reason_str, val = inner
                 if reason_str in acts:
+                    if hasattr(noun_inst, reason_str) and getattr(noun_inst, reason_str):
+                        print(f"Item already {reason_str}, continuing.")
+                        continue
+                    setattr(noun_inst, reason_str, True)
                     event_name = self.get_event_name_by_attr_trigger(reason)
                     if not event_name:
                         print(f"No event found with this attr trigger reason: {reason}. Cannot generate event. (Not a problem if it wasn't expected. Tailor this later.)")
@@ -1464,7 +1537,6 @@ def register_generated_event(event_name, noun, reason_str):
     event_inst, event_entry = events.add_event(intake_event.name, vars(intake_event))
     #print(f"About to get item instances for {event_inst}, using {noun}")
     events.get_all_item_instances(event_inst, event_entry, noun)
-    events.clean_messages(event_inst, noun)
     add_items_to_events(event_inst, noun)
     return event_inst
 
