@@ -122,7 +122,7 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
 
     if new_location and isinstance(new_location, placeInstance) and not new_cardinal:
         new_cardinal = loc.current.name
-        new_card_inst = loc.by_cardinal_str(loc.current.name, new_location)
+        new_card_inst = loc.by_cardinal_str(new_cardinal, new_location.name)
         if not new_card_inst.cardinal_data:
             for card in new_location.cardinals:
                 new_card_inst = new_location.cardinals.get(card)

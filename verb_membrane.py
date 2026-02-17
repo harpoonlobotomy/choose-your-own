@@ -63,11 +63,11 @@ def check_noun_actions(noun_inst, verbname):
 def get_noun_instances(dict_from_parser, viable_formats):
 
     error = None
-    def check_cardinals(entry, dict, format):
+    def check_cardinals(entry, dictionary, format):
 
         from env_data import locRegistry
         loc_inst = None
-        for _, dict_entry in dict.items():
+        for _, dict_entry in dictionary.items():
             for k, v in dict_entry.items():
                 if k == "location":
                     loc_inst = v.get("instance")
@@ -83,8 +83,8 @@ def get_noun_instances(dict_from_parser, viable_formats):
         #print(f"locRegistry.cardinals[loc_inst]: {locRegistry.cardinals[loc_inst]}")
 
         card_inst = locRegistry.cardinals[loc_inst][card]
-        dict_from_parser[idx][kind] = ({"instance": card_inst, "str_name": entry["str_name"], "text": entry["text"]})
-        return dict_from_parser
+        dictionary[idx][kind] = ({"instance": card_inst, "str_name": entry["str_name"], "text": entry["text"]})
+        return dictionary
 
     #if len(viable_formats) != 1:
     #    print("More than one viable format. I can't handle that yet. Exiting.")
@@ -110,79 +110,75 @@ def get_noun_instances(dict_from_parser, viable_formats):
 
         for idx, data in dict_from_parser.items():
             for kind, entry in data.items():
-                requires_noun = False
-                #print(f"GET NOUN INSTANCES::: Kind: {kind}, entry: {entry}")
+                #print(f"GET NOUN INSTANCES::: Kind: {kind}, entry: {entry}\n")
                 if kind == "noun":
-                    requires_noun = True
-                    noun_name = None
                     name = entry["str_name"]
-                    noun_inst = registry.instances_by_name(name) ## NOTE: This won't hold for long. Different instances may have different attr.
-                    if not noun_inst:
-                        suitable_nouns -= 10
-                        ### wait wtf it MAKES a new instance to check noun attr???
-                        #NOTE cancelled this new item generation for now, I can't imagine why that was here tbh...
-                        #if name in registry.item_defs:
-                        #    noun_inst = registry.init_single(name, registry.item_defs[name])
-                    #if not noun_inst:
-                        dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": entry["str_name"], "text": entry["text"]})
-                        error = (f"No found ItemInstance for {entry}", (idx, kind))
+                    if name == "assumed_noun":
+                        if entry.get("instance"):
+                            print(f"entry[instance]: {entry["instance"]}")
+
+                        dict_from_parser[idx][kind] = ({"instance": "assumed_noun", "str_name": entry["str_name"], "text": entry["text"]})
+                        error = ("assumed_noun", (idx, kind))
                     else:
-                        #print(f"Noun inst: {noun_inst}")
-                        if not isinstance(noun_inst, ItemInstance):
-                            if len(noun_inst) > 1:
-                                loc_found = False
-                                from env_data import locRegistry
-                                for noun in noun_inst:
-                                    if noun.location == locRegistry.current:
-                                        noun_inst = noun
-                                        loc_found = True
-                                        break
-                                if not loc_found: # just take the first if none are local.
+                        noun_inst = registry.instances_by_name(name) ## NOTE: This won't hold for long. Different instances may have different attr.
+                        if not noun_inst:
+                            suitable_nouns -= 10
+                            ### wait wtf it MAKES a new instance to check noun attr???
+                            #NOTE cancelled this new item generation for now, I can't imagine why that was here tbh...
+                            #if name in registry.item_defs:
+                            #    noun_inst = registry.init_single(name, registry.item_defs[name])
+                        #if not noun_inst:
+                            dict_from_parser[idx][kind] = ({"instance": "4", "str_name": entry["str_name"], "text": entry["text"]})
+                            error = ("assumed_noun", (idx, kind))
+                        else:
+                            #print(f"Noun inst: {noun_inst}")
+                            if not isinstance(noun_inst, ItemInstance):
+                                if len(noun_inst) > 1:
+                                    loc_found = False
+                                    from env_data import locRegistry
+                                    for noun in noun_inst:
+                                        if noun.location == locRegistry.current:
+                                            noun_inst = noun
+                                            loc_found = True
+                                            break
+                                    if not loc_found: # just take the first if none are local.
+                                        noun_inst = noun_inst[0]
+                                else:
                                     noun_inst = noun_inst[0]
-                            else:
-                                noun_inst = noun_inst[0]
-                        noun_name = name
-                        dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": name, "text": entry["text"]})
-                        #noun_name = check_noun_actions(noun_inst, verb)
-                        #if noun_name:
-                        #    dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": name, "text": entry["text"]})
-                        #    suitable_nouns += 1
-                        #else:
-    ## NOTE: Added this here so all nouns pass even if they will fail later, which entirely removes the point of the allowed noun_actions. But, I can better tailor failure messages within each later action-fn. So I think I'm going with it for now.
-                          #  dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": name, "text": entry["text"]})
-                          #  #print(f"You can't `{verb.name}` the {entry["str_name"]}")
-                          #  suitable_nouns -= 10
-                    if noun_inst and "is_cluster" in noun_inst.item_type:
-                        from env_data import locRegistry
-                        #TODO HERE.
-                        if hasattr(noun_inst, "has_multiple_instances") and hasattr(noun_inst, "single_identifier") and hasattr(noun_inst, "plural_identifier"):
-                            #print("Cluster has identifiers.")
-                            if noun_inst.plural_identifier in entry["text"]:
-                                #and noun_inst.has_multiple_instances > 1:
-                                ## REMINDER: This is not to set the name, that is a biproduct. It's to find the correct instance if there is one.
-                                local_named_items = registry.get_local_items(include_inv=True, by_name=noun_inst.name)
-                                if local_named_items:
-                                    print(f"Found more than one local item with name {noun_inst.name}. Checking input text for plural identifier `{noun_inst.plural_identifier}` to identify the correct one.")
-                                    for item in local_named_items:
-                                        if item.has_multiple_instances > 1:
-                                            noun_inst = item
-                                            registry.set_print_name(noun_inst, noun_inst.plural_identifier)
-                                            break
+                            dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": name, "text": entry["text"]})
 
-                            elif noun_inst.single_identifier in entry["text"]:
-                                local_named_items = registry.get_local_items(include_inv=True, by_name=noun_inst.name)
-                                if local_named_items:
-                                    for item in local_named_items:
-                                        if item.has_multiple_instances == 1:
-                                            noun_inst = item
-                                            registry.set_print_name(noun_inst, noun_inst.single_identifier)
-                                            break
+                        if noun_inst and "is_cluster" in noun_inst.item_type:
+                            from env_data import locRegistry
+                            #TODO HERE.
+                            if hasattr(noun_inst, "has_multiple_instances") and hasattr(noun_inst, "single_identifier") and hasattr(noun_inst, "plural_identifier"):
+                                #print("Cluster has identifiers.")
+                                if noun_inst.plural_identifier in entry["text"]:
+                                    #and noun_inst.has_multiple_instances > 1:
+                                    ## REMINDER: This is not to set the name, that is a biproduct. It's to find the correct instance if there is one.
+                                    local_named_items = registry.get_local_items(include_inv=True, by_name=noun_inst.name)
+                                    if local_named_items:
+                                        print(f"Found more than one local item with name {noun_inst.name}. Checking input text for plural identifier `{noun_inst.plural_identifier}` to identify the correct one.")
+                                        for item in local_named_items:
+                                            if item.has_multiple_instances > 1:
+                                                noun_inst = item
+                                                registry.set_print_name(noun_inst, noun_inst.plural_identifier)
+                                                break
 
-                            dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": noun_inst.name, "text": entry["text"]})
+                                elif noun_inst.single_identifier in entry["text"]:
+                                    local_named_items = registry.get_local_items(include_inv=True, by_name=noun_inst.name)
+                                    if local_named_items:
+                                        for item in local_named_items:
+                                            if item.has_multiple_instances == 1:
+                                                noun_inst = item
+                                                registry.set_print_name(noun_inst, noun_inst.single_identifier)
+                                                break
+
+                                dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": noun_inst.name, "text": entry["text"]})
 
                 elif kind == "location":
                     from env_data import locRegistry
                     loc_name = entry["str_name"]
+                    print(f"LOC NAME from str_name IN LOCATION: {loc_name}")
                     if locRegistry.place_by_name(loc_name):
                         dict_from_parser[idx][kind] = ({"instance": locRegistry.place_by_name(loc_name), "str_name": loc_name, "text": entry["text"]})
 
@@ -196,10 +192,6 @@ def get_noun_instances(dict_from_parser, viable_formats):
                     #print(f"Kind is cardinal: {entry}")
                     dict_from_parser = check_cardinals(entry, dict_from_parser, viable_formats)
 
-                if requires_noun == True: # Not sure this'll ever come up, as a thing will likely fail at the initial parser stage. Maybe delete this later.
-                    if not noun_name:
-                        print(f"{MOVE_UP}\033[1;31m[ Couldn't find anything to do with the input `{name}`, sorry. ]\033[0m")
-                    requires_noun = False
         #print("About to return dict_from_parser, error")
         return dict_from_parser, error
     #print("About to return dict_from_parser, error")
@@ -258,33 +250,69 @@ class Membrane:
 
     def get_local_nouns(self):
 
-        from set_up_game import game
         from itemRegistry import registry
         from env_data import locRegistry
 
-        #inventory = game.inventory
-        #print(f"inventory: {inventory}")
-        #print(f"locRegistry.current: {locRegistry.current}")
         inventory = registry.get_item_by_location(locRegistry.inv_place)
         current_loc_items = registry.get_item_by_location(locRegistry.current)
         #print(f"current_loc_items: {current_loc_items}")
         local_named = set()
+        local_items = {}
         if inventory:
             for item in inventory:
                 local_named.add(item.name)
+                local_items[item.name] = item
         if current_loc_items:
             for item in current_loc_items:
                 local_named.add(item.name)
+                local_items[item.name] = item
+
+        # Need to add transition items if current is exit/entrance:
+        if registry.transition_objs.get(locRegistry.current.place):
+            print(f"registry.transition_objs.get(locRegistry.current.place): {registry.transition_objs.get(locRegistry.current.place)}")
+            local_named.add(registry.transition_objs[locRegistry.current].name)
+            print(f"Added transition object to local_named: `{registry.transition_objs[locRegistry.current].name}`")
+            local_items[item.name] = registry.transition_objs[locRegistry.current]
+
         self.local_nouns = local_named
+        self.local_dict = local_items
         #print(f"local nouns: {self.local_nouns}")
 
 membrane = Membrane()
-# excluded for not being relevant right now. "go to the graveyard", , "go to a city hotel room", "go to the pile of rocks", "approach the forked tree branch"
+
+def add_item(input_str):
+    from env_data import locRegistry
+
+    if " add " in input_str:
+        splitstr = input_str.split(" add ")
+        input_str = splitstr[-1]
+
+    if input_str in registry.item_defs:
+        print(f"registry.item_defs[test]: {registry.item_defs[input_str]}")
+        created_item = registry.init_single(input_str, registry.item_defs[input_str])
+    else:
+        print(f"No item named `{input_str}`. Do you want to create a new item?")
+        new_test = input("y/yes for yes, anything else to return.")
+        if new_test not in ("y", "yes"):
+            print("Returning.")
+            return
+        from itemRegistry import new_item_from_str
+        created_item = new_item_from_str(input_str, input_str=None, loc_cardinal=locRegistry.current.place_name)
+
+    registry.move_item(created_item, location=locRegistry.current)
+    from testing_coloured_descriptions import init_loc_descriptions
+    init_loc_descriptions(locRegistry.current)
+
+    print(f"Generated item ``{created_item}``.")
 
 
 def immediate_commands(input_str):
-# immediate_commands = ["print local items", "print inventory items", "print named items"]
+    from env_data import locRegistry
     print_yellow(f"IMMEDIATE COMMAND: {input_str}")
+    if input_str.startswith("godmode") and input_str != "godmode":
+        if " add " in input_str:
+            add_item(input_str)
+
     from env_data import locRegistry
     if input_str == "print local items":
         local_items = registry.by_location.get(locRegistry.current)
@@ -322,21 +350,22 @@ def immediate_commands(input_str):
     if "god" in input_str:
         where = input('"add" or "add item" to add an item. "move" to force move an item to a location.')
         if where in ("add", "add item", "add_item"):
-            test = input("Enter <item_name> to spawn an item at your location. This is the only option at present.\n")
-            if test == "":
+            input_str = input("Enter <item_name> to spawn an item at your location. This is the only option at present.\n")
+
+            if input_str == "":
                 print("Nothing entered; returning")
                 return input()
-            if test in registry.item_defs:
-                print(f"registry.item_defs[test]: {registry.item_defs[test]}")
-                created_item = registry.init_single(test, registry.item_defs[test])
+            if input_str in registry.item_defs:
+                print(f"registry.item_defs[test]: {registry.item_defs[input_str]}")
+                created_item = registry.init_single(input_str, registry.item_defs[input_str])
             else:
-                print(f"No item named `{test}`. Do you want to create a new item?")
+                print(f"No item named `{input_str}`. Do you want to create a new item?")
                 new_test = input("y/yes for yes, anything else to return.")
                 if new_test not in ("y", "yes"):
                     print("Returning.")
                     return input()
                 from itemRegistry import new_item_from_str
-                created_item = new_item_from_str(test, input_str=None, loc_cardinal=locRegistry.current.place_name)
+                created_item = new_item_from_str(input_str, input_str=None, loc_cardinal=locRegistry.current.place_name)
             registry.move_item(created_item, location=locRegistry.current)
             print(f"Generated item ``{created_item}``.")
 
@@ -348,8 +377,8 @@ def immediate_commands(input_str):
                 return input()
             if isinstance(item, list):
                 for inst in item:
-                    test = input(f"Do you want to move item {inst}?")
-                    if test in ("y", "yes"):
+                    input_str = input(f"Do you want to move item {inst}?")
+                    if input_str in ("y", "yes"):
                         item = inst
                         break
             else:
@@ -373,19 +402,14 @@ def immediate_commands(input_str):
     print_yellow("Exiting immediate_commands.\n")
     return
 
-
-
-
-
-
 test_input_list = ["take the paperclip", "take the paperclip", "pick up the glass jar", "put the paperclip in the wallet", "place the dried flowers on the headstone", "look at the moss", "examine the damp newspaper", "read the puzzle mag", "read the fashion mag in the city hotel room", "open the glass jar", "close the window", "pry open the TV set", "smash the TV set", "break the glass jar", "clean the watch", "clean the severed tentacle", "mix the unlabelled cream with the anxiety meds", "combine the fish food and the moss", "eat the dried flowers", "consume the fish food", "drink the unlabelled cream", "burn the damp newspaper", "burn the fashion mag in the graveyard", "throw the pretty rock", "lob the pretty rock at the window", "chuck the glass jar into the glass jar", "drop the wallet", "discard the paper scrap with number", "remove the batteries from the TV set", "add the batteries to the mobile phone", "put the car keys in the plastic bag", "set the watch", "lock the window", "unlock the window", "shove the TV set", "move the headstone", "barricade the window with the TV set", "separate the costume jewellery", "investigate the exact thing", "observe the graveyard", "watch the watch", "leave the graveyard", "depart", "go", "take the exact thing", "put the severed tentacle in the glass jar", "open the wallet with the paperclip", "read the mail order catalogue at the forked tree branch", "pick the moss", "pick the watch", "pick up moss", "throw anxiety meds", "put batteries into watch", "clean a glass jar"]
 
 #test_input_list = ["go west", "go north", "go to shed", "go north", "go to work shed", "go north", "go to shed door", "go to work shed door", "open door", "close door", "open shed door", "close shed door", "go into shed", "open door", "go into work shed", "go into work shed", "leave shed", "inventory", "drop mag", "take mag", "drop mag at church", "go into work shed", "open work shed door", "open door", "go into shed", "take map", "take key", "go to north graveyard", "use key on padlock", "lock padlock with key", "unlock padlock with key", "take padlock", "go to city hotel room", "find tv set", "look at tv set"]
 
-test_input_list = ["go west", "open door", "enter shed", "take map", "take key", "go to north graveyard", "look at gate", "unlock padlock with key", "look at gate", "pick up padlock", "go to city hotel room", "find tv set", "go to east graveyard", "take jar", "logging args", "break jar"]
+test_input_list = ["go west", "logging args", "open door", "enter shed", "take map", "take key", "go to north graveyard", "look at gate", "unlock padlock with key", "look at gate", "pick up padlock", "go to city hotel room", "find tv set", "go to east graveyard", "take jar", "break jar"]
 
 #test_input_list = ["go east", "take glass jar", "break jar", "pick up glass shard", "drop glass shard", "go west", "open door", "enter shed", "take map", "take key", "north graveyard", "use key on padlock"]
-test_input_list = ["take hammer", "break pot with hammer"]
+#test_input_list = ["east", "break jar", "break flowers with hammer"]
 #test_input_list = ["logging args", "take stick", "approach the forked tree branch", "look around"]
 
 import json
@@ -402,7 +426,6 @@ class UserEncoder(json.JSONEncoder):
             return str(o)
         elif isinstance(o, set):
             return list(o)
-        # Let the base class default method raise the TypeError
         return super().default(o)
 
 input_outcome_dict = {}
@@ -419,10 +442,9 @@ def run_membrane(input_str=None, run_tests=False):
         immediate_command = ["print local items", "print inventory items", "print named items", "print current events", "print all events", "godmode", "god mode"]
         while input_str == None or input_str == "":
             input_str = input("\n")
-            if input_str in immediate_command:
-                while input_str in immediate_command:
-                    immediate_commands(input_str)
-                    input_str = input()
+            if input_str in immediate_command or input_str.startswith("godmode"):
+                immediate_commands(input_str)
+                input_str = input()
         #print(f"\ninput_STR:::: {input_str}\n")
         response = (None, None)
 
@@ -462,28 +484,36 @@ def run_membrane(input_str=None, run_tests=False):
 
             logging_fn(f"error: {error} // inst_dict: {inst_dict}")
             if error:
-                if isinstance(error, str):
-                    print(f"Error: {error}")
-                    return None
-                print(f"ERROR: {error}")
                 message, idx_kind = error
-                idx, kind = idx_kind
-                print(f"inst_dict[idx][kind]: {inst_dict[idx][kind]}")
-                text = inst_dict[idx][kind].get("text")
-                canonical = inst_dict[idx][kind].get("str_name")
-                if canonical and " " in canonical:
-                    not_found = list()
-                    parts = canonical.split()
-                    print(f"PARTS: {parts}")
-                    if parts:
-                        for part in parts:
-                            if part in input_str:
-                                not_found.append(part)
-                    if not_found:
-                        text = " ".join(not_found)
+                if isinstance(error, str):
+                    if error == "No dict_from_parser":
+                        # print this if you need to, but in general, don't.
+                        #print(f"Error: {error}")
+                        return None
+                if "assumed_noun" in message or "non_local noun" in message:
+                    from misc_utilities import print_failure_message
+                    print_failure_message(input_str, message, idx_kind, inst_dict, viable_format)
+                    return None
+                else:
+                    print(f"ERROR: {error}")
+                    message, idx_kind = error
+                    idx, kind = idx_kind
+                    print(f"inst_dict[idx][kind]: {inst_dict[idx][kind]}")
+                    text = inst_dict[idx][kind].get("text")
+                    canonical = inst_dict[idx][kind].get("str_name")
+                    if canonical and " " in canonical:
+                        not_found = list()
+                        parts = canonical.split()
+                        print(f"PARTS: {parts}")
+                        if parts:
+                            for part in parts:
+                                if part in input_str:
+                                    not_found.append(part)
+                        if not_found:
+                            text = " ".join(not_found)
 
-                print(f"Nothing found here by the name \033[1;33m`{text}`\033[0m.")
-                return None
+                    print(f"Nothing found here by the name \033[1;33m`{text}`\033[0m.")
+                    return None
 
             if not inst_dict:
                 print(f"{MOVE_UP}\033[1;31m[ Couldn't find anything to do with the input `{input_str}`, sorry. ]\033[0m")

@@ -278,16 +278,18 @@ Note on descriptions: if self.descriptions, will have different descriptions dep
         if hasattr(self, "is_hidden") and self.is_hidden:
             self.set_hidden()
 
-        if hasattr(self, "enter_location"):
-            self.enter_location = loc.place_by_name(self.enter_location)
+        if "transition" in self.item_type:
+
+            self.enter_location = loc.by_cardinal_str(self.enter_location)
             #print(f"self.enter_location: {self.enter_location}")
             setattr(self.enter_location, "entry_item", self)
             setattr(self.enter_location, "location_entered", False)
             self.is_transition_obj = True
+            registry.transition_objs[self.enter_location] = self
 
-        if hasattr(self, "exit_to_location"):
-            self.exit_to_location = loc.by_name.get(self.exit_to_location)
+            self.exit_to_location = loc.by_cardinal_str(self.exit_to_location)
             setattr(self.exit_to_location, "exit_item", self)
+            registry.transition_objs[self.exit_to_location] = self
 
     def __repr__(self):
         return f"<ItemInstance {self.name} / ({self.id}) / {self.location.place_name} / {self.event if hasattr(self, "event") else ''}/ {(self.has_multiple_instances if hasattr(self, 'has_multiple_instances') else '')}>"
@@ -329,13 +331,15 @@ class itemRegistry:
 
         self.item_defs = {}#item_defs
 
+        self.transition_objs = {}
+
     # -------------------------
     # Creation / deletion
     # -------------------------
 
     def init_single(self, item_name, item_entry = None, apply_location = None):
-        print(f"\n\n[init_single] ITEM NAME: {item_name}")
-        print(f"[init_single] ITEM ENTRY: {item_entry}\n\n")
+        #print(f"\n\n[init_single] ITEM NAME: {item_name}")
+        #print(f"[init_single] ITEM ENTRY: {item_entry}\n\n")
         if not item_entry:
             if self.item_defs.get(item_name):
                 item_entry = self.item_defs[item_name]
@@ -423,10 +427,14 @@ class itemRegistry:
             inst.contained_in = None
         self.by_name.get(inst.name, list()).remove(inst)
 
+        if " " in inst.name:
+            from verb_membrane import membrane
+            if membrane.plural_words_dict.get(inst.name):
+                membrane.plural_words_dict.pop(inst.name)
         inst = self.instances.remove(inst)
         if not inst:
             return
-        print(f"Still inst: {inst}")
+        print(f"Inst was not deleted entirely: {inst}")
 
     def item_def_by_attr(self, attr_str="", loot_type=None, open=None, locked=None):
 
@@ -804,23 +812,25 @@ class itemRegistry:
                         val = val.replace(noun.name, new_name)
                     if noun.name in val2:
                         val2 = val2.replace(noun.name, new_name)
-            elif isinstance(v, str):
-                if k == "material_type":
-                    mat_type = v
-                    noun_type = noun.material_type
-                    print(f"mat type for new instance: {mat_type}, noun type: {noun_type}")
+            #elif isinstance(v, str):
+            #    new_def[k] = v
+                #if k == "material_type":
+                #    mat_type = v
+                #    noun_type = noun.material_type
+                    #print(f"mat type for new instance: {mat_type}, noun type: {noun_type}")
 
    # "generic": {"on_break": f"broken [[item_name]]"}
             else:
                 if noun.name in v:
                     v = v.replace(noun.name, new_name)
+                new_def[k] = v
 
         new_def["is_broken"] = True
         new_def["starting_location"] = noun.location.place_name
-        print(f"Applying to item_Defs: {new_def}")
+        #print(f"Applying to item_Defs: {new_def}")
         #self.item_defs[new_name] = new_def
         #print(f"ITEM DEF: {item_def}")
-        print(f"NEW DEF: {new_def}")
+        #print(f"NEW DEF: {new_def}")
         return new_def
 
     def combine_clusters(self, shard:ItemInstance, target: (cardinalInstance|ItemInstance)):
@@ -1253,7 +1263,7 @@ class itemRegistry:
                     for child in inst.children:
                         if not child in inst.starting_children or has_and_true(child, "hidden"):
                             starting_children_only = False
-            print("if container:")
+
             if starting_children_only:
                 test = get_if_open(inst, "starting_children_only")
                 #print(f"TEST: {test}")
@@ -1286,15 +1296,18 @@ class itemRegistry:
                     inst.descriptions["generic"] = f"It's a {inst.name}"
                     inst.description = inst.descriptions["generic"]
                     return
-                if has_and_true(inst, "is_open") and inst.descriptions.get("if_open"):
+                if has_and_true(inst, "is_broken") and inst.descriptions.get("is_broken"):
+                    description = inst.descriptions["is_broken"]
+
+                elif has_and_true(inst, "is_open") and inst.descriptions.get("if_open"):
                     description = inst.descriptions["if_open"]
 
                 elif hasattr(inst, "is_open") and not getattr(inst, "is_open") and inst.descriptions.get("if_closed"):
                     description = inst.descriptions["if_closed"]
 
-                if inst.descriptions.get("if_singular") and inst.has_multiple_instances == 1:
+                elif inst.descriptions.get("if_singular") and inst.has_multiple_instances == 1:
                         description = inst.descriptions["if_singular"]
-                if inst.descriptions.get("if_plural") and inst.has_multiple_instances > 1:
+                elif inst.descriptions.get("if_plural") and inst.has_multiple_instances > 1:
                         description = inst.descriptions["if_plural"]
 
                 elif inst.descriptions.get("generic"):

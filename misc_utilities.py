@@ -27,17 +27,27 @@ cardinal_cols = {
 
 cardinals=list(cardinal_cols.keys())
 
+MOVE_UP = "\033[A"
+
 ### STRING MANIPULATION
 
 def smart_capitalise(s: str) -> str:
     return s[0].upper() + s[1:] if s else s
 
-def is_plural_noun(noun_inst):
+def is_plural_noun(noun_inst, singular = None, plural = None, bool_test=False):
     #from itemRegistry import registry
     #registry.item_defs
     plural_nouns = set(("dried flowers", "bedsheets",))
     if noun_inst.name in plural_nouns:
+        if bool_test:
+            return 1
+        if plural:
+            return plural
         return "are"
+    if bool_test:
+        return 0
+    if singular:
+        return singular
     return "is"
 
 def check_name(item_name):
@@ -170,6 +180,52 @@ def look_around():
                 is_items = ", ".join(col_list(applicable_items))
                 print(f"   {is_items}")
 
+
+
+def print_failure_message(input_str, message=None, idx_kind=None, init_dict=None, format = None):
+    logging_fn()
+    print(f'{MOVE_UP}\n\033[1;32m[[  {input_str}  ]]\033[0m\n')
+    #print(f"Print failure message\nmessage: {message} / idx_kind: {idx_kind}, init_dict: {init_dict}")
+    from verb_actions import get_verb, get_noun
+    if not init_dict:
+        print(f"Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
+        return
+
+    verb = get_verb(init_dict)
+    if not verb:
+        print(f"Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
+        return
+
+    if not idx_kind:
+        print(f"Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
+
+    idx, kind = idx_kind
+    entry = init_dict[idx][kind]
+    entry2 = noun2 = None
+    for i, kind in init_dict.items():
+        kind = list(kind)[0]
+        if "noun" in kind and init_dict[i][kind].get("text") != entry['text']:
+            entry2 = init_dict[i][kind]
+            if entry2.get("instance") and not isinstance(entry2["instance"], str):
+                noun2 = entry2["instance"]
+
+    print(f"dict: {init_dict}")
+
+
+    if isinstance(entry["instance"], str):# and entry["instance"] == 'assumed_noun':
+        if verb.name == "drop":
+            print(f"You can't drop the {assign_colour(entry['text'])}; you aren't holding it.")
+            return
+        if not entry2:
+            if verb.name == "look":
+                print(f"There's no {assign_colour(entry['text'], colour="yellow")} around here to {assign_colour(verb.name, colour="green")} at.")
+                return
+            print(f"There's no {assign_colour(entry['text'], colour="yellow")} around here to {assign_colour(verb.name, colour="green")}.")
+            return
+        if not noun2:
+            print(f"There's no {assign_colour(entry['text'], colour="yellow")} around here to {assign_colour(verb.name, colour="green")} {assign_colour(entry2['text'], colour="yellow")} with.")
+            return
+        print(f"There's no {assign_colour(entry['text'], colour="yellow")} around here to {assign_colour(verb.name, colour="green")} the {assign_colour(entry2['instance'])} with.")
 
 
 ### INVENTORY LIST MANAGEMENT (possible all should be in item_management instead, but keeping here for now.)
@@ -324,10 +380,10 @@ def separate_loot(child_input=None, parent_input=None, inventory=[]): ## should 
 
         if children:
             for item in children:
-                inventory, result = registry.move_from_container_to_inv(item, parent)
+                result = registry.move_from_container_to_inv(item, parent)
 
     else:
-        inventory, result = registry.move_from_container_to_inv(child, parent)
+        result = registry.move_from_container_to_inv(child, parent)
 
     clean_separation_result(result, to_print=True)
 
@@ -358,7 +414,7 @@ def get_itemname_from_sqrbrkt(string, noun):
 
 
 def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=False, not_bold=False, caps=False, card_type = None, noun=None):
-    
+
     from tui.colours import Colours
     string = item
     if colour == "event_msg":
@@ -578,7 +634,7 @@ def do_input():
 
     #from choose_a_path_tui_vers import enable_tui
     SHOW = "\033[?25h"
-    MOVE_UP = "\033[A"
+
     HIDE = "\033[?25l"
 
     move_up = MOVE_UP
