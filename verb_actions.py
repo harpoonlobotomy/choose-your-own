@@ -1020,12 +1020,12 @@ def break_item(format_tuple, input_dict):
                     if getattr(noun_2, f"{attack}_attack") > getattr(noun, f"{attack}_defence"):
                         print(f"You {attack} the {assign_colour(noun)} with the {assign_colour(noun_2)}, and it breaks.")
                         broken = noun#set_noun_attr(("is_broken", True), noun=noun)
-                        return
-                    if getattr(noun, f"{attack}_attack") < getattr(noun_2, f"{attack}_defence"):
+                        break
+                    elif getattr(noun, f"{attack}_attack") < getattr(noun_2, f"{attack}_defence"):
                         print(f"You {attack} the {assign_colour(noun)} with the {assign_colour(noun_2)}, but {assign_colour(noun_2)} was weaker - {assign_colour(noun_2)} breaks.")
                         broken = noun_2#set_noun_attr(("is_broken", True), noun=noun_2)
-                        return
-                    if getattr(noun, f"{attack}_attack") == getattr(noun_2, f"{attack}_defence"):
+                        break
+                    elif getattr(noun, f"{attack}_attack") == getattr(noun_2, f"{attack}_defence"):
                         print(f"You {attack} the {assign_colour(noun)} with the {assign_colour(noun_2)}, but the {assign_colour(noun)} and the {assign_colour(noun_2)} are evenly matched; nothing happens.")
                         return
     if broken:

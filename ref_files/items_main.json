@@ -409,7 +409,7 @@
     "can_pick_up": true,
     "descriptions": {
       "generic": "a bunch of old flowers, brittle and pale; certainly not as vibrant as you imagine they once were.",
-      "if_broken": ""
+      "is_broken": "a crushed bundle of old, dry flowers. They probably meant something to someone once."
     },
     "is_broken": false,
     "is_burned": false,

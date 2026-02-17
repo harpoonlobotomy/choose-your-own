@@ -2438,3 +2438,23 @@ You smash the dried flowers with the god hammer, and it breaks.
 but the dried flowers stay there, no change. Need to refix it.
 
 Working on the break messages, passing moved children back out to print after the event is done. Will fix the dried flower instance after.
+
+7.48pm
+Neatened it up some more, added the removal of deleted instances from membrane.plural_words_dict so 'dried flowers' directs to 'broken dried flowers', not the nonexistent original entity.
+
+But, annoyingly, 'broken flowers' refers to 'broken glass shard', not 'broken dried flowers'. Really need to do that tally-comparison - you might both be partial matches, but one of you has 1/3, the other has 2/3; 2/3 should always win.
+
+Maybe not tonight but tomorrow.
+
+8.11pm
+Well I did start implementing it a while ago it seems:
+#   compound_matches[compound_word]=tuple(((compound_match, len(word_parts))))  ## if input == 'paper scrap': "paper scrap with paper":(2,4)
+
+8.21pm
+
+[[  look at dried flowers  ]]
+
+You look at the broken dried flowers:
+Hey, did it. Nice.
+
+So now it checks how many matches vs misses and picks the best match, not just whichever it finds first.

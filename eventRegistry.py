@@ -834,7 +834,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
     def do_immediate_actions(self, event:eventInstance, trig, noun:ItemInstance=None):
 
         # To do immediate actions for immediate_action events. Will streamline this later maybe but this should do for now.
-        inst = None
+        inst = children = None
         if hasattr(event, "init_items") and event.init_items:
             #print(f"Event init_items: {event.init_items}")
             for each in event.init_items:
@@ -916,8 +916,9 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                                     for attr in effect_attrs[effect]["on_event_start"]:
                                         setattr(item, attr, effect_attrs[effect]["on_event_start"][attr])
                                         print(f"EFFECT: {effect}, item: {item}")
-
+                        registry.init_descriptions(inst = inst)
                         init_loc_descriptions(locRegistry.current)
+
                         ## TODO this is half done. Finish this bit... Need to make sure the attributes are properly set to the new item, they may differ from item defs defaults.
                         #print(f"Initialised event item ({inst})")
                     else:

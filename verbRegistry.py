@@ -186,11 +186,25 @@ class Parser:
                 if test in matches:
                     match = test
             else:
-                 for item in compound_matches:
+                missing_parts = {}
+                for item in compound_matches:
                     if local_named and item in local_named and item in parts_dict:# still just reports the first found, but that works if it's the first local. Later can add a check for the portion of word-parts found relative to len.
                         #print(f"item in local_named: {item}")
-                        match = item
-                        break
+                        matched, total_parts = compound_matches[item]
+                        missing = total_parts - matched
+                        missing_parts[item] = int(total_parts / missing)
+                        #match = item
+                        #break
+                if len(missing_parts) > 1:
+                    least_missing = 10
+                    winner = None
+                    for item, missing in missing_parts.items():
+                        if missing < least_missing:
+                            least_missing = missing
+                            winner = item
+                    if winner:
+                        match = winner
+                        matches_count, _ = compound_matches[match]
 
             if match:
                 canonical = match
