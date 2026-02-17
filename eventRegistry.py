@@ -452,6 +452,8 @@ class eventRegistry:
 
 
         attr_trigger = get_parts_from_tuple(attr_trigger)
+        if not attr_trigger:
+            return None
         #print(f"attr_trigger after tuple: {attr_trigger}, type: {type(attr_trigger)}")
         trigger, val = attr_trigger
         for event in registrar.start_trigger_is_attr:
@@ -1190,6 +1192,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
         logging_fn()
         #print(f"Start of is_event_trigger. Noun details: {vars(noun_inst)}")
         def check_triggers(event:eventInstance, noun:ItemInstance, reason) -> (int|None)|list:
+            logging_fn()
             moved_children = None
             if event.end_triggers:
                 for trig in event.end_triggers:
@@ -1256,13 +1259,9 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                 #print(f"This {noun_inst} already has an event tied to it: {noun_inst.event}")
                 outcome, moved_children = check_triggers(noun_inst.event, noun=noun_inst, reason=reason)
                 return outcome, moved_children
-            #else:
-                #print(f"Noun {noun_inst} has event but is not event key.")
-
 
         if events.generate_events_from_itemname.get(noun_inst.name):
-            existing_event = False
-            print(f"generate from event name {noun_inst}")
+
             event_name = events.generate_events_from_itemname[noun_inst.name]
 
             intake_event = registrar.by_name.get(event_name)
@@ -1289,7 +1288,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
 
         if isinstance(reason, tuple):
             for inner in reason:
-                reason_str, val = inner
+                reason_str, _ = inner
                 if reason_str in acts:
                     if hasattr(noun_inst, reason_str) and getattr(noun_inst, reason_str):
                         print(f"Item already {reason_str}, continuing.")
@@ -1300,7 +1299,18 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                         print(f"No event found with this attr trigger reason: {reason}. Cannot generate event. (Not a problem if it wasn't expected. Tailor this later.)")
                         return None, None
                     event = register_generated_event(event_name, noun_inst, reason_str)
-                    outcome, moved_children = check_triggers(event, noun=noun_inst, reason=reason)
+                    outcome, moved_children = check_triggers(event, noun=noun_inst, reason=reason) # Should this not be reason=reason_str? I just do the loop again here... #TODO
+                else:
+                    return None, None
+
+        elif isinstance(reason, str):
+            event_name = self.get_event_name_by_attr_trigger(reason)
+            if not event_name:
+                #print(f"No event found with this attr trigger reason: {reason}. Not unexpected, no current enents would trigger this. Delete msg later.)")
+                return None, None
+            event = register_generated_event(event_name, noun_inst, reason_str)
+            outcome, moved_children = check_triggers(event, noun=noun_inst, reason=reason)
+
         return outcome, moved_children
 
 

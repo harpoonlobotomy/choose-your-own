@@ -143,7 +143,7 @@ def is_loc_current_loc(location=None, cardinal=None):
 def get_transition_noun(noun, format_tuple, input_dict, take_first=False):
     logging_fn()
     local_items_list = registry.get_item_by_location(loc.current)
-    #print(f"local items in get_transition_noun: {local_items_list}")
+    print(f"local items in get_transition_noun: {local_items_list}")
     if hasattr(noun, "is_loc_exterior"):
         #print(f"has noun.in_loc_ext: {noun.is_loc_exterior}")
         if hasattr(noun, "transition_objs"):
@@ -661,6 +661,9 @@ def go(format_tuple, input_dict): ## move to a location/cardinal/inside
         noun = noun_entry["instance"]
         if hasattr(noun, "enter_location"):
             return move_through_trans_obj(noun, input_dict)
+        elif loc.place_by_name(noun.name):
+            new_relocate(new_location=loc.by_name.get(noun.name))
+
 
     if (direction_entry and direction_entry["str_name"] in to_words and len(format_tuple) < 5) or (not direction_entry and len(format_tuple) < 4) or (direction_entry and not cardinal_entry and not location_entry):
         if location_entry and not cardinal_entry:
@@ -1499,7 +1502,7 @@ def take(format_tuple, input_dict):
             return 1, added_to_inv
         else:
             if hasattr(noun_inst, "can_pick_up") and noun_inst.can_pick_up:
-                #print(f"{noun_inst} can be picked up.")
+                print(f"{noun_inst} can be picked up.")
                 if reason_val in (3, 4):
                     outcome = registry.move_from_container_to_inv(noun_inst, parent=container)
                     added_to_inv = outcome
@@ -1528,8 +1531,7 @@ def take(format_tuple, input_dict):
 
         noun_loc = noun.location
         cannot_take, added_to_inv = can_take(noun)
-        #print(f"after can_take: cannot_take: {cannot_take} // added_to_inv: {added_to_inv}")
-
+        print(f"after can_take: cannot_take: {cannot_take} // added_to_inv: {added_to_inv}")
 
         if cannot_take and hasattr(noun, "can_consume"):
             print(f"\nDid you mean to consume the {assign_colour(noun)}? ")
@@ -1587,6 +1589,7 @@ def take(format_tuple, input_dict):
                 noun = added_to_inv
         #print(f"{assign_colour(noun_inst)} is now in your inventory.") # original
         #print(f"ITEM: {noun}")
+        print("about to check event triggers.")
         outcome, moved_children = events.is_event_trigger(noun, noun_loc, reason = "item_in_inv")
         if not outcome:
             print(f"The {assign_colour(noun)} {is_plural_noun(noun)} now in your inventory.")
@@ -1745,10 +1748,6 @@ def drop(format_tuple, input_dict):
                     noun=item
                     found = True
                     break
-        if not found:
-            print(f"No noun to drop. Rewrite this bit. ({noun})")
-            return
-
 
     if len(input_dict) == 3:
         direction = get_dir_or_sem_if_singular(input_dict)
@@ -1887,6 +1886,7 @@ def enter(format_tuple, input_dict, noun=None):
     logging_fn()
     ### NEED TO FORMALISE DOORS/TRANSITION OBJECTS.
     # just realised you can add str to exit like you can with print/input: exit(code="Exiting because reason given above.")
+    location = get_location(input_dict)
     if not noun:
         if format_tuple == ("verb", "noun", "noun"):
             noun = get_noun(input_dict, 2)
@@ -1895,19 +1895,30 @@ def enter(format_tuple, input_dict, noun=None):
     #print(f"NOUN: {noun}")
     #if hasattr(noun, "is_loc_exterior"):
     #    print(f"{noun} is a location exterior object, this will work later.")
-    if not noun or hasattr(noun, "is_loc_exterior") or hasattr(noun, "is_transition_obj"):
-        noun = get_transition_noun(noun, format_tuple, input_dict)
+    noun = get_noun(input_dict)
+    if noun and hasattr(noun, "is_loc_exterior") or hasattr(noun, "is_transition_obj"):
+        if loc.by_name.get(noun.name): ## So it doesn't matter if it things 'work shed' is a loc or noun, it still directs correctly.
+            location = loc.by_name.get(noun.name)
+        else:
+            noun = get_transition_noun(noun, format_tuple, input_dict)
+        print(f"NOUN: {noun}")
 
     if not noun:
-        noun = get_noun(input_dict, get_str=True)
-        if noun:
+        print("Not noun.")
+        noun = get_noun(input_dict)
+    #print(f"NOUN after get_transition_noun: {noun}")
+    if noun:
+        if hasattr(noun, "enter_location"):
+            return move_through_trans_obj(noun, input_dict)
+        if loc.by_name.get(noun.name): ## So it doesn't matter if it things 'work shed' is a loc or noun, it still directs correctly.
+            location = loc.by_name.get(noun.name)
+        if not location:
             print(f"You can't enter a {assign_colour(noun)} here.")
             return
-        print("There's nothing to enter here.")
+
+    if location:
+        go(format_tuple, input_dict)
         return
-    #print(f"NOUN after get_transition_noun: {noun}")
-    if hasattr(noun, "enter_location"):
-        return move_through_trans_obj(noun, input_dict)
 
     else:
         target_loc = find(format_tuple, input_dict)
@@ -1942,7 +1953,6 @@ def router(viable_format, inst_dict, input_str=None):
             #print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {input_str}  ]]\033[0m\n')
         else:
             print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {" ".join(input_strings)}  ]]\033[0m\n')
-
     else: #print processed str
         print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {" ".join(quick_list)}  ]]\033[0m\n')
 

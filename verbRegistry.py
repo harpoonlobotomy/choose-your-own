@@ -117,100 +117,75 @@ class Parser:
         #print(f"parts dict:: type: {type(parts_dict)}")
         for compound_word, word_parts in parts_dict.items():
             if perfect_match:
-                print(f"PERFECT MATCH: {perfect_match}")
+                #print(f"PERFECT MATCH: {perfect_match}")
                 break
             #print(f"Word: {word} // word parts: {word_parts}")
             if word in word_parts:
                 #print(f"word {word} in word parts: {word_parts}")
                 #test_print(f"MATCH IN PLURAL WORDS: `{word}` FOR COMPOUND WORD: {compound_word}", print_true=True)
                 matches_count = 0
-                for i, bit in enumerate(word_parts):
+                for bit in word_parts:
                     try:
-                        #print(f"bit: {bit}, i+matches_count: {i+matches_count}, parts[idx + matches_count]: {parts[idx + matches_count]})")
-                        #if len(parts) <= idx + matches_count and bit == parts[idx+matches_count]:
                         if len(parts) > idx + matches_count and bit == parts[idx+matches_count]:
                             matches_count += 1
-                            #print(f"Matches_count: {matches_count}")
+                            print(f"Matches_count: {matches_count} / bit: {bit}")
                             if matches_count == len(word_parts):
                                 perfect_match = compound_word
                                 break
 
                     except Exception as e:
-                        print(f"Failed: {e}")
+                        print(f"Failed in check_compound_words: {e}")
                         print(f"No matched word-parts after parts[{idx}+{matches_count}].")
                         break
                 compound_match += 1
-                compound_matches[compound_word]=tuple(((compound_match, len(word_parts)))) ## if input == 'paper scrap': "paper scrap with paper":(2,4)
+                print(f"Compound match: {compound_match}")
+                print(f"matches_count: {matches_count}")
+                #compound_matches[compound_word]=tuple(((compound_match, len(word_parts)))) ## if input == 'paper scrap': "paper scrap with paper":(2,4)
+                compound_matches[compound_word]=tuple(((matches_count, len(word_parts)))) ## if input == 'paper scrap': "paper scrap with paper":(2,4)
 
-        if len(compound_matches) == 1 or perfect_match:
-            #print(f"list compound_matches: {list(compound_matches)}")
-            if perfect_match:
-                canonical = perfect_match
-            else:
-                canonical = list(compound_matches)[0] ## just add it if it's the only possible match, for now. Make it more rigorous later, but this'll catch most cases.
+        if perfect_match and ((word_type == "noun" and perfect_match in local_named) or word_type == "location"):
+            print(f"PERFECT MATCH: {perfect_match}, matches_count: {matches_count}")
+            canonical = perfect_match
             if isinstance(kinds, str):
-                if kinds == "No match":
+                if kinds == "No match" or kinds == "":
                     kinds = set()
+                else:
+                    temp = kinds
+                    kinds = set()
+                    kinds.add(temp)
             kinds.add(word_type)
             potential_match=True
             omit_next += matches_count-1
             return idx, word, kinds, canonical, potential_match, omit_next, perfect_match
 
-
-        elif compound_match > 1: ## TODO make this better.
-            if perfect_match:
-                #print(f"PERFECT MATCH: {perfect_match}")
-                canonical = perfect_match
-                if isinstance(kinds, str):
-                    kinds = set()
-                kinds.add(word_type)
-                potential_match=True
-                omit_next += matches_count
-                return idx, word, kinds, canonical, potential_match, omit_next, perfect_match
-
-            #print("More than one compound match")
+        elif compound_match:
             matches = set()
             match = None
             #print(f"Compound matches: {compound_matches}")
+            least_missing = 10
+            winner = None
 
-            #for item_name in compound_matches: # replaced with the local_named test below, so it won't randomly select from the potential options but will always choose locally. (local_named includes inventory.)
-            #    #print(f"item name in compound matches: {item_name}")
-            #    matches.add(item_name)
-            #    match = item_name
-
-            if not match and len(matches) > 1:
-                print("There are multiple items here you could be talking about. Please enter which one you mean:")
-                items = ', '.join(matches)
-                print_green(items)
-                test = input()
-                if test in matches:
-                    match = test
+            for item in compound_matches:
+                if (word_type == "noun" and local_named and item in local_named and item in parts_dict) or word_type == "location":
+                    print(f"Viable option: {item}")
+                    matched, total_parts = compound_matches[item]
+                    missing = total_parts - matched
+                    ratio = missing/total_parts
+                    print(f"Missing: {missing} / ration total/missing: {ratio} (total_parts: {total_parts})")
+                    if missing < least_missing:
+                        least_missing = missing
+                        winner = item
+            print(f"matches count: ({matches_count})")
+            match = winner
+            if match:
+                matches_count, _ = compound_matches[match]
             else:
-                missing_parts = {}
-                for item in compound_matches:
-                    if local_named and item in local_named and item in parts_dict:# still just reports the first found, but that works if it's the first local. Later can add a check for the portion of word-parts found relative to len.
-                        #print(f"item in local_named: {item}")
-                        matched, total_parts = compound_matches[item]
-                        missing = total_parts - matched
-                        missing_parts[item] = int(total_parts / missing)
-                        #match = item
-                        #break
-                if len(missing_parts) > 1:
-                    least_missing = 10
-                    winner = None
-                    for item, missing in missing_parts.items():
-                        if missing < least_missing:
-                            least_missing = missing
-                            winner = item
-                    if winner:
-                        match = winner
-                        matches_count, _ = compound_matches[match]
-
+                matches_count = 0
+            print(f"matches count: ({matches_count})")
             if match:
                 canonical = match
-                kinds.add(word_type)
-                potential_match=True
                 omit_next += matches_count -1
+                kinds.add(word_type)
 
             else:
                 if not matches:
@@ -219,12 +194,19 @@ class Parser:
                             #print(f"item name in compound matches: {item_name}")
                             matches.add(item_name)
                             match = item_name
-                    print(f"Nothing found here by the name \033[1;33m`{word}.{(f"Did you mean: [{matches}?]") if matches else ""}`\033[0m.")
-                    return idx, word, "No match", canonical, potential_match, omit_next, perfect_match
+                    #print(f"Nothing found here by the name \033[1;33m`{word}`\033[0m.")
+                    if word_type == "noun":
+                        kinds.add("noun")
+                    canonical = "assumed_noun"
+                    return idx, word, kinds, canonical, potential_match, omit_next, perfect_match
                 print(f"Compound matches: {compound_match}")
                 print(f"Content: {compound_matches}")
                 print_red("More than one potential compound match, the system can't cope with that yet.")
-        "idx, word, kinds, canonical, potential_match, omit_next, perfect_match: {idx, word, kinds, canonical, potential_match, omit_next, perfect_match}"
+        #"idx, word, kinds, canonical, potential_match, omit_next, perfect_match: {idx, word, kinds, canonical, potential_match, omit_next, perfect_match}"
+        else:
+            kinds.add("noun")
+            canonical = "assumed_noun"
+
         return idx, word, kinds, canonical, potential_match, omit_next, perfect_match
 
     def tokenise(input_str, nouns_list, locations, directions, cardinals, membrane):
@@ -235,7 +217,8 @@ class Parser:
         loc_options = locations
         compound_locs = membrane.compound_locations
         compound_nouns = membrane.plural_words_dict
-        items = nouns_list
+        #items = nouns_list
+        items = membrane.local_nouns
         local_items = membrane.local_nouns
         tokens = []
         omit_next = 0
@@ -243,7 +226,7 @@ class Parser:
         initial = verbs.list_null_words | set(directions) | set(loc_options) | verbs.semantics | cardinals
 
         #print(f"initial: {initial}")
-
+        #print(f"INPUT STR: {input_str}\n")
         for idx, word in enumerate(parts):
             word = word.lower()
             kinds = set()
@@ -342,7 +325,6 @@ class Parser:
                                 kinds.add("meta")
                                 canonical = word
 
-
                 if canonical != None:
                     if "meta" in kinds and "verb" in kinds and len(kinds) == 2:
                         kinds = (("meta",))
@@ -357,9 +339,9 @@ class Parser:
                         second_idx, second_word, second_kinds, second_canonical, second_potential_match, second_omit_next, second_perfect = Parser.check_compound_words(parts_dict = compound_locs, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "location", omit_next=omit_next, local_named=local_items)
                     except Exception as e:
                         print(f"Could not get location: {e}")
-
                     #print(f"omit_next after second check compound words: {omit_next}")
-
+                    print(f"kinds: {kinds}, canonical: {canonical}, word: {word} at end")
+                    print(f"kinds: {second_kinds}, canonical: {second_canonical}, word: {second_word} at end")
                     if perfect and not second_perfect:
                         kinds = (("noun",))
                         word = canonical # testing this out.
@@ -368,31 +350,20 @@ class Parser:
                     #    tokens.append(Token(idx, word, kinds, canonical))
                     #    continue
 
-                    elif second_perfect and not perfect:
-                        kinds = (("location",)) # made this but was still adding second_kinds. bleh.
+                    elif second_perfect:
+                        print(f"second_perfect: {second_perfect}")
+                        kinds = (("location",))
                         second_word = second_canonical
                         tokens.append(Token(second_idx, second_word, kinds, second_canonical))
                         omit_next = second_omit_next
+                        print(f"second_omit_next after second_perfect: {second_omit_next}")
                         continue
-                    #    tokens.append(Token(second_idx, second_word, second_kinds, second_canonical))
-                    #
-#
-                    #elif perfect and second_perfect:
-                    #    #print(f"Perfect for both noun and location: help? {idx}, {word} // {kinds}/{second_kinds} // {perfect} / {second_perfect} // {canonical} / {second_canonical}")
-                    #    #exit() # arbitrarily setting this to location.
-                    #    kinds = (("location",))
-                    #    tokens.append(Token(second_idx, second_word, second_kinds, second_canonical))
-                    #if perfect:
-                        #print(f"Perfect: idx: {idx}, word: {word}, canonical: {canonical}")
-                        #tokens.append(Token(idx, word, kinds, canonical))
-                        #continue
 
-                    if canonical:
-                        #print(f"CANONICAL AFTER PERFECT CHECKS: {canonical}")
+                    if canonical and canonical != "assumed_noun":
                         tokens.append(Token(idx, word, kinds, canonical))
                         continue
 
-                    if (not canonical and second_canonical) or (perfect and second_perfect):
+                    if ((not canonical or canonical == "assumed_noun") and (second_canonical and not second_canonical == "assumed_noun")) or (perfect and second_perfect):
                         idx = second_idx
                         word = second_word
                         kinds = second_kinds
@@ -402,40 +373,13 @@ class Parser:
                         tokens.append(Token(idx, word, kinds, canonical))
                         continue
 
-                    #if canonical and not second_perfect:
-
-                    if not canonical:
+                    if not canonical or second_canonical:
                         verbReg_Reciever(f"Tokenise: idx: {idx}, word: {word}, not canonical")
-                        if kinds == "No match":
-                            return word, kinds
-
-                        from config import add_new_words_if_missing
-                        if not add_new_words_if_missing:
-                            #MOVE_UP = "\033[A"
-                            #print(f"{MOVE_UP}\033[1;31m[ Couldn't find anything to do with the input `{input_str}`, sorry. ]\033[0m")
-                            continue
-                        print(f"No canonical for idx `{idx}`, word `{word}`")
-                        print("Please enter a word type if you would like to add a new noun/verb/location")
-                        test = input()
-                        if test in ("noun", "verb", "location", "loc"):
-                            if test == "location" or test == "loc":
-                                from generate_locations import generate_new_location
-                                generate_new_location(word)
-                                #import json
-                                #temp_defs = "dynamic_data/temp_defs.json"
-                                #with open(temp_defs, 'r') as file:
-                                #    temp_def_dict = json.load(file)
-                                #    temp_def_dict[word] = new_dict#({"kinds":["location"], "canonical": word})
-                                #with open(temp_defs, 'w') as file:
-                                #    json.dump(temp_def_dict, file, indent=2)
-
-                            tokens.append(Token(idx, word, [test], word))
-                            continue
-
-                    #print(f"verbs.compound_words: {verbs.compound_words}")
-
-                        ## Set up a fn where it tests the results tuple of compound_word, whichever compound_word in compound_matches has the best ration of (matches, total_parts) wins.)
-                        ## If multiple options and all have same ratio, then we take the longest. So, 'blue glass jar, glass jar and jar' might all successfully match for separate jar-type items. But even if 'glass jar', 'blue glass jar' and 'jar' are legit entities, 'blue glass jar' wins if all three are matched. So first get match-ratio, then if no winner, get matched-length. There'll most likely only be one potential winner but good to have the system in place.
+                        kinds = set()
+                        kinds.add("noun")
+                        canonical = "assumed_noun"
+                        tokens.append(Token(idx, word, kinds, canonical))
+                        continue
 
             if not potential_match:
                 test_print(f"No full match found for parts in `{input_str}`.")
@@ -443,7 +387,7 @@ class Parser:
         return tokens
 
 
-    def token_role_options(token) -> list:
+    def token_role_options(token:Token) -> list:
 
             verbReg_Reciever(f"top of token_role_options: {token}")
             kinds = set(token.kind)
@@ -721,7 +665,7 @@ class Parser:
         directions = membrane.directions
         cardinals = membrane.cardinals
 
-        membrane.get_local_nouns()
+        membrane.get_local_nouns() # membrane.local_nouns = list of names. membrane.local_dict = dict of name[instance]# Switch to usin the dict instead and ditch the list later.
 
         tokens = self.tokenise(input_str, nouns_list, locations, directions, cardinals, membrane)
         if not tokens:
@@ -739,6 +683,10 @@ class Parser:
         verbReg_Reciever(f"sequences after sequencer: {sequences}")
 
         if not sequences:
+            #print(f"FAILURE IN SEQUENCES: {tokens}")
+            from misc_utilities import print_failure_message
+            print_failure_message(input_str=input_str)
+            return None, None
             MOVE_UP = "\033[A"
             print(f"{MOVE_UP}\033[1;31m[ Couldn't find anything to do with the input `{input_str}`, sorry. <after get_sequences_from_tokens>]\033[0m")
             clean_parts = []

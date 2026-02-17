@@ -2458,3 +2458,218 @@ You look at the broken dried flowers:
 Hey, did it. Nice.
 
 So now it checks how many matches vs misses and picks the best match, not just whichever it finds first.
+
+12.35, 17/2/26
+
+Working on https://github.com/harpoonlobotomy/choose-your-own/issues/7 :
+#   [[ take key ]]
+
+#   Sorry, you can't take the iron key right now.
+
+So this is happening because if only perfect_match or only one match, it doesn't check against local names. It only does that when it needs to pick the best option from multiple.
+
+So maybe I need to just make the compound_noun list from plural local nouns directly, instead of compound_nouns then checking against local_items.
+
+Also, need to make sure to include transition items in local_nouns if the exit/entrance is local.
+
+Have added transition_objs as a dict to registry; registry.transition_objs[cardinal_inst] = transition_item_inst
+
+Changed transition objs from having the enter/exit location as placeInstance to cardinalInstance.
+
+Okay. Back to the core 'can't take iron key' thing.
+
+So, there are three different versions of this error message, all coming from different places:
+
+
+#   [[  take hammer  ]]
+#
+#   Sorry, you can't take a hammer right now.
+#
+#   take key
+#   Nothing found here by the name `key`.
+#
+#   take iron key
+#   [[  take iron key  ]]
+#
+#   Sorry, you can't take a iron key right now.
+
+So. First and last differ in that the first is unbolded red (no item instance in assign_colour), and 'iron key' is bolded and in the iron key.colour because the instance was found but wasn't local.
+The 'Sorry, you can't take a x right now' is in def take():
+#   print(f"Sorry, you can't take a {assign_colour(text)} right now.")
+
+I think `Nothing found here by the name `key`.` is what should be aimed for, instead of letting it go all the way through the parser. Except, "There's no hammer around here to break anything with." makes a lot of sense, because the flowers /were/ local.
+
+Really, I think I need an 'ending parser because no result' function to send results through for formatted printing etc instead of printing it mid-process.
+
+It's just tricky because knowing 'key' is a noun is helpful.
+
+So: we need to know if x is a noun (local or not) to determine acceptable verb_format options. So for that, we use the full noun list. (NOTE: the full noun_list needs to be updated if items are added through events/godmode/etc.)
+
+Currently, 'take key' fails inside the parser because there are multiple potential options. But 'hammer' doesn't, because there's only one option.
+
+#   break hammer with key
+#   Nothing found here by the name `key`.
+#
+#   break hammer with iron key
+#   [[  break hammer with iron key  ]]
+#
+#   There's no god hammer around here to break.
+
+I like the formatting of 'no x around here to break', because it acknowledges the verb. But we only get that error if we accept 'hammer' as a noun.
+
+That error messages comes from def verb_requires_noun in verb_actions:
+#   print(f"There's no {assign_colour(noun)} around here to {verb_name}.")
+
+So maybe...
+Move the 'you can't {verb} a {noun} right now // 'sorry, you can't {verb} a {noun} right now' message to somewhere else. Whether the noun just isn't matched (in the case of 'key') or isn't local (in the case of hammer) it's routed the same way. The inconsistency between 'break hammer with key/break hammer with iron key/take iron key' is really annoying to me.
+
+So how about: Currently the parser fails if it can't find the item. Maybe if nothing found after all compound_word tests, we just say 'assume it's a noun', so it can continue through the parser to check for formats etc. Then at the end, we can make the error message from that. Or maybe we have a new category for 'assumed_noun', where we use it to print error messages but skip the noun instance checks as they'll always fail.
+
+But, I need to allow for sem/dir words here too. Right now if I type 'get the key from the table', it'll error on 'key'. But if there's no table, maybe that should be counted too. Though it makes sense enough to error on the first one I guess.
+
+Okay. So currently:
+
+In compound_words, if nothing, we add:
+#    kinds.add("noun")
+#    canonical = "assumed_noun"
+and output the token as usual.
+
+And we do the same thing at the end of the parser after compound words, so it should catch 'iron key' and 'key' the same way.
+
+2.33pm
+Pretty happy with `def print_failure_message(input_str, message=None, idx_kind=None, init_dict=None)` in misc_utilities. It calls it at the end when it's been caught by the nouns, and also gets called directly if there's a total failure in sequencer (so if you just type 'bleh' it prints `Sorry, I don't know what to do with `bleh`.`), and if you type 'take key' it prints 'There's no key around here to take', whether there's a key elsewhere or not - 'take bleh' prints `There's no bleh around here to take.`, which I like a lot better. It recognises a verb if you used one, and assumed a word in that format where a noun would fit would be a noun for the sake of the error message, but doesn't change error messages whether it's nearby or not a real word. Which I like.
+
+Still have to work on the 'hammer' example, though. Because there's only one match for hammer, it still recognises it;
+
+entry.items(): dict_items([('instance', None), ('str_name', 'god hammer'), ('text', 'hammer')])
+[[  take hammer  ]]
+
+Sorry, you can't take a hammer right now.
+
+So while it does only print 'hammer' instead of the str_name now, it still gets all the way through to 'def take' before erroring out. So I think, unless cardinal, it fails anyway, even if there's only one possible option /unless/ that option is local. Because 'hammer' finding 'god hammer' is great, /if/ there's a known god hammer to be found.
+
+Because currently, if it's a single word, it just checks
+if word in items:
+    kinds.add("noun")
+    canonical = word
+
+and 'items' is just registry.item_defs.
+
+3.07pm
+Okay so partway there;
+
+#   [[  break flowers with hammer  ]]
+#
+#   There's no hammer around here to break.
+
+So it's working better, but the message is clearly wrong. Okay.
+I guess I can just go get_noun and format the message using that. Would have done that anyway if it got through to def_take/break/etc. Just having all the error messages going through the same place feels a lot better.
+
+Although...
+
+'use hammer to break flowers' errors
+Sorry, I don't know what to do with `use hammer to break flowers`.
+for an entirely different reason - I've not set up multiple-verb parsing at all. Damn. That would actually be useful.
+I'd not been able to think of a time when multiple verbs would actually be useful, but 'use x to verb y' is actually the thing, huh.
+
+Maybe I do that part inside parser. If there's two verbs and the first is 'use', then just rearrange the dict to be 'break flowers w hammer' so that verb_actions can deal w it.
+
+Okay so the 'break flowers with hammer' - now outputs:
+
+[[  break flowers with hammer  ]]
+
+There's no hammer around here to break the dried flowers with.
+with the formatting
+There's no <yellow>hammer</y> around here to <green>break</g> the <inst.col>dried flowers</inst.col> with.
+
+And I'm quite pleased with that.
+
+Also added an exception to the error print for verb.name == drop, so the drop message matches.
+
+#   [[  drop paperclip  ]]
+#
+#   You can't drop the paperclip; you aren't holding it.
+ == paperclip is local but not in inv.
+
+#   [[  drop hammer  ]]
+#
+#   You can't drop the hammer; you aren't holding it.
+== no item 'hammer' found
+
+I like that it's the same either way. The error message is consistent. From a meta perspective it's useful to know if 'hammer' is an item in the world or not, but that's not data for the player to know unless there is one accessable to them.
+
+## thing to remember if I can:
+` I could add a god mode where there's some item or smth that gives you the ability to know all items anywhere, so if you type 'get hammer' it'd be like 'there's a hammer in north testing grounds - you bring it to yourself, and find it in your backpack'. It'd be some ability or smth, not a general part of the game. It'd be kinda neat. Not something I'm doing now though. `
+
+
+Issue I caused myself now:
+
+FAILURE IN SEQUENCES: [Token(idx=0, text='go', kind={'verb'}, canonical='go'), Token(idx=1, text='to', kind={'direction'}, canonical='to'), Token(idx=2, text='assumed_noun', kind=('location',), canonical='assumed_noun'), Token(idx=3, text='hotel', kind={'noun'}, canonical='assumed_noun'), Token(idx=4, text='room', kind={'noun'}, canonical='assumed_noun')]
+
+'city hotel room' comes back with 'city (kind=location, but text == 'assumed noun')', and doesn't properly omit because it's adding nouns. fffff.
+
+(Have made the loc/noun work better though, now in both places it checks if noun.name == loc.name and uses that as the intent if matching.)
+
+Now to work on the `'city hotel room' is three unknown nouns` issue.
+
+4.56pm
+okay so it finds:
+second_perfect: city hotel room
+but then immediately:
+
+#  ('Tokenise: idx: 3, word: hotel, omit_next: 0',)
+second_perfect: city hotel room
+second_omit_next after second_perfect: 0
+Hm. Why.
+
+Okay, I think it was because of this:
+
+if perfect_match and ((word_type == "noun" and perfect_match in local_named) or word_type == "location")
+
+previously was just
+
+if perfect_match and perfect_match in local_named, which obviously the locations never were.
+So with that fixed, it now goes to the city hotel room correctly.
+
+Hm. Well if you give it the full name.
+
+If not the full name, if just 'hotel room' or 'city room' etc:
+
+FAILURE IN SEQUENCES: [Token(idx=0, text='go', kind={'verb'}, canonical='go'), Token(idx=1, text='to', kind={'direction'}, canonical='to'), Token(idx=2, text='hotel', kind={'noun', 'location'}, canonical='city hotel room'), Token(idx=3, text='room', kind={'noun', 'location'}, canonical='city hotel room')]
+
+Hmm.
+
+5.30pm
+okay, 'go to hotel'/'go to hotel room' works again now.
+
+Hm.
+So the error messages still need work.
+
+# [[  look at tv  ]]
+
+input_dict: {0: {'verb': {'instance': <verbInstance look (d9bea324-c4ba-499d-8e81-1b015954d09c)>, 'str_name': 'look', 'text': 'look'}}, 1: {'direction': {'instance': None, 'str_name': 'at', 'text': 'at'}}, 2: {'noun': {'instance': 'else in if kind == noun', 'str_name': 'assumed_noun if not matches', 'text': 'tv'}}}
+
+# There's no tv set around here to look.
+
+1: need to change the error print to 'to look for' if verb.name == 'look'.
+
+but also it's giving me the noun.name.
+
+Hm.
+As well as the print.name error, I have this:
+
+Compound matches: {'tv set': (2, 2)}
+
+'tv set' is a perfect match, but the tv set isn't local.
+
+But, 'set' is a verb.
+
+Because 'set' is a verb, it makes the format 'verb_dir_noun_verb', which breaks.
+
+Honestly I might make an exception specifically for 'tv set' because it's not likely an issue with other things. Idk.
+
+Well fuck me. I had 'go to hotel room' working; and now it's broken again and I hadn't committed yet. fml.
+
+Okay think I rescued it, hopefully. Committing now regardless.
+
+Really need to formalise it more instead of just a long run of if branches but it works alright for now.
