@@ -147,8 +147,8 @@ def option(preamble=None):
     #test=user_input()
     from config import run_tests
     end_loop = run_membrane(run_tests=run_tests)
-    if end_loop:
-        return
+    if end_loop == "exit":
+        return "exit"
 
 
 def inner_loop(speed_mode=False):
@@ -159,6 +159,8 @@ def inner_loop(speed_mode=False):
 
     while True:
         test=option()
+        if test == "exit":
+            return test
 
 def run():
     import config
@@ -197,4 +199,5 @@ def run():
     from misc_utilities import look_around
     look_around()
     print()
-    inner_loop(speed_mode=test_mode)
+    result = inner_loop(speed_mode=test_mode)
+    return result

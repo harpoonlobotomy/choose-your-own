@@ -102,7 +102,6 @@ def switch_the(text:str|ItemInstance|list, replace_with:str="the")->str:
     return text
 
 
-
 def clean_separation_result(result:list, to_print=False):
     logging_fn()
     if not result:
@@ -147,32 +146,18 @@ def clean_separation_result(result:list, to_print=False):
 
 def look_around():
     from env_data import locRegistry as loc, get_loc_descriptions
-    #from choose_a_path_tui_vers import get_items_at_here
     from itemRegistry import registry
-    get_loc_descriptions(place=loc.currentPlace)
-    print("\033[37m \033[0m")
+    get_loc_descriptions(place=loc.currentPlace) # Is this still needed? Aren't we updating this on item change?
 
-    print(loc.currentPlace.overview, "\n")
-    #print("^ loc overview ^")
-    #print(f"loc.current: {loc.current}")
-    #print(f"loc.current vars: \n{vars(loc.current)}")
-
-    print(f"You're facing {assign_colour(loc.current)}. {loc.current.description}")
-    #print("^ loc current.description ^")
-    #print(f"You're facing {assign_colour(loc.current, card_type="name")}. {loc.current.description}")
-
-    is_items = registry.get_item_by_location() ## Need to merge this with the dict writing to account for missing items.
-
-    #is_items = get_items_at_here(print_list=False, place=loc.current)
+    print(f"{loc.currentPlace.overview}\n\nYou're facing {assign_colour(loc.current)}. {loc.current.description}")
 
     applicable_items = []
     import config
-    if config.print_items_in_area:
+    if config.print_items_in_area: # will remove this later, it's taken care of nicely by the location descriptions now.
+        is_items = registry.get_item_by_location() ## Need to merge this with the dict writing to account for missing items.
         if is_items:
             for item in is_items:
-                #print(f"ITEM: {item}, type: {type(item)}")
                 _, _, reason_val, _ = registry.check_item_is_accessible(item)
-                #print(f"REASON VAL FOR `{item}`: {reason_val}")
                 if reason_val == 0:
                     applicable_items.append(item)
             if applicable_items:
@@ -181,12 +166,11 @@ def look_around():
                 print(f"   {is_items}")
 
 
-
 def print_failure_message(input_str, message=None, idx_kind=None, init_dict=None, format = None):
     logging_fn()
-    print(f'{MOVE_UP}\n\033[1;32m[[  {input_str}  ]]\033[0m\n')
+    print(f'{MOVE_UP}\033[1;32m[[  {input_str}  ]]\033[0m\n')
     #print(f"Print failure message\nmessage: {message} / idx_kind: {idx_kind}, init_dict: {init_dict}")
-    from verb_actions import get_verb, get_noun
+    from verb_actions import get_verb
     if not init_dict:
         print(f"Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
         return

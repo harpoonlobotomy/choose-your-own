@@ -68,8 +68,6 @@ effect_attrs = {
    # "limit_travel": {"on_event_start": {"travel_limited": True}, "on_event_end":{"travel_limited": False}}
 
 
-
-
 class eventInstance:
 
     def __init__(self, name, attr):
@@ -122,7 +120,6 @@ class eventInstance:
         return f"<eventInstance {self.name} ({self.id}, event state: {self.state}>"#, all attributes: {self.attr})>"
 
 
-#not sure about this whole thing. Might make it worse, not better.
 class timedTrigger:
 
     def __init__(self, trigger_dict, event:eventInstance):
@@ -307,7 +304,6 @@ class Trigger:
 
     def __repr__(self):
         return f"<triggerInstance {self.id} for event {self.event.name}, event state: {event_state_by_int[self.state]}, {((f'Trigger item: {self.item_inst.name}' if isinstance(self.item_inst, ItemInstance) else f'Trigger item: {self.item_inst}') if self.is_item_trigger else None)}>"
-
 
 
 class eventRegistry:
@@ -760,8 +756,8 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                             return list(instance)[0]
                         return instance[0]
                     else:
-                        print(f"Multiple instances in {instance} for name {event_name}. Haven't dealt with this yet.")
-                        return instance
+                        print(f"Multiple instances in {instance} for name {event_name}. Haven't dealt with this yet. Returning first arbitrarily.") # have only had this happen when running a memory test. Not sure why it did, but it doesn't happen in regular use.
+                        return list(instance)[0]
 
     def play_held_msg(self, event=None, print_txt=False):
         logging_fn()
@@ -798,8 +794,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                         material_type = noun.material_type
                         from itemRegistry import material_msgs
                         msg = msg.replace("<material_msg>", material_msgs.get(material_type))
-                #if event.print_description_plain:
-                    #So I might not even be using this. Instead, it just checks if colour == event_msg, and if so checks for [[ in the string, and if it has it, it treats it like any other string with item instance, within assign_colour. It shouldn't break anything else, as the location descriptions that use [[]] parse it out before getting the loc colour.
+
                 msg = events.clean_messages(event, noun, msg)
                 if print_text:
                     print(f"{assign_colour(msg, colour='event_msg', noun=noun)}")

@@ -2759,3 +2759,255 @@ There's no tv set around here to look at.
 The issue was in assign_colour, as it took strings and got the instance (but not by alt_names, via the inconsistency). Have changed it so it doesn't get the item instance if a colour is provided, so now 'there is no tv' and 'there is no television' presents identically.]
 
 Okay, the issue of iterating None at event_end was in clean_messages, I failed to account for message that /didn't/ have [[]] in them. Fixed now.
+
+10.41
+Fixed spacing of event msgs with newlines.
+
+Wonder if I can do a version of init_loc_descriptions that doesn't draw from the json again. Or if that's even something I want to do.
+
+Could just get the JSON once and have it in memory, but I worry about having too much stuff in memory. Should look into how to check.
+
+11.07am
+
+Trying to run memory_profiler's memory_usage because I'm curious, just running it on initialise_all.
+In event_registry, it gets this:
+
+Multiple instances in {<eventInstance reveal_iron_key (2f7c76bc-a230-4414-bdfc-fe43856c348f, event state: 1>, <eventInstance reveal_iron_key (f9177e6c-57af-4003-abff-9ecc272d4451, event state: 1>, <eventInstance reveal_iron_key (9e432c1b-7796-4a6d-9b18-aa03eae990ea, event state: 1>} for name reveal_iron_key. Haven't dealt with this yet.
+
+Oh, it's because it runs it several times, and because it's already been initialised, it's adding the new to the previously initialised. Fair enough.
+
+Memory usage: 0.0 MB
+Not sure useful though.
+
+12.10
+Some interesting error logs while trying  to run memtests. (Got a memory result, Memory usage: 2.91796875 MB for test_runme, including initialisations. So that's not terrible I think?)
+
+Interesting logs in question:
+
+
+[[  go west  ]]
+
+You turn to face the west graveyard
+
+Standing in unkempt long grass, you see what looks like a work shed of some kind, with a wooden door that looks like it was barricaded until recently.
+
+[[  go north  ]]
+
+You turn to face the north graveyard
+
+There's a dark fence blocking the horizon, prominently featuring a heavy wrought-iron gate - standing strong but run-down, and an old dark-metal padlock on a chain, holding the gate closed.
+
+[[  go to shed  ]]
+
+You're now in the work shed, facing north.
+
+Around you, you see the interior of a rather run-down looking work shed, previously boarded up but seemingly, not anymore.
+There's a simple desk, hazily lit by the window over it to the north.
+
+The work shed is simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's a yellowed local map showing the region surrounding the graveyard, and a pair of secateurs.
+## NOTE: This should not go into the shed. One, because the gate event should stop travel away from the graveyard, and two, because the door isn't open and thus shouldn't allow inside (<!FALSE! the shed is allowed under the gate event.>). I'm assuming this is because I told it to assume 'shed' is a location, but it needs to add a check for 'if location has transition_obj, is transition_obj open'. And or, if location.name is also a noun_name, 'go to' goes to the ext, 'go into' goes to the internal (if trans obj allows). I really thought I already had the trans obj in place, but maybe the rerouting for noun+loc obj avoids it. Will check.
+[[  go north  ]]
+
+You're already facing the northern work shed.
+
+
+[[  go to work shed  ]]
+
+You're already in the work shed
+
+[[  go north  ]]
+
+You're already facing the northern work shed.
+
+
+
+[[  go to shed door  ]]
+
+There's no shed door around here to go.
+# NOTE: 'go to shed door' is a bit nonsense, but a) there is a shed door, it's 'wooden door' and it's the trans object for that location, and should be found locally.
+# Also: Need to edit the error message to 'to go to' for verb.name 'go'.
+
+[[  go to work shed door  ]]
+
+You're already in the work shed
+# NOTE: 'work shed door' should == 'shed door'. Might have to add it as an alt name.
+# followup: added 'work shed door' to alt_names, and still:
+`[[  go to work shed door  ]] > You're already in the work shed`
+
+
+[[  open door  ]]
+
+There's no door around here to open.
+# NOTE as above, it should absolutely be finding this door. Need to fix the local_items setup because it's failing to catch this. Assumedly because the door is technically located outside the location, but it should be catching both
+#          "enter_location": "north work shed",
+#          "exit_to_location": "west graveyard",
+# in the local_items setup. Will look into it.
+
+
+[[  close door  ]]
+
+There's no door around here to close.
+
+
+[[  open shed door  ]]
+
+There's no shed door around here to open.
+
+
+[[  close shed door  ]]
+
+There's no shed door around here to close.
+
+[[  go into shed  ]]
+
+Failed to find the correct function to use for <verbInstance go (692f0e53-0536-43b7-9e34-c56bc6e7aad6)>: maximum recursion depth exceeded
+# NOTE: Well this issue is obvious. Just need to fix the function so it doesn't recurse.
+
+[[  open door  ]]
+
+There's no door around here to open.
+
+[[  go into work shed  ]]
+
+Failed to find the correct function to use for <verbInstance go (692f0e53-0536-43b7-9e34-c56bc6e7aad6)>: maximum recursion depth exceeded
+
+[[  go into work shed  ]]
+
+Failed to find the correct function to use for <verbInstance go (692f0e53-0536-43b7-9e34-c56bc6e7aad6)>: maximum recursion depth exceeded
+
+[[  leave shed  ]]
+
+You can't leave without a new destination in mind. Where do you want to go?
+
+[[  drop mag at church  ]]
+
+You want to drop at church but you aren't there...
+
+[[  go into work shed  ]]
+
+Failed to find the correct function to use for <verbInstance go (692f0e53-0536-43b7-9e34-c56bc6e7aad6)>: maximum recursion depth exceeded
+
+Failed to run input_parser: 'NoneType' object is not subscriptable
+Failed get_noun_instances: cannot access local variable 'dict_from_parser' where it is not associated with a value
+Failed parser: cannot access local variable 'error' where it is not associated with a value
+
+So, today:
+#   'go to shed' needs to check if 'shed' == a trans obj nounname and if that trans obj is connected to the loc. If so, if trans obj not open, cannot enter; instead go to ext loc and describe trans obj.
+
+#   fix recursion in def go() for [[  go into shed  ]]
+
+#   trans objs should be 'visibile' from inside the trans obj's enter_location, eg:
+#          "enter_location": "north work shed",
+#          "exit_to_location": "west graveyard",
+# so if at north work shed, 'shed door' should be present even if technically located elsewhere.
+
+#   "[[  leave shed  ]]": As 'shed' is a location with an outside, 'leave shed' should be valid.
+
+
+also:
+[[  look around  ]]
+
+
+You're in a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+The entrance gates are to the north. To the east sit a variety of headstones, to the south stands a mausoleum, and to the west is what looks like a work shed of some kind.
+
+You're facing east. You see a variety of headstones, most quite worn, and not too much else - , and some broken glass shard.
+
+Need to fix the card description for graveyard east. One: the obvious 'else - ,', and 'some broken glass shard' - some + singular? Bad.
+It's getting 'some' correct (assumedly a plural checker, will need to remind myself) but it should be using nicename, which would be
+    "nicenames": {
+      "if_singular": "a glass shard",
+      "if_plural": "a few shards of glass"
+, but apparently it's not. Hm.
+
+
+Memory usage for the whole thing (running the entire 27 command loop inside the memory checker):
+
+Memory usage: [25.203125, 25.97265625, 28.82421875, 29.48046875, 29.4921875, 29.50390625, 29.51171875, 29.5234375, 29.53125, 42.78515625, 47.484375, 50.3671875, 50.42578125, 52.73046875, 53.21875, 53.171875, 52.0390625, 52.0546875, 52.0625, 52.07421875, 52.08203125, 52.09765625, 51.78515625, 52.0390625, 52.08984375, 52.08984375, 52.08984375, 52.08984375, 52.08984375, 52.08984375, 52.08984375, 52.09765625, 52.09765625, 52.09765625, 52.09765625, 52.09765625, 52.09765625, 52.09765625, 52.09765625, 52.09765625, 52.09765625, 52.09765625, 52.09765625, 52.09765625, 52.09765625, 52.109375]
+Peak increase: 28.015625 MB
+USAGE AFTER TEST: Peak increase: 28.015625 MB
+
+Removing the map opening:
+
+Memory usage: [25.4375, 26.140625, 28.85546875, 28.85546875, 28.85546875, 28.85546875, 28.85546875, 28.85546875, 28.85546875, 28.85546875, 28.85546875, 28.85546875, 28.85546875, 28.85546875, 28.85546875, 28.86328125, 28.87109375, 28.87109375, 28.87109375, 28.87109375, 28.921875, 28.921875, 28.921875, 28.921875, 28.921875, 28.921875, 28.921875, 28.921875, 28.921875, 28.921875, 28.921875, 28.921875, 28.921875, 28.921875, 28.921875, 28.921875, 28.921875, 28.921875, 28.921875, 28.921875, 28.921875, 28.921875, 28.921875, 28.921875, 28.9375]
+Peak increase: 3.5 MB
+
+So that's nice. 3.5mb for the full initialisation and run isn't too bad, I think. Need some comp sci major to let me know.
+
+2.43pm
+Hm.
+[[  go east  ]]
+
+You turn to face the east graveyard
+
+You see a variety of headstones, most quite worn, and decorated by clumps of moss, and a glass jar being used as a vase in front of one of the headstones, with some dried flowers left long ago.
+
+[[  look around  ]]
+
+
+You're in a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
+The entrance gates are to the north. To the east sit a variety of headstones, to the south stands a mausoleum, and to the west is what looks like a work shed of some kind.
+
+'look around' has an extra newline. Need to fix that.
+I wouldn't mind adding another newline before the input print though. It's a bit claustrophobic.
+
+Hm. the newlines overall are inconsistent.
+
+#   [[  take padlock  ]]
+#
+#   The padlock is now in your inventory.
+#
+#
+#   [[  look at door  ]]
+---
+#   [[  find carved stick  ]]
+#
+#   There's no carved stick around here to find.
+#
+#
+#   [[  take carved stick  ]]
+#
+#   There's no carved stick around here to take.
+#
+#   [[  go to east graveyard  ]]
+---
+#   [[  go east  ]]
+#
+#   You turn to face the east city hotel room
+#
+#   Against the wall is a large television, sitting between two large windows overlooking the city.
+#
+#   [[  look at tv  ]]
+#
+#   You look at the tv set:
+#
+#      A decent looking TV set, probably a few years old but appears to be well kept. Currently turned off. This model has a built-in DVD player.
+#
+#   [[  go to tree  ]]
+
+Need to work on that. Really just need to define the surrounding newlines in def router and not touch them otherwise. Well router and the failure print. Those are the two terminal points for any command.
+
+#   [[  take matchbox  ]]
+#
+#   The matchbox is now in your inventory.
+#
+#
+#   [[  burn magazine with matchbox  ]]
+#
+#   There's no magazine around here to burn the matchbox with.
+#
+#   [[  go to north testing grounds  ]]
+
+So is it 'the following one succeeded' that does it?
+
+I think so. It was the extra \n in print_failure_message.
+
+Also:
+[[  take dried flowers  ]]
+
+dried flowers is already in your inventory.
+vs
+Dried flowers fall from the broken glass jar.
+
+Need to add caps to the 'already in inventory' print.
+

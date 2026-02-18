@@ -41,6 +41,7 @@ class cardinalInstance:
         if (self.place_name == config.inv_loc_str or self.place_name == config.no_place_str):
             self.items = set() # purely for my own convenience. Maybe a bad idea but going to do it anyway for now.
 
+        self.description = None
         self.colour = cardinal_cols.get(self.name)
 
         self.cardinal_data = loc_dict[self.place.name].get(cardinal)

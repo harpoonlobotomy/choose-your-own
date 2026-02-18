@@ -129,6 +129,8 @@ def compile_long_desc(long_desc):
     #new_desc = f"You're facing {assign_colour(cardinal)}. " + item_description
     new_desc = item_description
     if not new_desc.endswith("."):
+        if new_desc == "":
+            new_desc = "There's not much to see here" # So it's not just a full stop if no desc was given in loc_data.
         new_desc = new_desc + "."
 
     return new_desc
@@ -212,9 +214,6 @@ def init_loc_descriptions(place=None, card=None):
 def loc_descriptions(place=None, card_inst=None):
 
     location_description, cardinal_descriptions = init_loc_descriptions(place, card=card_inst)
-    #print(f"LOCATION DESCRIPTION: {location_description}")
-    #print(f"CARDINAL DESCRIPTIONS: {cardinal_descriptions}")
-
     combined_dict = {}
 
     for location, overview in location_description.items():

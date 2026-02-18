@@ -1530,7 +1530,6 @@ def take(format_tuple, input_dict):
 
         noun_loc = noun.location
         cannot_take, added_to_inv = can_take(noun)
-        print(f"after can_take: cannot_take: {cannot_take} // added_to_inv: {added_to_inv}")
 
         if cannot_take and hasattr(noun, "can_consume"):
             print(f"\nDid you mean to consume the {assign_colour(noun)}? ")
@@ -1615,7 +1614,7 @@ def put(format_tuple, input_dict, location=None):
             if noun in game.inventory:
                 game.inventory.remove(get_noun(input_dict))
                 if noun in game.inventory:
-                    exit(f"{assign_colour(get_noun(input_dict))} still in inventory, something went wrong.")
+                    exit(f"{assign_colour(get_noun(input_dict))} still in inventory, something went wrong. Exiting.")
             else:
                 from misc_utilities import smart_capitalise
                 text = smart_capitalise(f"{action_word} {assign_colour(get_noun(input_dict))} {sem_or_dir} {assign_colour(get_noun(input_dict, 2))}")

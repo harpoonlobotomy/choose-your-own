@@ -1507,7 +1507,8 @@
   "wooden door": {
     "alt_names": [
       "shed doorway",
-      "shed door"
+      "shed door",
+      "work shed door"
     ],
     "can_be_closed": true,
     "can_be_opened": true,

@@ -414,9 +414,9 @@ test_input_list = ["take the paperclip", "take the paperclip", "pick up the glas
 
 #test_input_list = ["go west", "go north", "go to shed", "go north", "go to work shed", "go north", "go to shed door", "go to work shed door", "open door", "close door", "open shed door", "close shed door", "go into shed", "open door", "go into work shed", "go into work shed", "leave shed", "inventory", "drop mag", "take mag", "drop mag at church", "go into work shed", "open work shed door", "open door", "go into shed", "take map", "take key", "go to north graveyard", "use key on padlock", "lock padlock with key", "unlock padlock with key", "take padlock", "go to city hotel room", "find tv set", "look at tv set"]
 
-test_input_list = ["go west", "open door", "enter shed", "take map", "take key", "go to north graveyard", "look at gate"]#, "unlock padlock with key", "look at gate", "pick up padlock", "go to city hotel room", "find tv set", "go to east graveyard", "take jar", "break jar"]
+#test_input_list = ["go west", "open door", "enter shed", "take map", "take key", "go to north graveyard", "look at gate", "exit"]#, "unlock padlock with key", "look at gate", "pick up padlock", "go to city hotel room", "find tv set", "go to east graveyard", "take jar", "break jar"]
 
-#test_input_list = ["go east", "take glass jar", "break jar", "pick up glass shard", "drop glass shard", "go west", "open door", "enter shed", "take map", "take key", "north graveyard", "use key on padlock"]
+test_input_list = ["go east", "look around", "take glass jar", "break jar", "pick up glass shard", "drop glass shard", "take dried flowers", "go west", "look at door", "open door", "enter shed", "take map", "read map", "take key", "north graveyard", "use key on padlock", "take padlock", "look at door", "go to city hotel room", "go east", "look at tv", "go to tree", "find carved stick", "take carved stick", "go to east graveyard", "take moss", "take moss", "take moss", "look around", "go to work shed", "drop moss", "go to south graveyard", "take matchbox", "burn magazine with matchbox", "go to north testing grounds", "go to graveyard", "read magazine"]
 #test_input_list = ["east", "break jar", "break flowers with hammer"]
 #test_input_list = ["logging args", "take stick", "approach the forked tree branch", "look around"]
 
@@ -441,11 +441,22 @@ import config
 to_json = config.parser_tests_output_to_json
 
 def run_membrane(input_str=None, run_tests=False):
-    #if run_tests:
-    #    def loop(input_str, i)
+    logging_fn()
+
+    if input_str and input_str == "exit":
+        print("input_str is exit at top of run_membrane")
+        return "exit"
+
     def loop(input_str):
-    #def loop(input_str):
+
         logging_fn()
+
+        def log(): # leaving it here but disabled, just useful to test obj counts as things expand. # Add log_objects to config at some point.
+            import gc
+            objs = len(gc.get_objects())
+            from mem_checker import log_objects
+            log_objects(objs, input_str, run_tag="full_mem_test")
+        #log()
 
         immediate_command = ["print local items", "print inventory items", "print named items", "print current events", "print all events", "godmode", "god mode"]
         while input_str == None or input_str == "":
@@ -473,7 +484,9 @@ def run_membrane(input_str=None, run_tests=False):
                 logging_fn()
                 input_str = input()
 
-
+        if input_str == "exit":
+            print(f"Returning after logging: exit")
+            return "exit"
         try:
             from verbRegistry import Parser
             #print("Before input_parser")
@@ -531,20 +544,10 @@ def run_membrane(input_str=None, run_tests=False):
                 input_outcome_dict[(str(i) + " " + input_str)] = inst_dict
                 import json
                 test_file = "test_10_2_26_2.json"
-            #try:
-            #    for entry in input_outcome_dict:
-            #        #print(f"ENTRY: {entry}")
-            #        input_outcome_dict[entry]["OUTCOME"] = ""
-            #except Exception as e:
-            #    print(f"couldn't add 'outcome' to {entry}: {e}")
-            #    if input_outcome_dict[entry] == None:
-            #        input_outcome_dict[entry] = "OUTCOME:"
+
                 with open(test_file, 'w') as file:
                     json.dump(input_outcome_dict, file, indent=2, cls=UserEncoder)
-            #with open(test_file, 'w') as file:
-            #    json.dump(input_outcome_dict, file, indent=2)
-            #print(f"input_outcome_dict: ")
-            #pprint.pprint(input_outcome_dict)
+
             try:
                 if inst_dict:
                     from verb_actions import router
@@ -562,18 +565,17 @@ def run_membrane(input_str=None, run_tests=False):
             print(f"Failed parser: {e}")
 
     if run_tests:
-        #print("run tests on")
         from time import sleep
-        test_inputs = test_input_list#["get scroll", "open scroll", "go to east graveyard", "get glass jar", "put glass jar in scroll", "put scroll in glass jar"]
+        test_inputs = test_input_list
         for i, input_str in enumerate(test_inputs):
-            #input_outcome_dict[str(i, input_str)] = None
-            #print_yellow(f"#    input str: `{input_str}`")
+
             print()
-            loop(input_str)
+            test = loop(input_str)
+            if test == "exit":
+                return "exit"
 
             sleep(.05)
             #input("Press any key to continue to next.")
-
             if i == len(test_inputs)-1:
                 config.run_tests = False
                 #run_tests = False
@@ -581,10 +583,8 @@ def run_membrane(input_str=None, run_tests=False):
                 print()
 
     else:
-        #import json
-        #test_file = "test_31_1_26.json"
-        #with open(test_file, 'w') as file:
-        #    json.dump(input_outcome_dict, file, indent=2)
-        #loop(input_str, i)
-        loop(input_str)
+        test = loop(input_str)
+        if test == "exit":
+            print("Loop test at end == exit, returning `exit`.")
+            return "exit"
 
