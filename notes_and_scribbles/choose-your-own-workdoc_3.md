@@ -2673,3 +2673,87 @@ Well fuck me. I had 'go to hotel room' working; and now it's broken again and I 
 Okay think I rescued it, hopefully. Committing now regardless.
 
 Really need to formalise it more instead of just a long run of if branches but it works alright for now.
+
+
+Hm.
+[[  look at tv set  ]]
+
+dict: {0: {'verb': {'instance': <verbInstance look (2cc38475-3079-4823-9503-c062b9d84743)>, 'str_name': 'look', 'text': 'look'}}, 1: {'direction': {'instance': None, 'str_name': 'at', 'text': 'at'}}, 2: {'noun': {'instance': 'assumed_noun', 'str_name': 'assumed_noun', 'text': 'assumed_noun'}}}
+There's no assumed_noun around here to look at.
+
+
+[[  look at tv  ]]
+
+dict: {0: {'verb': {'instance': <verbInstance look (2cc38475-3079-4823-9503-c062b9d84743)>, 'str_name': 'look', 'text': 'look'}}, 1: {'direction': {'instance': None, 'str_name': 'at', 'text': 'at'}}, 2: {'noun': {'instance': 'assumed_noun', 'str_name': 'assumed_noun', 'text': 'tv'}}}
+There's no tv set around here to look at.
+
+So why did 'tv' get to keep the text 'tv', with instance assumed_noun and str_name 'assumed_noun', but 'tv set' got all three 'assumed_noun'?
+
+Because I mean this:
+'instance': 'assumed_noun', 'str_name': 'assumed_noun', 'text': 'assumed_noun'
+is not useful.
+
+
+"Failed to find the correct function to use for <verbInstance unlock (e97c8c31-6666-4212-bfbd-cb2c98784fd1)>: argument of type 'NoneType' is not iterable
+
+[[  look at gate  ]]
+"
+^^ This happens inside is_event_trigger. Need to remember to look into this properly. Possibly children related if I accidentally rolled back one of the changes that stopped it iterating 'children' if inst not hasattr children.
+
+When it hits that error the action still completes, it's just the event check that fails.
+
+Oh this is an issue though:
+
+[[  take key  ]] canonical: assumed_noun, word: key at end
+
+<ItemInstance iron key / (123bac1a-dfec-4a50-96eb-59cc69127a1f) / north work shed / <eventInstance reveal_iron_key (e4bb8e29-a1a2-4f8a-b324-9328275cb532, event state: 2>/ > can be picked up.
+after can_take: cannot_take: 0 // added_to_inv: <ItemInstance iron key / (123bac1a-dfec-4a50-96eb-59cc69127a1f) / north inventory_place / <eventInstance reveal_iron_key (e4bb8e29-a1a2-4f8a-b324-9328275cb532, event state: 2>/ >
+about to check event triggers.
+The iron key is now in your inventory.
+
+iron key's event is still in the future: I picked up the map, it failed the trigger so didn't start the thing, and yet the key is here. Wonder if the key was hidden and then unhid with the event and just the event text didn't print, but that's not true because the event state is still 2. Will look into that too.....
+
+
+6.36pm
+Oh come on, what?
+#   [[  go to hotel  ]]
+#
+#   dict: {0: {'verb': {'instance': <verbInstance go (33932276-b87a-4e30-a1b2-41c2615e68d9)>, 'str_name': 'go', 'text': 'go'}}, 1: {'direction': {'instance': None, 'str_name': 'to', 'text': 'to'}}, 2: {'noun': {'instance': '4', 'str_name': 'city hotel room', 'text': 'hotel'}}}
+#   There's no hotel around here to go.
+
+okay fixed again, I think. Still v v scrappy though. But I guess while it's still developing keeping it scrappy is okay, otherwise I'll rebuild the whole thing every week when it needs something new.
+
+
+
+#   [[  take tv  ]]
+#   You can't pick up the tv set.
+#
+#   [[  take television  ]]
+#
+#   There's no tv set around here to take.
+
+Well shit. So much for consistent error messages.
+
+`take tv`:
+#   kinds: {'noun'}, canonical: tv set, perfect: None, word: tv at end
+`take television`:
+#   kinds: {'noun'}, canonical: assumed_noun, perfect: None, word: television at end
+
+Oh, does local_nouns not include alt_words? Probably not, huh. Okay. Can fix that.
+
+Okay, done.
+'look at television' and 'look at tv' now both work again in the new setup, though 'look at tv set' still doesn't. That 'tv set' is a perfect match /should/ mean the omit_next is used to skip 'set' but it doesn't, will figure out why.
+
+okay I need to put assumed_noun somewhere else. Now I have variation I don't want between look at tv/look at television.
+
+The previous error was because 'tv set' had 'tv' as a alt_name, so it would be complete after 'tv', which is why it didn't skip 'set'.
+
+But yes, now I need to get the assumed_noun thing right.
+It's meant to be entry[text] every time, but:
+
+dict: {0: {'verb': {'instance': <verbInstance look (246b0663-81d2-4db6-bba6-3016c15d6ae7)>, 'str_name': 'look', 'text': 'look'}}, 1: {'direction': {'instance': None, 'str_name': 'at', 'text': 'at'}}, 2: {'noun': {'instance': 'assumed_noun', 'str_name': 'assumed_noun', 'text': 'television'}}}
+==
+There's no tv set around here to look at.
+
+7.32pm
+The issue was in assign_colour, as it took strings and got the instance (but not by alt_names, via the inconsistency). Have changed it so it doesn't get the item instance if a colour is provided, so now 'there is no tv' and 'there is no television' presents identically.]

@@ -178,7 +178,7 @@ def get_noun_instances(dict_from_parser, viable_formats):
                 elif kind == "location":
                     from env_data import locRegistry
                     loc_name = entry["str_name"]
-                    print(f"LOC NAME from str_name IN LOCATION: {loc_name}")
+                    #print(f"LOC NAME from str_name IN LOCATION: {loc_name}")
                     if locRegistry.place_by_name(loc_name):
                         dict_from_parser[idx][kind] = ({"instance": locRegistry.place_by_name(loc_name), "str_name": loc_name, "text": entry["text"]})
 
@@ -266,6 +266,14 @@ class Membrane:
             for item in current_loc_items:
                 local_named.add(item.name)
                 local_items[item.name] = item
+
+        for item, inst in registry.by_alt_names.items():
+            #print(f"alt_names: item: {item} / inst: {inst}")
+            if inst in local_items:
+                local_named.add(item)
+                #print(f"inst `{inst}` in local_items.values()")
+                local_items[item] = local_items[inst]
+                #print(f"local_items[item] for {item}: {local_items[item]}")
 
         # Need to add transition items if current is exit/entrance:
         if registry.transition_objs.get(locRegistry.current.place):
@@ -406,7 +414,7 @@ test_input_list = ["take the paperclip", "take the paperclip", "pick up the glas
 
 #test_input_list = ["go west", "go north", "go to shed", "go north", "go to work shed", "go north", "go to shed door", "go to work shed door", "open door", "close door", "open shed door", "close shed door", "go into shed", "open door", "go into work shed", "go into work shed", "leave shed", "inventory", "drop mag", "take mag", "drop mag at church", "go into work shed", "open work shed door", "open door", "go into shed", "take map", "take key", "go to north graveyard", "use key on padlock", "lock padlock with key", "unlock padlock with key", "take padlock", "go to city hotel room", "find tv set", "look at tv set"]
 
-test_input_list = ["go west", "logging args", "open door", "enter shed", "take map", "take key", "go to north graveyard", "look at gate", "unlock padlock with key", "look at gate", "pick up padlock", "go to city hotel room", "find tv set", "go to east graveyard", "take jar", "break jar"]
+test_input_list = ["go west", "open door", "enter shed", "take map", "take key", "go to north graveyard", "look at gate"]#, "unlock padlock with key", "look at gate", "pick up padlock", "go to city hotel room", "find tv set", "go to east graveyard", "take jar", "break jar"]
 
 #test_input_list = ["go east", "take glass jar", "break jar", "pick up glass shard", "drop glass shard", "go west", "open door", "enter shed", "take map", "take key", "north graveyard", "use key on padlock"]
 #test_input_list = ["east", "break jar", "break flowers with hammer"]

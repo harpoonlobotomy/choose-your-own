@@ -454,8 +454,7 @@
   "TV set": {
     "alt_names": [
       "television",
-      "tv set",
-      "tv"
+      "tv set"
     ],
     "can_be_added_to": true,
     "can_be_charged": false,

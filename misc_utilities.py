@@ -209,9 +209,6 @@ def print_failure_message(input_str, message=None, idx_kind=None, init_dict=None
             if entry2.get("instance") and not isinstance(entry2["instance"], str):
                 noun2 = entry2["instance"]
 
-    print(f"dict: {init_dict}")
-
-
     if isinstance(entry["instance"], str):# and entry["instance"] == 'assumed_noun':
         if verb.name == "drop":
             print(f"You can't drop the {assign_colour(entry['text'])}; you aren't holding it.")
@@ -225,7 +222,7 @@ def print_failure_message(input_str, message=None, idx_kind=None, init_dict=None
         if not noun2:
             print(f"There's no {assign_colour(entry['text'], colour="yellow")} around here to {assign_colour(verb.name, colour="green")} {assign_colour(entry2['text'], colour="yellow")} with.")
             return
-        print(f"There's no {assign_colour(entry['text'], colour="yellow")} around here to {assign_colour(verb.name, colour="green")} the {assign_colour(entry2['instance'])} with.")
+        print(f"There's no {assign_colour(entry['text'], colour="yellow")} around here to {assign_colour(verb.name, colour="green")} the {assign_colour(noun2)} with.")
 
 
 ### INVENTORY LIST MANAGEMENT (possible all should be in item_management instead, but keeping here for now.)
@@ -426,6 +423,16 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
 
     specials = ("location", "loc", "description", "title_bg", "title", "deco", "hash", "title_white", "equals", "underscore", "event_msg")
 
+    specials_dict = {
+        "loc": {"colour":"green", "bld":True},
+        "title_bg": {"colour": "black", "bg": "green"},
+        "equals": {"u_line":True, "bg":"blue"},
+        "hash": {"bg":"blue"},
+        "title_white": {"colour":"white"},
+        "title": {"bld":True},
+        "event_msg": {"ita":True, "colour": "yellow"}
+    }
+
     Colours.colour_counter = Colours.colour_counter%len(cardinals)
 
     if colour and isinstance(colour, str):
@@ -443,25 +450,40 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
 
         if colour in specials:
             if "loc" in colour:
-                colour="green" # set 'loc' in colours.C instead of hardcoding the actual colours here. Only code here for bold, or if the colour named is inaccurate.
-                bld=True
-            if colour == "title_bg":
-                colour="black"
-                bg="green"
-            if colour == "equals":
-                u_line=True
-                bg="blue"
-            if colour == "hash":
-                bg="blue"
-            if colour == "title_white":
-                colour="white"
-            if colour in bold_special:
-                bld=True
-            if colour == "title":
-                bld=True
-            if colour == "event_msg":
-                ita=True
-                colour = "yellow"
+                colour = "loc"
+            if specials_dict.get(colour):
+                for attr, val in specials_dict[colour].items():
+                    if attr == "u_line":
+                        u_line = val
+                    if attr == "bg":
+                        bg = val
+                    if attr == "bld":
+                        bld = val
+                    if attr == "ita":
+                        ita = val
+                if colour in bold_special:
+                    bld=True
+                if specials_dict[colour].get("colour"):
+                    colour = specials_dict[colour]["colour"]
+
+            #if "loc" in colour:
+            #    colour="green" # set 'loc' in colours.C instead of hardcoding the actual colours here. Only code here for bold, or if the colour named is inaccurate.
+            #    bld=True
+            #if colour == "title_bg":
+            #    colour="black"
+            #    bg="green"
+            #if colour == "equals":
+            #    u_line=True
+            #    bg="blue"
+            #if colour == "hash":
+            #    bg="blue"
+            #if colour == "title_white":
+            #    colour="white"
+            #if colour == "title":
+            #    bld=True
+            #if colour == "event_msg":
+            #    ita=True
+            #    colour = "yellow"
 
     elif isinstance(item, list):
         print(f"Item instance in assign_colour is a list: {item}")
@@ -503,7 +525,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
         bld=True
 
 
-    elif isinstance(item, str) or isinstance(item, ItemInstance|placeInstance|cardinalInstance):
+    elif (isinstance(item, str) and not colour) or isinstance(item, ItemInstance|placeInstance|cardinalInstance):
         from itemRegistry import registry
 
         if isinstance(item, str):
@@ -512,7 +534,6 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
             if val > 0:
                 item_instance = from_inventory_name(plain_name)
                 colour, _, bld = check_instance_col(item_instance)
-
             else:
                 item_instances=registry.instances_by_name(item)
                 if item_instances:
@@ -520,7 +541,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
                     colour, item, bld = check_instance_col(item)
                     #colour = item.colour
 
-        if isinstance(item, ItemInstance|placeInstance|cardinalInstance): # changing to elif breaks non-instance colours entirely.
+        if isinstance(item, ItemInstance|placeInstance|cardinalInstance):
             if nicename:
                 held_name = item.nicename
             colour, item, bld = check_instance_col(item)

@@ -1502,7 +1502,6 @@ def take(format_tuple, input_dict):
             return 1, added_to_inv
         else:
             if hasattr(noun_inst, "can_pick_up") and noun_inst.can_pick_up:
-                print(f"{noun_inst} can be picked up.")
                 if reason_val in (3, 4):
                     outcome = registry.move_from_container_to_inv(noun_inst, parent=container)
                     added_to_inv = outcome
@@ -1510,9 +1509,7 @@ def take(format_tuple, input_dict):
                     return 0, added_to_inv
                 elif reason_val == 0:
                     outcome = registry.move_item(noun_inst, location = loc.inv_place)
-                    #outcome = registry.move_item(inst, location = loc.inv_place)
-                    #outcome = registry.pick_up(noun_inst, location = loc.inv_place) ## the can_take function shouldn't be doing this part.
-                    #print("Did pick_up")
+
                     if outcome in loc.inv_place.items:
                         #print("Outcome is in inventory. (line 1480)")
                         return 0, outcome
@@ -1524,6 +1521,8 @@ def take(format_tuple, input_dict):
             else:
                 print(f"You can't pick up the {assign_colour(noun_inst)}.")
                 return 1, added_to_inv
+            print("Failed in can_take, returning defaults.")
+            return 0, added_to_inv
 
     dir_or_sem = get_dir_or_sem_if_singular(input_dict)
     location = get_location(input_dict)
@@ -1540,8 +1539,6 @@ def take(format_tuple, input_dict):
     elif dir_or_sem in ("in", "at") and location:
         if location == loc.current or location == loc.current.place:
             cannot_take, added_to_inv = can_take(noun)
-
-
 
     elif format_tuple == (("verb", "noun", "direction", "noun")): ## will later include scenery. Don't know how that's going to work yet.
         verb_str = input_dict[0]["verb"]["str_name"]
@@ -1587,9 +1584,7 @@ def take(format_tuple, input_dict):
         if isinstance(added_to_inv, ItemInstance): # added_to_inv smuggles out the single/local instance I actually want to pick up. So here we just swap them if needed. added_to_inv, if successful, is either the existing noun, or the corrected output.
             if added_to_inv != noun:
                 noun = added_to_inv
-        #print(f"{assign_colour(noun_inst)} is now in your inventory.") # original
-        #print(f"ITEM: {noun}")
-        print("about to check event triggers.")
+
         outcome, moved_children = events.is_event_trigger(noun, noun_loc, reason = "item_in_inv")
         if not outcome:
             print(f"The {assign_colour(noun)} {is_plural_noun(noun)} now in your inventory.")
@@ -1884,27 +1879,22 @@ def wait(format_tuple, input_dict):
 
 def enter(format_tuple, input_dict, noun=None):
     logging_fn()
-    ### NEED TO FORMALISE DOORS/TRANSITION OBJECTS.
-    # just realised you can add str to exit like you can with print/input: exit(code="Exiting because reason given above.")
+
     location = get_location(input_dict)
     if not noun:
         if format_tuple == ("verb", "noun", "noun"):
             noun = get_noun(input_dict, 2)
         else:
             noun = get_noun(input_dict)
-    #print(f"NOUN: {noun}")
-    #if hasattr(noun, "is_loc_exterior"):
-    #    print(f"{noun} is a location exterior object, this will work later.")
+
     noun = get_noun(input_dict)
     if noun and hasattr(noun, "is_loc_exterior") or hasattr(noun, "is_transition_obj"):
         if loc.by_name.get(noun.name): ## So it doesn't matter if it things 'work shed' is a loc or noun, it still directs correctly.
             location = loc.by_name.get(noun.name)
         else:
             noun = get_transition_noun(noun, format_tuple, input_dict)
-        print(f"NOUN: {noun}")
 
     if not noun:
-        print("Not noun.")
         noun = get_noun(input_dict)
     #print(f"NOUN after get_transition_noun: {noun}")
     if noun:
@@ -1930,7 +1920,6 @@ def enter(format_tuple, input_dict, noun=None):
                 print("You'll have to go there first.")
                 return
         print(f"This {noun} doesn't lead anywhere")
-
 
 
 def router(viable_format, inst_dict, input_str=None):

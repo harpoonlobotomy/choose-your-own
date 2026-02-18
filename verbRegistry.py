@@ -111,24 +111,19 @@ class Parser:
         canonical = potential_match = perfect_match = None
         compound_match = 0
         compound_matches = {}
-        #if not word.startswith("a "):
-            #word = "a " + word
-        #print(f"WORD: {word}, PARTS: {parts}")
-        #print(f"parts dict:: type: {type(parts_dict)}")
+
         for compound_word, word_parts in parts_dict.items():
             if perfect_match:
                 #print(f"PERFECT MATCH: {perfect_match}")
                 break
             #print(f"Word: {word} // word parts: {word_parts}")
             if word in word_parts:
-                #print(f"word {word} in word parts: {word_parts}")
-                #test_print(f"MATCH IN PLURAL WORDS: `{word}` FOR COMPOUND WORD: {compound_word}", print_true=True)
                 matches_count = 0
                 for bit in word_parts:
                     try:
                         if len(parts) > idx + matches_count and bit == parts[idx+matches_count]:
                             matches_count += 1
-                            print(f"Matches_count: {matches_count} / bit: {bit}")
+                            #print(f"Matches_count: {matches_count} / bit: {bit}")
                             if matches_count == len(word_parts):
                                 perfect_match = compound_word
                                 break
@@ -138,13 +133,11 @@ class Parser:
                         print(f"No matched word-parts after parts[{idx}+{matches_count}].")
                         break
                 compound_match += 1
-                print(f"Compound match: {compound_match}")
-                print(f"matches_count: {matches_count}")
-                #compound_matches[compound_word]=tuple(((compound_match, len(word_parts)))) ## if input == 'paper scrap': "paper scrap with paper":(2,4)
+
                 compound_matches[compound_word]=tuple(((matches_count, len(word_parts)))) ## if input == 'paper scrap': "paper scrap with paper":(2,4)
 
         if perfect_match and ((word_type == "noun" and perfect_match in local_named) or word_type == "location"):
-            print(f"PERFECT MATCH: {perfect_match}, matches_count: {matches_count}")
+            #print(f"PERFECT MATCH: {perfect_match}, matches_count: {matches_count}")
             canonical = perfect_match
             if isinstance(kinds, str):
                 if kinds == "No match" or kinds == "":
@@ -167,21 +160,19 @@ class Parser:
 
             for item in compound_matches:
                 if (word_type == "noun" and local_named and item in local_named and item in parts_dict) or word_type == "location":
-                    print(f"Viable option: {item}")
                     matched, total_parts = compound_matches[item]
                     missing = total_parts - matched
                     ratio = missing/total_parts
-                    print(f"Missing: {missing} / ration total/missing: {ratio} (total_parts: {total_parts})")
+                    #print(f"Missing: {missing} / ration total/missing: {ratio} (total_parts: {total_parts})")
                     if missing < least_missing:
                         least_missing = missing
                         winner = item
-            print(f"matches count: ({matches_count})")
+
             match = winner
             if match:
                 matches_count, _ = compound_matches[match]
             else:
                 matches_count = 0
-            print(f"matches count: ({matches_count})")
             if match:
                 canonical = match
                 omit_next += matches_count -1
@@ -189,20 +180,11 @@ class Parser:
 
             else:
                 if not matches:
-                    if compound_matches:
-                        for item_name in compound_matches: # if nothing found, take whatever you find as a last resort. Might delete this later
-                            #print(f"item name in compound matches: {item_name}")
-                            matches.add(item_name)
-                            match = item_name
-                    #print(f"Nothing found here by the name \033[1;33m`{word}`\033[0m.")
                     if word_type == "noun":
                         kinds.add("noun")
                     canonical = "assumed_noun"
                     return idx, word, kinds, canonical, potential_match, omit_next, perfect_match
-                print(f"Compound matches: {compound_match}")
-                print(f"Content: {compound_matches}")
-                print_red("More than one potential compound match, the system can't cope with that yet.")
-        #"idx, word, kinds, canonical, potential_match, omit_next, perfect_match: {idx, word, kinds, canonical, potential_match, omit_next, perfect_match}"
+
         else:
             kinds.add("noun")
             canonical = "assumed_noun"
@@ -288,7 +270,6 @@ class Parser:
                                 canonical = word
                             kinds.add("location")
 
-
                 if word in verbs.all_verbs:
                     if word in word_phrases and word_phrases.get(word) and parts[0] in word_phrases.get(word):
                         kinds.add("null")
@@ -334,29 +315,24 @@ class Parser:
                     second_perfect = None
                     idx, word, kinds, canonical, potential_match, omit_next, perfect = Parser.check_compound_words(parts_dict = compound_nouns, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "noun", omit_next=omit_next, local_named=local_items)
                     second_perfect = None
-                    #print(f"omit_next after first check compound words: {omit_next}")
+
                     try:
                         second_idx, second_word, second_kinds, second_canonical, second_potential_match, second_omit_next, second_perfect = Parser.check_compound_words(parts_dict = compound_locs, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "location", omit_next=omit_next, local_named=local_items)
                     except Exception as e:
                         print(f"Could not get location: {e}")
-                    #print(f"omit_next after second check compound words: {omit_next}")
-                    print(f"kinds: {kinds}, canonical: {canonical}, word: {word} at end")
-                    print(f"kinds: {second_kinds}, canonical: {second_canonical}, word: {second_word} at end")
+
                     if perfect and not second_perfect:
+                        omit_next = len(perfect.split(" "))
                         kinds = (("noun",))
-                        word = canonical # testing this out.
+                        word = perfect
                         tokens.append(Token(idx, word, kinds, canonical))
                         continue
-                    #    tokens.append(Token(idx, word, kinds, canonical))
-                    #    continue
 
                     elif second_perfect:
-                        print(f"second_perfect: {second_perfect}")
+                        omit_next = len(second_perfect.split(" "))
                         kinds = (("location",))
                         second_word = second_canonical
                         tokens.append(Token(second_idx, second_word, kinds, second_canonical))
-                        omit_next = second_omit_next
-                        print(f"second_omit_next after second_perfect: {second_omit_next}")
                         continue
 
                     if canonical and canonical != "assumed_noun":
@@ -366,7 +342,8 @@ class Parser:
                     if ((not canonical or canonical == "assumed_noun") and (second_canonical and not second_canonical == "assumed_noun")) or (perfect and second_perfect):
                         idx = second_idx
                         word = second_word
-                        kinds = second_kinds
+                        kinds = (("location",))
+                        #kinds = second_kinds
                         canonical = second_canonical
                         potential_match = second_potential_match
                         omit_next = second_omit_next
