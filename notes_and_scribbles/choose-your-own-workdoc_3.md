@@ -3029,4 +3029,248 @@ Oh wait, it's not called branch at all. Oops.
 5.07pm
 Have updated def find(), it now checks for noun.text and checks for a word/compound word against that text, and produces the output accordingly. If it finds nothing (so your input isn't an item anywhere), then it goes back to print_errors for 'There's no x to find'. Pleased with that.
 
-Okay. Have re-fixed the event messages for the moss, the formatting was a little broken and I was getting errors from that particular branch of eventReg. 
+Okay. Have re-fixed the event messages for the moss, the formatting was a little broken and I was getting errors from that particular branch of eventReg.
+
+>>> set("Hello!")
+{'H', 'l', 'e', '!', 'o'}
+
+>>> {"Hello!"}
+{'Hello!'}
+
+I need to keep this in mind. {"hello"} adds it as a component to a set, set("hello") creates a set with each of the iter elements as a component.
+
+
+Hm. Why this:
+
+[[  find carved stick  ]]
+
+
+[[  take carved stick  ]]
+?
+No error, just nothing printed. Not ideal...
+
+Oh, it's if it runs 'find' while actually at the location of the item.
+
+[[  find carved stick  ]]
+
+You can't see the carved stick right now.
+Hm. Not an improvement.
+
+Okay. Fixed it now. Now it only converts 'find' to 'look' if item is in current cardinal, else it just reports the location of the first found by name.
+
+Next:
+#   [[  burn magazine with matchbox  ]]
+#
+#   There's no magazine around here to burn the matchbox with.
+
+so close but not cigar.
+
+Okay. Fixed now.
+
+[[  burn magazine with matchbox  ]]
+
+There's no matchbox around here to burn the magazine with.
+
+Now a permanent fix as I've switched the order and it won't always fit, but it'll do.
+I think I'll just have to do a format library up properly to define noun1/noun2 for the formats, so based on format_str it automatically delegates which noun is which for print formatting etc. Would be useful. Also useful for lock/key interactions etc.
+
+Hm. That fix isn't working perfectly...
+
+[[  burn magazine with matchbox  ]]
+
+There's no matchbox around here to burn the mag with.
+Now here, we /do/ have 'matchbook', but we /don't/ have 'mag'. I need to tailor the message to which has failed if I have enough data in the dict to know there are two nouns, especially if I have one fully identified.
+
+#   NOTE: That error only shows up like that when there's no magazine.
+
+Now, in the runs where I do have a magazine, it claims the gardening mag can't burn. Clearly I'm checking the wrong thing.
+
+6.47pm
+This is odd.
+
+The matchbox contains:
+  matches
+
+[[  take match  ]]
+
+There's no match around here to take.
+
+But,
+  "match": {
+    "alt_names": [
+      "matches"
+    ],
+Matches is the alt_name. Why is it not 'finding' it?
+
+Changing the child name in item_defs doesn't help, it just makes it "match" everywhere.
+I guess maybe when we print children we're not checking the multiple_instances state of the children. Will have to add that.
+
+Or ffs just assign them at init_single...
+
+Oh, apparently I already do. Idk why it's failing then.
+Needed to set print_name as that's what assign_colour is, and I forgot.
+
+That's fixed, so I have this:
+The a matchbox contains:
+  a few matches
+
+but:
+
+[[  take match  ]]
+
+There's no match around here to take.
+
+[[  take matches  ]]
+
+The a matchbox is already in your inventory.
+
+local_named: {'puzzle mag', 'matchbox', 'clumps of moss', 'moss', 'dried flowers', 'clump of moss', 'severed tentacle', 'local map', 'gate', 'padlock', 'iron key', 'box of matches', 'paperclip'}
+
+So I can't take the matches, because they're in a container. Bleeeeh.
+
+So I guess.... I need to include one level of container-children in local_nouns. Damn.
+
+![alt text](image.png)
+Okay why are the colours wrong.
+
+The match is now in your inventory. <- cyan
+
+[[  inventory  ]]
+
+moss x2
+dried flowers
+padlock
+matchbox
+mail order catalogue
+iron key
+match <- blue
+paperclip
+local map
+
+You look at the match: <- cyan
+
+
+Also the match's description is wrong:
+[[  look at match  ]]
+
+You look at the match:
+
+   A number of matches, all unused.
+
+Should be singular, I only picked up one.
+
+Bleeeeh
+
+[[  take match  ]]
+
+The match is already in your inventory.
+
+Okay so, I have it checking local items to see if there's already something existing before refusing to take, but I guess it's /not/ taking available container contents. Okay. Will work on that tonight/tomorrow.
+
+# NOTE: LOCAL ITEMS MUST INCLUDE ACCESSIBLE CONTAINER ITEMS FOR TAKE/ETC.
+
+I think I need a fn for 'is_acccessible_by_name'. Because check_item_is_accessible just gives y ou the outcome for that noun, but doesn't check 'but is there another one with the same name that /is/ viable for the context'.
+
+Also it needs to be context aware. pick up == cannot include inventory. drop == cannot include non-inventory excluding inventory-containers, etc.
+
+Parser issue:
+
+values: ("token_role_options: Token(idx=1, text='shed', kind=('location',), canonical='work shed') // kinds: {'location'}",)
+(  Func:  verbReg_Reciever    )
+values: ("return for sequences: viable sequences: [['verb', 'location']], verb_instances: [{0: <verbInstance take (a41076b0-8ffd-43ff-8bbb-94e064b876c3)>}, {1: <verbInstance go (9902029e-9a51-4397-80f9-7bc729adc6fb)>}], sequences: [['verb', 'location']]",)
+(  Func:  verbReg_Reciever    )
+values: ("sequences after sequencer: [('verb', 'location')]",)
+Failed to run input_parser: 'NoneType' object is not subscriptable
+Failed get_noun_instances: cannot access local variable 'dict_from_parser' where it is not associated with a value
+Failed parser: cannot access local variable 'error' where it is not associated with a value
+
+This isn't even related to what I'm doing this afternoon...
+Issue caused because I'm not there, and can't 'take shed' when I'm not near it. But idk why it's not just going through the regular error channel. Need to dig into it later.
+
+
+ANS ITEM: wooden door, item_type: <class 'str'>, val: {'enter_location': 'north work shed', 'exit_to_location': 'west graveyard'}
+
+Hm.
+
+Why is the wooden door not found inside the shed. It's just failing entirely at the parser stage; it should be found by the updated local_nouns and it's not.
+
+Wooden door just straight up isn't mentioned:
+local_named: ['paperclip', 'moss', 'dried flowers', 'padlock', 'iron key', 'match', 'matchbox', 'fashion mag', 'local map', 'secateurs', 'clumps of moss', 'clump of moss', 'box of matches', 'matches', 'few matches', 'single match']
+
+ItemInstance shuold already have:
+
+            registry.transition_objs[self.enter_location] = self
+            registry.transition_objs[self.exit_to_location] = self
+
+(So for that matter I don't know why it's giving me strings for these values:
+
+TRANS ITEM: wooden door, item_type: <class 'str'>, val: {'enter_location': 'north work shed', 'exit_to_location': 'west graveyard'})
+
+item and both locations, all strings.
+
+At initialisation:
+
+EXIT TO LOCATION: <cardinalInstance west graveyard (a7408964-8ada-49e6-b323-3fb6d9a7b639)>
+self.ENTER_LOCATION: <cardinalInstance north work shed (bec03201-e040-46ee-a89c-59a2a3a979ad)>
+
+I do have to remember though I have
+"exit_item" and "entry_item" that should  refer to the trans obj.
+
+And registry.transition_objs[self.enter_location] = self should directly connect the card inst to the item inst.
+
+Okay well according to the actual object data, it's:
+ 'enter_location': <cardinalInstance north work shed (61f7da6f-1f46-42fc-86e3-44058bc5a7b6)>,
+ 'exit_to_location': <cardinalInstance west graveyard (8f7fdf22-94a2-42a0-b02d-69226bfaedb8)>,
+
+So that part's working, I'm just not sure why it's printing as a string.....
+
+Oh, is it because we have to init the cardinals before the items, so there's no names. But... Well I guess when the items are init'd they add their own details, but the loc_dict... doesn't get updated, I guess?
+
+So yeah, self.transition_objs[item] gets written up at the start, before the items/instances exist yet. So it's just names.
+
+
+EXIT TO LOCATION: <cardinalInstance west graveyard (b74afc7c-e15e-4c7b-904f-c47bf9712ae3)>
+registry.transition_objs[self.exit_to_location]: <ItemInstance wooden door / (a327c63b-52a8-4621-99fc-38fa7a777516) / north no_place / None/ >
+self.ENTER_LOCATION: <cardinalInstance north work shed (29929ef0-1484-4c65-ab88-2215ca859c57)>
+registry.transition_objs[self.enter_location]: <ItemInstance wooden door / (a327c63b-52a8-4621-99fc-38fa7a777516) / north no_place / None/ >
+
+
+So this works, dammit:
+registry.transition_objs[self.enter_location]
+
+Except when I come here:
+
+.......
+
+Oh.
+
+The one that works is registry, not location. I've been confusing the two.
+
+right. Okay.
+
+Well. # TODO: After init, replace env_data's transition_objs with itemReg (or just don't add it to itemReg at all, just do it straight to env_data). It makes more sense that way because env_data already has the damn cardinals.
+
+
+Oh fuck right off.
+
+Around you, you see the interior of a rather run-down looking work shed, previously boarded up but seemingly, not anymore.
+There's a simple desk, hazily lit by the window over it to the north.
+
+You're facing north. The work shed is simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's a yellowed local map showing the region surrounding the graveyard, an old iron key, mottled with age, a pair of secateurs, and a clump of moss.
+
+It's mixing up descriptions again. God dammit.....
+
+
+Okay - little progress again.
+
+location from current_loc: <cardinalInstance north work shed (a241856c-da8e-4b97-b2f8-d16e05be1d4b)>
+LOCATION: TRANSITION OBJS: {<ItemInstance wooden door / (aee1ab4e-0f39-41a6-b4f5-23ec9e65ae58) / west graveyard / None/ >}
+TRANS ITEM: <ItemInstance wooden door / (aee1ab4e-0f39-41a6-b4f5-23ec9e65ae58) / west graveyard / None/ >, item_type: <class 'itemRegistry.ItemInstance'>
+
+Seeing the door from inside the shed. Okay.
+
+10.35
+
+Okay - finally it's less broken. Door is accessible from inside. Have just replaced the original local_nouns in verb_membrane with the new version. Will take some time tomorrow to do that across the board. It includes items in containers (though I can exclude those later and/or just rerun it to recollect.
+
+Getting v v tired. Might have to leave it a bit.

@@ -129,7 +129,7 @@ class timedTrigger:
         self.state = event.state
         self.is_item_trigger = False
         self.item_inst = None
-        self.triggers = set() #item_broken, 'item_in_inv', etc.
+        self.triggers = set([str]) #item_broken, 'item_in_inv', etc.
 
         """
         trigger_dict = {
@@ -305,7 +305,6 @@ class Trigger:
     def __repr__(self):
         return f"<triggerInstance {self.id} for event {self.event.name}, event state: {event_state_by_int[self.state]}, {((f'Trigger item: {self.item_inst.name}' if isinstance(self.item_inst, ItemInstance) else f'Trigger item: {self.item_inst}') if self.is_item_trigger else None)}>"
 
-
 class eventRegistry:
 
     def __init__(self):
@@ -316,7 +315,7 @@ class eventRegistry:
         self.by_state = {}
         self.trigger_items = {}
         self.travel_is_limited = False
-        self.triggers = set()
+        self.triggers = set([Trigger])
         self.item_names = dict()
 
         self.start_triggers = dict() #self.start_trigger_is_item
@@ -828,7 +827,8 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
 
         return print_current(event, state_type=msg_type, print_text=print_txt, noun=noun)
 
-    def do_immediate_actions(self, event:eventInstance, trig, noun:ItemInstance=None):
+    def do_immediate_actions(self, event:eventInstance, trig:Trigger|
+                             timedTrigger, noun:ItemInstance=None):
 
         inst = children = None
         if hasattr(event, "init_items") and event.init_items:
@@ -1016,7 +1016,6 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
 
     def end_event(self, event_name, trigger:Trigger=None, noun_loc=None, noun=None):
         logging_fn()
-        print(f"end_event: {event_name}, trigger: {trigger}, noun: {noun}")
         print_desc_again = False # Use to reprint the local description if items have become unhidden. Do it in a better way later, for now this will do.
         if isinstance(event_name, str):
             event_to_end = self.event_by_name(event_name)

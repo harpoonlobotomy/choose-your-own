@@ -279,17 +279,32 @@ Note on descriptions: if self.descriptions, will have different descriptions dep
             self.set_hidden()
 
         if "transition" in self.item_type:
-
-            self.enter_location = loc.by_cardinal_str(self.enter_location)
-            #print(f"self.enter_location: {self.enter_location}")
-            setattr(self.enter_location, "entry_item", self)
-            setattr(self.enter_location, "location_entered", False)
+#
+# location: transition objs, set of items. item holds entry/exit.
+# location: entry_items/exit_items.
+            enter_location = loc.by_cardinal_str(self.enter_location)
+            if not hasattr(enter_location, "entry_item"):
+                setattr(enter_location, "entry_item", set())
+            getattr(enter_location, "entry_item").add(self)
+            if not hasattr(enter_location, "transition_objs"):
+                setattr(enter_location, "transition_objs", set())
+            getattr(enter_location, "transition_objs").add(self)
+            self.enter_location = enter_location
+            setattr(enter_location, "location_entered", False)
             self.is_transition_obj = True
-            registry.transition_objs[self.enter_location] = self
 
-            self.exit_to_location = loc.by_cardinal_str(self.exit_to_location)
-            setattr(self.exit_to_location, "exit_item", self)
-            registry.transition_objs[self.exit_to_location] = self
+            registry.transition_objs[self.enter_location] = self # shuold not need this.
+
+            exit_to_location = loc.by_cardinal_str(self.exit_to_location)
+            if not hasattr(exit_to_location, "exit_to_item"):
+                setattr(exit_to_location, "exit_to_item", set())
+            getattr(exit_to_location, "exit_to_item").add(self)
+            if not hasattr(exit_to_location, "transition_objs"):
+                setattr(exit_to_location, "transition_objs", set())
+            getattr(exit_to_location, "transition_objs").add(self)
+            self.exit_to_location = exit_to_location
+            setattr(exit_to_location, "location_entered", False)
+            self.is_transition_obj = True
 
     def __repr__(self):
         return f"<ItemInstance {self.name} / ({self.id}) / {self.location.place_name} / {self.event if hasattr(self, "event") else ''}/ {(self.has_multiple_instances if hasattr(self, 'has_multiple_instances') else '')}>"
@@ -736,11 +751,11 @@ class itemRegistry:
                         reason = 5
                     else:
                         if hasattr(inst, "is_transition_obj"):
-                            if hasattr(inst, "enter_location") and hasattr(inst, "enter_location") and inst.enter_location ==  loc.current.place:
+                            if hasattr(inst, "enter_location") and hasattr(inst, "enter_location") and inst.enter_location ==  loc.current:
                                 reason = 0
                             else:
                                 reason = 6
-                        elif hasattr(inst, "is_loc_exterior") and inst.location.place == loc.current.place:
+                        elif hasattr(inst, "is_loc_exterior") and inst.location.place == loc.current:
                             reason = 8
 
                         else:
@@ -1239,7 +1254,7 @@ class itemRegistry:
                 inst.descriptions = descriptions
 
         if not inst.descriptions and inst.description:
-            #print(f"inst.description: {inst.description}")
+            print(f"Not inst.descriptions. inst.description: {inst.description}")
             return
 
         def get_if_open(inst:ItemInstance, label:str):
@@ -1289,7 +1304,7 @@ class itemRegistry:
             else:
                 if not has_and_true(inst, "children") and get_if_open(inst, "no_children"):
                     description = get_if_open(inst, "no_children")
-
+        #print(f"{inst.name}: Description after child check etc: {description}")
         if not description:
             #print(f"Not description: {inst.name}, description: {description} // descriptions: {inst.descriptions}")
             if hasattr(inst, "descriptions"):
@@ -1321,11 +1336,14 @@ class itemRegistry:
                 inst.nicename = inst.nicenames["if_singular"]
         if inst.nicenames.get("if_plural") and inst.has_multiple_instances > 1:
                 inst.nicename = inst.nicenames["if_plural"]
-
+        #print(f"inst.nicenames: {inst.nicenames}")
+        #print(f"inst.nicename: {inst.nicename}")
+        #if inst.nicename:
+        #    inst.print_name = inst.nicename
         if description:
+            #print(f"inst.description: {inst.description}")
             inst.description = description
             return
-
         if orig_description:
             return
 

@@ -209,12 +209,15 @@ def print_failure_message(input_str, message=None, idx_kind=None, init_dict=None
             if verb.name == "look":
                 print(f"There's no {assign_colour(entry['text'], colour="yellow")} around here to {assign_colour(verb.name, colour="green")} at.")
                 return
+            if verb.name == "go":
+                print(f"There's no {assign_colour(entry['text'], colour="yellow")} around here to {assign_colour(verb.name, colour="green")} to.")
+                return
             print(f"There's no {assign_colour(entry['text'], colour="yellow")} around here to {assign_colour(verb.name, colour="green")}.")
             return
         if not noun2:
             print(f"There's no {assign_colour(entry['text'], colour="yellow")} around here to {assign_colour(verb.name, colour="green")} {assign_colour(entry2['text'], colour="yellow")} with.")
             return
-        print(f"There's no {assign_colour(entry['text'], colour="yellow")} around here to {assign_colour(verb.name, colour="green")} the {assign_colour(noun2)} with.")
+        print(f"There's no {assign_colour(noun2)} around here to {assign_colour(verb.name, colour="green")} the {assign_colour(entry['text'], colour="yellow")} with.")
 
 
 ### INVENTORY LIST MANAGEMENT (possible all should be in item_management instead, but keeping here for now.)
@@ -580,16 +583,19 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
     coloured_text=Colours.c(item, colour, bg, bold=bld, italics=ita, underline=u_line, invert=invt, no_reset=no_reset)
     return coloured_text
 
-def col_list(print_list:list=[], colour:str=None)->list: ## merge this to the above, to it just deals with lists automatically instead of being a separate call.
+def col_list(print_list:list=[], colour:str=None, nicename=False)->list: ## merge this to the above, to it just deals with lists automatically instead of being a separate call.
     coloured_list=[]
 
     for i, item in enumerate(print_list):
         if item == None:
             continue
         if not colour:
-            coloured_text = assign_colour(item, i)
+            if isinstance(item, ItemInstance):
+                coloured_text = assign_colour(item, nicename=nicename)
+            else:
+                coloured_text = assign_colour(item, i, nicename=nicename)
         else:
-            coloured_text = assign_colour(item, colour)
+            coloured_text = assign_colour(item, colour, nicename=nicename)
         coloured_list.append(coloured_text)
     return coloured_list
 
@@ -605,7 +611,9 @@ def in_loc_facing_card(cardinal:cardinalInstance):
 
 def has_and_true(item, attr):
     #print(f"HAS AND TRUE: item: {item}, attr: {attr}")
-    if hasattr(item, attr) and getattr(item, attr) == True:
+    #if hasattr(item, attr) and getattr(item, attr) == True:
+    #    return True
+    if hasattr(item, attr) and getattr(item, attr):# shouldn't be this didn't work for some things and I don't know why. Trying it again so I'm not exclusively checking 'true', but a truthy val.
         return True
     return False
 

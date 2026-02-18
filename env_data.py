@@ -31,21 +31,21 @@ class cardinalInstance:
     def __init__(self, cardinal, loc):
         from misc_utilities import cardinal_cols
         self.id = str(uuid.uuid4())
-        self.name = cardinal # "east"
-        self.place_name = cardinal + " " + loc.name # eg "east graveyard"        },
-        self.ern_name = cardinal + "ern " + loc.name # eg "eastern graveyard"
-        self.in_loc_facing_card = f"the {loc.name}, facing {self.name}"
+        self.name:str = cardinal # "east"
+        self.place_name:str = cardinal + " " + loc.name # eg "east graveyard"        },
+        self.ern_name:str = cardinal + "ern " + loc.name # eg "eastern graveyard"
+        self.in_loc_facing_card:str = f"the {loc.name}, facing {self.name}"
         self.place:placeInstance = loc
-        self.alt_names = (loc_dict[loc.name].get("alt_names") if loc_dict[loc.name].get("alt_names") else None)
+        self.alt_names:list|None = (loc_dict[loc.name].get("alt_names") if loc_dict[loc.name].get("alt_names") else None)
 
         if (self.place_name == config.inv_loc_str or self.place_name == config.no_place_str):
             self.items = set() # purely for my own convenience. Maybe a bad idea but going to do it anyway for now.
 
-        self.description = None
+        self.description:str|None = None
         self.colour = cardinal_cols.get(self.name)
 
         self.cardinal_data = loc_dict[self.place.name].get(cardinal)
-        self.missing_cardinal = loc_dict[self.place.name].get("missing_cardinal")
+        self.missing_cardinal:str = loc_dict[self.place.name].get("missing_cardinal")
         setattr(self, cardinal, self.cardinal_data)
 
         self.cardinal_actions = (loc_dict[self.place.name][cardinal].get("actions") if loc_dict[self.place.name].get(cardinal) else None)
@@ -65,8 +65,13 @@ class cardinalInstance:
                         self.loc_exterior_items.add(item) # TODO should do this a different way, because this doesn't use the instance, only the name.
                     if "transition" in loc_dict[self.place.name][self.name]["items"][item]["item_type"]:
                         if not hasattr(self, "transition_objs"):
-                            self.transition_objs = dict()
-                        self.transition_objs[item] = {"enter_location": loc_dict[self.place.name][self.name]["items"][item].get("enter_location"), "exit_to_location": (loc_dict[self.place.name][self.name]["items"][item].get("exit_to_location") if loc_dict[self.place.name][self.name]["items"][item].get("exit_to_location") != self.name else self)}
+                            self.transition_objs = set() # changed from a dict. Might have to change it back.
+## Also just in general the transition_objs needs work. Far too much duplication.
+                        self.transition_objs.add(item)
+                            #self.transition_objs = dict()
+                        #self.transition_objs[item] = {
+                        #    "enter_location": loc_dict[self.place.name][self.name]["items"][item].get("enter_location"),
+                        #    "exit_to_location": (loc_dict[self.place.name][self.name]["items"][item].get("exit_to_location") if loc_dict[self.place.name][self.name]["items"][item].get("exit_to_location") != self.name else self)}
 
     def __repr__(self):
         return f"<cardinalInstance {self.place_name} ({self.id})>"

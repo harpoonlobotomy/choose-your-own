@@ -207,29 +207,25 @@ class Parser:
 
         initial = verbs.list_null_words | set(directions) | set(loc_options) | verbs.semantics | cardinals
 
-        #print(f"initial: {initial}")
-        #print(f"INPUT STR: {input_str}\n")
         for idx, word in enumerate(parts):
             word = word.lower()
             kinds = set()
             potential_match=False
             verbReg_Reciever(f"Tokenise: idx: {idx}, word: {word}, omit_next: {omit_next}")
-            if omit_next >= 1: # shouldn't this be >=, not ==? Surely if omit_next == 1, we need to omit once...
+            if omit_next >= 1:
                 omit_next -= 1
                 continue
 
             else:
                 canonical = None
-
+                if word == "magazine":
+                    word = "mag"
                 if word in verbs.all_meta_verbs:
-                    #print(f"word in verbs.all_meta_verbs: {word}")
                     if word not in verbs.meta_verbs:
-                        #print("word not in meta_verbs")
                         for key_word in verbs.meta_verbs:
                             if verbs.meta_verbs[key_word].get("alt_words"):
                                 for alt_word in verbs.meta_verbs[key_word]["alt_words"]:
                                     if word == alt_word:
-                                        #print(f"word in verbs.meta_verbs[key_word]: {word}, key word: {key_word}")
                                         word = key_word
                                         kinds.add("meta")
                                         canonical = word
@@ -542,21 +538,7 @@ class Parser:
                                     viable_sequences.append(seq)
 
             return viable_sequences
-        #if not viable_sequences:
-        #    for seq in sequences:
-        #        seq = str(seq)
-        #        print(f"seq: {seq}")
-        #        if "'direction', 'sem'" in seq:
-        #            dir_text = sem_text = None
-        #            for token in tokens:
-        #                if "direction" in token.kind:
-        #                    dir_text = token.text
-        #                if "sem" in token.kind:
-        #                    sem_text = token.text
-#
-        #            if dir_text and sem_text:
-        #                print(f"dir_text: {dir_text}, sem_text: {sem_text}")
-        #            print("Direction, sem in seq")
+
 
         viable_sequences = run_sequences(sequences, verb_instances)
         if not viable_sequences:
@@ -641,6 +623,19 @@ class Parser:
         locations = membrane.locations
         directions = membrane.directions
         cardinals = membrane.cardinals
+
+        from interactions.item_interactions import find_local_item_by_name
+        local_nouns = find_local_item_by_name()
+        clean_nouns  = {}
+        for item in local_nouns:
+            clean_nouns[item.name] = item
+            if " " in item.name:
+                if not membrane.plural_words_dict.get(item.name):
+                    parts = item.name.split(" ")
+                    membrane.plural_words_dict[item.name] = tuple(parts)
+
+        membrane.local_dict = clean_nouns
+        membrane.local_nouns = list(clean_nouns)
 
         membrane.get_local_nouns() # membrane.local_nouns = list of names. membrane.local_dict = dict of name[instance]# Switch to usin the dict instead and ditch the list later.
 

@@ -1571,23 +1571,23 @@
     ],
     "can_be_added_to": true,
     "can_be_closed": true,
-    "can_be_locked": true,
+    "can_be_locked": false,
     "can_be_opened": true,
     "can_pick_up": true,
     "children": null,
-    "children_type_limited": false,
+    "children_type_limited": ["match"],
     "container_limits": 4,
     "descriptions": {
       "generic": "a scratched and worn matchbox, waterstained but with the scratch panel on the side still in tact.",
       "starting_children_only": "",
       "any_children": "",
-      "no_children": "",
+      "no_children": "an empty matchbox.",
       "open_starting_children_only": "",
-      "open_any_children": "",
-      "open_no_children": ""
+      "open_any_children": "an open matchbox, with matches inside.",
+      "open_no_children": "an empty matchbox."
     },
     "is_burned": false,
-    "is_locked": true,
+    "is_locked": false,
     "is_open": false,
     "item_size": "a_few_marbles",
     "item_type": [
@@ -1603,12 +1603,12 @@
     "smash_attack": 5,
     "smash_defence": 5,
     "starting_children": [
-      "matches"
+      "match"
     ]
   },
   "match": {
     "alt_names": [
-      "matches"
+      "matches", "few matches", "single match"
     ],
     "can_pick_up": true,
     "descriptions": {
@@ -1626,6 +1626,8 @@
       "is_cluster",
       "standard"
     ],
+    "single_identifier": "match",
+    "plural_identifier": "matches",
     "nicenames": {
       "if_singular": "a single match",
       "if_plural": "a few matches"

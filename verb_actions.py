@@ -9,7 +9,7 @@ from env_data import cardinalInstance, locRegistry as loc, placeInstance
 from interactions import item_interactions
 from interactions.player_movement import new_relocate, turn_around
 from itemRegistry import ItemInstance, registry
-from misc_utilities import assign_colour, col_list, generate_clean_inventory, is_plural_noun, smart_capitalise
+from misc_utilities import assign_colour, col_list, generate_clean_inventory, has_and_true, is_plural_noun, smart_capitalise
 from printing import print_yellow
 from set_up_game import game
 from verb_definitions import directions, semantics, formats
@@ -165,13 +165,13 @@ def get_transition_noun(noun, format_tuple, input_dict, take_first=False):
             if not location:
                 location = loc.current.place
             if hasattr(location, "entry_item"):
-                loc_item = location.entry_item
+                test_item = location.entry_item
                 #print(f"HAs loc item: {loc_item}")
                 if take_first:
-                    return loc_item
-                if isinstance(loc_item, str) and local_items_list:
+                    return test_item
+                if isinstance(test_item, str) and local_items_list:
                     for loc_item in local_items_list:
-                        if loc_item.name == loc_item:
+                        if loc_item.name == test_item:
                             noun = loc_item
                             return noun
 
@@ -847,9 +847,16 @@ def find(format_tuple, input_dict):
             local_items = local_items | set(items)
             items_at[cardinal_inst] = set(items)
 
-    if local_items and noun in local_items:
+    if (local_items and noun in local_items) and (items_at.get(loc.current) and noun in items_at.get(loc.current)):
+        for entry in input_dict:
+            if input_dict[entry].get("noun"):
+                input_dict[entry]["noun"]["instance"] = noun
+                input_dict[entry]["noun"]["str_name"] = noun.name
         look(format_tuple, input_dict)
         return 1
+
+        # I'm not sure what I want to do with items that are in the same location but different cardinal. For now I guess we treat all non-current-cardinal the same, but might change it later.
+        #print(f"Noun.location: {noun.location}, current loc: {loc.current}")
 
     if "inventory_place" in noun.location.place_name:
         print(f"There's a {assign_colour(noun)} in your inventory, is that what you were looking for?")
@@ -969,11 +976,12 @@ def burn(format_tuple, input_dict):
     can_burn = False
     firesource_found = False
 
-    if "flammable" not in noun.item_type:
+    if not hasattr(noun, "flammable") or (hasattr(noun, "flammable") and not noun.flammable):
         print(f"The {assign_colour(noun)} can't burn, it seems.")
         return
 
-    elif "flammable" in noun.item_type and (hasattr(noun, "is_burned") and noun.is_burned):
+    elif has_and_true(noun, "is_burned"):
+    #elif has_and_true(noun, "flammable") and has_and_true(noun, "is_burned"):
         print(f"The {assign_colour(noun)} is already burned.")
         return
 
@@ -988,6 +996,7 @@ def burn(format_tuple, input_dict):
         if noun2:
             dir_or_sem = get_dir_or_sem_if_singular(input_dict)
             if dir_or_sem in ("with", "using"):
+                print(f"Vars for prospective fire source: {vars(noun2)}")
                 if "firesource" in noun2.item_type:
                     firesource_found = noun2
                 else:
@@ -1141,15 +1150,26 @@ def lock_unlock(format_tuple, input_dict, do_open=False):
         return
 
 
-def print_children_in_container(noun_inst):
+def print_children_in_container(noun_inst:ItemInstance):
 
     children = set()
-    if hasattr(noun_inst, "children"):
+    if hasattr(noun_inst, "children") and noun_inst.children:
         children = noun_inst.children
+        clean_children = list()
+        for item in children:
+            if "is_cluster" in item.item_type:
+                if int(item.has_multiple_instances) > 1:
+                    print(f"ITEM NICENAME IN PRINT CHILDREN: {item.nicename}")
+                    print(f"ITEM NICENAMES IN PRINT CHILDREN: {item.nicenames}")
 
-    if children:
+
+
         print(f"\nThe {assign_colour(noun_inst)} contains:")
-        children = ", ".join(col_list(children))
+        children = ", ".join(col_list(children, nicename=True))
+        if noun_inst.name == "matchbox":
+            for child in noun_inst.children:
+                print(f"Child: {child}, type: {type(child)}")
+                print(f"VARS CHILDREN: {vars(child)}")
         print(f"  {children}")
 
 
@@ -1481,6 +1501,9 @@ def take(format_tuple, input_dict):
     #noun = verb_requires_noun(input_dict, "take", local=True)
     added_to_inv = False
 
+    from interactions.item_interactions import find_local_item_by_name
+    find_local_item_by_name(noun, verb=get_verb(input_dict), access_str=None, current_loc=loc.current)
+    #exit()
     def can_take(noun_inst):
         logging_fn()
         added_to_inv = False
