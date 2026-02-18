@@ -98,6 +98,7 @@ class eventInstance:
         self.locked_items = (attr.get("locked_items") if attr.get("locked_items") else set())
         #print(f'attr.get("hidden_items"): {attr.get("hidden_items")}')
         #print(f'self.hidden_items: {self.hidden_items}')
+        self.remove_items = set() # for short-term storage of item instances to be removed by events.
         self.start_trigger_location = None
         self.end_trigger_location = None
 
@@ -363,7 +364,7 @@ class eventRegistry:
         return event, event_attr
 
     def clean_messages(self, event, noun=None, msg = None):
-
+        logging_fn()
         if msg == None:
             messages = event.msgs
             #print(f"MESSAGES: {messages}")
@@ -373,10 +374,14 @@ class eventRegistry:
                     new_message = message.replace("[[]]", noun.name)
                     #print(f"CLEANED MESSAGE: {message}")
                     event.msgs[part] = new_message
+                else:
+                    event.msgs[part] = msg
         else:
             if "[[]]" in msg:
                 new_message = msg.replace("[[]]", noun.name)
                 return new_message
+            else:
+                return msg
 
     def get_all_item_instances(self, event:eventInstance, event_entry, noun=None):
         from itemRegistry import registry
@@ -779,8 +784,8 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
     def play_event_msg(self, msg_type="held", event=None, print_txt=True, noun=None):
         logging_fn()
 
-
         def print_current(event, state_type="held", print_text=False, noun:ItemInstance=noun):
+            logging_fn()
             if not event.msgs:
                 print(f"NO EVENT MESGS: {event}")
                 return
@@ -795,22 +800,18 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                         msg = msg.replace("<material_msg>", material_msgs.get(material_type))
                 #if event.print_description_plain:
                     #So I might not even be using this. Instead, it just checks if colour == event_msg, and if so checks for [[ in the string, and if it has it, it treats it like any other string with item instance, within assign_colour. It shouldn't break anything else, as the location descriptions that use [[]] parse it out before getting the loc colour.
-
                 msg = events.clean_messages(event, noun, msg)
                 if print_text:
                     print(f"{assign_colour(msg, colour='event_msg', noun=noun)}")
                 return msg
-
 
             return f"Nothing to print print for event `{event}`, msg_type `{msg_type}`." # remove this later and replace with a type-defined default.
 
         if "_msg" in msg_type:
             msg_type = msg_type.replace("_msg", "")
 
-
         if msg_type == "exception":
             return print_current(event, state_type=msg_type, print_text=print_txt, noun=noun)
-
 
         if msg_type == "held":
             if self.travel_is_limited:
@@ -823,8 +824,6 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
             print("Need to define event for start/end messages.")
             return ""
 
-        #if not hasattr(event, "end_type"):
-        #    event.end_type = None # should not be needed, have added it to event init.
         end_type = event.end_type
         if msg_type in ("start", "end"):
             if msg_type == "end":
@@ -835,14 +834,10 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
 
     def do_immediate_actions(self, event:eventInstance, trig, noun:ItemInstance=None):
 
-        # To do immediate actions for immediate_action events. Will streamline this later maybe but this should do for now.
         inst = children = None
         if hasattr(event, "init_items") and event.init_items:
-            #print(f"Event init_items: {event.init_items}")
             for each in event.init_items:
-                #print(f"EACH: {each}")
                 for k, outcome_name in event.init_items[each].items():
-                    #print(f"K: {k}, item_name: {outcome_name}")
                     if k == "item_name":
                         entry = None
                         inst = None
@@ -855,55 +850,42 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                                     print(f"No target_itemname for {noun}.")
                                     target_itemname == "detritus"
                                 item_name = target_itemname
-                                from itemRegistry import registry
-                                #mat_type = noun.material_type
-                                #outcome = material_type.get(mat_type)
-                                #if not outcome:
-                                #    print(f"{mat_type} not in material types, using 'generic' instead.")
-                                #    outcome = material_type["generic"]
 
-                                #print(f"TRIG: {trig}")
                                 if "[[item_name]]" in item_name:
+                                    from itemRegistry import registry
                                     item_name = item_name.replace("[[item_name]]", noun.name)
                                     entry = registry.generate_alt_state_item(item_name, noun)
-                                    print(f"Entry after [[item_name]]: {entry}")
-                                    #from itemRegistry import registry
-                                    #new_def = registry.generate_alt_state_item(item_name, noun)## This is not implemented yet###
+                                    #print(f"Entry after [[item_name]]: {entry}")
+
                         from itemRegistry import registry
-                        #print(f"ITem name: {item_name}/ outcome_name: {outcome_name}")
                         if not item_name:
                             item_name = outcome_name
                         if not entry:
                             entry = registry.item_defs.get(item_name)
-                        #print(f"K: {k}, v: {item_name}")
                             if not entry:
                                 entry = registry.by_alt_names.get(item_name)
-                                #print(f"Alt name? : {test}")
                                 if not entry:
-                                    #print(f"Registry.by_alt_names: {registry.by_alt_names}")
                                     from item_dict_gen import generator
                                     generator_alt_name = generator.alt_names.get(item_name)
                                     if generator_alt_name:
                                         item_name = generator_alt_name
-                                        #print(f"Item in generator alt names: {generator_alt_name}")
                                         if registry.item_defs.get(item_name):
                                             entry = registry.item_defs.get(item_name)
 
                         if not entry:
                             print("No item def to use as a basis. Exiting.")
                             exit()
-                            #print("Truly no definition found for this new name. Oops. Taking from noun instead.")
-                            #new_def = registry.generate_alt_state_item(item_name, noun)## This is not implemented yet###
 
                         entry = self.clean_altered_state_def(item_name, entry, outcome_name)
-                        #print(f"after clean altered state: {entry}")
                         registry.item_defs[item_name] = entry
                         plural_words_dict = registry.plural_words
                         if len(item_name.split()) > 1:
                             plural_words_dict[item_name] = tuple(item_name.split())
                         inst = registry.init_single(item_name, entry)
                         if not inst:
-                            print(f"Failed to generate instance for {item_name}")
+                            print(f"Failed to generate instance for {item_name}. Exiting.")
+                            from logger import traceback_fn
+                            traceback_fn()
                             exit()
 
                         event.items.add(inst)
@@ -917,17 +899,15 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                                 if effect_attrs[effect].get("on_event_start"):
                                     for attr in effect_attrs[effect]["on_event_start"]:
                                         setattr(item, attr, effect_attrs[effect]["on_event_start"][attr])
-                                        print(f"EFFECT: {effect}, item: {item}")
+                                        #print(f"EFFECT: {effect}, item: {item}")
                         registry.init_descriptions(inst = inst)
                         init_loc_descriptions(locRegistry.current)
 
-                        ## TODO this is half done. Finish this bit... Need to make sure the attributes are properly set to the new item, they may differ from item defs defaults.
-                        #print(f"Initialised event item ({inst})")
                     else:
                         print(f"No item definition for {item_name}, cannot generate item for event {event}.")
                         return None
 
-        if hasattr(event, "remove_items") and event.remove_items:
+        if event.remove_items:
             #print(f"event.remove_items: {event.remove_items}")
             for each in event.remove_items:
                 for item in event.remove_items[each]:
@@ -1135,11 +1115,14 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
 
             if hasattr(event_to_end, "end_type") and event_to_end.end_type == "failure" and hasattr(event_to_end, "remove_event_on_failure") and event_to_end.remove_event_on_failure:
         ## Genuinely not sure how useful or needed this is. If I just remove the event from events.events and remove the flag from the items, would that be enough? Idk. Will loko it up later. for now, this.
+
                 triggers_to_remove = set()
-                for trigger in event_to_end.triggers:
-                    triggers_to_remove.add(trigger)
-                for trigger in triggers_to_remove:
-                    event_to_end.triggers.remove(trigger)
+                if event_to_end.triggers:
+                    for trigger in event_to_end.triggers:
+                        triggers_to_remove.add(trigger)
+                    if triggers_to_remove:
+                        for trigger in triggers_to_remove:
+                            event_to_end.triggers.remove(trigger)
                 if event_to_end.items:
                     remove_items = set()
                     for item in event_to_end.items:
@@ -1147,7 +1130,6 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                     for item in remove_items:
                         event_to_end.items.remove(item)
                         item.event = None
-
                 events.events.remove(event_to_end)
         else:
             print(f"Cannot set event {event_name} as ended event, because it is not present in current_events: {self.event_by_state(1)} (type: { type(self.event_by_state(1))})")
@@ -1229,8 +1211,8 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                                 k, v = inner
                                 for condition in trig.triggers:
                                     if trigger_acts.get(condition) and trigger_acts[condition].get(k) == v:
-                                        print(f"Condition [{k}: {v}] met for {noun_inst}. Will end event now.")
-                                        self.end_event(event, trig, noun_loc)
+                                        #print(f"Condition [{k}: {v}] met for {noun_inst}. Will end event now.")
+                                        self.end_event(event, trig, noun_loc, noun=noun_inst)
                                         return 1, None
                         else:
                             print(f"Could not parse {reason}, type: {type(reason)}")
@@ -1275,10 +1257,10 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                         if isinstance(reason, str):
                             if reason in intake_event.start_trigger["item_trigger"].get("triggered_by"):
                                 #print("The reason is correct, the event should be started.")
-                                event = register_generated_event(event_name, noun_inst)
+                                event = register_generated_event(event_name, noun_inst, reason_str = reason)
                                 self.start_event(event_name = event.name, event = event, noun=noun_inst)
                                 #print("Finished adding event")
-                                return outcome, moved_children
+                                return "success", None # I don't think this will ever have moved_children? If it does I'll need to change things.
 
             if event.no_item_restriction[noun_inst.name] == noun_inst:
                 print(f"Item is part of an existing event: {event}")

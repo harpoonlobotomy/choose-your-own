@@ -2757,3 +2757,5 @@ There's no tv set around here to look at.
 
 7.32pm
 The issue was in assign_colour, as it took strings and got the instance (but not by alt_names, via the inconsistency). Have changed it so it doesn't get the item instance if a colour is provided, so now 'there is no tv' and 'there is no television' presents identically.]
+
+Okay, the issue of iterating None at event_end was in clean_messages, I failed to account for message that /didn't/ have [[]] in them. Fixed now.

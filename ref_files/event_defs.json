@@ -42,7 +42,7 @@
             "cannot_leave": ["work shed", "graveyard"]}},
     "messages": {
         "start_msg": "",
-        "end_msg": "As the padlock falls to the ground and the chain unravells, the graveyard gate creaks open.\n\n You see beyond the threshold of the graveyard, a variety of locations to explore.\n\n [Look at your map to see where else you can go.]\n",
+        "end_msg": "As the padlock falls to the ground and the chain unravells, the graveyard gate creaks open.\n\nYou see beyond the threshold of the graveyard, a variety of locations to explore.\n\n    [Look at your map to see where else you can go.]\n",
         "held_msg": "Until the gate's unlocked, you don't see a way out of here."}},
 
   "moss_dries": {
