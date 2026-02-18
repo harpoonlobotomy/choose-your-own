@@ -143,12 +143,9 @@ def is_loc_current_loc(location=None, cardinal=None):
 def get_transition_noun(noun, format_tuple, input_dict, take_first=False):
     logging_fn()
     local_items_list = registry.get_item_by_location(loc.current)
-    print(f"local items in get_transition_noun: {local_items_list}")
     if hasattr(noun, "is_loc_exterior"):
-        #print(f"has noun.in_loc_ext: {noun.is_loc_exterior}")
         if hasattr(noun, "transition_objs"):
             if isinstance(noun.transition_objs, ItemInstance):
-                #print(f"noun transition objs: {noun.transition_objs}")
                 noun = noun.transition_objs
                 return noun
 
@@ -215,7 +212,6 @@ def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
         if not isinstance(b, ItemInstance):
             if isinstance(b, cardinalInstance):
                 if b == loc.current:
-                    from misc_utilities import smart_capitalise
                     text = smart_capitalise(f"{action} {assign_colour(a)} {direction} {assign_colour(b, card_type = "place_name")}")
                     print(text)
                     item_interactions.add_item_to_loc(a, b)
@@ -351,10 +347,12 @@ def get_cardinal(input_dict:dict) -> ItemInstance:
         if input_dict[i].get("cardinal"):
             return list(input_dict[i].values())[0]["instance"]
 
-def get_location(input_dict:dict) -> ItemInstance:
+def get_location(input_dict:dict, get_str=False) -> ItemInstance:
     logging_fn()
     for i, _ in enumerate(input_dict):
         if input_dict[i].get("location"):
+            if get_str:
+                return list(input_dict[i].values())[0]["text"]
             return list(input_dict[i].values())[0]["instance"]
     get_cardinal(input_dict) # so it tries automatically if fails to get loc.
 
@@ -816,17 +814,29 @@ def find(format_tuple, input_dict):
     """
     noun = get_noun(input_dict)
     location = get_location(input_dict)
-    if not noun:
+    if not noun or isinstance(noun, str):
         noun = get_transition_noun(None, format_tuple, input_dict, take_first=True)
         if not noun:
-            print("I can only look for nouns at the moment.")
-            return
+            noun_str = get_noun(input_dict, get_str=True)
+            if not noun_str:
+                return 0
+            noun = registry.by_name.get(noun_str)
+            if noun:
+                if isinstance(noun, list):
+                    noun = noun[0]
+            if not noun:
+                for word, parts in registry.plural_words.items():
+                    if noun_str in parts:
+                        noun = registry.by_name.get(word)
+                        if isinstance(noun, list):
+                            noun = noun[0] # arbitrarily take the first.
+            if not noun:
+                return 0
 
     if not location:
         location = loc.current.place
-    if not isinstance(location, placeInstance):
-        if isinstance(location, cardinalInstance):
-            location = location.place
+    if not isinstance(location, placeInstance) and isinstance(location, cardinalInstance):
+        location = location.place
 
     local_items = set()
     items_at = {}
@@ -837,15 +847,21 @@ def find(format_tuple, input_dict):
             local_items = local_items | set(items)
             items_at[cardinal_inst] = set(items)
 
-    if local_items:
-        if noun in local_items:
-            for card in items_at:
-                if noun in items_at[card]:
-                    #if len(items_at) == 1:
-                    print(f"There's a {assign_colour(noun)} at {assign_colour(card.place_name, "loc")}, is that what you were looking for?")
-                    return card
-            print(f"Somehow {noun.name} wasn't found in the location dict, but is in local_items. Something broke.")
-    print("end of def find(); something must have gone wrong.")
+    if local_items and noun in local_items:
+        look(format_tuple, input_dict)
+        return 1
+
+    if "inventory_place" in noun.location.place_name:
+        print(f"There's a {assign_colour(noun)} in your inventory, is that what you were looking for?")
+        return 1
+
+    print(f"There's a {assign_colour(noun)} at {assign_colour(noun.location.ern_name, "loc")}, is that what you were looking for?")
+    return 1
+    #for card in items_at:
+    #    if noun in items_at[card]:
+    #        #if len(items_at) == 1:
+    #        print(f"There's a {assign_colour(noun)} at {assign_colour(card.place_name, "loc")}, is that what you were looking for?")
+    #        return card
 
 
 def read(format_tuple, input_dict):
@@ -1498,7 +1514,7 @@ def take(format_tuple, input_dict):
                             if item != noun_inst and item.location == loc.current: # maybe I should replace the above with this. Don't worry about the whole 'make a dict of local names' thing, just check the location of inst by name directly.
                                 print(f"There's another {noun_inst.name} here, but it was not found in local_items. This means the item location wasn't assigned properly, something is broken.")
 
-            print(f"{assign_colour(noun_inst)} is already in your inventory.")
+            print(f"The {assign_colour(noun_inst)} {is_plural_noun(noun_inst)} already in your inventory.")
             return 1, added_to_inv
         else:
             if hasattr(noun_inst, "can_pick_up") and noun_inst.can_pick_up:
@@ -1610,14 +1626,17 @@ def put(format_tuple, input_dict, location=None):
             if hasattr(noun, "contained_in") and noun2 == noun.contained_in:
                 print(f"{noun2.name} is already in {noun}")
                 return
-            registry.move_item(inst=get_noun(input_dict), new_container=(get_noun(input_dict, 2)))
-            if noun in game.inventory:
-                game.inventory.remove(get_noun(input_dict))
-                if noun in game.inventory:
-                    exit(f"{assign_colour(get_noun(input_dict))} still in inventory, something went wrong. Exiting.")
+            registry.move_item(noun, new_container=noun2)
+            if noun in loc.inv_place.items or noun in registry.by_location[loc.inv_place]:
+                if noun in loc.inv_place.items:
+                    loc.inv_place.items.remove(noun)
+                if noun in registry.by_location[loc.inv_place]:
+                    registry.by_location[loc.inv_place].remove(noun)
+
+                if noun in loc.inv_place.items or noun in registry.by_location[loc.inv_place]:
+                    exit(f"{assign_colour(noun)} still in inventory, something went wrong. Exiting.")
             else:
-                from misc_utilities import smart_capitalise
-                text = smart_capitalise(f"{action_word} {assign_colour(get_noun(input_dict))} {sem_or_dir} {assign_colour(get_noun(input_dict, 2))}")
+                text = smart_capitalise(f"{action_word} {assign_colour(noun)} {sem_or_dir} {assign_colour(noun2)}")
                 print(text)
             return
 

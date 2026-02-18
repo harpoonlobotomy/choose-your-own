@@ -61,7 +61,7 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                 elif item == "no_items":
                     no_items_text = long_dict[item]
                 elif item == "no_starting_items":
-                     no_starting_items = long_dict["no_starting_items"]
+                     no_starting_items = long_dict[item]
                 else:
                     if item:
                         if itemRegistry.registry.instances_by_name(item) and local_items:
@@ -95,8 +95,6 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
 
             if len(long_desc) == 1 and no_items_text:
                 if local_items:
-                    if no_starting_items:
-                        long_desc.append(no_starting_items)
                     for loc_item in local_items:
                         if not long_dict.get(loc_item):
                         #    print("pass, assume already included.")

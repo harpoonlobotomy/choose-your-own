@@ -25,11 +25,12 @@ def instance_name_in_inventory(inst_name:str)->ItemInstance:
 
 def show_map(noun):
     #bring the noun in here in case there are multiple maps later.
-    print()
-    print_green("<     Showing Map.     >", invert=True)
-    from config import map_file
-    import os
-    os.startfile(map_file)
+    from config import show_map, map_file
+    if show_map:
+        print()
+        print_green("<     Showing Map.     >", invert=True)
+        import os
+        os.startfile(map_file)
 
 def look_at_item(item_inst, entry): ## this is just using everything from registry. Should really just be in registry....
     if isinstance(item_inst, ItemInstance):

@@ -48,10 +48,11 @@
     "alt_names": [],
     "north": {
       "item_desc": {
-        "generic": "This is the north part of a tree..."
+        "generic": "This is the north part of a tree. You see ",
+        "no_items": "There doesn't seem to be anything here."
       },
-      "short_desc": "The northern tree parts are ",
-      "items": {}
+      "short_desc": "The northern tree parts are",
+      "items": {"carved stick": {}, "wallet": {}}
     },
     "east": {
       "item_desc": {
@@ -101,7 +102,6 @@
         "generic": "You see a variety of headstones, most quite worn, and ",
         "moss": "decorated by clumps of [[]]",
         "glass jar": "a [[]] being used as a vase in front of one of the headstones, with some dried flowers left long ago",
-        "no_starting_items": "not too much else - ",
         "no_items": "not much else. It's quite empty here..."
       },
       "short_desc": "sit a variety of headstones",

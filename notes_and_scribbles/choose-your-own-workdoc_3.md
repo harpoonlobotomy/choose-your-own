@@ -2936,71 +2936,17 @@ So that's nice. 3.5mb for the full initialisation and run isn't too bad, I think
 
 2.43pm
 Hm.
-[[  go east  ]]
-
-You turn to face the east graveyard
-
-You see a variety of headstones, most quite worn, and decorated by clumps of moss, and a glass jar being used as a vase in front of one of the headstones, with some dried flowers left long ago.
-
-[[  look around  ]]
-
-
-You're in a rather poorly kept graveyard - smaller than you might have expected given the scale of the gate and fences.
-The entrance gates are to the north. To the east sit a variety of headstones, to the south stands a mausoleum, and to the west is what looks like a work shed of some kind.
 
 'look around' has an extra newline. Need to fix that.
 I wouldn't mind adding another newline before the input print though. It's a bit claustrophobic.
 
-Hm. the newlines overall are inconsistent.
+...
 
-#   [[  take padlock  ]]
-#
-#   The padlock is now in your inventory.
-#
-#
-#   [[  look at door  ]]
----
-#   [[  find carved stick  ]]
-#
-#   There's no carved stick around here to find.
-#
-#
-#   [[  take carved stick  ]]
-#
-#   There's no carved stick around here to take.
-#
-#   [[  go to east graveyard  ]]
----
-#   [[  go east  ]]
-#
-#   You turn to face the east city hotel room
-#
-#   Against the wall is a large television, sitting between two large windows overlooking the city.
-#
-#   [[  look at tv  ]]
-#
-#   You look at the tv set:
-#
-#      A decent looking TV set, probably a few years old but appears to be well kept. Currently turned off. This model has a built-in DVD player.
-#
-#   [[  go to tree  ]]
-
-Need to work on that. Really just need to define the surrounding newlines in def router and not touch them otherwise. Well router and the failure print. Those are the two terminal points for any command.
-
-#   [[  take matchbox  ]]
-#
-#   The matchbox is now in your inventory.
-#
-#
-#   [[  burn magazine with matchbox  ]]
-#
-#   There's no magazine around here to burn the matchbox with.
-#
-#   [[  go to north testing grounds  ]]
-
+The newlines overall are inconsistent.
+...
 So is it 'the following one succeeded' that does it?
 
-I think so. It was the extra \n in print_failure_message.
+It was the extra \n in print_failure_message.
 
 Also:
 [[  take dried flowers  ]]
@@ -3011,3 +2957,76 @@ Dried flowers fall from the broken glass jar.
 
 Need to add caps to the 'already in inventory' print.
 
+3.14pm
+For the moment, going to fix descriptions. Should be easy enough.
+
+So, the issue is:
+
+ "no_starting_items": "not too much else - ",
+
+ It's because it does
+
+if len(long_desc) == 1 and no_items_text:
+    if local_items:
+        if no_starting_items:
+            long_desc.append(no_starting_items)
+and then appends the item(s), which means when it comes to the formatter, it has three parts.
+
+Maybe I merge the start text with no_starting_items so it only counts for one. With one item and a total of two it would print
+
+        item_description = (f"{long_desc[0]}{long_desc[1]}")
+
+But no, then it would still be broken if there was two extra items. Maybe I just remove the starting_items print if there are additional items at all.
+
+Okay. Have just removed starting_items print entirely, so it's just
+#   You see a variety of headstones, most quite worn, and some broken glass shard.
+
+Now to deal with 'some broken glass shard'.
+the item name is 'broken glass shard'. So I assume it's checking for plurality to get the 'some' (as it's not part of the item def) but not using the plural nicename properly. Assign_colour /does/ request nicename for loc_items
+
+ITEM: <ItemInstance broken glass shard / (0c469e89-d79f-4835-8f71-b349f4492508) / east graveyard / <eventInstance item_is_broken (f8963d8e-9998-4c96-b105-20f7529e159b, event state: 0>/ 3>, print_name: broken glass shard, nicename: some broken glass shard
+
+Okay so in init_descriptions (itemReg):
+Not description: broken glass shard, description: None // descriptions: {'if_singular': 'a shard of broken glass.', 'if_plural': 'a scattering of broken glass.'}
+ITEM: <ItemInstance broken glass shard / (09ff5abc-dc80-4674-bb73-cece5612eba8) / north no_place / None/ 0>, print_name: broken glass shard, nicename: some broken glass shard
+
+Oh, it's because nicenames is wrong:
+NICENAMES: {'generic': 'some broken glass shard'}
+
+Hm.
+self.nicenames: {'generic': 'some broken glass shard'}
+Even printing it in init. Maybe it's wrong in item_dict_gen.
+
+3.35pm
+generator item defs: {'alt_names': ['broken glass shards', 'glass shards', 'shards of glass', 'shard of glass', 'shard', 'shards'], 'can_pick_up': True, 'descriptions': {'if_singular': 'a shard of broken glass.', 'if_plural': 'a scattering of broken glass.'}, 'has_multiple_instances': 3, 'single_identifier': 'shard', 'plural_identifier': 'shards', 'item_size': 'small_flat_things', 'item_type': ['can_pick_up', 'is_cluster', 'standard'], 'nicenames': {'if_singular': 'a glass shard', 'if_plural': 'a few shards of glass'}, 'slice_attack': 10, 'slice_defence': 4, 'smash_attack': 2, 'smash_defence': 2, 'material_type': 'generic', 'on_break': 'broken [[item_name]]'}
+Nope, generator has it right.
+
+Okay. So by the end of itemreg init_single, it's already
+`'nicenames': {'generic': 'some broken glass shard'}`
+
+okay, fixed:
+You see a variety of headstones, most quite worn, and a few shards of glass.
+
+It was the compound instancing in event_reg; it disregarded the base item's nicenames.
+Now, it only does that if there's no existing 'nicenames'.
+Now that might not be suitable. In this case, the resulting object was its own object. But if I'm going
+'break lamp'
+the nicename should be 'a broken lamp'
+
+Okay. So now it checks if the thing is a cluster and if it doesn't have is_broken already - if it does, then it's a premade 'broken' item, otherwise it's 'broken x'. Might need adjustment but it's better. Also fixed the 'dried flowers already in inventory', made it
+#   (f"The {assign_colour(noun_inst)} {is_plural_noun(noun_inst)} already in your inventory.")
+so that's a solid improvement.
+
+With the descriptions done:
+find x: I'd like to expand it. I think we need to route from the error print fn back to find, which is weird but I think necessary for it to work, otherwise I have to allow non-local for the entire parser or start judging nouns based on verb mid-parse, which I don't want to do.
+
+Fixed a random check for game.inventory that was still in verb_actions. Need to clear out any more of those.
+
+Hm.
+'find branch' fails for a specific reason. It makes it through the parser, because 'branch' finds 'forked tree branch' loc. There is a branch noun, but it's not found because it's not local.
+Oh wait, it's not called branch at all. Oops.
+
+5.07pm
+Have updated def find(), it now checks for noun.text and checks for a word/compound word against that text, and produces the output accordingly. If it finds nothing (so your input isn't an item anywhere), then it goes back to print_errors for 'There's no x to find'. Pleased with that.
+
+Okay. Have re-fixed the event messages for the moss, the formatting was a little broken and I was getting errors from that particular branch of eventReg. 

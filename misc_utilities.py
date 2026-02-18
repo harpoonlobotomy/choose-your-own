@@ -1,5 +1,5 @@
 from env_data import cardinalInstance, placeInstance
-from itemRegistry import ItemInstance
+from itemRegistry import ItemInstance, registry
 from logger import logging_fn
 
 ## utilities to be used by any script at any point
@@ -176,9 +176,17 @@ def print_failure_message(input_str, message=None, idx_kind=None, init_dict=None
         return
 
     verb = get_verb(init_dict)
+
     if not verb:
         print(f"Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
         return
+    from verb_actions import get_noun
+    if verb.name == "find":
+        noun = get_noun(init_dict)
+        if noun and isinstance(noun, str) and get_noun(init_dict, get_str=True) != noun: # == assumed noun
+            from verb_actions import find
+            if find(format_tuple=format, input_dict=init_dict):
+                return
 
     if not idx_kind:
         print(f"Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
@@ -389,7 +397,7 @@ def get_itemname_from_sqrbrkt(string, noun):
     for part in other_parts:
         if part == item_name_raw:
             continue
-        joined.append(part.strip())
+        joined.append(part)
     compiled_str = "".join(joined)
     return compiled_str
 
@@ -487,6 +495,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
                 if isinstance(item, placeInstance):
                     item=item.name
                 if isinstance(item, ItemInstance):
+                    #print(f"ITEM: {item}, print_name: {item.print_name}, nicename: {item.nicename}")
                     item = item.print_name
             else:
                 colour=cardinals[Colours.colour_counter%len(cardinals)]
@@ -549,15 +558,6 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
         item=switch_the(item)
     if caps:
         item = smart_capitalise(item)
-
-    #if colour == None:
-    #    colour=cardinals[Colours.colour_counter%len(cardinals)]
-    #    colour=cardinal_cols[colour]
-    #    Colours.colour_counter += 1
-    #    bld=True
-
-    #if colour == None:
-        #print(f"Colour is None. Item: ({item}). Type: ({type(item)})")
 
     if not_bold:
         bld=False

@@ -208,7 +208,7 @@ class Membrane:
         self.all_verb_names = verbs_set
         self.combined_wordphrases = combined_wordphrases
 
-        from env_data import loc_dict, locRegistry
+        from env_data import loc_dict
         self.locations = list(loc_dict.keys())
 
         self.nouns_list = list(registry.item_defs.keys())
@@ -410,16 +410,6 @@ def immediate_commands(input_str):
     print_yellow("Exiting immediate_commands.\n")
     return
 
-test_input_list = ["take the paperclip", "take the paperclip", "pick up the glass jar", "put the paperclip in the wallet", "place the dried flowers on the headstone", "look at the moss", "examine the damp newspaper", "read the puzzle mag", "read the fashion mag in the city hotel room", "open the glass jar", "close the window", "pry open the TV set", "smash the TV set", "break the glass jar", "clean the watch", "clean the severed tentacle", "mix the unlabelled cream with the anxiety meds", "combine the fish food and the moss", "eat the dried flowers", "consume the fish food", "drink the unlabelled cream", "burn the damp newspaper", "burn the fashion mag in the graveyard", "throw the pretty rock", "lob the pretty rock at the window", "chuck the glass jar into the glass jar", "drop the wallet", "discard the paper scrap with number", "remove the batteries from the TV set", "add the batteries to the mobile phone", "put the car keys in the plastic bag", "set the watch", "lock the window", "unlock the window", "shove the TV set", "move the headstone", "barricade the window with the TV set", "separate the costume jewellery", "investigate the exact thing", "observe the graveyard", "watch the watch", "leave the graveyard", "depart", "go", "take the exact thing", "put the severed tentacle in the glass jar", "open the wallet with the paperclip", "read the mail order catalogue at the forked tree branch", "pick the moss", "pick the watch", "pick up moss", "throw anxiety meds", "put batteries into watch", "clean a glass jar"]
-
-#test_input_list = ["go west", "go north", "go to shed", "go north", "go to work shed", "go north", "go to shed door", "go to work shed door", "open door", "close door", "open shed door", "close shed door", "go into shed", "open door", "go into work shed", "go into work shed", "leave shed", "inventory", "drop mag", "take mag", "drop mag at church", "go into work shed", "open work shed door", "open door", "go into shed", "take map", "take key", "go to north graveyard", "use key on padlock", "lock padlock with key", "unlock padlock with key", "take padlock", "go to city hotel room", "find tv set", "look at tv set"]
-
-#test_input_list = ["go west", "open door", "enter shed", "take map", "take key", "go to north graveyard", "look at gate", "exit"]#, "unlock padlock with key", "look at gate", "pick up padlock", "go to city hotel room", "find tv set", "go to east graveyard", "take jar", "break jar"]
-
-test_input_list = ["go east", "look around", "take glass jar", "break jar", "pick up glass shard", "drop glass shard", "take dried flowers", "go west", "look at door", "open door", "enter shed", "take map", "read map", "take key", "north graveyard", "use key on padlock", "take padlock", "look at door", "go to city hotel room", "go east", "look at tv", "go to tree", "find carved stick", "take carved stick", "go to east graveyard", "take moss", "take moss", "take moss", "look around", "go to work shed", "drop moss", "go to south graveyard", "take matchbox", "burn magazine with matchbox", "go to north testing grounds", "go to graveyard", "read magazine"]
-#test_input_list = ["east", "break jar", "break flowers with hammer"]
-#test_input_list = ["logging args", "take stick", "approach the forked tree branch", "look around"]
-
 import json
 class UserEncoder(json.JSONEncoder):
     def default(self, o):
@@ -435,6 +425,8 @@ class UserEncoder(json.JSONEncoder):
         elif isinstance(o, set):
             return list(o)
         return super().default(o)
+
+from notes_and_scribbles.test_commands import input_command_list
 
 input_outcome_dict = {}
 import config
@@ -566,7 +558,7 @@ def run_membrane(input_str=None, run_tests=False):
 
     if run_tests:
         from time import sleep
-        test_inputs = test_input_list
+        test_inputs = input_command_list
         for i, input_str in enumerate(test_inputs):
 
             print()

@@ -401,6 +401,8 @@ class itemRegistry:
 
         self.init_descriptions(inst)
 
+        #if inst.name == "broken glass shard":
+        #    print(vars(inst))
         return inst
 
     def get_item_from_defs(self, item_name):
@@ -1320,9 +1322,7 @@ class itemRegistry:
         if inst.nicenames.get("if_plural") and inst.has_multiple_instances > 1:
                 inst.nicename = inst.nicenames["if_plural"]
 
-
         if description:
-            #print(f"DESCRIPTION: {description}")
             inst.description = description
             return
 

@@ -1,5 +1,3 @@
-#config.py
-#just here to hold this value for now. Maybe more later.
 
 enable_tui: bool = False
 
@@ -14,13 +12,12 @@ white_bg = True
 print_items_in_area = False#True
 print_input_str = True
 
+show_map = False
 map_file = r"archived\map.png" # it keeps getting corrupted, and I wonder if it's because it's not part of a commit yet. Putting it here for now.
-
 
 item_data = r"ref_files\items_main.json"
 loc_data = r"ref_files\loc_data.json"
 event_data = r"ref_files\event_defs.json"
-
 
 usual_start = "graveyard"
 test_start = "testing grounds"

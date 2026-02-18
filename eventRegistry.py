@@ -501,8 +501,10 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
             action = "on_break"
         #print(f"state change: {state_change}")
         item_entry["material_type"] = state_change
-        item_entry[action] = None
-        item_entry["nicenames"] = {"generic": f"some {item_name}"}
+        #if not item_entry["nicenames"]:
+        if "is_cluster" in item_entry["item_type"] and not item_entry.get("is_broken"):
+            item_entry["nicenames"] = {"generic": f"some {item_name}"}
+            item_entry[action] = None
         return item_entry
 
 
@@ -769,7 +771,6 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                     if print_txt:
                         print(holder.msgs["held_msg"])
                     return holder.msgs["held_msg"]
-
             else:
                 if event.state == 1:
                     if event.msgs.get("held_msg"):
@@ -1015,7 +1016,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
 
     def end_event(self, event_name, trigger:Trigger=None, noun_loc=None, noun=None):
         logging_fn()
-
+        print(f"end_event: {event_name}, trigger: {trigger}, noun: {noun}")
         print_desc_again = False # Use to reprint the local description if items have become unhidden. Do it in a better way later, for now this will do.
         if isinstance(event_name, str):
             event_to_end = self.event_by_name(event_name)
@@ -1179,7 +1180,6 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                         exit()
 
                     if trig.is_item_trigger and trig.item_inst == noun:
-                        #print(f"INST IS TRIG ITEM: {noun}")
                         if isinstance(reason, str):
                             if reason in trig.triggers:
                                 #print(f"reason in trig.triggers: {trig.triggers}")
@@ -1191,9 +1191,10 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                                         if exception == "current_loc_is_inside":
                                             from env_data import locRegistry
                                             if locRegistry.current.place.inside:
-                                                self.play_event_msg(self, msg_type="exception", event=None, print_txt=True, noun=noun)
+                                                self.play_event_msg( msg_type="exception", event=event, print_txt=True, noun=noun)
                                                 #print("Not ending because you're inside.")
-                                                return 0, None
+                                                return 1, None
+                                    print(f"No viable exceptions for {event}, noun: {noun}")
 
 
                                 #print("ENDING EVENT VIA IS_EVENT_TRIGGER")
