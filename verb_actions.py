@@ -2,8 +2,6 @@
 ### Interface between item_actions and the verbs.
 
 #import time
-from time import sleep
-from xml.etree.ElementInclude import include
 from logger import logging_fn, traceback_fn
 from env_data import cardinalInstance, locRegistry as loc, placeInstance
 from interactions import item_interactions
@@ -389,6 +387,28 @@ def get_nouns(input_dict):
     noun_2 = get_noun(input_dict, 2)
     return (noun, noun_2)
 
+
+def get_nouns_w_str(input_dict):
+
+    """Return up to two nouns `entry['instance']` + `entry['text']` from input_dict.
+
+    Returns `noun, noun_str, noun2, noun2_str`, with any not found being `None`."""
+
+    noun_counter = 0
+    noun = noun_str = noun2 = noun2_str = None
+
+    for data in input_dict.values():
+        for kind, entry in data.items():
+            if "noun" in kind:
+                noun_counter += 1
+                if noun_counter == 2:
+                    noun2 = entry["instance"]
+                    noun2_str = entry["text"]
+                else:
+                    noun_str = entry["text"]
+                    noun = entry["instance"]
+
+    return noun, noun_str, noun2, noun2_str
 
 def get_location(input_dict:dict, get_str=False) -> cardinalInstance|placeInstance:
     logging_fn()
@@ -897,23 +917,18 @@ def read(format_tuple, input_dict):
                 print(assign_colour(to_print, "b_yellow"))
 
             if hasattr(noun, "is_map"):
-                from interactions.item_interactions import show_map
-                show_map(noun)
+                item_interactions.show_map(noun)
 
-            #if hasattr(noun_inst, "can_pick_up") and hasattr(noun_inst, "location") and noun_inst.location != None:
-            #    take(format_tuple, input_dict)
-            #else:
             if hasattr(noun, "event"):
                 from eventRegistry import events
                 outcome, moved_children = events.is_event_trigger(noun, noun.location, "item_is_read")
                 if moved_children:
                     print_moved_children(moved_children, noun, outcome)
-                 # just check, in case it's a street sign or something that you can't pick up but might still be a trigger. Unlikely but silly to exclude it arbitrarily.
+
             return
 
         else:
             look(format_tuple, input_dict)
-            #print(f"It seems like you can't read the {assign_colour(noun_inst)}") # just look at it instead of saying this.
             return
 
     print(f"You can't see a {assign_colour(noun)} to read.")
@@ -1313,13 +1328,11 @@ def simple_open_close(format_tuple, input_dict):
         print(f"You can't do that right now.\n[{noun_inst} / {meaning}]")
         return
 
-    from interactions.item_interactions import is_loc_ext
-
-    outcome = is_loc_ext(noun_inst)
+    outcome = item_interactions.is_loc_ext(noun_inst)
     if outcome:
         if get_noun(input_dict, 2):
             noun_inst_2 = get_noun(input_dict, 2) # pleased with this bit. Makes 'open work shed door' work cleanly without having to adjust the parser.
-            test = is_loc_ext(noun_inst, return_trans_obj=True)
+            test = item_interactions.is_loc_ext(noun_inst, return_trans_obj=True)
             if test == noun_inst_2:
                 noun_inst = noun_inst_2
         else:
@@ -1501,8 +1514,7 @@ def take(format_tuple, input_dict):
     #noun = verb_requires_noun(input_dict, "take", local=True)
     added_to_inv = False
 
-    from interactions.item_interactions import find_local_item_by_name
-    find_local_item_by_name(noun, verb=get_verb(input_dict), access_str=None, current_loc=loc.current)
+    item_interactions.find_local_item_by_name(noun, verb=get_verb(input_dict), access_str=None, current_loc=loc.current)
     #exit()
     def can_take(noun_inst):
         logging_fn()
@@ -1908,8 +1920,7 @@ def use_item(format_tuple, input_dict):
 
     noun = verb_requires_noun(input_dict, "use", local=True)
     if "map" in noun.name:
-        from interactions.item_interactions import show_map
-        show_map(noun)
+        item_interactions.show_map(noun)
         return
 
     print(f"Cannot process {input_dict} in def use_item() End of function, unresolved. (Function not yet written)")

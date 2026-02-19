@@ -14,15 +14,6 @@ def look_at(response):
     print(f"Response: {response}")
 
 
-def instance_name_in_inventory(inst_name:str)->ItemInstance:
-    logging_fn()
-    from set_up_game import game
-    item_entry = registry.instances_by_name(inst_name)
-    if item_entry and isinstance(item_entry, list):
-        for entry in item_entry:
-            if entry in game.inventory:
-                return entry
-
 def show_map(noun):
     #bring the noun in here in case there are multiple maps later.
     from config import show_map, map_file
@@ -31,6 +22,7 @@ def show_map(noun):
         print_green("<     Showing Map.     >", invert=True)
         import os
         os.startfile(map_file)
+
 
 def look_at_item(item_inst, entry): ## this is just using everything from registry. Should really just be in registry....
     if isinstance(item_inst, ItemInstance):
@@ -58,12 +50,7 @@ def look_at_item(item_inst, entry): ## this is just using everything from regist
             if hasattr(item_inst, "is_open") and item_inst.is_open:
                 verb_actions.print_children_in_container(item_inst)
 
-            #print(f"game.map_item id: {game.map_item.id}")
-            #print(f"item_inst id: {item_inst.id}")
             if hasattr(item_inst, "is_map"):
-            #from set_up_game import game
-            #if item_inst == game.map_item:
-                #print("item inst is map")
                 show_map(item_inst)
 
 
@@ -132,19 +119,7 @@ def is_loc_ext(noun:ItemInstance, return_trans_obj=False) -> str|None:
 
     return None
 
-#container, reason_val = registry.check_item_is_accessible(noun_inst)
-no_containers = ["only_loc_no_containers", "loc_w_inv_no_containers"]
-no_inventory = ["not_in_inv", "only_loc_no_containers"]
-no_local = ["inv_and_inv_containers"]
 
-verb_to_noun_access = {
-    "inv_and_inv_containers": ["drop"], # only things in inventory, including recursion.
-    "all_local": ["look", "find"], # everything accessable, carried/ local/etc
-    "not_in_inv": ["take"], # includes local containers, just nothing I'm already carrying.
-    "only_loc_no_containers": [""], # No idea what would call for this tbh. It's just 'stuff you can see around you'.
-    "loc_w_inv_no_containers": [""] # this one either. This'll take some development.
-    }
-#note: inv_containers must be open.
 def recurse_items_from_list(input_list:list) -> set:
 
     children = set()
@@ -160,99 +135,112 @@ def recurse_items_from_list(input_list:list) -> set:
                     children.add(child)
     return children
 
+#container, reason_val = registry.check_item_is_accessible(noun_inst)
+no_containers = ["only_loc_no_containers", "loc_w_inv_no_containers"]
+no_inventory = ["not_in_inv", "only_loc_no_containers"]
+no_local = ["inv_and_inv_containers"]
 
-def find_local_item_by_name(noun:ItemInstance=None, verb=None, access_str:str="all_local", current_loc:cardinalInstance=None) -> set:
-    ## DO NOT FORGET ABOUT place(/or card, which is it).loc_exterior_items
-## First we have to build the relevant local_items for the search. This should probably be a primary function to use elsewhere tbh but this'll do for now.
-    location = None
-    if access_str and verb:
-        for kind, values in verb_to_noun_access.items():
-            if verb.name in values:
-                if access_str != kind:
-                    print(f"Conflict between access_str `{access_str}` and the verb's allocation: `{kind}`. Will continue with access_str, but the conflict should be remedied.")
-                break
+scope_to_verb = {
+    "inv_and_inv_containers": ["drop"], # only things in inventory, including recursion.
+    "all_local": ["look", "find"], # everything accessable, carried/ local/etc
+    "not_in_inv": ["take"], # includes local containers, just nothing I'm already carrying.
+    "only_loc_no_containers": [""], # No idea what would call for this tbh. It's just 'stuff you can see around you'.
+    "loc_w_inv_no_containers": [""] # this one either. This'll take some development.
+    }
 
-    elif not access_str and verb:
-        for kind, values in verb_to_noun_access.items():
-            if verb.name in values:
-                access_str = kind
-                break
-        if not access_str:
-            print(f"Verb `{verb.name}` could not find a match in verb allocation.\nExpected one of:\n{list(verb_to_noun_access)}. Cannot continue.")
-            exit()
 
-    elif access_str and not verb:
-        if not verb_to_noun_access.get(access_str):
-            print(f"find_local_items access_str is not a valid key: {access_str}. Expected one of:\n{list(verb_to_noun_access)}. Cannot continue.")
-            exit()
+def find_local_item_by_name(noun:ItemInstance=None, verb=None, access_str:str="all_local", current_loc:cardinalInstance=None) -> ItemInstance|set:
+    """
+    Builds relevant items set using verb scope derived from `access_str` or `verb`'s status in `verb_to_noun_access`. If `noun` provided, returns the relevant `ItemInstance` of that name if found. If no `noun` provided, returns the full set.
+    """
+    logging_fn()
+    def build_relevant_items_set(verb=None, access_str=None, current_loc=None) -> set:
+        logging_fn()
+        location = None
+        if access_str and verb:
+            for kind, values in scope_to_verb.items():
+                if verb.name in values:
+                    if access_str != kind:
+                        print(f"Conflict between access_str `{access_str}` and the verb's allocation: `{kind}`. Will continue with access_str, but the conflict should be remedied.")
+                    break
 
-### Processing starts now we have an access_str to work with. ###
-## Get inventory items.
-    inv_items = None
-    if access_str in no_inventory:
+        elif not access_str and verb:
+            for kind, values in scope_to_verb.items():
+                if verb.name in values:
+                    access_str = kind
+                    break
+            if not access_str:
+                print(f"Verb `{verb.name}` could not find a match in verb allocation.\nExpected one of:\n{list(scope_to_verb)}. Cannot continue.")
+                exit()
+
+        elif access_str and not verb:
+            if not scope_to_verb.get(access_str):
+                print(f"find_local_items access_str is not a valid key: {access_str}. Expected one of:\n{list(scope_to_verb)}. Cannot continue.")
+                exit()
+        else:
+            access_str = "all_local" # arbitrarily get all, so it can be called with no args and still work for getting all local items.
+
+    # Now we know what's excluded, made the set.
         inv_items = None
-    else:
-        inv_items = loc.inv_place.items
-    if inv_items and access_str not in no_containers:
-        children = recurse_items_from_list(inv_items)
-        if children:
-            inv_items = set(children|set(inv_items))
+        if access_str in no_inventory:
+            inv_items = None
+        else:
+            inv_items = loc.inv_place.items
+        if inv_items and access_str not in no_containers:
+            children = recurse_items_from_list(inv_items)
+            if children:
+                inv_items = set(children|set(inv_items))
 
-    if access_str in no_local:
-        loc_items = None
-    else:
-        if current_loc and isinstance(current_loc, cardinalInstance):
-            location = current_loc
-        elif current_loc and isinstance(current_loc, str):
-            location = loc.by_cardinal_str(current_loc)
-        elif (not current_loc or not location) and noun:
-            location = noun.location
-            if not location:
-                #assume current.
+        if access_str in no_local:
+            loc_items = None
+        else:
+            if current_loc and isinstance(current_loc, cardinalInstance):
+                location = current_loc
+            elif current_loc and isinstance(current_loc, str):
+                location = loc.by_cardinal_str(current_loc)
+            elif (not current_loc or not location) and noun:
+                location = noun.location
+            if not location: #assume current.
                 from env_data import locRegistry
                 location = locRegistry.current
-       #else:
-        #    print("Cannot get location: no location provided and no noun to take location from. Cannot continue; exiting.")
-        #    exit()
-        loc_items = registry.get_item_by_location(location)
 
-        if loc_items and access_str not in no_containers:
-            children = recurse_items_from_list(loc_items)
-            if children:
-                loc_items = set(children|set(loc_items))
+            loc_items = registry.get_item_by_location(location)
 
-        if access_str in no_inventory and not loc_items:
-            print("No local items at all. Returning.")
-            return
+            if loc_items and access_str not in no_containers:
+                children = recurse_items_from_list(loc_items)
+                if children:
+                    loc_items = set(children|set(loc_items))
 
-    final_items = ((inv_items | (set(loc_items) if isinstance(loc_items, list) else loc_items)) if inv_items else set(loc_items))
+            if access_str in no_inventory and not loc_items:
+                print("No local items at all. Returning.")
+                return
 
-    if hasattr(location, "transition_objs") and location.transition_objs:
-        #print(f"LOCATION: TRANSITION OBJS: {location.transition_objs}")
-        for item in location.transition_objs:
-            print(f"TRANS ITEM: {item}, item_type: {type(item)}")
-            final_items.add(item)
-        #for item, val in location.transition_objs.items():
-        #    print(f"TRANS ITEM: {item}, item_type: {type(item)}, val: {val}")
+        final_items = ((inv_items | (set(loc_items) if isinstance(loc_items, list) else loc_items)) if inv_items else set(loc_items))
 
-            #TRANS ITEM: wooden door, item_type: <class 'str'>, val: {'enter_location': 'north work shed', 'exit_to_location': 'west graveyard'}
-    print(f"FINAL ITEMS for location {location} for noun {noun}:::\n{final_items}\n\n")
-    if noun:
-        print("Here is where we check the set we've made against the name")
-    else:
-        print("No noun given, will just return the set wholecloth.")
+        if hasattr(location, "transition_objs") and location.transition_objs:
+            for item in location.transition_objs:
+                final_items.add(item)
+
         return final_items
-    #exit()
-        #if hasattr(location, "transition_objs") and location.transition_objs:
-        #    for item, val in location.transition_objs.items():
-        #        print(f"ITEM `{item}` type: {type(item)}")
-        #        exit()
-        #        loc_items.append(item)
 
+    final_items = build_relevant_items_set(verb, access_str, current_loc)
+    ## Finally test if a match for noun if noun, else return final_items.
+    if noun:
+        if isinstance(noun, ItemInstance):
+            if noun in final_items and not has_and_true(noun, "is_hidden"):
+                return noun
+            noun_name = noun.name
+        elif isinstance(noun, str):
+            noun_name = noun
 
+        if registry.by_alt_names.get(noun_name):
+            noun_name = registry.by_alt_names.get(noun_name)
+
+        for item in final_items:
+            if item.name == noun_name and not has_and_true(item, "is_hidden"):
+                return item
+
+    else:
+        return final_items
 
         # includes trans obj, inv and inv containers, local items + items in open local containers (I don't yet have the discovered tag but need it for this, really - I don't want to tell you 'that open jar has a thing in it', but if you've already found it then I don't mind listing it as an option. For now I'll just use open containers but that needs doing, #TODO at some time.)
-
-
-    #from verb_membrane import membrane
-    #if membrane.local_dict.get(noun.name):

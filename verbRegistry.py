@@ -627,17 +627,20 @@ class Parser:
         from interactions.item_interactions import find_local_item_by_name
         local_nouns = find_local_item_by_name()
         clean_nouns  = {}
-        for item in local_nouns:
-            clean_nouns[item.name] = item
-            if " " in item.name:
-                if not membrane.plural_words_dict.get(item.name):
-                    parts = item.name.split(" ")
-                    membrane.plural_words_dict[item.name] = tuple(parts)
+        if not local_nouns:
+            clean_nouns = set()
+        else:
+            for item in local_nouns:
+                clean_nouns[item.name] = item
+                if " " in item.name:
+                    if not membrane.plural_words_dict.get(item.name):
+                        parts = item.name.split(" ")
+                        membrane.plural_words_dict[item.name] = tuple(parts)
 
         membrane.local_dict = clean_nouns
         membrane.local_nouns = list(clean_nouns)
 
-        membrane.get_local_nouns() # membrane.local_nouns = list of names. membrane.local_dict = dict of name[instance]# Switch to usin the dict instead and ditch the list later.
+        #membrane.get_local_nouns() # membrane.local_nouns = list of names. membrane.local_dict = dict of name[instance]# Switch to usin the dict instead and ditch the list later.
 
         tokens = self.tokenise(input_str, nouns_list, locations, directions, cardinals, membrane)
         if not tokens:

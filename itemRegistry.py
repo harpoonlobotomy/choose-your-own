@@ -279,9 +279,7 @@ Note on descriptions: if self.descriptions, will have different descriptions dep
             self.set_hidden()
 
         if "transition" in self.item_type:
-#
-# location: transition objs, set of items. item holds entry/exit.
-# location: entry_items/exit_items.
+            # card_inst.transition_objs doesn't need to specify by location, because the instance has the location itself. If later there are many many transition objects, then bringing the dict back will make sense, but for now there's literally one item, def not worth the dict. When it's bigger, maybe reconsider.
             enter_location = loc.by_cardinal_str(self.enter_location)
             if not hasattr(enter_location, "entry_item"):
                 setattr(enter_location, "entry_item", set())
@@ -289,6 +287,8 @@ Note on descriptions: if self.descriptions, will have different descriptions dep
             if not hasattr(enter_location, "transition_objs"):
                 setattr(enter_location, "transition_objs", set())
             getattr(enter_location, "transition_objs").add(self)
+            if self.name in enter_location.transition_objs:
+                enter_location.transition_objs.remove(self.name)
             self.enter_location = enter_location
             setattr(enter_location, "location_entered", False)
             self.is_transition_obj = True
@@ -296,12 +296,18 @@ Note on descriptions: if self.descriptions, will have different descriptions dep
             registry.transition_objs[self.enter_location] = self # shuold not need this.
 
             exit_to_location = loc.by_cardinal_str(self.exit_to_location)
+
             if not hasattr(exit_to_location, "exit_to_item"):
                 setattr(exit_to_location, "exit_to_item", set())
             getattr(exit_to_location, "exit_to_item").add(self)
+            if self.name in exit_to_location.exit_to_item:
+                exit_to_location.exit_to_item.remove(self.name)
             if not hasattr(exit_to_location, "transition_objs"):
                 setattr(exit_to_location, "transition_objs", set())
             getattr(exit_to_location, "transition_objs").add(self)
+            if self.name in exit_to_location.transition_objs:
+                exit_to_location.transition_objs.remove(self.name)
+
             self.exit_to_location = exit_to_location
             setattr(exit_to_location, "location_entered", False)
             self.is_transition_obj = True
@@ -877,7 +883,7 @@ class itemRegistry:
                     total_instances = shard.has_multiple_instances + compound_target.has_multiple_instances
                     compound_target.has_multiple_instances = total_instances
                     shard.has_multiple_instances = 0
-                    shard.location = loc.no_place
+                    shard.location = loc.no_place # NOTE: Need to be able to retrieve these, so if I pick it back up from a safe place that didn't end the event, the event keeps ticking. So when picking up from cluster, check no_place before generating.
                     if shard in self.by_location[loc.inv_place]:
                         self.by_location[loc.inv_place].remove(shard)
                     else:

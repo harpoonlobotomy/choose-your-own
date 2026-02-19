@@ -3274,3 +3274,127 @@ Seeing the door from inside the shed. Okay.
 Okay - finally it's less broken. Door is accessible from inside. Have just replaced the original local_nouns in verb_membrane with the new version. Will take some time tomorrow to do that across the board. It includes items in containers (though I can exclude those later and/or just rerun it to recollect.
 
 Getting v v tired. Might have to leave it a bit.
+
+8.51am
+Okay, back at it today.
+
+Have figured out the issue here:
+
+Transition objs at west graveyard: {'wooden door', <ItemInstance wooden door / (2e57aa44-e334-4242-8b0b-df0afd5d8066) / west graveyard / None/ >}
+ITEM: wooden door
+Failed to run input_parser: 'str' object has no attribute 'name'
+
+I missed the vital point yesterday.
+here:
+#   transition objs at west graveyard: {'wooden door', <ItemInstance wooden door / (2e57aa44-e334-4242-8b0b-df0afd5d8066) / west graveyard / None/ >}
+
+That's two items, not one. One str, and one instance. The str was added by locRegistry at init, and the inst was added by itemReg at init. That's why it's suddenly claiming there's a string.
+
+Not going to fix that in this function though, going to fix it in itemReg.
+When it's adding things to locReg transition_objs, if there's an existing str with inst.name, replace the str with the inst. And there should /always/ be an inst to match the str, because that's where the need for the inst comes from. God I'm so tired I can barely see.
+
+8.57
+eyyy, I fixed it. [[  enter shed  ]] works again immediately.
+Ey 'look at door' from inside works too. Thank goodness.
+
+And it works the way I want, too. When the parser starts, the full local runs.
+
+the only thing I'm thinking is whether I want to store the various options (not_inv/not local, etc) during that initial run, or rerun it with those constraints once it hits the verb.
+
+11:50
+Have fixed a few more minor things. Forgot what they were already though.
+
+Re the last note, having thought about it: Use get_local_nouns exactly as originally intended. Full set for the parser, then the verb actions send specific requests for the subset of nouns they require as they require them. It just makes sense.
+
+Though I wouldn't mind a 'get_nouns_w_str(input_dict)' like
+
+def get_nouns_w_str(input_dict):
+
+2.32pm
+Added def get_nouns_w_str(input_dict): to verb_actions. Happy with it.
+
+Okay. So.
+
+I need to remove verb_requires_noun, it was an okay concept but doesn't do its job well, esp compared to get_local_nouns now.
+
+Oh. I confused myself.
+
+The one I wrote today/yesterday is get_local_nouns(self) in verb_membrane.
+
+There is a similarish fn in itemReg called get_local_items.
+get_local_items performs what looks like an almost identical task, including the inventory or not, optional by_name (that never worked properly.) It's only used 4 times throughout but I should be able to just directly replace it with get_local_nouns.
+
+get_local_nouns currently builts a dict, it doesn't really have to. Not sure if I'll use it or not. Maybe I will in the verb actions. leaving it there for now, maybe delete later.
+
+
+Things to work on:
+
+1: can enter shed even if door is closed. Need to fix.
+2 "go to door" returns `You can't go enter something unless you're nearby to it.`, when I'm standing in the shed. This will be resolved with get_local_nouns though I think.
+
+no wait where's the function I wrote today. Did I write two and get confused? Because this one doesn't have the noun, excluded str, verb...
+
+OH.
+It was
+
+def find_local_item_by_name(noun:ItemInstance=None, verb=None, access_str:str="all_local", current_loc:cardinalInstance=None)
+in item_interactions that I was thinking about. Goddamn... So I have three?
+
+Let me check this.
+
+so, find_local_item_by_name is the one I was pleased with. Ignore the fn names given above.
+It's in item_interactions.
+
+VerbRegistry uses once to get local_nouns, where weirdly it makes a dict and a list...?
+
+# Note: No longer using all_nouns_list in the input_parser. Consider removing it entirely once some more testing's been done.
+
+So this is the one I want to use everywhere. Seems the most consistent and flexible. Run with no args and get the full local_nouns list, add verb or access_str to set limits on which categories are added to the set,add a noun to get name matches.
+
+find_local_item_by_name(noun:ItemInstance=None, verb=None, access_str:str="all_local", current_loc:cardinalInstance=None)
+
+Okay so, we get instances here:
+
+registry.instances_by_name(name)
+at ln 123 in verb_membrane/get_noun_instances.
+
+
+Then we do this and try to find item in local_named_items, which looks like a poor man's find_local_item_by_name
+local_named_items = registry.get_local_items(include_inv=True, by_name=noun_inst.name)
+
+I need to fix this part:
+ elif noun_inst.single_identifier in entry["text"]: (ln 167 verb membrane)
+ because that's far messier than it needs to be.
+
+Yeah get_local_nouns is what adds to membrane
+
+        self.local_nouns = list(local_items)#local_named
+        self.local_dict = local_items
+        #print(f"\nlocal nouns: {self.local_nouns}")
+        logging_fn(note = "end of get_local_nouns")
+
+But I overwrite it with
+
+    membrane.local_dict = clean_nouns
+    membrane.local_nouns = list(clean_nouns)???
+from find_local_items_by_name anyway.
+
+God I was tired. Okay.
+
+Then we have
+
+registry.get_local_items(include_inv=True, by_name=noun_inst.name)
+which is invoked around ln 158 getting the clister identifiers in get_noun_instances.
+
+Oh, just found where 'instance = "4" came from:
+# dict_from_parser[idx][kind] = ({"instance": "4", "str_name": entry["str_name"], "text": entry["text"]})
+No idea when or why...
+
+So instead of instances_by_name, it should be the new one with the name. But it requires an instance, doesn't it... Okay.
+Well I do get a name...
+Or I guess, could just grab the first instance by that name and just use that for the process. It won't return if it's not a match anyway.
+
+Or no, maybe we just don't get any instances inside membrane at all.
+Or no, maybe we just use the dict that is already stored in membrane from this current run. Go with that, assume it's correct, then do all the proper checks for verbs once we're out. So we get a placeholder noun if there is one, without extra checks. That's probably best I think.
+
+Hm. when combining clusters, maybe we just hide the singular one instead of removing it. Otherwise we don't know where that particular one was moved /to/ and have no way to track it. So, put it down, the event plays as usual, but it's invisibly still present, and we pick it up next time we try to pick up an item at that loc. That works.  # TODO

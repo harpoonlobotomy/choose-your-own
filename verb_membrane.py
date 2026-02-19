@@ -114,37 +114,16 @@ def get_noun_instances(dict_from_parser, viable_formats):
                 if kind == "noun":
                     name = entry["str_name"]
                     if name == "assumed_noun":
-                        if entry.get("instance"):
-                            print(f"entry[instance]: {entry["instance"]}")
-
                         dict_from_parser[idx][kind] = ({"instance": "assumed_noun", "str_name": entry["str_name"], "text": entry["text"]})
                         error = ("assumed_noun", (idx, kind))
                     else:
                         noun_inst = registry.instances_by_name(name) ## NOTE: This won't hold for long. Different instances may have different attr.
                         if not noun_inst:
                             suitable_nouns -= 10
-                            ### wait wtf it MAKES a new instance to check noun attr???
-                            #NOTE cancelled this new item generation for now, I can't imagine why that was here tbh...
-                            #if name in registry.item_defs:
-                            #    noun_inst = registry.init_single(name, registry.item_defs[name])
-                        #if not noun_inst:
-                            dict_from_parser[idx][kind] = ({"instance": "4", "str_name": entry["str_name"], "text": entry["text"]})
+                            dict_from_parser[idx][kind] = ({"instance": "assumed_noun", "str_name": entry["str_name"], "text": entry["text"]})
                             error = ("assumed_noun", (idx, kind))
                         else:
-                            #print(f"Noun inst: {noun_inst}")
-                            if not isinstance(noun_inst, ItemInstance):
-                                if len(noun_inst) > 1:
-                                    loc_found = False
-                                    from env_data import locRegistry
-                                    for noun in noun_inst:
-                                        if noun.location == locRegistry.current:
-                                            noun_inst = noun
-                                            loc_found = True
-                                            break
-                                    if not loc_found: # just take the first if none are local.
-                                        noun_inst = noun_inst[0]
-                                else:
-                                    noun_inst = noun_inst[0]
+                            noun_inst = noun_inst[0]
                             dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": name, "text": entry["text"]})
 
                         if noun_inst and "is_cluster" in noun_inst.item_type:
@@ -249,63 +228,53 @@ class Membrane:
         self.formats = formats
 
     def get_local_nouns(self):
-
+        """ DELETE ME. superceded by find_local_item_by_name in interactions.item_interactions"""
         logging_fn()
 
         def get_children(parent, local_items):
             logging_fn()
-            if "container" in parent.item_type:
-                if hasattr(parent, "children") and parent.children:
-                    for child in parent.children:
-                        local_items[child.name] = child
+            if "container" in parent.item_type and hasattr(parent, "children") and parent.children:
+                for child in parent.children:
+                    local_items[child.name] = child
             return local_items
 
         from itemRegistry import registry
         from env_data import locRegistry
 
+        ## check to see if they ever diverge:
         inventory = registry.get_item_by_location(locRegistry.inv_place)
+        alt_inventory = locRegistry.inv_place.items
+
+        if inventory or alt_inventory:
+            if len(inventory) != len(alt_inventory):
+                print(f"\nitems in inv_place and inv_place.items are not equal\nitems at inv_place:\n{inventory}\n\ninv_place.items(): \n{alt_inventory}\n")
+                exit()
+
         current_loc_items = registry.get_item_by_location(locRegistry.current)
-        #print(f"current_loc_items: {current_loc_items}")
-        #local_named = set()
         local_items = {}
+
         if inventory:
             for item in inventory:
                 local_items = get_children(item, local_items)
-                #local_named.add(item.name)
                 local_items[item.name] = item
         if current_loc_items:
             for item in current_loc_items:
                 local_items = get_children(item, local_items)
-                #local_named.add(item.name)
                 local_items[item.name] = item
 
-        for item, inst in registry.by_alt_names.items():
-            #print(f"alt_names: item: {item} / inst: {inst}")
-            if inst in local_items:
-                #local_named.add(item)
-                #print(f"inst `{inst}` in local_items.values()")
-                local_items[item] = local_items[inst]
-                #print(f"local_items[item] for {item}: {local_items[item]}")
+        for item, itemname in registry.by_alt_names.items():
+            if itemname in local_items:
+                local_items[item] = registry.by_name[itemname]
 
-        # Need to add transition items if current is exit/entrance:
         if hasattr(locRegistry.current, "transition_objs") and locRegistry.current.transition_objs:
-            print(f"Transition objs at {locRegistry.current.place_name}: {locRegistry.current.transition_objs}")
+
             for item in locRegistry.current.transition_objs:
-                print(f"ITEM: {item}, NAME: {item.name}")
-                print(f"Item vars: {vars(item)}")
                 local_items[item.name] = item
 
-
-        #if registry.transition_objs.get(locRegistry.current):
-        #    print(f"registry.transition_objs.get(locRegistry.current.place): {registry.transition_objs.get(locRegistry.current)}")
-        #    #local_named.add(registry.transition_objs[locRegistry.current].name)
-        #    print(f"Added transition object to local_named: `{registry.transition_objs[locRegistry.current].name}`")
-        #    local_items[item.name] = registry.transition_objs[locRegistry.current]
-#
         self.local_nouns = list(local_items)#local_named
         self.local_dict = local_items
-        #print(f"local nouns: {self.local_nouns}")
-        print("leaving get_local_nouns.")
+        #print(f"\nlocal nouns: {self.local_nouns}")
+        logging_fn(note = "end of get_local_nouns")
 
 membrane = Membrane()
 
