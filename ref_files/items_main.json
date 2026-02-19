@@ -1638,7 +1638,7 @@
     "smash_defence": 5
   },
   "broken glass shard": {
-    "alt_names": ["broken glass shards", "glass shards", "shards of glass", "shard of glass", "shard", "shards"],
+    "alt_names": ["broken glass shards", "glass shards", "shards of glass", "shard of glass", "glass shard", "shard", "shards"],
     "can_pick_up": true,
     "on_break": null,
     "is_broken": true,

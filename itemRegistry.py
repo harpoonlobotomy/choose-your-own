@@ -793,6 +793,7 @@ class itemRegistry:
     def set_print_name(self, inst:ItemInstance, new_print_name:str):
         logging_fn()
         inst.print_name = new_print_name
+        self.init_descriptions(inst)
 
     def get_parent_details(self, inst, old_container, new_container)->tuple[ItemInstance, bool, ItemInstance]:
         was_in_container = False
@@ -857,6 +858,7 @@ class itemRegistry:
         return new_def
 
     def combine_clusters(self, shard:ItemInstance, target: (cardinalInstance|ItemInstance)):
+        from interactions.item_interactions import find_local_item_by_name
         ## DROPPING TO CLUSTER IN LOCATION/CONTAINER
         logging_fn()
         target_is_location = False
@@ -867,6 +869,7 @@ class itemRegistry:
             print(f"\n{shard} is not in inv_place. This is bad, how are we combining if not removing from inventory?\n\n\n")
         # get cluster:
         if target_is_location:
+            local_item = find_local_item_by_name(noun=shard, access_str="combine_cluster", current_loc=target)
             local_items = self.get_local_items()
             local_named = list()
             if local_items:

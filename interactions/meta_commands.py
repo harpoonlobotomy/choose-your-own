@@ -88,6 +88,8 @@ def select_noun(noun_name=None):
         print(noun_instances)
         print("Do you want a specific instance, or will any do?")
         test = input("Press enter to default to the first option, or enter 'loc' to choose by item location, or 'inv' to choose from inventory items.\n")
+        if test == "":
+            noun_instance = test[0]
         if "loc" in test:
             location = input("Please enter the location:\n")
             from env_data import locRegistry
@@ -111,9 +113,6 @@ def select_noun(noun_name=None):
 
     elif isinstance(noun_instances, list):
         noun_instance = noun_instances[0]
-
-    else:
-        noun_instance = noun_instances
 
     print_blue(f"Instance found for {noun_name}: {noun_instance}", invert=True)
 

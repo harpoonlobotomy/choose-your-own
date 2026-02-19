@@ -3398,3 +3398,57 @@ Or no, maybe we just don't get any instances inside membrane at all.
 Or no, maybe we just use the dict that is already stored in membrane from this current run. Go with that, assume it's correct, then do all the proper checks for verbs once we're out. So we get a placeholder noun if there is one, without extra checks. That's probably best I think.
 
 Hm. when combining clusters, maybe we just hide the singular one instead of removing it. Otherwise we don't know where that particular one was moved /to/ and have no way to track it. So, put it down, the event plays as usual, but it's invisibly still present, and we pick it up next time we try to pick up an item at that loc. That works.  # TODO
+
+Realised I still haven't actually implemented the 'burning' yet, which was the whole point of this branch. Oops.
+
+deleted a bunch of logs from trying to fix descriptions again, no real info here.
+
+8.18pm
+Okay. So it is correctly identifying single/plural, but the descriptions aren't updated.
+
+noun_inst singular identifier in text
+#   [[  look at glass shard  ]]
+#
+#   You look at the shard:
+#
+#      A scattering of broken glass.
+
+Ey, fixed it.
+
+#   [[  look at glass shard  ]]
+#
+#   You look at the shard:
+#
+#      A shard of broken glass.
+
+Now it updates the descriptions when it sets the print name. Might be wasteful and may have to change it later but it fixes it, so I can carry on with other things.
+
+New error:
+
+#   go to work shed
+#   Failed to run input_parser: unsupported operand type(s) for |: 'set' and 'NoneType'
+#   Failed get_noun_instances: cannot access local variable 'dict_from_parser' where it is not associated with a value
+#   Failed parser: cannot access local variable 'error' where it is not associated with a value
+
+At least I already know what this one's from, will fix now.
+
+Oh, huh.
+Going from the church to the workshed gets me the error, but going straight to the work shed doesn't. Hm.
+
+Okay, done. Just had to fix it so the no-items church didn't break things.
+
+I godmode-d in a new glass jar, and I think it came with its own flowers.
+
+Yup.
+[<ItemInstance dried flowers / (2af695fb-69ed-4b11-8928-945c5ca1acc4) / east graveyard / None/ >, <ItemInstance dried flowers / (3e3f98d9-6961-4537-836f-6734e89d9848) / north no_place / None/ >]
+
+#   Do you want a specific instance, or will any do?
+#   Press enter to default to the first option, or enter 'loc' to choose by item location, or 'inv' to choose from inventory items.
+
+#   Instance found for dried flowers: None
+
+Hm.
+
+Notes for tomorrow:
+* can't pick up the flowers from a godmode added glass jar; there's one lot of flowers in no_place and another local, need to figure out which.
+* Need to add find_local_item_by_name to verb_action functions, currently they all still do their old things.

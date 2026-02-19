@@ -121,13 +121,13 @@ def is_loc_ext(noun:ItemInstance, return_trans_obj=False) -> str|None:
 
 
 def recurse_items_from_list(input_list:list) -> set:
-
+    logging_fn()
     children = set()
 
     for item in input_list:
         if "container" not in item.item_type or has_and_true(item, "is_hidden") or has_and_true(item, "is_locked"):
             continue
-        if has_and_true(item, "children"):
+        if has_and_true(item, "children") and item.is_open:
             for child in item.children:
                 # Possibly we get cluster names /here/ rather than at print-time.
                 #Or, we do that when things open. When you open a container w/ children, check cluster status. Probably better to do it then  rather than just when looking.
@@ -137,40 +137,46 @@ def recurse_items_from_list(input_list:list) -> set:
 
 #container, reason_val = registry.check_item_is_accessible(noun_inst)
 no_containers = ["only_loc_no_containers", "loc_w_inv_no_containers"]
-no_inventory = ["not_in_inv", "only_loc_no_containers"]
+no_inventory = ["not_in_inv", "only_loc_no_containers", "combine_cluster"]
 no_local = ["inv_and_inv_containers"]
+allow_hidden = ["combine_cluster"]
 
 scope_to_verb = {
     "inv_and_inv_containers": ["drop"], # only things in inventory, including recursion.
     "all_local": ["look", "find"], # everything accessable, carried/ local/etc
     "not_in_inv": ["take"], # includes local containers, just nothing I'm already carrying.
     "only_loc_no_containers": [""], # No idea what would call for this tbh. It's just 'stuff you can see around you'.
-    "loc_w_inv_no_containers": [""] # this one either. This'll take some development.
+    "loc_w_inv_no_containers": [""], # this one either. This'll take some development.
+    "combine_cluster": ["combine_cluster"]
     }
 
-
-def find_local_item_by_name(noun:ItemInstance=None, verb=None, access_str:str="all_local", current_loc:cardinalInstance=None) -> ItemInstance|set:
+def find_local_item_by_name(noun:ItemInstance=None, verb=None, access_str:str=None, current_loc:cardinalInstance=None) -> ItemInstance|set:
     """
     Builds relevant items set using verb scope derived from `access_str` or `verb`'s status in `verb_to_noun_access`. If `noun` provided, returns the relevant `ItemInstance` of that name if found. If no `noun` provided, returns the full set.
     """
     logging_fn()
+    if verb:
+        from verbRegistry import VerbInstance
+        if isinstance(verb, VerbInstance):
+            verb = verb.name
+
     def build_relevant_items_set(verb=None, access_str=None, current_loc=None) -> set:
         logging_fn()
         location = None
         if access_str and verb:
             for kind, values in scope_to_verb.items():
-                if verb.name in values:
+                if verb in values:
                     if access_str != kind:
                         print(f"Conflict between access_str `{access_str}` and the verb's allocation: `{kind}`. Will continue with access_str, but the conflict should be remedied.")
                     break
 
         elif not access_str and verb:
             for kind, values in scope_to_verb.items():
-                if verb.name in values:
+                if verb in values:
                     access_str = kind
                     break
             if not access_str:
-                print(f"Verb `{verb.name}` could not find a match in verb allocation.\nExpected one of:\n{list(scope_to_verb)}. Cannot continue.")
+                print(f"Verb `{verb}` could not find a match in verb allocation.\nExpected one of:\n{list(scope_to_verb)}. Cannot continue.")
                 exit()
 
         elif access_str and not verb:
@@ -215,15 +221,25 @@ def find_local_item_by_name(noun:ItemInstance=None, verb=None, access_str:str="a
                 print("No local items at all. Returning.")
                 return
 
-        final_items = ((inv_items | (set(loc_items) if isinstance(loc_items, list) else loc_items)) if inv_items else set(loc_items))
+        if not inv_items and not loc_items:
+            #print("Not inv or loc")
+            return
+        if inv_items and not loc_items:
+            final_items = inv_items
+        elif loc_items and not inv_items:
+            final_items = loc_items
+        else:
+            final_items = ((inv_items | (set(loc_items))) if inv_items else set(loc_items))
 
         if hasattr(location, "transition_objs") and location.transition_objs:
             for item in location.transition_objs:
                 final_items.add(item)
-
+        #print(f"Final items: {final_items}")
         return final_items
 
     final_items = build_relevant_items_set(verb, access_str, current_loc)
+    if not final_items:
+        return None
     ## Finally test if a match for noun if noun, else return final_items.
     if noun:
         if isinstance(noun, ItemInstance):
@@ -244,3 +260,28 @@ def find_local_item_by_name(noun:ItemInstance=None, verb=None, access_str:str="a
         return final_items
 
         # includes trans obj, inv and inv containers, local items + items in open local containers (I don't yet have the discovered tag but need it for this, really - I don't want to tell you 'that open jar has a thing in it', but if you've already found it then I don't mind listing it as an option. For now I'll just use open containers but that needs doing, #TODO at some time.)
+
+def get_correct_cluster_inst(noun_inst:ItemInstance, entry:dict) -> ItemInstance: ## Not implemented yet. Moving from verb_
+
+    if hasattr(noun_inst, "has_multiple_instances") and hasattr(noun_inst, "single_identifier") and hasattr(noun_inst, "plural_identifier"):
+        #print("Cluster has identifiers.")
+        if noun_inst.plural_identifier in entry["text"] or noun_inst.single_identifier in entry["text"]:
+            local_items = find_local_item_by_name()
+            named_items = registry.instances_by_name(noun_inst.name)
+            if named_items:
+                #print(f"Found named items of the name `{noun_inst.name}`. Checking against local_items and input text for plural identifier `{noun_inst.plural_identifier}` to identify the correct one.")
+                for item in named_items:
+                    if item in local_items:
+                        #print(f"Item {item} in local_items.")
+                        if item.has_multiple_instances > 1 and noun_inst.plural_identifier in entry["text"]:
+                            #print("noun_inst plural identifier in text")
+                            noun_inst = item
+                            registry.set_print_name(noun_inst, noun_inst.plural_identifier)
+                            break
+
+                        if item.has_multiple_instances == 1 and noun_inst.single_identifier in entry["text"]:
+                            #print("noun_inst singular identifier in text")
+                            noun_inst = item
+                            registry.set_print_name(noun_inst, noun_inst.single_identifier)
+                            break
+    return noun_inst

@@ -42,23 +42,6 @@ combine_sems = ["into", "with", "to", "and"]
 combine_parts = {("put", "into"), ("add", "to"), ("a", "while")# thinking about this for more specific matching. Not sure. Idea is 'put x into y' == explicitly y is a container.
 }
 
-   #exit()
-
-def check_noun_actions(noun_inst, verbname):
-
-    #print(f"Verb inst name: {verbname}")
-    #print(f"noun inst actions: {noun_inst.verb_actions}")
-    if isinstance(verbname, VerbInstance):
-        verbname = verbname.name
-    if verbname in ("look", "use"): # always pass 'look'
-        return noun_inst.name
-    for action in noun_inst.verb_actions:
-        if flag_actions.get(action):
-            if verbname in flag_actions[action]:
-                #print(f"{action}: Verb inst name in flag_actions for noun: ({noun_inst.name}): {verbname}")
-                return noun_inst.name
-
-    #print(f"Noun fails: {noun_inst}, verbname: {verbname}")
 
 def get_noun_instances(dict_from_parser, viable_formats):
 
@@ -106,9 +89,8 @@ def get_noun_instances(dict_from_parser, viable_formats):
                     verb = entry["instance"]
                     #print(f"meta Verb: {verb}")
 
-        suitable_nouns = 0
-
         for idx, data in dict_from_parser.items():
+            from env_data import locRegistry
             for kind, entry in data.items():
                 #print(f"GET NOUN INSTANCES::: Kind: {kind}, entry: {entry}\n")
                 if kind == "noun":
@@ -119,7 +101,6 @@ def get_noun_instances(dict_from_parser, viable_formats):
                     else:
                         noun_inst = registry.instances_by_name(name) ## NOTE: This won't hold for long. Different instances may have different attr.
                         if not noun_inst:
-                            suitable_nouns -= 10
                             dict_from_parser[idx][kind] = ({"instance": "assumed_noun", "str_name": entry["str_name"], "text": entry["text"]})
                             error = ("assumed_noun", (idx, kind))
                         else:
@@ -127,53 +108,24 @@ def get_noun_instances(dict_from_parser, viable_formats):
                             dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": name, "text": entry["text"]})
 
                         if noun_inst and "is_cluster" in noun_inst.item_type:
-                            from env_data import locRegistry
-                            #TODO HERE.
-                            if hasattr(noun_inst, "has_multiple_instances") and hasattr(noun_inst, "single_identifier") and hasattr(noun_inst, "plural_identifier"):
-                                #print("Cluster has identifiers.")
-                                if noun_inst.plural_identifier in entry["text"]:
-                                    #and noun_inst.has_multiple_instances > 1:
-                                    ## REMINDER: This is not to set the name, that is a biproduct. It's to find the correct instance if there is one.
-                                    local_named_items = registry.get_local_items(include_inv=True, by_name=noun_inst.name)
-                                    if local_named_items:
-                                        print(f"Found more than one local item with name {noun_inst.name}. Checking input text for plural identifier `{noun_inst.plural_identifier}` to identify the correct one.")
-                                        for item in local_named_items:
-                                            if item.has_multiple_instances > 1:
-                                                noun_inst = item
-                                                registry.set_print_name(noun_inst, noun_inst.plural_identifier)
-                                                break
+                            from interactions.item_interactions import get_correct_cluster_inst
+                            noun_inst = get_correct_cluster_inst(noun_inst, entry)
 
-                                elif noun_inst.single_identifier in entry["text"]:
-                                    local_named_items = registry.get_local_items(include_inv=True, by_name=noun_inst.name)
-                                    if local_named_items:
-                                        for item in local_named_items:
-                                            if item.has_multiple_instances == 1:
-                                                noun_inst = item
-                                                registry.set_print_name(noun_inst, noun_inst.single_identifier)
-                                                break
-
-                                dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": noun_inst.name, "text": entry["text"]})
+                            dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": noun_inst.name, "text": entry["text"]})
 
                 elif kind == "location":
-                    from env_data import locRegistry
                     loc_name = entry["str_name"]
-                    #print(f"LOC NAME from str_name IN LOCATION: {loc_name}")
+
                     if locRegistry.place_by_name(loc_name):
                         dict_from_parser[idx][kind] = ({"instance": locRegistry.place_by_name(loc_name), "str_name": loc_name, "text": entry["text"]})
 
-                elif kind == "direction": #Changing cardinals to their own specicial thing, can then ignore this part really.
-
+                elif kind == "direction":
                     dict_from_parser[idx][kind] = ({"instance": None, "str_name": entry["str_name"], "text": entry["text"]})
-                    # TODO: Make it more explicit (or at least, really really remember) that this is going to <cardinal> <current_location> unless stated otherwise.
 
-                        #locRegistry.place_cardinals[place_instance_obj][cardinal_direction_str]
                 elif kind == "cardinal":
-                    #print(f"Kind is cardinal: {entry}")
                     dict_from_parser = check_cardinals(entry, dict_from_parser, viable_formats)
 
-        #print("About to return dict_from_parser, error")
         return dict_from_parser, error
-    #print("About to return dict_from_parser, error")
     return None, "No dict_from_parser"
 
 class Membrane:
@@ -190,6 +142,7 @@ class Membrane:
         from env_data import loc_dict
         self.locations = list(loc_dict.keys())
 
+        from itemRegistry import registry
         self.nouns_list = list(registry.item_defs.keys())
         #plural_word_dict = {}
 #
@@ -206,30 +159,7 @@ class Membrane:
         self.directions = directions
         self.cardinals = set(cardinals) ## does membrane need these or not?
 
-        def get_format_sublists(all_formats):
-
-            sublists = {
-                "location_only": ["verb_only", "verb_loc", "verb_dir", "verb_dir_loc"],
-                "single_nouns": ["verb_noun", "verb_dir_noun", "verb_noun_dir", "verb_noun_dir_loc"],
-                "two_nouns": ["verb_noun_noun", "verb_noun_dir_noun", "verb_noun_dir_dir_noun", "verb_noun_dir_noun_dir_loc", "verb_noun_sem_noun", "verb_dir_noun_sem_noun"]
-            }
-            def get_format_sublist(format_list):
-                temp_list = []
-                for format in format_list:
-                    temp_list.append(all_formats[format])
-                return temp_list
-
-            new_format_dict = {}
-            for name, list in sublists.items():
-                new_format_dict[name] = get_format_sublist(list)
-
-            return new_format_dict
-
         self.formats = formats
-
-    def get_local_nouns(self):
-        """ DELETE ME. superceded by find_local_item_by_name in interactions.item_interactions"""
-        logging_fn()
 
         def get_children(parent, local_items):
             logging_fn()
@@ -250,29 +180,10 @@ class Membrane:
                 print(f"\nitems in inv_place and inv_place.items are not equal\nitems at inv_place:\n{inventory}\n\ninv_place.items(): \n{alt_inventory}\n")
                 exit()
 
-        current_loc_items = registry.get_item_by_location(locRegistry.current)
-        local_items = {}
-
-        if inventory:
-            for item in inventory:
-                local_items = get_children(item, local_items)
-                local_items[item.name] = item
-        if current_loc_items:
-            for item in current_loc_items:
-                local_items = get_children(item, local_items)
-                local_items[item.name] = item
-
-        for item, itemname in registry.by_alt_names.items():
-            if itemname in local_items:
-                local_items[item] = registry.by_name[itemname]
-
-        if hasattr(locRegistry.current, "transition_objs") and locRegistry.current.transition_objs:
-
-            for item in locRegistry.current.transition_objs:
-                local_items[item.name] = item
+        from interactions.item_interactions import find_local_item_by_name
+        local_items = find_local_item_by_name()
 
         self.local_nouns = list(local_items)#local_named
-        self.local_dict = local_items
         #print(f"\nlocal nouns: {self.local_nouns}")
         logging_fn(note = "end of get_local_nouns")
 

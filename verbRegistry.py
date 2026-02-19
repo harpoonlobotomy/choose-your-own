@@ -103,7 +103,7 @@ class VerbRegistry:
 @dataclass
 class Parser:
 
-    def check_compound_words(parts_dict, word, parts, idx, kinds, word_type, omit_next, local_named):
+    def check_compound_words(parts_dict, word, parts, idx, kinds, word_type, omit_next):
         logging_fn()
 
         #print(f"\nCHECK COMPOUND WORDS: {word_type}\n")
@@ -136,7 +136,7 @@ class Parser:
 
                 compound_matches[compound_word]=tuple(((matches_count, len(word_parts)))) ## if input == 'paper scrap': "paper scrap with paper":(2,4)
 
-        if perfect_match and ((word_type == "noun" and perfect_match in local_named) or word_type == "location"):
+        if perfect_match:
             #print(f"PERFECT MATCH: {perfect_match}, matches_count: {matches_count}")
             canonical = perfect_match
             if isinstance(kinds, str):
@@ -159,14 +159,17 @@ class Parser:
             winner = None
 
             for item in compound_matches:
-                if (word_type == "noun" and local_named and item in local_named and item in parts_dict) or word_type == "location":
-                    matched, total_parts = compound_matches[item]
-                    missing = total_parts - matched
-                    ratio = missing/total_parts
-                    #print(f"Missing: {missing} / ration total/missing: {ratio} (total_parts: {total_parts})")
-                    if missing < least_missing:
-                        least_missing = missing
-                        winner = item
+                by_alt_words = verbs.by_alt_words.get(item)
+                if by_alt_words:
+                    print(f"ITEM in compound_matches: {item}")
+                    print(f"By alt words: {by_alt_words}")
+                matched, total_parts = compound_matches[item]
+                missing = total_parts - matched
+                ratio = missing/total_parts
+                #print(f"Missing: {missing} / ration total/missing: {ratio} (total_parts: {total_parts})")
+                if missing < least_missing:
+                    least_missing = missing
+                    winner = item
 
             match = winner
             if match:
@@ -201,7 +204,7 @@ class Parser:
         compound_nouns = membrane.plural_words_dict
         #items = nouns_list
         items = membrane.local_nouns
-        local_items = membrane.local_nouns
+        #local_items = membrane.local_nouns
         tokens = []
         omit_next = 0
 
@@ -309,11 +312,11 @@ class Parser:
                     potential_match = True
                 else:
                     second_perfect = None
-                    idx, word, kinds, canonical, potential_match, omit_next, perfect = Parser.check_compound_words(parts_dict = compound_nouns, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "noun", omit_next=omit_next, local_named=local_items)
+                    idx, word, kinds, canonical, potential_match, omit_next, perfect = Parser.check_compound_words(parts_dict = compound_nouns, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "noun", omit_next=omit_next)
                     second_perfect = None
 
                     try:
-                        second_idx, second_word, second_kinds, second_canonical, second_potential_match, second_omit_next, second_perfect = Parser.check_compound_words(parts_dict = compound_locs, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "location", omit_next=omit_next, local_named=local_items)
+                        second_idx, second_word, second_kinds, second_canonical, second_potential_match, second_omit_next, second_perfect = Parser.check_compound_words(parts_dict = compound_locs, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "location", omit_next=omit_next)
                     except Exception as e:
                         print(f"Could not get location: {e}")
 
@@ -494,10 +497,6 @@ class Parser:
 
         #print(f"verb instances: {verb_instances}")
         #print(f"meta instances: {meta_instances}")
-        if len(verb_instances) == 1:
-            verb_entry = verb_instances
-
-
         def run_sequences(sequences, verb_instances):
             viable_sequences = []
             #for verb_entry in verb_instances:
@@ -618,7 +617,6 @@ class Parser:
         logging_fn()
         from verb_membrane import membrane
 
-        all_nouns_list = membrane.nouns_list # swapping these out so it only considers local nouns. Keeping the orignal here as all_ in case it breaks things.
         nouns_list = membrane.nouns_list
         locations = membrane.locations
         directions = membrane.directions
@@ -637,10 +635,7 @@ class Parser:
                         parts = item.name.split(" ")
                         membrane.plural_words_dict[item.name] = tuple(parts)
 
-        membrane.local_dict = clean_nouns
         membrane.local_nouns = list(clean_nouns)
-
-        #membrane.get_local_nouns() # membrane.local_nouns = list of names. membrane.local_dict = dict of name[instance]# Switch to usin the dict instead and ditch the list later.
 
         tokens = self.tokenise(input_str, nouns_list, locations, directions, cardinals, membrane)
         if not tokens:
