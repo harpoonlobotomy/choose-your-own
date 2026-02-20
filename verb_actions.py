@@ -774,7 +774,9 @@ def look(format_tuple=None, input_dict=None):
         return
 
     verb_entry, noun_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
-    noun = get_noun(input_dict)
+
+    #noun = get_noun(input_dict)
+    noun, noun_text, _, _ = get_nouns_w_str(input_dict)
 
     if len(format_tuple) == 1 or (len(format_tuple) == 2 and semantic_entry != None and input_dict[1]["sem"]["str_name"] == "around"):
         from misc_utilities import look_around
@@ -790,6 +792,11 @@ def look(format_tuple=None, input_dict=None):
                 turn_cardinal(intended_direction, turning=False)
 
         elif noun:
+            outcome = item_interactions.find_local_item_by_name(noun, noun_text)
+            if isinstance(outcome, ItemInstance):
+                noun = outcome
+            else:
+                print(f"No noun outcome from find_local_item_by_name in def look. Instead: {outcome}")
             #if hasattr(noun, "description_detailed"):
             #    read(format_tuple, input_dict)
             #else:
@@ -805,6 +812,11 @@ def look(format_tuple=None, input_dict=None):
             #if hasattr(noun, "description_detailed"):
             #    read(format_tuple, input_dict)
             #else:
+            outcome = item_interactions.find_local_item_by_name(noun, noun_text)
+            if isinstance(outcome, ItemInstance):
+                noun = outcome
+            else:
+                print(f"No noun outcome from find_local_item_by_name in def look. Instead: {outcome}")
             item_interactions.look_at_item(noun, noun_entry)
             return
         if format_tuple[2] == "cardinal" and format_tuple[1] == "direction":

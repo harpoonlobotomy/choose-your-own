@@ -858,7 +858,6 @@ class itemRegistry:
         return new_def
 
     def combine_clusters(self, shard:ItemInstance, target: (cardinalInstance|ItemInstance)):
-        from interactions.item_interactions import find_local_item_by_name
         ## DROPPING TO CLUSTER IN LOCATION/CONTAINER
         logging_fn()
         target_is_location = False
@@ -869,20 +868,23 @@ class itemRegistry:
             print(f"\n{shard} is not in inv_place. This is bad, how are we combining if not removing from inventory?\n\n\n")
         # get cluster:
         if target_is_location:
+            from interactions.item_interactions import find_local_item_by_name
             local_item = find_local_item_by_name(noun=shard, access_str="combine_cluster", current_loc=target)
-            local_items = self.get_local_items()
-            local_named = list()
-            if local_items:
-                #print(f"All local items in combine_clusters: ({local_items})")
-                for item in local_items:
-                    if item.name == shard.name:
-                        local_named.append(item)
-                        #print(f"ITEM in named cluster list: {item}, name: {item.name}, has_multiple_instances: {(item.has_multiple_instances if hasattr(item, 'has_multiple_instances') else 'no has_multiple_instances')}")
-                #print(f"Local named: {local_named}")
-                if local_named and len(local_named) > 1:
-                    print(f"Multiple items in cluster with name {shard.name}. This should not be possible, as I should be combining with the first one found and then returning that one, so I should never get to a point where there's more than one. Cluster list: {local_items}. Incoming inst is {shard}")
-                elif local_named:
-                    compound_target = list(local_named)[0]
+            if not local_item:
+                local_items = self.get_local_items()
+                local_named = list()
+                if local_items:
+                    #print(f"All local items in combine_clusters: ({local_items})")
+                    for item in local_items:
+                        if item.name == shard.name:
+                            local_named.append(item)
+                            #print(f"ITEM in named cluster list: {item}, name: {item.name}, has_multiple_instances: {(item.has_multiple_instances if hasattr(item, 'has_multiple_instances') else 'no has_multiple_instances')}")
+                    #print(f"Local named: {local_named}")
+                    if local_named and len(local_named) > 1:
+                        print(f"Multiple items in cluster with name {shard.name}. This should not be possible, as I should be combining with the first one found and then returning that one, so I should never get to a point where there's more than one. Cluster list: {local_items}. Incoming inst is {shard}")
+                    elif local_named:
+                        compound_target = list(local_named)[0]
+
                     total_instances = shard.has_multiple_instances + compound_target.has_multiple_instances
                     compound_target.has_multiple_instances = total_instances
                     shard.has_multiple_instances = 0
@@ -999,7 +1001,8 @@ class itemRegistry:
                 return shard, "process_as_normal"
             #print(f"original inst: {inst}, location: {inst.location}\nShard: {shard}, location: {shard.location}\nCompound target: {compound_target}, location: {compound_target.location}")
             if compound_target.has_multiple_instances == 0:
-                #print(f"Compound_target {compound_target} is exhausted, removing from everywhere.")
+                print(f"Compound_target {compound_target} is exhausted, removing from everywhere.")
+                exit()
                 self.delete_instance(compound_target)
             from testing_coloured_descriptions import init_loc_descriptions
             init_loc_descriptions(loc.current.place, loc.current)
@@ -1007,28 +1010,6 @@ class itemRegistry:
                 self.delete_instance(shard)
             self.init_descriptions(compound_target)
             return shard, None
-        #original:
-            """if "is_cluster" in inst.item_type:
-                print("is cluster and location is not none.")
-                if self.get_local_items(by_name=inst.name):
-                    print(f"there are local items with this name: {self.get_local_items(by_name=inst.name)}.")
-                    if location != loc.inv_place: ## == am dropping, so combine inst with local cluster.
-                        print(f"location is not inv place. Need to add {inst} to local cluster if found.")
-                #print("is cluster, passed first get_local_items")
-                        print(f"list(self.get_local_items(by_name=inst.name))[0]: {list(self.get_local_items(by_name=inst.name))[0]}")
-                        singular_inst, combined_inst = self.combine_clusters(inst)
-                        print(f"AFTER COMBINE_CLUSTER: \n Original inst: {inst}, location: {inst.location}\n Singular inst: {singular_inst}, location: {singular_inst.location}\nCombined inst: {combined_inst}, location: {combined_inst.location}\n")
-                        if combined_inst:
-                            print(f"Combined inst: {combined_inst}, location: {combined_inst.location}")
-                            print(f"Original inst: {inst}, location: {inst.location}")
-                            #print(f"Combined_inst: {combined_inst}")
-                            done = combined_inst
-                            updated.add(combined_inst)
-                            if inst in self.by_location[location]:
-                                self.by_location[location].remove(inst)
-                            inst.location = loc.no_place
-                            if inst in loc.inv_place.items:
-                                loc.inv_place.items.remove(inst)"""
 
         origin = (parent if was_in_container else old_loc)
         success, shard = self.separate_cluster(inst, origin=origin, origin_type="container" if was_in_container else "location")

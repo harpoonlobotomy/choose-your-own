@@ -3452,3 +3452,80 @@ Hm.
 Notes for tomorrow:
 * can't pick up the flowers from a godmode added glass jar; there's one lot of flowers in no_place and another local, need to figure out which.
 * Need to add find_local_item_by_name to verb_action functions, currently they all still do their old things.
+
+Trying to figure out the best way to do get_correct_cluster_inst(noun_inst:ItemInstance, entry:dict).
+I'm not sure if I want to have on its own, or  have it above find_local_by_name and call it as part of that function.
+
+Only thing is, the cluster fn requires the input text. But that gets stored as noun.text, so I guess I can just feed that into find_local.
+
+Going to try it out. Right now I'm doing the cluster search in get_noun_instances.  Not ideal. It's better I think to just let it pick one instance as a sample if there is one, and let the specific noun finding happen as required by the function.
+
+10.06am 20/2/26
+Hey, got it working again:
+
+# [[  look at glass shard  ]]
+# You look at the shard:
+#    A shard of broken glass.
+
+# [[  look at glass shards  ]]
+# You look at the shards:
+#    A scattering of broken glass.
+
+get_correct_cluster is now inside the main noun getter. It sends noun_text through if it has it.
+If I specifically need a cluster noun, I can send noun_text as noun.plural_identifier.
+
+It prioritises multiple instances if nothing else specified.
+Whether that's right or not depends, though. If it's pick_up, should prioritise 'single + not in inv' but accept plurals. If drop, should prioritise compound+ not in inv for target, but base noun should be single + in inv. I need to write this out properly.
+Note: Need to change how single items are dropped, because they need to be able to be picked up. So allow hidden singles to be targets for drop/pickup.
+
+## cluster_noun operations:
+#   to pick_up:
+*       mandatory: Must be not_in_inv. Allow hidden.
+        prioritise single inst, accept multiple inst.
+#   to drop:
+        for subject (noun being dropped):
+*           must be in inventory/inv container
+                (Will be single because only singles are allowed in inv)
+        for target:
+            must be in location, not inv, allow hidden.
+            prioritise multiple. Only allow single if no multiple.
+#            if single: have to write a fn to make one of them into the new non-hidden compound.
+
+Have added "priority" to fn sig, so I can specify if I need to. Noun_text somewhat shares this use, but not completely; for def look, noun_text is telling what it wants to look for, so we don't allow hidden and prioritise whatever noun_text says.
+
+I guess really we probably prioritise single always, right? Unless noun_text overrides. Yeah. Okay, that's actually much simpler. We always prioritise single if possible. Actually I can't think of a case where we'd want to prioritise multiples, in the world where we don't destroy dropped singles. I need to set that up.
+
+Okay, that seems to work.
+
+So, the main functions:
+
+`find_local_item_by_name(noun:ItemInstance=None, noun_text = None, verb=None, access_str:str=None, current_loc:cardinalInstance=None, allow_hidden=False)`
+
+Which internally runs
+`noun = get_correct_cluster_inst(noun, noun_text)`
+if the noun is a cluster and noun_text is called. If no noun_text it just returns the best found via the main noun finder.
+
+My eyes are doing that fun thing where I can't see clearly again. Goddamn.
+
+Changed it to always get correct cluster, not only if noun_text is given, it'll just prioritise single. So noun_text is only used if called directly from a main function.
+
+Note though - I can specify which noun I need from def move, so why do I also do it inside the move function?
+Not sure which is better.
+
+Well with 'drop', if I just say 'drop glass' it gets the target compound from the location, so it /has/ to be internal there.
+
+Okay so, for 'drop', we get the right compound in def drop, and it finds the target itself in combine_clusters. So that works. Any named nouns we get in the verb-action fn, otherwise we get it internally. That's okay.
+
+NOTE: combine_clusters allows for you to give a target of iteminstance type, but nothing in the function allows for that.
+Ah, it can be a container. Okay. As in, 'put  glass in box', where box already has glass in it.
+
+So I need to change
+
+# success, shard = self.separate_cluster(inst, origin=origin, origin_type="container" if was_in_container else "location")
+
+to pick up singles instead of always separating, as well as stopping them from being deleted afterwards, and instead making them invisible.
+
+10.46am
+Currently,
+`[[  drop glass  ]] == Failed to find the correct function to use for <verbInstance drop (aa6ebf03-7a99-4c85-b3ea-51e8becda1eb)>: cannot access local variable 'compound_target' where it is not associated with a value`
+Not unexpected.

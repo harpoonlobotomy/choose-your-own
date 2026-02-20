@@ -107,11 +107,11 @@ def get_noun_instances(dict_from_parser, viable_formats):
                             noun_inst = noun_inst[0]
                             dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": name, "text": entry["text"]})
 
-                        if noun_inst and "is_cluster" in noun_inst.item_type:
-                            from interactions.item_interactions import get_correct_cluster_inst
-                            noun_inst = get_correct_cluster_inst(noun_inst, entry)
-
-                            dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": noun_inst.name, "text": entry["text"]})
+                        #if noun_inst and "is_cluster" in noun_inst.item_type:
+                        #    from interactions.item_interactions import get_correct_cluster_inst
+                        #    noun_inst = get_correct_cluster_inst(noun_inst, entry)
+#
+                        #    dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": noun_inst.name, "text": entry["text"]})
 
                 elif kind == "location":
                     loc_name = entry["str_name"]
