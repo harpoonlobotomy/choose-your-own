@@ -207,14 +207,16 @@ def recurse_items_from_list(input_list:list) -> set:
 no_containers = ["only_loc_no_containers", "loc_w_inv_no_containers"]
 no_inventory = ["not_in_inv", "only_loc_no_containers", "combine_cluster", "drop_target", "pick_up"]
 no_local = ["inv_and_inv_containers", "drop_subject"]
+in_inv_children = ["local_and_inv_containers_only"]
 
 ## Put strings here to use as 'search terms' to look for in no_containers/no_inventory/no_local. Eg for drop, whether it's subject or target changes things, so just using the verb doesn't work.
 simple_assignments = ["drop_subject", "drop_target", "pick_up"]
 
 scope_to_verb = {
     "inv_and_inv_containers": ["drop"], # only things in inventory, including recursion.
-    "all_local": ["look", "find"], # everything accessable, carried/ local/etc
-    "not_in_inv": ["take", "pick_up"], # includes local containers, just nothing I'm already carrying.
+    "all_local": ["look", "find", "burn", "fire_source"], # everything accessable, carried/ local/etc
+    "local_and_inv_containers_only": ["take"],
+    "not_in_inv": ["pick_up"], # includes local containers, just nothing I'm already carrying.
     "only_loc_no_containers": [""], # No idea what would call for this tbh. It's just 'stuff you can see around you'.
     "loc_w_inv_no_containers": [""], # this one either. This'll take some development.
     }
@@ -250,6 +252,7 @@ def find_local_item_by_name(noun:ItemInstance=None, noun_text = None, verb=None,
                 exit()
         else:
             access_str = "all_local" # arbitrarily get all, so it can be called with no args and still work for getting all local items.
+        #print(f"Access str: {access_str}")
 
     # Now we know what's excluded, made the set.
         inv_items = None
@@ -259,8 +262,10 @@ def find_local_item_by_name(noun:ItemInstance=None, noun_text = None, verb=None,
             inv_items = loc.inv_place.items
         if inv_items and access_str not in no_containers:
             children = recurse_items_from_list(inv_items)
-            if children:
+            if children and access_str not in in_inv_children:
                 inv_items = set(children|set(inv_items))
+            elif children and access_str in in_inv_children:
+                inv_items = children
 
         if access_str in no_local:
             loc_items = None
@@ -282,7 +287,6 @@ def find_local_item_by_name(noun:ItemInstance=None, noun_text = None, verb=None,
                     loc_items = set(children|set(loc_items))
 
             if access_str in no_inventory and not loc_items:
-                print("No local items at all. Returning.")
                 return None, access_str
 
         if not inv_items and not loc_items:
@@ -312,14 +316,15 @@ def find_local_item_by_name(noun:ItemInstance=None, noun_text = None, verb=None,
 
     if noun:
         if isinstance(noun, ItemInstance):
-            if noun in final_items:
-                if "is_cluster" in noun.item_type:
-                    if access_str in ("drop_target", "pick_up", "not_in_inv"):
-                        single_and_local = True
-                    else:
-                        single_and_local = False
-                    noun = get_correct_cluster_inst(noun, noun_text, local_items=final_items, local_only = True if single_and_local else False, access_str = access_str, allow_hidden=hidden_cluster, priority=priority if priority else None)
-                return noun
+            if noun in final_items and "is_cluster" in noun.item_type:
+                if access_str in ("drop_target", "pick_up", "not_in_inv"):
+                    single_and_local = True
+                else:
+                    single_and_local = False
+                test = get_correct_cluster_inst(noun, noun_text, local_items=final_items, local_only = True if single_and_local else False, access_str = access_str, allow_hidden=hidden_cluster, priority=priority if priority else None)
+                if test:
+                    noun = test
+                    return noun
 
             noun_name = noun.name
         elif isinstance(noun, str):

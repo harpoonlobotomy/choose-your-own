@@ -103,7 +103,7 @@ class VerbRegistry:
 @dataclass
 class Parser:
 
-    def check_compound_words(parts_dict, word, parts, idx, kinds, word_type, omit_next):
+    def check_compound_words(parts_dict, word, parts, idx, kinds, word_type, omit_next, local_nouns = None):
         logging_fn()
 
         #print(f"\nCHECK COMPOUND WORDS: {word_type}\n")
@@ -157,16 +157,33 @@ class Parser:
             #print(f"Compound matches: {compound_matches}")
             least_missing = 10
             winner = None
+            locals = list()
+            if word_type == "noun":
+                for item in local_nouns:
+                    if item in compound_matches:
+                        locals.append(item)
+
+                if locals and len(locals) == 1:
+                    matches_count, _ = compound_matches[locals[0]]
+                    canonical = locals[0]
+                    omit_next += matches_count -1
+                    kinds.add(word_type)
+                    perfect_match = canonical
+                    return idx, word, kinds, canonical, potential_match, omit_next, perfect_match
+
 
             for item in compound_matches:
                 by_alt_words = verbs.by_alt_words.get(item)
                 if by_alt_words:
                     print(f"ITEM in compound_matches: {item}")
                     print(f"By alt words: {by_alt_words}")
+
                 matched, total_parts = compound_matches[item]
+                if matched == 0:
+                    matched = 1 # eg 'mag' is 'fashion magazine', but the index is wrong so it marks nothing and breaks later. At least one match happened or it wouldn't be in compound_matches.
                 missing = total_parts - matched
                 ratio = missing/total_parts
-                #print(f"Missing: {missing} / ration total/missing: {ratio} (total_parts: {total_parts})")
+                #print(f"Missing: {missing} / ratio total/missing: {ratio} (total_parts: {total_parts})")
                 if missing < least_missing:
                     least_missing = missing
                     winner = item
@@ -180,7 +197,7 @@ class Parser:
                 canonical = match
                 omit_next += matches_count -1
                 kinds.add(word_type)
-
+                #print(f"Canonical: {canonical}. omit_next: {omit_next}, word type: {word_type}")
             else:
                 if not matches:
                     if word_type == "noun":
@@ -312,7 +329,7 @@ class Parser:
                     potential_match = True
                 else:
                     second_perfect = None
-                    idx, word, kinds, canonical, potential_match, omit_next, perfect = Parser.check_compound_words(parts_dict = compound_nouns, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "noun", omit_next=omit_next)
+                    idx, word, kinds, canonical, potential_match, omit_next, perfect = Parser.check_compound_words(parts_dict = compound_nouns, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "noun", omit_next=omit_next, local_nouns = items)
                     second_perfect = None
 
                     try:
@@ -626,7 +643,7 @@ class Parser:
         local_nouns = find_local_item_by_name()
         clean_nouns  = {}
         if not local_nouns:
-            clean_nouns = set()
+            clean_nouns = dict()
         else:
             for item in local_nouns:
                 clean_nouns[item.name] = item
@@ -635,7 +652,7 @@ class Parser:
                         parts = item.name.split(" ")
                         membrane.plural_words_dict[item.name] = tuple(parts)
 
-        membrane.local_nouns = list(clean_nouns)
+        membrane.local_nouns = clean_nouns
 
         tokens = self.tokenise(input_str, nouns_list, locations, directions, cardinals, membrane)
         if not tokens:
@@ -653,7 +670,7 @@ class Parser:
         verbReg_Reciever(f"sequences after sequencer: {sequences}")
 
         if not sequences:
-            #print(f"FAILURE IN SEQUENCES: {tokens}")
+            print(f"FAILURE IN SEQUENCES: {tokens}")
             from misc_utilities import print_failure_message
             print_failure_message(input_str=input_str)
             return None, None
@@ -684,9 +701,9 @@ class Parser:
                 length_checked_sequences.append(sequence)
 
         initial_dict, sequence = Parser.generate_initial_dict(tokens, length_checked_sequences) # culls to just the first sequence. Doesn't deal with 'picking the best version' if there's more than one yet. Needs to in the future.
-
+        #print(f"About to go to build_dict: {initial_dict}\n")
         dict_for_output, tokens = self.build_dict(verb_instances, tokens, initial_dict, sequence)
-        #print(f"dict for output; {dict_for_output}")
+        #print(f"dict for output; {dict_for_output}\n")
         return sequence, dict_for_output
 
     # -------------

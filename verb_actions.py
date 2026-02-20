@@ -995,8 +995,10 @@ def clean(format_tuple, input_dict):
 def burn(format_tuple, input_dict):
     logging_fn()
 
-    noun = get_noun(input_dict)
-    noun2 = get_noun(input_dict, 2)
+    noun, noun_str, noun2, noun2_str = get_nouns_w_str(input_dict)
+    outcome = item_interactions.find_local_item_by_name(noun, noun_str, verb="burn")
+    if isinstance(outcome, ItemInstance):
+        noun = outcome
 
     from config import require_firesource
 
@@ -1013,6 +1015,9 @@ def burn(format_tuple, input_dict):
         return
 
     if require_firesource:
+        outcome = item_interactions.find_local_item_by_name(noun2, noun2_str, verb="fire_source")
+        if isinstance(outcome, ItemInstance):
+            noun2 = outcome
         if not noun2:
             local_items = registry.get_local_items(include_inv=True)
             if local_items:
@@ -1023,7 +1028,6 @@ def burn(format_tuple, input_dict):
         if noun2:
             dir_or_sem = get_dir_or_sem_if_singular(input_dict)
             if dir_or_sem in ("with", "using"):
-                print(f"Vars for prospective fire source: {vars(noun2)}")
                 if "firesource" in noun2.item_type:
                     firesource_found = noun2
                 else:

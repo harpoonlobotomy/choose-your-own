@@ -3607,3 +3607,26 @@ Got it. Now you can drop/pick up the same cluster item each time.
 
 Dropped items still drop to 0 count, and the count is added back to the cluster, but the 0 count ones are picked up first. So 'broken glass' always starts with 3 cluster parts, and the total number of glass parts from that cluster is always 3, whether they're in inventory or invisible or plain in loc. The shard/shards plural names still update properly.
 Really pleased with that.
+
+7.24pm
+Back to burning things now.
+
+##
+ .-            -.
+[<  look at tv  >]
+ '-            -'
+
+
+Hm.
+Outcome: None, noun: <ItemInstance match / (1c125b4a-ad8b-41c2-8d7e-7a115f1746f3) / north no_place / None/ 12>
+
+Okay, fixed that, ish.
+
+values: ("top of token_role_options: Token(idx=1, text='fashion mag', kind=('noun',), canonical='fashion mag')",)
+values: ("top of token_role_options: Token(idx=4, text='match', kind={'noun'}, canonical='match')",)
+For some reason, 'burn fashion mag with match' skips the 'with', so the sentence breaks. 'Burn mag with match' works fine. Need to check why it adds too many omit_nexts...
+
+I wonder if it was the addition of local_nouns that made the difference here. Because one of those would have worked, but it's not getting the correct one because it's only comparing to item defs I think.
+
+10.02pm
+Okay. Fixed again now. Omit_next is proper again, and matches and magazines work again.
