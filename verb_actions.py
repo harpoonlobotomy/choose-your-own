@@ -1812,7 +1812,7 @@ def drop(format_tuple, input_dict):
 
     outcome = item_interactions.find_local_item_by_name(noun=noun, access_str="drop_subject") # item being dropped (drop_target may be later if dropping into container etc.)
     if outcome and isinstance(outcome, ItemInstance):
-        print_yellow(f"Found noun from find_local_item_by_name: {outcome}. Original: {noun}")
+        #print_yellow(f"Found noun from find_local_item_by_name: {outcome}. Original: {noun}")
         noun = outcome
     else:
         outcome = print_failure_message(noun=noun_str, verb="drop")
@@ -1829,7 +1829,7 @@ def drop(format_tuple, input_dict):
         _, container, reason_val, meaning = registry.check_item_is_accessible(noun)
         #print(f"reason val: {reason_val}, meaning: {meaning}, for item: {noun}")
         if reason_val == 5:
-            dropped = registry.drop(noun)
+            registry.drop(noun)
 
         elif reason_val == 3:
             print(f"You can't drop the {assign_colour(noun)}; you'd need to get it out of the {assign_colour(container)} first.")
@@ -1856,7 +1856,6 @@ def drop(format_tuple, input_dict):
                 if noun2 and "container" in noun2.item_type:
                     registry.move_item(noun, new_container=noun2)
                     #move_a_to_b(a=item_to_place, b=container_or_location, action=action_word, direction=direction)
-
             else:
                 print(f"Couldn't move {noun.name} because {meaning}")
         else:
@@ -1994,6 +1993,15 @@ def enter(format_tuple, input_dict, noun=None):
                 return
         print(f"This {noun} doesn't lead anywhere")
 
+MOVE_UP = "\033[A"
+def make_foreline(new_str, input_str):
+
+    diff = len(new_str) - len(input_str)
+    half = int(diff/2)
+    leftovers = diff - (half + half) - 1 -2
+    foreline = f"{MOVE_UP}\033[1;32m" + " .-" + (f" " * (half-3)) + (" " * (len(input_str))) + (f" " * (half + leftovers)) + "-."
+    print(foreline)
+    return f"\033[1;32m" + " '-" + (f" " * (half-2)) + (" " * (len(input_str))) + (f" " * (half + leftovers-1)) + "-'"
 
 def router(viable_format, inst_dict, input_str=None):
     logging_fn()
@@ -2005,13 +2013,17 @@ def router(viable_format, inst_dict, input_str=None):
         for data in v.values():
             quick_list.append(data["str_name"])
             input_strings.append(data["text"])
-    MOVE_UP = "\033[A"
+
 
     from config import print_input_str
 
     if print_input_str:
+        new_str = f"[<  {input_str}  >]"
+        foreline = make_foreline(new_str, input_str)
+        input_str = new_str
         if input_str:
-            print(f'{MOVE_UP}\033[1;32m[[  {input_str}  ]]\033[0m\n')
+            print(f'{MOVE_UP}\n\033[1;32m{input_str}\033[0m')
+            print(foreline, "\033[0m\n")
             #print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {input_str}  ]]\033[0m\n')
         else:
             print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {" ".join(input_strings)}  ]]\033[0m\n')

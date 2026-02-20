@@ -876,10 +876,7 @@ class itemRegistry:
         from interactions.item_interactions import find_local_item_by_name
         compound_target = find_local_item_by_name(noun=shard.name, access_str="drop_target", hidden_cluster=True, current_loc=target)
         if not compound_target:
-            print(f"No compound target for {shard} to merge with.")
             return shard, "no_local_compound"
-
-        print(f"Compound target: {compound_target}. Shard: {shard}")
 
         if not hasattr(shard, "has_multiple_instances") or not hasattr(compound_target, "has_multiple_instances") or shard.name != compound_target.name:
             return False, False
@@ -891,7 +888,6 @@ class itemRegistry:
         registry.by_location[target].add(shard)
         setattr(shard, "is_hidden", True) # switching these up, so we do drop the shard, but leave it invisible at the target location.
         if shard in self.by_location[loc.inv_place]:
-            print(f"removed {shard.name} from inventory")
             self.by_location[loc.inv_place].remove(shard)
         else:
             print(f"{shard} was not in by_location[loc.inv_place].")
@@ -901,11 +897,10 @@ class itemRegistry:
             print(f"{shard} was not in by_location[loc.inv_place].")
 
         total_instances = shard.has_multiple_instances + compound_target.has_multiple_instances
-        print("total_instances: ", total_instances, "inst.has_multiple_instances: ", shard.has_multiple_instances, "+ inst_at_target: ", compound_target.has_multiple_instances)
+        #print("total_instances: ", total_instances, "inst.has_multiple_instances: ", shard.has_multiple_instances, "+ inst_at_target: ", compound_target.has_multiple_instances)
         compound_target.has_multiple_instances = total_instances
         shard.has_multiple_instances = 0
 
-        print(f"Combined clusters. New instance count: {total_instances}")
         return shard, compound_target
 
     def separate_cluster(self, compound_inst:ItemInstance|placeInstance, origin, origin_type:str):
@@ -926,14 +921,14 @@ class itemRegistry:
             ## but we do need compound_noun to say where it 'came' from.
             compound_test = find_local_item_by_name(noun=noun, verb="take", access_str = "pick_up", current_loc = loc.current, priority="plural")
             if compound_test:
-                print(f"COMPOUND TEST IN SEPARATE CLUSTER. (Ideally in loc with +1 cluster parts): {compound_test}")
+                #print(f"COMPOUND TEST IN SEPARATE CLUSTER. (Ideally in loc with +1 cluster parts): {compound_test}")
                 compound_inst = compound_test
         else:
             local_item = find_local_item_by_name(noun=noun, verb="take", access_str = "pick_up", current_loc = loc.current, hidden_cluster=True)
             if local_item and hasattr(noun, "has_multiple_instances") and noun.has_multiple_instances == 0:
                 shard = local_item
             else:
-                print(f"Local item in separate cluster: {local_item}. multiple instances: {local_item.has_multiple_instances}")
+                #print(f"Local item in separate cluster: {local_item}. multiple instances: {local_item.has_multiple_instances}")
                 new_def = registry.item_defs.get(compound_inst.name)
                 if origin_type == "location":
                     new_def["exceptions"] = {"starting_location": origin}
@@ -958,7 +953,7 @@ class itemRegistry:
                     existing_contained_item = item
                     break
             if not existing_contained_item:
-                print(f"No multiple_instances item in {origin}")
+                #print(f"No multiple_instances item in {origin}")
                 container.children.add(compound_inst)
 
             if existing_contained_item:
@@ -1005,27 +1000,22 @@ class itemRegistry:
             if not target:
                 print(f"No target: in move_cluster_items for {inst}, but no location or new_container was given.")
             # The following only applies if move to location. Need to also get the logic in for containers.
-            printing.print_yellow(f"going to combine_clusters. Shard: {inst}, target: {target}")
+            #printing.print_yellow(f"going to combine_clusters. Shard: {inst}, target: {target}")
             shard, compound_target = self.combine_clusters(inst, target)
-            printing.print_yellow(f"After combine_clusters: Shard: {shard} // compound target: {compound_target}")
+            #printing.print_yellow(f"After combine_clusters: Shard: {shard} // compound target: {compound_target}")
             if compound_target == "no_local_compound":
                 return shard, "process_as_normal"
-            #print(f"original inst: {inst}, location: {inst.location}\nShard: {shard}, location: {shard.location}\nCompound target: {compound_target}, location: {compound_target.location}")
             if compound_target.has_multiple_instances == 0: # This'll never happen in is_drop... #DETELEME later.
                 print(f"Compound_target {compound_target} is exhausted, removing from everywhere. compound_target.has_multiple_instances == 0 in itemReg.")
                 exit()
-                self.delete_instance(compound_target)
 
             from testing_coloured_descriptions import init_loc_descriptions
             init_loc_descriptions(loc.current.place, loc.current)
-            #if isinstance(shard, ItemInstance) and isinstance(compound_target, ItemInstance): # now making the shard invisible inside combine_clusters instead.
-            #    self.delete_instance(shard)
 
             self.init_descriptions(compound_target)
             return shard, None
 
         origin = (parent if was_in_container else old_loc)
-        printing.print_yellow(f"Going to separate_cluster. inst: {inst}, origin: {origin}")
         success, shard = self.separate_cluster(inst, origin=origin, origin_type="container" if was_in_container else "location")
         if not success:
             print(f"separate cluster failed. Reported shard: {shard}, original inst: {inst}, origin: {origin}")
@@ -1038,33 +1028,7 @@ class itemRegistry:
                 from testing_coloured_descriptions import init_loc_descriptions
                 init_loc_descriptions(loc.current.place, loc.current)
 
-
-    # original:
-        """if "is_cluster" in inst.item_type: # holy shit, it seems to work. Dropping a glass shard to a location where one already exists makes them combine, but picking them up keeps them separate. And referring to them by sing/plur works in all tests I've tried so far. Sheeeeit.
-            separated = False
-            print(f"Item {inst} is cluster.")
-            if not done:
-                #print("Not done, probably wasn't dropping from inv to loc.")
-                separated, single_inst = self.separate_cluster(inst, origin=parent if was_in_container else old_loc, origin_type="container" if was_in_container else "location")
-                #print(f"inst: {inst}, new_cluster: {new_cluster}")
-                if separated:
-                #print("inst separated")
-                    updated.add(single_inst)
-                    updated.add(inst)
-                    done = single_inst
-                    print(f"Done (new single): {done}, old cluster: {inst}")
-
-            if inst.has_multiple_instances == 0:
-                print(f"This instance [{inst}] has no multiples left; deleting.")
-                #if done:
-                if inst in updated:
-                    updated.remove(inst)
-                    #print(f"removed {inst} from updated")
-                #print(f"inst: {inst}, vars: {vars(inst)}")
-                if inst in self.instances:
-                    self.delete_instance(inst)
-                    print(f"delted {inst} from instances")"""
-        return shard, None #second part is just for notes in case of 'treat as normal' or whatever string I wrote earlier. #or whatever is the correct output for the case. Likely
+        return shard, None
 
     def move_item(self, inst:ItemInstance, location:cardinalInstance=None, new_container:ItemInstance=None, old_container:ItemInstance=None, no_print=False)->ItemInstance:
         logging_fn()
@@ -1074,8 +1038,6 @@ class itemRegistry:
             outcome, other = self.move_cluster_item(inst, location, new_container, old_container)
             updated.add(outcome)
             updated.add(inst)
-            ## outcome == whichever instance should be passed back to verb_actions/event tracking.
-            # If picking up, should be the new singular_inst. If dropping, should be the original inst that was added to the compound.
             if other != "process_as_normal":
                 return outcome
 
@@ -1481,8 +1443,8 @@ class itemRegistry:
         #    print(f"{inst} not in inventory, cannot drop.")
         #    return None, inventory_list
         #inventory_list.remove(inst)
-        self.move_item(inst, location = loc.current)
-        return inst#, inventory_list
+        if self.move_item(inst, location = loc.current):
+            return inst#, inventory_list
 
 
     def complete_location_dict(self):

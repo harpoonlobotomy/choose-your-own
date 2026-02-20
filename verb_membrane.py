@@ -12,7 +12,7 @@ from eventRegistry import eventInstance
 import eventRegistry
 from itemRegistry import ItemInstance, registry
 from logger import logging_fn
-from printing import print_yellow
+from printing import print_blue, print_yellow
 from verbRegistry import VerbInstance
 
 MOVE_UP = "\033[A"
@@ -69,30 +69,19 @@ def get_noun_instances(dict_from_parser, viable_formats):
         dictionary[idx][kind] = ({"instance": card_inst, "str_name": entry["str_name"], "text": entry["text"]})
         return dictionary
 
-    #if len(viable_formats) != 1:
-    #    print("More than one viable format. I can't handle that yet. Exiting.")
-    #    print(viable_formats)
-    #    exit()
-
     verb = None
-    #print(f"dict_from_parser: {dict_from_parser}")
+
     if dict_from_parser:
         for data in dict_from_parser.values():
             for kind, entry in data.items():
-                #print(f"kind: {kind}, entry: {entry}")
                 if "verb" in kind:
                     verb = entry["instance"]
-                    #print(f"Verb: {verb}")
-                    #print(f"Verb type: {type(verb)}")
-                    #print(f"Verb.name in get_noun_instances: `{verb.name}`")
                 if "meta" in kind and verb == None:
                     verb = entry["instance"]
-                    #print(f"meta Verb: {verb}")
 
         for idx, data in dict_from_parser.items():
             from env_data import locRegistry
             for kind, entry in data.items():
-                #print(f"GET NOUN INSTANCES::: Kind: {kind}, entry: {entry}\n")
                 if kind == "noun":
                     name = entry["str_name"]
                     if name == "assumed_noun":
@@ -106,12 +95,6 @@ def get_noun_instances(dict_from_parser, viable_formats):
                         else:
                             noun_inst = noun_inst[0]
                             dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": name, "text": entry["text"]})
-
-                        #if noun_inst and "is_cluster" in noun_inst.item_type:
-                        #    from interactions.item_interactions import get_correct_cluster_inst
-                        #    noun_inst = get_correct_cluster_inst(noun_inst, entry)
-#
-                        #    dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": noun_inst.name, "text": entry["text"]})
 
                 elif kind == "location":
                     loc_name = entry["str_name"]
@@ -144,12 +127,7 @@ class Membrane:
 
         from itemRegistry import registry
         self.nouns_list = list(registry.item_defs.keys())
-        #plural_word_dict = {}
-#
-        #for item_name in self.nouns_list:
-        #    if len(item_name.split()) > 1:
-        #        plural_word_dict[item_name] = tuple(item_name.split())
-#
+
         self.plural_words_dict = registry.plural_words
 
         compound_locs = {}
@@ -183,8 +161,7 @@ class Membrane:
         from interactions.item_interactions import find_local_item_by_name
         local_items = find_local_item_by_name()
 
-        self.local_nouns = list(local_items)#local_named
-        #print(f"\nlocal nouns: {self.local_nouns}")
+        self.local_nouns = list(local_items)
         logging_fn(note = "end of get_local_nouns")
 
 membrane = Membrane()
@@ -197,7 +174,6 @@ def add_item(input_str):
         input_str = splitstr[-1]
 
     if input_str in registry.item_defs:
-        print(f"registry.item_defs[test]: {registry.item_defs[input_str]}")
         created_item = registry.init_single(input_str, registry.item_defs[input_str])
     else:
         print(f"No item named `{input_str}`. Do you want to create a new item?")
@@ -211,7 +187,6 @@ def add_item(input_str):
     registry.move_item(created_item, location=locRegistry.current)
     from testing_coloured_descriptions import init_loc_descriptions
     init_loc_descriptions(locRegistry.current)
-
     print(f"Generated item ``{created_item}``.")
 
 
@@ -306,8 +281,6 @@ def immediate_commands(input_str):
                 print(f"Moved item: {item}")
                 print(f"New location: {item.location}")
 
-        #created_item = registry.init_single(test, apply_location=locRegistry.current)
-
     print_yellow("Exiting immediate_commands.\n")
     return
 
@@ -336,10 +309,6 @@ to_json = config.parser_tests_output_to_json
 def run_membrane(input_str=None, run_tests=False):
     logging_fn()
 
-    if input_str and input_str == "exit":
-        print("input_str is exit at top of run_membrane")
-        return "exit"
-
     def loop(input_str):
 
         logging_fn()
@@ -357,7 +326,7 @@ def run_membrane(input_str=None, run_tests=False):
             if input_str in immediate_command or input_str.startswith("godmode"):
                 immediate_commands(input_str)
                 input_str = input()
-        #print(f"\ninput_STR:::: {input_str}\n")
+
         response = (None, None)
 
         while "logging" in input_str:
@@ -378,14 +347,12 @@ def run_membrane(input_str=None, run_tests=False):
                 input_str = input()
 
         if input_str == "exit":
-            print(f"Returning after logging: exit")
             return "exit"
+
         try:
             from verbRegistry import Parser
-            #print("Before input_parser")
             try:
                 viable_format, dict_from_parser = Parser.input_parser(Parser, input_str)
-                #print(f"After input_parser\n{dict_from_parser}")
                 if not viable_format:
                     return None
             except Exception as e:
@@ -401,8 +368,6 @@ def run_membrane(input_str=None, run_tests=False):
                 message, idx_kind = error
                 if isinstance(error, str):
                     if error == "No dict_from_parser":
-                        # print this if you need to, but in general, don't.
-                        #print(f"Error: {error}")
                         return None
                 if "assumed_noun" in message or "non_local noun" in message:
                     from misc_utilities import print_failure_message
@@ -467,17 +432,15 @@ def run_membrane(input_str=None, run_tests=False):
             if test == "exit":
                 return "exit"
 
+            print()
             sleep(.05)
             #input("Press any key to continue to next.")
             if i == len(test_inputs)-1:
                 config.run_tests = False
                 #run_tests = False
-            else:
-                print()
 
     else:
         test = loop(input_str)
         if test == "exit":
-            print("Loop test at end == exit, returning `exit`.")
+            print_blue(f"{MOVE_UP}Exiting now.\n")#Loop test at end == exit, returning `exit`.")
             return "exit"
-
