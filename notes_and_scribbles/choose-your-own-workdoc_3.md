@@ -3525,7 +3525,85 @@ So I need to change
 
 to pick up singles instead of always separating, as well as stopping them from being deleted afterwards, and instead making them invisible.
 
-10.46am
-Currently,
-`[[  drop glass  ]] == Failed to find the correct function to use for <verbInstance drop (aa6ebf03-7a99-4c85-b3ea-51e8becda1eb)>: cannot access local variable 'compound_target' where it is not associated with a value`
-Not unexpected.
+11.31am
+Hmph.
+
+[[  drop glass  ]]
+
+You can't drop the broken glass shard; you aren't holding it.
+
+And we're back here to looking at nouns that aren't near us.
+
+Oh, I guess I didn't add the new function to def drop yet. Okay.
+
+Also, am rerouting immediate failures (eg there is no noun present to act on) to failure printing in misc utilities.
+
+Hmph.
+
+Compound target: <ItemInstance broken glass shard / (234315fb-2863-4461-a7fd-10bc9aeba09c) / north inventory_place / None/ 1>. Shard: <ItemInstance broken glass shard / (234315fb-2863-4461-a7fd-10bc9aeba09c) / north inventory_place / None/ 1>
+
+It's 'finding' the one I sent it.
+
+12.51pm
+fixed now. Dropping single into cluster adds to cluster, dropping single with no cluster drops single, picking up works.
+
+Okay. I need to make this far cleaner. Trying to re-usilise access_str and priority is going to make it a headache, especially since there's a low degree of recursion so I have to be able to send the same commands in the round.
+
+1.19pm
+Oh, I just hit this error for the  first time:
+
+Compound_target <ItemInstance broken glass shard / (141ce1fc-1c0f-4ee4-a5b4-38bf18f769a9) / east graveyard / None/ 0> is exhausted, removing from everywhere. compound_target.has_multiple_instances == 0 in itemReg.
+
+So there was a cluster with three, I picked one up, but when I dropped it it found a single cluster t oadd to. And the 'compound target' it found was... in the inventory. Which should not happen.
+
+
+So, we drop, run
+# outcome = item_interactions.find_local_item_by_name(noun=noun, access_str="drop_subject")
+to get the one we're dropping (from inv only)
+
+Then we go through def move, and referred to combine_clusters for it to check for existing clusters.
+# compound_target = find_local_item_by_name(noun=shard.name, access_str="drop_target", allow_hidden=True, current_loc=target)
+
+And there, it goes through find_local again, which goes to get_correct_cluster again, and it loops. It's not truly recursive but I need a way to tell it 'hey, don't check clusters again, you already got delivered it'. Or maybe I just skip it. Idk. I just need to be able to pass the specificity. I think it's because it's prioritising single, but it shouldn't even have local nouns as options, so idk how it's picking it. Something's getting dropped.
+
+It's just tricky because the call for find_local is inside of get_correct_cluster inside of get_local, which gets called from everywhere. Bleh.
+
+Well I should at least call get_correct_cluster at the beginning, before local items gets made. Because it gets made again immediatly anyway.
+Well for now I'm just passing allow_hidden and access_str directly through to compound, so I can pass them t hrough directly instead of trying to interpret.
+
+2.47pm
+Hm.
+
+They're there, but they don't show up when I search. Not sure where I'm excluding hidden but apparently I am.
+[<ItemInstance broken glass shard / (94c97bb2-bcb3-43f0-8740-465f16c4838c) / east graveyard / <eventInstance item_is_broken (27b94c6f-2819-4448-9cc5-8ff1f88661a9, event state: 0>/ 2>,
+<ItemInstance broken glass shard / (0cc0b296-319c-4e9c-8a48-2ed8b2406b46) / east graveyard / None/ 0>,
+<ItemInstance broken glass shard / (f2f4c617-cd59-4d0c-b46b-2d79daa0f570) / north inventory_place / None/ 1>]
+
+but if I print local:
+LOCAL ITEMS:
+{<ItemInstance broken glass shard / (94c97bb2-bcb3-43f0-8740-465f16c4838c) / east graveyard / <eventInstance item_is_broken (27b94c6f-2819-4448-9cc5-8ff1f88661a9, event state: 0>/ 2>, <ItemInstance desiccated skeleton / (aa263abc-dbc5-4abe-8716-4fe85a250116) / east graveyard / None/ >, <ItemInstance moss / (6d0021d4-3a16-4854-9796-392e56a04ad1) / east graveyard / None/ 3>, <ItemInstance dried flowers / (f6007de2-0cf5-41eb-85ea-be6ffefdbbf5) / east graveyard / None/ >}
+
+So 6b46 should show up, but doesn't.
+OH i didn't add it to the location. Goddamn, okay.
+
+Okay so now it does get added to location:
+FINAL ITEMS: {<ItemInstance broken glass shard / (4c34a943-26ac-426e-9af3-5a29e590bc21) / east graveyard / <eventInstance item_is_broken (ae8b6699-32a7-4108-beea-a1d104c45be8, event state: 0>/ 3>, <ItemInstance broken glass shard / (d5758478-3af6-4f4e-9f9d-2cf69ee03c77) / east graveyard / None/ 0>, <ItemInstance desiccated skeleton / (fbcc643d-5be2-48bd-8cb0-5adbe204dc5e) / east graveyard / None/ >, <ItemInstance moss / (8c5daf29-f53f-429b-b9db-6df3a5cc771d) / east graveyard / None/ 3>, <ItemInstance dried flowers / (5abb9984-870f-43d1-9d71-12497ba1c3e7) / east graveyard / None/ >}
+
+And it has both options when get sto choosing the right cluster.
+
+Okay. So - partial success. cluster choosing now works properly, BUT it gets caught by run_check refusing clusters.
+
+I fixed that, but now realised my error.
+The original cluster search has to find the plural if there is one
+
+ITEM: <ItemInstance broken glass shard / (1d9b07a6-fffe-4764-ad1a-b309a6018ba8) / north inventory_place / None/ 1>
+ITEM: <ItemInstance fashion mag / (a773fc69-18a0-4681-9807-b3a1d50a9a04) / north inventory_place / None/ >
+You can't drop a glass; you aren't holding one.
+Hm.
+Oh, probably didn't inhide when I picked it up.
+
+3.25pm
+Got it. Now you can drop/pick up the same cluster item each time.
+
+Dropped items still drop to 0 count, and the count is added back to the cluster, but the 0 count ones are picked up first. So 'broken glass' always starts with 3 cluster parts, and the total number of glass parts from that cluster is always 3, whether they're in inventory or invisible or plain in loc. The shard/shards plural names still update properly.
+Really pleased with that.

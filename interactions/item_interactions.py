@@ -120,38 +120,73 @@ def is_loc_ext(noun:ItemInstance, return_trans_obj=False) -> str|None:
     return None
 
 
-def get_correct_cluster_inst(noun:ItemInstance, noun_text=None, priority="single") -> ItemInstance: ## Not implemented yet. Moving from verb_
+def get_correct_cluster_inst(noun:ItemInstance, noun_text=None, priority="single", local_only=False, access_str = None, allow_hidden=False, local_items:set=None) -> ItemInstance: ## Not implemented yet. Moving from verb_
     logging_fn()
+    #priority="single" # will just set this permanently later.
     # Not sure if I want to have this here, or  have it above find_local_by_name and call it as part of that function.
-    if hasattr(noun, "has_multiple_instances") and hasattr(noun, "single_identifier") and hasattr(noun, "plural_identifier"):
-        print(f"Noun {noun} in get_correct_cluster_inst.")
-        if noun_text and not (noun.plural_identifier in noun_text or noun.single_identifier in noun_text):
-            print(f"Noun text `{noun_text}` but is not noun.plural (`{noun.plural_identifier}`) or noun.single (`{noun.single_identifier}`). Setting to None.")
-            noun_text = None
-        if not noun_text and priority:
-            if priority == "single":
-                noun_text = noun.single_identifier
+    if not (hasattr(noun, "has_multiple_instances") and hasattr(noun, "single_identifier") and hasattr(noun, "plural_identifier")):
+        print(f"Noun {noun} does not have the identifiers required for get_correct_cluster_inst. Returning.")
+        return
+    plural_id = noun.plural_identifier
+    single_id = noun.single_identifier
+    print(f"Noun {noun} in get_correct_cluster_inst. Priority: {priority}, noun_text: {noun_text}, access_str: {access_str}")
+    if noun_text and not (noun_text == plural_id or single_id == noun_text):
+        print(f"Noun text is not an identifier: {noun_text}")
+    if noun_text and not (plural_id in noun_text or single_id in noun_text):
+        print(f"Noun text `{noun_text}` but is not noun.plural (`{plural_id}`) or noun.single (`{single_id}`). Setting to None.")
+        noun_text = None
+    if not noun_text and priority:
+        if priority == "single":
+            noun_text = single_id
 
-    # If not noun_text, then it's probably in the move_cluster section. In that case, I need to find a multiple if there is one, else take a single.
-        local_items = find_local_item_by_name(current_loc=loc.current, allow_hidden=True)
-        local_clusters = (i for i in local_items if i.name == noun.name)
-        print(f"Local clusters: {local_clusters}")
-        if local_clusters and (not noun_text or (noun_text and noun.plural_identifier in noun_text or noun.single_identifier in noun_text)):
-            print(f"Found named items of the name `{noun.name}`. Checking against local_items and input text for plural identifier `{noun.plural_identifier}` to identify the correct one.")
-            for item in local_clusters:
-                if ((noun.plural_identifier in noun_text and item.has_multiple_instances > 1) if noun_text != None else item.has_multiple_instances > 1):
-                    print("Plural compound inst found.")
-                    noun = item
-                    registry.set_print_name(noun, noun.plural_identifier)
+# If not noun_text, then it's probably in the move_cluster section. In that case, I need to find a multiple if there is one, else take a single.
+    if not local_items:
+        print("Not local items, getting new.")
+        local_items = find_local_item_by_name(current_loc=loc.current, hidden_cluster=allow_hidden, access_str=access_str)#priority = "plural" if (access_str and access_str in no_inventory) else "single"
+    local_clusters = list((i for i in local_items if i.name == noun.name))
+    if allow_hidden:
+        inst_val = 0
+    else:
+        inst_val = 1
+    print(f"Local clusters: {local_clusters}")
+    if local_clusters and (not noun_text or (noun_text and plural_id in noun_text or single_id in noun_text)):
+        singles = set()
+        plurals = set()
+        print(f"Found named items of the name `{noun.name}`. Checking against local_items and input text for plural identifier `{plural_id}` to identify the correct one.")
+        for item in local_clusters:
+            if (item.has_multiple_instances <= 1 if allow_hidden else item.has_multiple_instances == 1):
+                ### what is this: else item.has_multiple_instances == 1):
+                print("single compound inst found.")
+                singles.add(item)
+                #noun = item
+                #registry.set_print_name(noun, single_id)
+                #if priority == "single":
+                #    break
+
+            if ((plural_id in noun_text and item.has_multiple_instances > 1) if (noun_text != None or allow_hidden) else item.has_multiple_instances > 1):
+                print("Plural compound inst found.")
+                plurals.add(item)
+                #noun = item
+                #registry.set_print_name(noun, plural_id)
+                #if priority == "plural":
+                #    break
+        new_noun = None
+        if priority == "plural":
+            print(f"Plural priority. plurals: {plurals}")
+            if plurals:
+                for item in plurals:
+                    new_noun = item
+                    break
+        if priority == "single":
+            print(f"single priority. Singles: {singles}")
+            if singles:
+                for item in singles:
+                    new_noun = item
                     break
 
-                elif ((noun.single_identifier in noun_text and item.has_multiple_instances == 1) if noun_text != None else item.has_multiple_instances == 1):
-                #elif item.has_multiple_instances == 1 and noun.single_identifier in noun_text:
-                    print("single compound inst found.")
-                    noun = item
-                    registry.set_print_name(noun, noun.single_identifier)
-                    break
-
+        if not new_noun:
+            new_noun = local_clusters[0]
+        noun = new_noun
 
     return noun
 
@@ -173,50 +208,51 @@ def recurse_items_from_list(input_list:list) -> set:
 
 #container, reason_val = registry.check_item_is_accessible(noun_inst)
 no_containers = ["only_loc_no_containers", "loc_w_inv_no_containers"]
-no_inventory = ["not_in_inv", "only_loc_no_containers", "combine_cluster"]
-no_local = ["inv_and_inv_containers"]
+no_inventory = ["not_in_inv", "only_loc_no_containers", "combine_cluster", "drop_target", "pick_up"]
+no_local = ["inv_and_inv_containers", "drop_subject"]
+
+## Put strings here to use as 'search terms' to look for in no_containers/no_inventory/no_local. Eg for drop, whether it's subject or target changes things, so just using the verb doesn't work.
+simple_assignments = ["drop_subject", "drop_target", "pick_up"]
 
 scope_to_verb = {
     "inv_and_inv_containers": ["drop"], # only things in inventory, including recursion.
     "all_local": ["look", "find"], # everything accessable, carried/ local/etc
-    "not_in_inv": ["take"], # includes local containers, just nothing I'm already carrying.
+    "not_in_inv": ["take", "pick_up"], # includes local containers, just nothing I'm already carrying.
     "only_loc_no_containers": [""], # No idea what would call for this tbh. It's just 'stuff you can see around you'.
     "loc_w_inv_no_containers": [""], # this one either. This'll take some development.
-    "combine_cluster": ["combine_cluster"]
     }
 
-def find_local_item_by_name(noun:ItemInstance=None, noun_text = None, verb=None, access_str:str=None, current_loc:cardinalInstance=None, allow_hidden=False) -> ItemInstance|set:
+def find_local_item_by_name(noun:ItemInstance=None, noun_text = None, verb=None, access_str:str=None, current_loc:cardinalInstance=None, hidden_cluster=False, priority="single") -> ItemInstance|set:
     """
     Builds relevant items set using verb scope derived from `access_str` or `verb`'s status in `verb_to_noun_access`. If `noun` provided, returns the relevant `ItemInstance` of that name if found. If no `noun` provided, returns the full set.
     """
     logging_fn()
+
+
     if verb:
         from verbRegistry import VerbInstance
         if isinstance(verb, VerbInstance):
             verb = verb.name
 
-    def build_relevant_items_set(verb=None, access_str=None, current_loc=None) -> set:
+    def build_relevant_items_set(verb=None, noun=None, access_str=None, current_loc=None) -> set:
         logging_fn()
         location = None
-        if access_str and verb:
-            for kind, values in scope_to_verb.items():
-                if verb in values:
-                    if access_str != kind:
-                        print(f"Conflict between access_str `{access_str}` and the verb's allocation: `{kind}`. Will continue with access_str, but the conflict should be remedied.")
-                    break
 
-        elif not access_str and verb:
+        if not access_str and verb:
+            print(f"verb and not access str: verb:{verb}")
             for kind, values in scope_to_verb.items():
+                print(f"kind: {kind}, values: {values}")
                 if verb in values:
+                    print(f"Verb in values: {verb}")
                     access_str = kind
                     break
             if not access_str:
                 print(f"Verb `{verb}` could not find a match in verb allocation.\nExpected one of:\n{list(scope_to_verb)}. Cannot continue.")
                 exit()
 
-        elif access_str and not verb:
-            if not scope_to_verb.get(access_str):
-                print(f"find_local_items access_str is not a valid key: {access_str}. Expected one of:\n{list(scope_to_verb)}. Cannot continue.")
+        elif access_str:
+            if not scope_to_verb.get(access_str) and not access_str in simple_assignments:
+                print(f"find_local_items access_str is not a valid key: {access_str}. Expected one of:\n{list(scope_to_verb)} or \n{simple_assignments}. Cannot continue.")
                 exit()
         else:
             access_str = "all_local" # arbitrarily get all, so it can be called with no args and still work for getting all local items.
@@ -254,11 +290,11 @@ def find_local_item_by_name(noun:ItemInstance=None, noun_text = None, verb=None,
 
             if access_str in no_inventory and not loc_items:
                 print("No local items at all. Returning.")
-                return
+                return None, access_str
 
         if not inv_items and not loc_items:
             #print("Not inv or loc")
-            return
+            return None, access_str
         if inv_items and not loc_items:
             final_items = inv_items
         elif loc_items and not inv_items:
@@ -269,20 +305,33 @@ def find_local_item_by_name(noun:ItemInstance=None, noun_text = None, verb=None,
         if hasattr(location, "transition_objs") and location.transition_objs:
             for item in location.transition_objs:
                 final_items.add(item)
-        #print(f"Final items: {final_items}")
-        return final_items
+        return final_items, access_str
 
-    final_items = build_relevant_items_set(verb, access_str, current_loc)
+    if isinstance(noun, str):
+        if noun_text and noun != noun_text:
+            print(f"Noun is a string: {noun}. Noun_text is also present: {noun_text}.")
+        if noun == "assumed_noun" and noun_text:
+            noun = noun_text
+
+    final_items, access_str = build_relevant_items_set(verb, noun, access_str, current_loc)
+    print(f"FINAL ITEMS: {final_items}\n Hidden: {hidden_cluster}")
     if not final_items:
         return None
     ## Finally test if a match for noun if noun, else return final_items.
-    if noun and (not has_and_true(noun, "is_hidden") or allow_hidden):
+    if noun:
         if isinstance(noun, ItemInstance):
             if noun in final_items:
                 #print(f"Noun in final_items: {noun}\nitem_types: {noun.item_type}")
                 if "is_cluster" in noun.item_type:
-                    #print(f"Noun is a cluster: {noun}")
-                    noun = get_correct_cluster_inst(noun, noun_text)
+                    if access_str in ("drop_target", "pick_up", "not_in_inv"):
+                        print(f"Access str means single_and_local: {access_str}")
+                        single_and_local = True
+                    else:
+                        print(f"Access str means not single_and_local: {access_str}")
+                        single_and_local = False
+                    print(f"Single and local: {single_and_local}, hidden state: {hidden_cluster}")
+                    print(f"Noun is a cluster: {noun}. Noun_text: {noun_text}, access_str: {access_str}")
+                    noun = get_correct_cluster_inst(noun, noun_text, local_items=final_items, local_only = True if single_and_local else False, access_str = access_str, allow_hidden=hidden_cluster, priority=priority if priority else None)
                     #print(f"Noun found after get_correct_cluster: {noun}")
                 return noun
 
@@ -294,12 +343,9 @@ def find_local_item_by_name(noun:ItemInstance=None, noun_text = None, verb=None,
             noun_name = registry.by_alt_names.get(noun_name)
 
         for item in final_items:
-            if item.name == noun_name :
-                #print(f"Noun in final_items: {noun}")
-                if "is_cluster" in item.item_type:
-                    #print(f"Noun is a cluster: {noun}")
-                    item = get_correct_cluster_inst(item, noun_text)
-                    #print(f"Noun found after get_correct_cluster: {noun}")
+            print(f"ITEM: {item}")
+            if item.name == noun_name and (not has_and_true(item, "is_hidden") or hidden_cluster):
+                print(f"ITEM == noun_name and passes hidden test: {item}")
                 return item
 
     else:

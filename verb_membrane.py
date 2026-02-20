@@ -406,7 +406,7 @@ def run_membrane(input_str=None, run_tests=False):
                         return None
                 if "assumed_noun" in message or "non_local noun" in message:
                     from misc_utilities import print_failure_message
-                    print_failure_message(input_str, message, idx_kind, inst_dict, viable_format)
+                    print_failure_message(input_str, message, idx_kind=idx_kind, init_dict=inst_dict, format = viable_format)
                     return None
                 else:
                     print(f"ERROR: {error}")

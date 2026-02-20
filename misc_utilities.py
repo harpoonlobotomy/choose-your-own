@@ -166,58 +166,78 @@ def look_around():
                 print(f"   {is_items}")
 
 
-def print_failure_message(input_str, message=None, idx_kind=None, init_dict=None, format = None):
+def print_failure_message(input_str=None, message=None, noun=None, verb=None, idx_kind=None, init_dict=None, format = None):
     logging_fn()
-    print(f'{MOVE_UP}\033[1;32m[[  {input_str}  ]]\033[0m\n')
+    if input_str:
+        print(f'{MOVE_UP}\033[1;32m[[  {input_str}  ]]\033[0m\n')
+    #print(f"start of print_failure_message: noun: {noun}, input_str: {input_str}, idx_kind: {idx_kind}, init_dict: {init_dict}")
     #print(f"Print failure message\nmessage: {message} / idx_kind: {idx_kind}, init_dict: {init_dict}")
     from verb_actions import get_verb
-    if not init_dict:
+    if not init_dict and not (noun and verb):
         print(f"Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
         return
-
-    verb = get_verb(init_dict)
+    noun_name = None
+    if not verb and init_dict:
+        verb = get_verb(init_dict)
 
     if not verb:
         print(f"Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
         return
+
     from verb_actions import get_noun
-    if verb.name == "find":
-        noun = get_noun(init_dict)
-        if noun and isinstance(noun, str) and get_noun(init_dict, get_str=True) != noun: # == assumed noun
-            from verb_actions import find
-            if find(format_tuple=format, input_dict=init_dict):
-                return
+    from verbRegistry import VerbInstance
+    if isinstance(verb, VerbInstance):
+        verb = verb.name
+        if verb == "find":
+            noun = get_noun(init_dict)
+            if noun and isinstance(noun, str) and get_noun(init_dict, get_str=True) != noun: # == assumed noun
+                from verb_actions import find
+                if find(format_tuple=format, input_dict=init_dict):
+                    return
 
-    if not idx_kind:
+    if not idx_kind and not (noun and verb):
         print(f"Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
+        return
 
-    idx, kind = idx_kind
-    entry = init_dict[idx][kind]
+    if noun:
+        if isinstance(noun, ItemInstance):
+            noun_name = noun.name
+        if isinstance(noun, str):
+            noun_name = noun
+
     entry2 = noun2 = None
-    for i, kind in init_dict.items():
-        kind = list(kind)[0]
-        if "noun" in kind and init_dict[i][kind].get("text") != entry['text']:
-            entry2 = init_dict[i][kind]
-            if entry2.get("instance") and not isinstance(entry2["instance"], str):
-                noun2 = entry2["instance"]
+    if idx_kind:
+        idx, kind = idx_kind
+        entry = init_dict[idx][kind]
+        if isinstance (entry["instance"], str):
+            if entry["instance"] != "assumed_noun":
+                noun_name = entry["instance"]
+            else:
+                noun_name = entry["text"]
+        for i, kind in init_dict.items():
+            kind = list(kind)[0]
+            if "noun" in kind and init_dict[i][kind].get("text") != entry['text']:
+                entry2 = init_dict[i][kind]
+                if entry2.get("instance") and not isinstance(entry2["instance"], str):
+                    noun2 = entry2["instance"]
 
-    if isinstance(entry["instance"], str):# and entry["instance"] == 'assumed_noun':
-        if verb.name == "drop":
-            print(f"You can't drop the {assign_colour(entry['text'])}; you aren't holding it.")
+    if noun_name:# and entry["instance"] == 'assumed_noun':
+        if verb == "drop":
+            print(f"You can't drop a {assign_colour(noun_name, colour="yellow")}; you aren't holding one.")
             return
         if not entry2:
-            if verb.name == "look":
-                print(f"There's no {assign_colour(entry['text'], colour="yellow")} around here to {assign_colour(verb.name, colour="green")} at.")
+            if verb == "look":
+                print(f"There's no {assign_colour(noun_name, colour="yellow")} around here to {assign_colour(verb, colour="green")} at.")
                 return
-            if verb.name == "go":
-                print(f"There's no {assign_colour(entry['text'], colour="yellow")} around here to {assign_colour(verb.name, colour="green")} to.")
+            if verb == "go":
+                print(f"There's no {assign_colour(noun_name, colour="yellow")} around here to {assign_colour(verb, colour="green")} to.")
                 return
-            print(f"There's no {assign_colour(entry['text'], colour="yellow")} around here to {assign_colour(verb.name, colour="green")}.")
+            print(f"There's no {assign_colour(noun_name, colour="yellow")} around here to {assign_colour(verb, colour="green")}.")
             return
         if not noun2:
-            print(f"There's no {assign_colour(entry['text'], colour="yellow")} around here to {assign_colour(verb.name, colour="green")} {assign_colour(entry2['text'], colour="yellow")} with.")
+            print(f"There's no {assign_colour(noun_name, colour="yellow")} around here to {assign_colour(verb, colour="green")} {assign_colour(entry2['text'], colour="yellow")} with.")
             return
-        print(f"There's no {assign_colour(noun2)} around here to {assign_colour(verb.name, colour="green")} the {assign_colour(entry['text'], colour="yellow")} with.")
+        print(f"There's no {assign_colour(noun2)} around here to {assign_colour(verb, colour="green")} the {assign_colour(entry['text'], colour="yellow")} with.")
 
 
 ### INVENTORY LIST MANAGEMENT (possible all should be in item_management instead, but keeping here for now.)

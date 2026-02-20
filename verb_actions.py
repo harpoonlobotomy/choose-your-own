@@ -7,7 +7,7 @@ from env_data import cardinalInstance, locRegistry as loc, placeInstance
 from interactions import item_interactions
 from interactions.player_movement import new_relocate, turn_around
 from itemRegistry import ItemInstance, registry
-from misc_utilities import assign_colour, col_list, generate_clean_inventory, has_and_true, is_plural_noun, smart_capitalise
+from misc_utilities import assign_colour, col_list, generate_clean_inventory, has_and_true, is_plural_noun, smart_capitalise, print_failure_message
 from printing import print_yellow
 from set_up_game import game
 from verb_definitions import directions, semantics, formats
@@ -1522,17 +1522,25 @@ def turn(format_tuple, input_dict):
 def take(format_tuple, input_dict):
     from eventRegistry import events
     logging_fn()
-    noun = get_noun(input_dict)
-    #noun = verb_requires_noun(input_dict, "take", local=True)
+
+    noun, noun_str, _, _ = get_nouns_w_str(input_dict)
+
     added_to_inv = False
 
-    item_interactions.find_local_item_by_name(noun, verb=get_verb(input_dict), access_str=None, current_loc=loc.current)
-    #exit()
-    def can_take(noun_inst):
+    outcome = item_interactions.find_local_item_by_name(noun, verb="take", current_loc=loc.current, hidden_cluster=True)
+    if isinstance(outcome, ItemInstance):
+        noun = outcome
+    else:
+        if outcome == None:
+            logging_fn(f"Going to print error from def take `{input_dict}`")
+            print_failure_message(noun=noun_str, verb="take")
+            return
+
+    def can_take(noun):
         logging_fn()
         added_to_inv = False
 
-        inst, container, reason_val, meaning = registry.check_item_is_accessible(noun_inst)
+        inst, container, reason_val, meaning = registry.check_item_is_accessible(noun)
         #print(f"CAN_TAKE: {noun_inst} / meaning: {meaning} / reason_val: {reason_val}")
         if reason_val not in (0, 3, 4, 5):
             for item, value in input_dict.items():
@@ -1546,43 +1554,43 @@ def take(format_tuple, input_dict):
             if local_items:
                 local_item_names = dict()
                 for loc_item in local_items:
-                    if loc_item != noun_inst:
+                    if loc_item != noun:
                         local_item_names[loc_item.name] = loc_item
 
-                if noun_inst.name in local_item_names:
-                    val, added_to_inv = can_take(local_item_names[noun_inst.name])
+                if noun.name in local_item_names:
+                    val, added_to_inv = can_take(local_item_names[noun.name])
                     return val, added_to_inv
             else:
-                items_by_name = registry.by_name.get(noun_inst.name)
+                items_by_name = registry.by_name.get(noun.name)
                 if items_by_name:
                     #print(f"Items matching {noun_inst.name}: \n{items_by_name}\nThis won't do anything yet, but later it should.")
                     if items_by_name:
                         for item in items_by_name:
-                            if item != noun_inst and item.location == loc.current: # maybe I should replace the above with this. Don't worry about the whole 'make a dict of local names' thing, just check the location of inst by name directly.
-                                print(f"There's another {noun_inst.name} here, but it was not found in local_items. This means the item location wasn't assigned properly, something is broken.")
+                            if item != noun and item.location == loc.current: # maybe I should replace the above with this. Don't worry about the whole 'make a dict of local names' thing, just check the location of inst by name directly.
+                                print(f"There's another {noun.name} here, but it was not found in local_items. This means the item location wasn't assigned properly, something is broken.")
 
-            print(f"The {assign_colour(noun_inst)} {is_plural_noun(noun_inst)} already in your inventory.")
+            print(f"The {assign_colour(noun)} {is_plural_noun(noun)} already in your inventory.")
             return 1, added_to_inv
         else:
-            if hasattr(noun_inst, "can_pick_up") and noun_inst.can_pick_up:
+            if hasattr(noun, "can_pick_up") and noun.can_pick_up:
                 if reason_val in (3, 4):
-                    outcome = registry.move_from_container_to_inv(noun_inst, parent=container)
+                    outcome = registry.move_from_container_to_inv(noun, parent=container)
                     added_to_inv = outcome
                     #print("added to inv, returning.")
                     return 0, added_to_inv
                 elif reason_val == 0:
-                    outcome = registry.move_item(noun_inst, location = loc.inv_place)
+                    outcome = registry.move_item(noun, location = loc.inv_place)
 
                     if outcome in loc.inv_place.items:
                         #print("Outcome is in inventory. (line 1480)")
                         return 0, outcome
-                    if noun_inst in loc.inv_place.items: # Once confirmed, remove the
+                    if noun in loc.inv_place.items: # Once confirmed, remove the
                         #print("noun_inst is in inventory. line 1483")
-                        added_to_inv = noun_inst
+                        added_to_inv = noun
                         return 0, added_to_inv
-                print(f"{noun_inst} failed to be processed, not reasonval 3, 4, 5. reason_val: {reason_val}/{meaning}")
+                print(f"{noun} failed to be processed, not reasonval 3, 4, 5. reason_val: {reason_val}/{meaning}")
             else:
-                print(f"You can't pick up the {assign_colour(noun_inst)}.")
+                print(f"You can't pick up the {assign_colour(noun)}.")
                 return 1, added_to_inv
             print("Failed in can_take, returning defaults.")
             return 0, added_to_inv
@@ -1619,9 +1627,11 @@ def take(format_tuple, input_dict):
             if reason_val not in (0, 3, 4):
                 #print(f"Cannot take {noun_inst.name}.")
                 #print(f"Reason code: {reason_val}")
+                #print_failure_message(verb="take", noun=noun)
                 print(f"Sorry, you can't take the {assign_colour(noun)} right now.")
-                if reason_val == 2:
+                if reason_val == 5:
                     print(f"{assign_colour(noun)} is already in your inventory.")
+                    return
             else:
                 if container == container_inst and reason_val in (3, 4):
                     output_noun = registry.move_from_container_to_inv(noun, parent=container)
@@ -1790,24 +1800,23 @@ def drop(format_tuple, input_dict):
     #print("This is the drop function.")
 
     _, location = get_current_loc() # don't know if separating the tuple is making life harder for myself here...
-    noun = get_noun(input_dict)
+    noun, noun_str, _, _ = get_nouns_w_str(input_dict)
     #noun = verb_requires_noun(input_dict, "drop", local=True)
+    if isinstance(noun, str):
+        print("Noun is not an instance obj.")
+        if noun == "assumed_noun":
+            noun = noun_str
     if not noun:
         print("What do you want to drop?")
         return
 
-    if noun not in loc.inv_place.items:
-        found = False
-        inv_items = loc.inv_place.items
-        #print(f"inv items: {inv_items}")
-        if inv_items:
-            for item in inv_items:
-                if hasattr(item, "is_hidden") and item.is_hidden:
-                    continue
-                if item.name == noun.name:
-                    noun=item
-                    found = True
-                    break
+    outcome = item_interactions.find_local_item_by_name(noun=noun, access_str="drop_subject") # item being dropped (drop_target may be later if dropping into container etc.)
+    if outcome and isinstance(outcome, ItemInstance):
+        print_yellow(f"Found noun from find_local_item_by_name: {outcome}. Original: {noun}")
+        noun = outcome
+    else:
+        outcome = print_failure_message(noun=noun_str, verb="drop")
+        return
 
     if len(input_dict) == 3:
         direction = get_dir_or_sem_if_singular(input_dict)

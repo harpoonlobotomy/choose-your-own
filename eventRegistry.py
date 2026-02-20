@@ -1014,18 +1014,13 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                     #if to_be_current.msgs.get("start_msg"):
 
 
-    def end_event(self, event_name, trigger:Trigger=None, noun_loc=None, noun=None):
+    def end_event(self, event_name, trigger:Trigger=None, noun=None):
         logging_fn()
         print_desc_again = False # Use to reprint the local description if items have become unhidden. Do it in a better way later, for now this will do.
         if isinstance(event_name, str):
             event_to_end = self.event_by_name(event_name)
         else:
             event_to_end = event_name
-
-        #if hasattr(event_to_end, "remove_event_on_failure"):
-        #    print(f"REMOVE EVENT ON FAILURE TRUE FOR {event_to_end}")
-        #else:
-        #    print(f"NO :: REMOVE EVENT ON FAILURE FOR {event_to_end}")
 
         if event_to_end in self.event_by_state(1):
             self.by_state[1].remove(event_to_end)
@@ -1042,12 +1037,11 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                             still_limited_to.add(loc)
                         no_limits = False
 
-
                 if no_limits:
                     self.travel_is_limited = False
                     self.travel_limited_to = set()
                 else:
-                    self.travel_limited_to = still_limited_to #reinstate the limits imposed by any other events but remove your own.
+                    self.travel_limited_to = still_limited_to
 
 # The following all assume that all events only act on unique items (eg an item won't be hidden by multiple events (or if they are, cannot be revealed by any old one of them. Going with it to keep it simple for now.))
     ##NOTE: Absolutely this can be done using the new category entry in effect_attrs instead of going through it manually each time. Implement that.
@@ -1065,16 +1059,10 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                     for item in getattr(event_to_end, item_set):
                         if effect_attrs.get(item_set) and effect_attrs[item_set].get("on_event_end"):
                             for k, v in effect_attrs[item_set]["on_event_end"].items():
-                                #print(f"Item: {item}, K: {k}, v: {v}")
-                                #print(f"Before setattr for item[k]: {getattr(item, k)}")
                                 setattr(item, k, v)
-                                #print(f"After setattr for item[k]: {getattr(item, k)}")
 
-                        #else:
-                            #print(f"No entry in effect_attrs for {item_set}")
                         pop_me.add(item)
                         if item_set == "hidden_items": # NOTE: use this to make it print the description again after an end, so if something was meant to suddenly appear, use this (even if it wasn't technically hiding)
-                            #print("Will print desc again.")
                             print_desc_again = True
 
                     if pop_me:
@@ -1091,9 +1079,6 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                 if hasattr(item, "is_event_key"):
                     item.is_event_key = False
 
-
-            #print(f"MESSAGES: {event_to_end.msgs}")
-            #print(f"VARS EVENT: {vars(event_to_end)}")
             if hasattr(event_to_end, "end_type") and event_to_end.end_type == "failure":
                 self.play_event_msg(msg_type="failure", event=event_to_end, print_txt=True, noun=noun)
 
@@ -1132,16 +1117,12 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
 
     def check_movement_limits(self)-> dict:
 
-        allowed_locations = {}
         allowed_locations_by_loc = {}
         for event in self.by_state[1]:
             if hasattr(event, "travel_limited_to"):
-                allowed_locations[event] = set()
                 for loc in event.travel_limited_to:
-                    allowed_locations[event].add(loc)
                     allowed_locations_by_loc.setdefault(loc, set()).add(event)
 
-        #return allowed_locations
         return allowed_locations_by_loc
 
     def check_reason_tuple(self, reason, event, trig, noun_inst=None):
@@ -1165,7 +1146,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                     self.start_event(event_name = event.name, event = event, noun=noun_inst)
                     return 1, None
 
-    def is_event_trigger(self, noun_inst, noun_loc, reason = None) -> (int|None):
+    def is_event_trigger(self, noun_inst, noun_loc = None, reason = None) -> (int|None):
         logging_fn()
         #print(f"Start of is_event_trigger. Noun details: {vars(noun_inst)}")
         def check_triggers(event:eventInstance, noun:ItemInstance, reason) -> (int|None)|list:
@@ -1183,7 +1164,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                             if reason in trig.triggers:
                                 #print(f"reason in trig.triggers: {trig.triggers}")
                                 if reason in requires_end_trigger_loc:
-                                    if hasattr(trig, "item_inst_loc") and getattr(trig, "item_inst_loc") != None and trig.item_inst_loc != noun_loc:
+                                    if hasattr(trig, "item_inst_loc") and getattr(trig, "item_inst_loc") != None and trig.item_inst_loc != noun.location:
                                         continue # fail if the fail should have a location but doesn't. Doesn't apply to any current ones, but if you have to read a book under a specific tree, this would apply.
                                 if hasattr(trig, "exceptions") and trig.exceptions:
                                     for exception in trig.exceptions:
@@ -1195,9 +1176,8 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                                                 return 1, None
                                     print(f"No viable exceptions for {event}, noun: {noun}")
 
-
                                 #print("ENDING EVENT VIA IS_EVENT_TRIGGER")
-                                self.end_event(event, trig, noun_loc, noun)
+                                self.end_event(event, trig, noun)
                                 return 1, None
 
                         elif isinstance(reason, tuple):
@@ -1207,7 +1187,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                                 for condition in trig.triggers:
                                     if trigger_acts.get(condition) and trigger_acts[condition].get(k) == v:
                                         #print(f"Condition [{k}: {v}] met for {noun_inst}. Will end event now.")
-                                        self.end_event(event, trig, noun_loc, noun=noun_inst)
+                                        self.end_event(event, trig, noun=noun_inst)
                                         return 1, None
                         else:
                             print(f"Could not parse {reason}, type: {type(reason)}")
@@ -1380,13 +1360,6 @@ class eventIntake:
             if self.start_trigger_is_item:
                 #print(f"generated item with start trigger: {self}")
                 self.match_item_to_name_only = attr["start_trigger"]["item_trigger"].get("match_item_by_name_only")
-                #events.generate_event_from_item[attr["start_trigger"]["item_trigger"]["item_name"]] = self
-                # Means location etc doesn't matter in this case, only that the item name matches start trigger.
-            #elif self.start_trigger_is_attr:
-            #    if not attr.get("immediate_action"):
-            #        print("Cannot deal with this yet. Currently only immediate_action triggers can be attr triggers.")
-            #    else:
-            #        self.match_trigger_to_attr_only = attr["immediate_action"]["attribute_trigger"].get("item_attribute")
 
             self.repeats = attr.get("repeats")
 
