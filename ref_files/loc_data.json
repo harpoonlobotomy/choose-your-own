@@ -247,7 +247,8 @@
     "descrip": "Around you, you see the interior of a rather run-down looking PPPwork shedEEE, previously boarded up but seemingly, not anymore.",
     "inside": true,
     "electricity": false,
-    "nature": false
+    "nature": false,
+    "transition_obj": {"north": "wooden door"}
   },
   "everything": {
     "alt_names": [],

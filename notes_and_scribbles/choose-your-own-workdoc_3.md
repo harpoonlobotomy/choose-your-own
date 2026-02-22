@@ -4000,3 +4000,62 @@ Honestly considering removing the item-named-shed and just keeping it as descrip
 
 Ugh that's going to take the rest of the day. Probably needs it though. It was always a bit silly.
 
+2.22pm
+Tried it, then realised the error was because I never finished updating ext_location and rolled it back.
+
+Now:
+transition_objs': None
+Why does work shed (noun) not have instance objs?
+Oh we put them on the location, don't we, not the noun inst.
+It makes no sense to have
+'transition_objs': None,
+on the work shed noun obj tho when half the time that's what gets pulled. Should apply it to both. It's a static state so it's not like I need to track the changes.
+TODO: Add transition_objs to is_loc_exterior noun inst as well as the location.
+
+2.27pm
+But randomly I still get this:
+
+format: ('verb', 'direction', 'location')
+ .-                 -.
+[<  go to work shed  >]
+ '-                 -'
+
+def go len2 or len3
+No noun.
+Failed to find the correct function to use for <verbInstance go (68b48fa1-e6d7-4fbe-897d-622828d25935)>: 'cardinal'
+
+I don't know why it works most of the time and then just breaks.
+
+format: ('verb', 'location')
+ .-            -.
+[<  enter shed  >]
+ '-            -'
+
+It would go to 'go' here but it recurses.
+Still.
+
+Okay so the reason it's broken is because at some point I changed it so transition_objs were on the cardinal, not the place obj. Which is a suitable improvement, but I didn't update initialise_placeRegistry.
+
+#   if hasattr(place, "transition_objs"):
+#       for item in place.transition_objs:
+
+
+Well, changing transition_objs back to a set, because there's literally no reason to have it be a dict to store the location of the item, whe the item carries it and that item is being carried /by the cardinal/.
+
+Getting rid of exit_to_item and entry_item.
+
+Okay so currently, the cardinal has a set of transition_objs.
+
+the /place/ has transition_objs[item][int_location] and [ext_location]
+
+Huh, this is interesting.
+
+When 'shed' is a location:
+
+nuon has ext_location: <cardinalInstance west graveyard (a224c2e2-a73b-4bd0-bf96-fa63ac5ebdac)> and int_location: <cardinalInstance north work shed (a4c91cd5-9ee4-40fa-a9b3-ec74eb9ef6a2)>
+You can't enter through a closed door.
+
+Think it's fixed now. Seems it. 5.59pm
+Added 'door_opens to itemReg, want to use more random-from-a-list descriptions. Not today though.
+
+I think trans_nouns etc should work better now.

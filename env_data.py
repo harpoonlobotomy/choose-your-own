@@ -69,9 +69,9 @@ class cardinalInstance:
 ## Also just in general the transition_objs needs work. Far too much duplication.
                         self.transition_objs.add(item)
                             #self.transition_objs = dict()
-                        #self.transition_objs[item] = {
-                        #    "enter_location": loc_dict[self.place.name][self.name]["items"][item].get("enter_location"),
-                        #    "exit_to_location": (loc_dict[self.place.name][self.name]["items"][item].get("exit_to_location") if loc_dict[self.place.name][self.name]["items"][item].get("exit_to_location") != self.name else self)}
+                        self.place.transition_objs[item] = {
+                            "int_location": loc_dict[self.place.name][self.name]["items"][item].get("int_location"),
+                            "ext_location": (loc_dict[self.place.name][self.name]["items"][item].get("ext_location") if loc_dict[self.place.name][self.name]["items"][item].get("ext_location") != self.name else self)}
 
     def __repr__(self):
         return f"<cardinalInstance {self.place_name} ({self.id})>"
@@ -92,6 +92,7 @@ class placeInstance:
         self.current_loc = None
         self.colour = None ## assign like items on first
         self.cardinals = {}
+        self.transition_objs = {}
 
         for attr, value in loc_dict.get(name, {}).items():
             if attr == "alt_names":
@@ -225,6 +226,8 @@ class placeRegistry:
         print(f"by_alt_name: {self.by_alt_name}")
         print(f"LOC INST: {loc_inst}, type: {type(loc_inst)}")
         print(f"Failed to get placeInstance for {loc_name}. Please investigate. Exiting from env_data.")
+        from logger import traceback_fn
+        traceback_fn()
         exit()
 
     def show_name(self, loc, text=""):
@@ -288,34 +291,46 @@ def initialise_placeRegistry():
     for name in loc_dict.keys():
         place = add_new_loc(name)
 
-        if hasattr(place, "transition_objs"):
-            for item in place.transition_objs:
-                enter_location = place.transition_objs[item].get("enter_location")
-                exit_to_location = place.transition_objs[item].get("exit_to_location")
-                if not enter_location:
-                    print(f"No enter location found for {place} transition object {item}")
-                    exit()
-                if not exit_to_location:
-                    print(f"No exit_to location found for {place} transition object {item}")
-                    exit()
-                for loc in (enter_location, exit_to_location):
-                    if isinstance(loc, str):
-                        loc_inst = locRegistry.place_by_name(loc)
-                        if loc == enter_location:
-                            place.transition_objs[item]["enter_location"] = loc_inst
-                        else:
-                            place.transition_objs[item]["exit_to_location"] = loc_inst
+    for place in locRegistry.places:
+        name = place.name
+        for card in place.cardinals:
+            cardinal = place.cardinals[card]
 
-                target_place = enter_location
-                if not hasattr(target_place, "transition_objs"):
-                    target_place.transition_objs = dict()
+            if hasattr(cardinal, "transition_objs") and cardinal.transition_objs:
+                for item in cardinal.transition_objs:
+                    #item_data = loc_dict[name][card]["items"].get(item)
+                    int_location = ext_location = None
+                    if cardinal.place.transition_objs.get(item):
+                        int_location = cardinal.place.transition_objs[item].get("int_location")
+                        ext_location = cardinal.place.transition_objs[item].get("ext_location")
 
-                    target_place.transition_objs[item] = {}
-                    target_place.transition_objs[item][enter_location] = target_place
-                    target_place.transition_objs[item][exit_to_location] = place
+                    if not int_location:
+                        print(f"No enter location found for {cardinal} transition object {item}")
+                        exit()
+                    if not ext_location:
+                        print(f"No exit_to location found for {cardinal} transition object {item}")
+                        exit()
+                    for loc in (int_location, ext_location):
+                        if isinstance(loc, str):
+                            card_inst = locRegistry.by_cardinal_str(cardinal_str=loc)
+                            if loc == int_location:
+                                cardinal.place.transition_objs[item]["int_location"] = card_inst
+                            else:
+                                cardinal.place.transition_objs[item]["ext_location"] = card_inst
 
-                else:
-                    print(f"Target place transition objects: {target_place.transition_objs}")
+                    target_place = locRegistry.by_cardinal_str(cardinal_str=int_location)
+                    if target_place and isinstance(target_place, cardinalInstance):
+                        target_place = target_place.place
+                    print(f"target_place: {target_place}")
+                    if not hasattr(target_place, "transition_objs") or (hasattr(target_place, "transition_objs") and not target_place.transition_objs):
+                        target_place.transition_objs = dict()
+
+                        target_place.transition_objs[item] = {}
+                        target_place.transition_objs[item][int_location] = target_place
+                        target_place.transition_objs[item][ext_location] = cardinal
+
+                    else:
+                        print(f"Target card transition objects: {target_place.transition_objs}")
 
     from config import starting_location_str, no_place_str, inv_loc_str
     locRegistry.set_current(starting_location_str)
@@ -331,16 +346,11 @@ def get_descriptions(place:placeInstance, cardinal:cardinalInstance=None):
     if not isinstance(place.overview, str):
         place.overview = list(place.overview)[0]
     if not place.overview:
-        #print(f"SELF OVERVIEW IN ENV_DATA: {place.overview}")
-    #else:
         print("Failed to get self.overview.")
         print(f"Did this part work at least? ``{description_dict.get(place.name)}``")
-    #print(f"place.overview::::: {place.overview}")
+
     CARDINALS = ["north", "east", "south", "west"]
     for card in CARDINALS:
-        #if cardinal and card != cardinal:
-        #    print(f"SKIPPING CARDINAL {card}")
-        #    continue
         if locRegistry.cardinals[place].get(card) and isinstance(locRegistry.cardinals[place].get(card), cardinalInstance):
             card_inst = locRegistry.cardinals[place].get(card)
             if description_dict[place.name].get(card):

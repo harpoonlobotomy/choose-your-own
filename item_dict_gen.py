@@ -95,8 +95,8 @@ def set_material_types(item_name, cleaned_dict):
 
     cleaned_dict["material_type"] = item_material
     for k, v in material_type_ref.get(item_material).items():
-        if k != "on_break":
-            print(f"Expected 'on_break' in material_type but didn't find it: `{k}`")
+        if k != "on_break" and k != "on_burn":
+            print(f"Expected 'on_break'/'on_burn' in material_type but didn't find it: `{k}`")
         cleaned_dict[k] = v
 
     return cleaned_dict

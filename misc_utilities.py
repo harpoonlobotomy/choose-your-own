@@ -589,6 +589,8 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
             item = item.name
         elif card_type == "ern_name":
             item = item.ern_name
+        elif card_type == "place":
+            item = item.place.name
         elif card_type == "place_name":
             item = item.place_name
         elif card_type == "in_loc_facing_card":

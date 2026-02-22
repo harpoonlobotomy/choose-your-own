@@ -1162,7 +1162,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
             moved_children = None
             if event.end_triggers:
                 for trig in event.end_triggers:
-                    #print(f"TRIG in event.end_triggers: {trig}")#\nvars: \n{vars(trig)}\n\n")
+                    print(f"TRIG in event.end_triggers: {trig}")#\nvars: \n{vars(trig)}\n\n")
                     if hasattr(trig, "constraint_tracking"):
                         print("Whether the event ends or not depends on this constraint. Maybe it should be checked earlier, I feel like I do this check in item_interactions. Needs to be one or the other.")
                         exit()
@@ -1170,7 +1170,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                     if trig.is_item_trigger and trig.item_inst == noun:
                         if isinstance(reason, str):
                             if reason in trig.triggers:
-                                #print(f"reason in trig.triggers: {trig.triggers}")
+                                print(f"reason in trig.triggers: {trig.triggers}")
                                 if reason in requires_end_trigger_loc:
                                     if hasattr(trig, "item_inst_loc") and getattr(trig, "item_inst_loc") != None and trig.item_inst_loc != noun.location:
                                         continue
@@ -1188,10 +1188,12 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
 
                         elif isinstance(reason, tuple):
                             #print(f"REASON TUPLE: {reason}, len: {len(reason)}") # will it always need to go to inner? Not sure.
+                            if len(reason) == 1:
+                                reason = reason[0]
                             #for inner in reason:
                             k, v = reason
                             for condition in trig.triggers:
-                                print(f"condition in triggers: {condition}")
+                                #print(f"condition in triggers: {condition}")
                                 if trigger_acts.get(condition) and trigger_acts[condition].get(k) == v:
                                     #print(f"Condition [{k}: {v}] met for {noun_inst}. Will end event now.")
                                     self.end_event(event, trig, noun=noun_inst)

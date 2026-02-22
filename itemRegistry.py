@@ -144,6 +144,8 @@ detail_data = { #moved this from item_definitions.
 "damp_newspaper": {"is_tested":True, 1: "Despite your best efforts, the newspaper is practically disintegrating in your hands. You make out something about an event in ballroom, but nothing beyond that..", 3: "After carefully dabbing off as much of the mucky water and debris as you can, you find the front page is a story about the swearing in of a new regional governor, apparenly fraught with controversy.", 4: "Something about a named official and a contraversy from years ago where a young man went missing in suspicious circumstances."} ## no idea where this would go, but I need some placeholder text so here it is.
 }
 
+door_opens = ["The door creaks, but allows you to head inside.", "The door creaks slightly as you make your way inside."]
+
 class ItemInstance:
     """
     Represents a single item in the game world or player inventory.
@@ -203,7 +205,6 @@ class ItemInstance:
         # removed this section again; fixed item_dict_gen to actually have all the flags it needs initially. Now itemReg only has to get the formatting right and find the instances where relevant..
 
         return self.item_type
-
 
     def __init__(self, definition_key:str, attr:dict):
         #print(f"\n\n@@@@@@@@@@@@@@@@@ITEM {definition_key} in INIT ITEMINANCE@@@@@@@@@@@@@@@\n\n")
@@ -281,39 +282,6 @@ Note on descriptions: if self.descriptions, will have different descriptions dep
         if hasattr(self, "is_hidden") and self.is_hidden:
             self.set_hidden()
 
-        if "transition" in self.item_type:
-            # card_inst.transition_objs doesn't need to specify by location, because the instance has the location itself. If later there are many many transition objects, then bringing the dict back will make sense, but for now there's literally one item, def not worth the dict. When it's bigger, maybe reconsider.
-            int_location = loc.by_cardinal_str(self.int_location)
-            if not hasattr(int_location, "entry_item"):
-                setattr(int_location, "entry_item", set())
-            getattr(int_location, "entry_item").add(self)
-            if not hasattr(int_location, "transition_objs"):
-                setattr(int_location, "transition_objs", set())
-            getattr(int_location, "transition_objs").add(self)
-            if self.name in int_location.transition_objs:
-                int_location.transition_objs.remove(self.name)
-            self.int_location = int_location
-            setattr(int_location, "location_entered", False)
-            self.is_transition_obj = True
-
-            registry.transition_objs[self.int_location] = self # shuold not need this.
-
-            ext_location = loc.by_cardinal_str(self.ext_location)
-
-            if not hasattr(ext_location, "exit_to_item"):
-                setattr(ext_location, "exit_to_item", set())
-            getattr(ext_location, "exit_to_item").add(self)
-            if self.name in ext_location.exit_to_item:
-                ext_location.exit_to_item.remove(self.name)
-            if not hasattr(ext_location, "transition_objs"):
-                setattr(ext_location, "transition_objs", set())
-            getattr(ext_location, "transition_objs").add(self)
-            if self.name in ext_location.transition_objs:
-                ext_location.transition_objs.remove(self.name)
-
-            self.ext_location = ext_location
-            setattr(ext_location, "location_entered", False)
-            self.is_transition_obj = True
 
     def __repr__(self):
         return f"<ItemInstance {self.name} / ({self.id}) / {self.location.place_name} / {self.event if hasattr(self, "event") else ''}/ {(self.has_multiple_instances if hasattr(self, 'has_multiple_instances') else '')}>"
@@ -353,13 +321,49 @@ class itemRegistry:
 
         self.locks_keys = {}
 
-        self.item_defs = {}#item_defs
+        self.item_defs = {}
 
-        self.transition_objs = {}
+        self.transition_objs = set()
 
     # -------------------------
     # Creation / deletion
     # -------------------------
+
+    def add_transition_objs(self, inst):
+
+        if "transition" in inst.item_type:
+            #print(f"TRANSITION ITEM: {inst.name}")
+            ## This is for transition objects like doors, NOT loc_exterior instances.
+            int_location = loc.by_cardinal_str(inst.int_location)
+            ext_location = loc.by_cardinal_str(inst.ext_location)
+
+            if not hasattr(int_location, "transition_objs"):
+                setattr(int_location, "transition_objs", set())
+            int_location.transition_objs.add(inst)
+            if inst.name in int_location.transition_objs:
+                int_location.transition_objs.remove(inst.name)
+
+            if inst.name in int_location.place.transition_objs:
+                int_location.place.transition_objs[inst] = int_location
+                int_location.place.transition_objs.pop(inst.name)
+
+
+            if not hasattr(ext_location, "transition_objs"):
+                setattr(ext_location, "transition_objs", set())
+            ext_location.transition_objs.add(inst)
+            if inst.name in ext_location.transition_objs:
+                ext_location.transition_objs.remove(inst.name)
+
+            if inst.name in ext_location.place.transition_objs:
+                ext_location.place.transition_objs[inst] = ext_location
+                ext_location.place.transition_objs.pop(inst.name)
+
+            inst.int_location = int_location
+            inst.ext_location = ext_location
+
+            setattr(int_location, "location_entered", False)
+            setattr(ext_location, "location_entered", False)
+            inst.is_transition_obj = True
 
     def init_single(self, item_name, item_entry = None, apply_location = None):
         #print(f"\n\n[init_single] ITEM NAME: {item_name}")
@@ -424,6 +428,7 @@ class itemRegistry:
         self.instances.add(inst)
 
         self.init_descriptions(inst)
+        self.add_transition_objs(inst)
 
         #if inst.name == "broken glass shard":
         #    print(vars(inst))
@@ -1783,13 +1788,17 @@ def initialise_itemRegistry():
                 if len(alt_name.split()) > 1:
                     plural_word_dict[alt_name] = tuple(alt_name.split())
 
-    for obj in registry.instances:
+    for obj in registry.instances: # should be able to delete this entirely now.
         if hasattr(obj, "is_loc_exterior"):
+            print(f"obj.name: {obj.name}")
             location = loc.place_by_name(obj.name)
-            if hasattr(location, "entry_item"):
+            if hasattr(location, "transition_objs") and location.transition_objs:
                 if not hasattr(obj, "transition_objs") or not isinstance(obj.transition_objs, set):
                     obj.transition_objs = set()
-                obj.transition_objs.add(location.entry_item)
+                for item in location.transition_objs:
+                    print(f"ITEM: {item}")
+                    print("Item from location.transition_objs added to obj.transition_objs")
+                    obj.transition_objs.add(item)
 
     registry.add_plural_words(plural_word_dict)
 
