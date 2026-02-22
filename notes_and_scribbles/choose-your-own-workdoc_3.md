@@ -3815,3 +3815,188 @@ get_action_flags_from_name(self, name):
 in itemRegistry that isn't used either.
 
 I could probably change item_burned to is_burned in eventRegistry too.
+
+Oh, also 'if_singular' and 'if_plural' should be is_ as well. Just make it is_x always.
+
+Yeah, using the 'closed' description as the generic works well. A thing that can be open/closed is always one of the two, so using generic as closed means
+
+    elif hasattr(inst, "is_open") and not getattr(inst, "is_open") and inst.descriptions.get("if_closed"):
+        description = inst.descriptions["if_closed"]
+that goes way entirely, because unless it was closed, it would just stick with generic.
+
+So, `if_open, if_closed, if_singular, if_plural` are the ones I've found so far that need changing.
+
+# Need to update item_defs to make any 'is_closed/if_closed' description the generic instead.
+
+Wait I added an is_closed flag?
+    if (hasattr(confirmed_container, "is_closed") and getattr(confirmed_container, "is_closed")):
+        reason = 1
+It's inside of run_check.
+
+
+# NOTE: CAN PICK UP ITEMS NOT LOCAL. At least in testing_grounds. TESTED: only in testing grounds. Things work differently there.
+
+Have fixed the 'burned magazine' returning a big error even if 'magazine' is found because 'burned' becomes its own noun and breaks the sequencer. Have added a workaround where it simply removes the assumed_noun if the other noun is confirmed and combines their name in the token.text (so an error message will still say 'burned magazine', not the found-inst's name that you didn't type) but if you have a not-burned magazine, it does that.
+
+Well have changed the assumed_noun's kind to adjective and set its idx to *10, but it remains a token.
+
+Okay, and have added it to the dict. So now we get this:
+
+dict: {
+    0: {'verb': {'canonical': 'look', 'text': 'look'}},
+    1: {'direction': {'canonical': 'at', 'text': 'at'}},
+    20: {'adjective': {'canonical': 'assumed_noun', 'text': 'burned', 'str_name': 'burned'}},
+    2: {'noun': {'canonical': 'fashion magazine', 'text': 'burned magazine'}}}
+
+The adjective is ignored in the sequencer, and ignored by verb_actions entirely so far. But having it there means I could add it to the error message if I wanted, etc. Relatively happy with that.
+
+Now back to the other horde of errors.
+
+
+Hm. Weird inventory/opening errors.
+
+#   [<  open jar  >] (in local area)
+#
+#   interactable, val, meaning:  1 0 accessible
+#   You can't open the glass jar
+#
+#   (so i picked it up)
+#
+#   [<  open jar  >]
+#   interactable, val, meaning:  1 5 in inventory
+#   You can't open the glass jar
+
+Fixed that now.
+
+Now an event error:
+
+Picking up the moss. All three start their events.
+Red moss first, then blue, then cyan.
+
+But when you drop the moss - red moss doesn't print the trigger messages I'd expect. Investigating.
+
+---------
+
+So I dropped three mosses, all of which started events.
+
+This time, two of them printed this:
+
+Noun moss is an event trigger for <eventInstance moss_dries (b3bf4e01-629e-419d-beb8-37516e4fdc67, event state: 1>
+After if trig.is_item_trigger and trig.item_inst == noun:
+You put down the still-damp moss.
+
+but one printed
+
+Noun moss is an event trigger for <eventInstance moss_dries (54b21e2b-074c-4d56-a5e8-52422d4e94bf, event state: 1>
+You put down the still-damp moss.
+
+Red moss failed this:
+    if noun_inst.event and hasattr(noun_inst, "is_event_key") and noun_inst.is_event_key:
+        print(f"Noun {noun_inst.name} is an event trigger for {noun_inst.event}")
+But it went through this process just like the others:
+#   generate events from itemname: moss / moss_dries
+#   Reason item is in this check? item_in_inv
+#   INTAKE EVENT:
+#   {'name': 'moss_dries', etc}
+
+It seems random; sometimes they all have the right print, sometimes only two, and the order is random. But they do all print the end event message. So maybe it's that terminal error where it skips lines, not an actual logic error.
+Adding a temporary print for event state after it runs.
+
+Oh, they all had the event removed so event.state errored. Well that's good.
+
+Oh it probably doesn't remove the /event itself though, does it. So they'll all be floating around. Should deal with that.
+
+But at least it confirms they were all processed.
+
+Oh, no, the event is removed entirely. Okay, good
+
+ .-           -.
+[<  take moss  >]
+ '-           -'
+
+INST is_hidden in run_check.
+Sorry, you can't take a moss right now.
+
+Oh I forgot to compensate for that, oops. Easy fix though.
+
+Hm. So this is odd.
+
+[<ItemInstance moss / (aa20a404-fb25-4733-b608-d51175cc0a96) / east graveyard / None/ 1>, <ItemInstance moss / (63ccb5b3-2915-445a-9a4f-637b98ddbd20) / east graveyard / None/ 0>, <ItemInstance moss / (bcf03142-2441-4186-af9d-b172e25fdbc5) / east graveyard / None/ 2>]
+
+This moss was dropped, but didn't become part of the compound. That's very odd...
+
+Hm. No idea why that was happening, but it seems to be fixed now:
+[<ItemInstance moss / (0792773e-8c8b-4889-921c-8e094975222e) / east graveyard / None/ 0>, <ItemInstance moss / (a4007fb9-17b1-475c-a568-86b3d445acbb) / east graveyard / None/ 0>, <ItemInstance moss / (7d02f6f5-69b8-4d70-a9e1-1ab834f7f069) / east graveyard / None/ 3>]
+
+Very odd.
+
+
+---------
+12.29pm
+Hm. The 'maintain timed event after item dropped if conditions met' is not working.
+
+ .-           -.
+[<  drop moss  >]
+ '-           -'
+
+Noun moss is an event trigger for <eventInstance moss_dries (10eae62a-5adf-43df-87e3-69e926d75a45, event state: 1>
+You put the still-damp moss down in a nice dry spot.
+
+
+ .-           -.
+[<  drop moss  >]
+ '-           -'
+
+You can't drop a moss; you aren't holding one.
+
+
+ .-           -.
+[<  take moss  >]
+ '-           -'
+
+generate events from itemname: moss / moss_dries
+Reason item is in this check? item_in_inv
+intake_event.triggered_by: ['item_in_inv']
+You pick up the moss, and feel it squish a little between your fingers.
+
+The dropped moss was magenta. The moss picked up was blue, and it started a new event.
+
+So, the existing event/noun:
+
+These are the moss clumps after a pick up/put down cycle:
+[<ItemInstance moss / (4c9f7bb0-5f61-44fc-b15c-dc1b95275a05) / east graveyard / None/ 0>, <ItemInstance moss / (133e7319-3095-4b7f-beb0-65adf1b392eb) / east graveyard / None/ 0>, <ItemInstance moss / (418d3934-8c69-42e7-a603-0c408390dc96) / east graveyard / None/ 3>]
+That's all correct.
+
+But, if I pick one up:
+
+[<ItemInstance moss / (4c9f7bb0-5f61-44fc-b15c-dc1b95275a05) / north inventory_place / <eventInstance moss_dries (049f7b79-279e-4c2a-901f-703187c2abf3, event state: 1>/ 1>, <ItemInstance moss / (133e7319-3095-4b7f-beb0-65adf1b392eb) / east graveyard / None/ 0>,
+<ItemInstance moss / (418d3934-8c69-42e7-a603-0c408390dc96) / east graveyard / None/ 2>]
+
+Oh, it's right. Okay.
+
+Well then I go to shed with two mosses:
+
+... Or I would, but:
+
+ .-            -.
+[<  go to shed  >]
+ '-            -'
+
+Failed to find the correct function to use for <verbInstance go (19b6dc16-594b-44e9-92e1-c73679ff3e8b)>: maximum recursion depth exceeded
+
+Ah. Because 'go' sends to enter, and enter sends to go.
+
+Hm.
+Fixed the recursion, but now I have the issue of two separate paths for 'go to shed'. Either it picked the noun, and then we deal with transition objs etc, or it picked the location, and we just go directly there.
+
+Hm.
+Why does it not have transition objects...
+
+{'id': '104bf9f9-3666-4fac-84d2-b76132e15ee5', 'material_type': 'generic', 'on_break': 'broken [[item_name]]', 'can_break': False, 'can_examine': False, 'descriptions': {'generic': 'a simple shed, with wood panelled walls and a simple wooden door.'}, 'has_door': False, 'is_loc_exterior': True, 'is_vertical_surface': True, 'item_type': {'wall', 'static', 'loc_exterior'}, 'nicenames': {'generic': 'a work shed'}, 'slice_attack': 5, 'slice_defence': 5, 'smash_attack': 5, 'smash_defence': 5, 'transition_objs': None, 'description': 'a simple shed, with wood panelled walls and a simple wooden door.', 'starting_location': <cardinalInstance west graveyard (af785dad-c352-4875-978a-706d2110b4a7)>, 'name': 'work shed', 'print_name': 'work shed', 'nicename': 'a work shed', 'is_transition_obj': False, 'colour': 'cyan', 'verb_actions': set(), 'location': <cardinalInstance west graveyard (af785dad-c352-4875-978a-706d2110b4a7)>, 'event': None, 'is_event_key': False, 'alt_names': None}
+
+this is confusing. Didn't expect to spend so long on this.
+
+Honestly considering removing the item-named-shed and just keeping it as descriptions. I can always add 'shed wall' etc if I need it later.
+
+Ugh that's going to take the rest of the day. Probably needs it though. It was always a bit silly.
+

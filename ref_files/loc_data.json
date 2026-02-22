@@ -256,7 +256,7 @@
         "generic": "Everything, just everything. What is it you want? Spread around the bright white empty space, you see "
       },
       "short_desc": "Seems like there's everything here.",
-      "items": {}
+      "items": {"matchbox": {}}
     },
     "descrip": "A place with everything, for testing."
   },

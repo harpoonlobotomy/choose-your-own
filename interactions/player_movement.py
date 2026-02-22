@@ -30,6 +30,9 @@ def check_loc_card(location, cardinal):
     is_same_card = False
 
     if location:
+        if isinstance(location, cardinalInstance) and not cardinal:
+            cardinal = location
+            location = cardinal.place
         if isinstance(location, placeInstance):
             to_loc = location
         elif isinstance(location, str):
@@ -114,8 +117,8 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
             return
 
     elif is_same_loc:
-        print(f"You're already in the {assign_colour(loc.current.place)}")
         if is_same_card or not new_cardinal:
+            print(f"You're already in the {assign_colour(loc.current.place)}")
             return
         turn_around(new_cardinal)
         return

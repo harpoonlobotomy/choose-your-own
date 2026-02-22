@@ -436,10 +436,13 @@ class Parser:
             #print(f"Sequence: {sequence}")
             matched = 0
             for token in tokens:
+                #print(f"TOKEN.KIND + TYPE: {token.kind}, {type(token.kind)}")
                 if matched == len(sequence):
                     full_matches = reformed_dict
                     break
                 if token.kind != {"null"} and token.kind != set():
+                    if token.kind == {'adjective'} and token.idx >= 10:
+                        reformed_dict[matched*10] = {"adjective": {"canonical": token.canonical, "text": token.text, "str_name": token.text}}
                     if sequence[matched] in token.kind:
                         #print(f"sequence[matched]: {sequence[matched]}, token.kind: {token.kind}")
                         #print(f"This is {token.kind}")
@@ -459,7 +462,7 @@ class Parser:
         #print(f"reformed_dict {reformed_dict}, sequence {sequence}")
         return reformed_dict, sequence
 
-    def get_sequences_from_tokens(tokens) -> list:
+    def get_sequences_from_tokens(self, tokens) -> list:
         sequences = [[]]
         verb_instances = []
         meta_instances = []
@@ -513,7 +516,7 @@ class Parser:
             if not meta_instances:
                 #print("No verb_instance or meta_instance found in get_sequences_from_tokens. Returning None.")
                 #print(f"TOKENS: {tokens}")
-                return None, None
+                return None, None, tokens
 
         #print(f"verb instances: {verb_instances}")
         #print(f"meta instances: {meta_instances}")
@@ -560,27 +563,52 @@ class Parser:
 
         for seq in sequences:
             if "noun, noun" in str(seq) or "'noun', 'noun'" in str(seq):
-                print(f"'noun', 'noun' in seq: {seq}")
+                #print(f"'noun', 'noun' in seq: {seq}")
                 if canonical_nouns:
-                    print(f"Canonical_nouns: {canonical_nouns}")
+                    #print(f"Canonical_nouns: {canonical_nouns}")
                     if len(canonical_nouns) == 2:
                         bad_noun = good_noun = None
                         for word in canonical_nouns:
+                            #print(f"val: {canonical_nouns[word]}, type: {type(canonical_nouns[word])}")
                             if word == "assumed_noun":
                                 bad_noun = word
-                            else: # None of  this does anything yet. Halfway through a thought.
+                            else:
                                 good_noun = word
-                        if bad_noun and good_noun:
-                            print(f"good noun: {good_noun}. bad noun: {bad_noun}")
+                        if bad_noun and good_noun and bad_noun == "assumed_noun" and good_noun != "assumed_noun":
+                            #print(f"good noun: {good_noun}. bad noun: {bad_noun}")
+                            for token in tokens:
+                                if token.idx == canonical_nouns[bad_noun]:
+                                    bad_token = token
+                                    bad_text = token.text
+                                if token.idx == canonical_nouns[good_noun]:
+                                    good_token = token
+                                    good_text = token.text
 
-                    print(f"TOKENS:")
-                    for token in tokens:
-                        print(vars(token))
+                            token = bad_token
+                            if token:
+                                idx = token.idx
+                                if good_token:
+                                    bad_token.idx = idx * 10
+                                    bad_token.kind = set(("adjective",))
+                                    #tokens.remove(token) # want to avoid this. Doing the idx*10 + kind == adjective to avoid. Not perfect though.
+                                    if good_token.idx > idx:
+                                        good_token.text = bad_text + " " + good_text
+                                    else:
+                                        good_token.text = good_text + " " + bad_text
 
-
+                                    good_token.idx = idx
+                                    #print(f"TOKENS AFTER: {tokens}")
+                                    sequence = []
+                                    for token in tokens: ## NOTE: This may have terrifying unintented outcomes. Replace it with something better and less descructive, and hopefully earlier in the process. Maybe we just add a list of adjectives that are optional if not present (burned, broken, etc, that are treated like null if not found.)
+                                        #print(f"token.kind type: {type(token.kind)}")
+                                        if token.idx != (idx * 10):
+                                            sequence.append(list(token.kind)[0])
+                                    sequences = list()
+                                    sequences.append(sequence)
+        #print(f"SEQUENCES before run_sequences: {sequences}")
         viable_sequences = run_sequences(sequences, verb_instances)
         if not viable_sequences:
-            #print(f"SEQUENCES: {sequences}")
+            #print(f"not viable sequences: SEQUENCES: {sequences}")
             if "inventory" in strings and ("in" in strings or "at" in strings):
                 new_seq = list(sequences[0])
                 new_seq.remove("meta")
@@ -591,7 +619,7 @@ class Parser:
 
         viable_sequences = run_sequences(sequences, verb_instances)
         verbReg_Reciever(f"return for sequences: viable sequences: {viable_sequences}, verb_instances: {verb_instances}, sequences: {sequences}")
-        return [tuple(seq) for seq in viable_sequences if seq], verb_instances
+        return [tuple(seq) for seq in viable_sequences if seq], verb_instances, tokens
 
     def resolve_verb(tokens, verb_name, format_key) -> tuple[VerbInstance|str]:
 
@@ -688,11 +716,11 @@ class Parser:
                 return word_str, None
 
         verbReg_Reciever(f"tokens before sequencer: {tokens}")
-        sequences, verb_instances = self.get_sequences_from_tokens(tokens)
+        sequences, verb_instances, tokens = self.get_sequences_from_tokens(self, tokens)
         verbReg_Reciever(f"sequences after sequencer: {sequences}")
-
+        #print(f"SEQUENCES: {sequences}/tokens: {tokens}")
         if not sequences:
-            print(f"FAILURE IN SEQUENCES: {tokens}")
+            #print(f"FAILURE IN SEQUENCES: {tokens}")
             from misc_utilities import print_failure_message
             print_failure_message(input_str=input_str)
             return None, None
@@ -721,6 +749,8 @@ class Parser:
         for sequence in sequences:
             if len(sequence) == token_count:
                 length_checked_sequences.append(sequence)
+        if not length_checked_sequences and len(sequences) == 1:
+            length_checked_sequences = sequences # may make things fail unexpectedly, but allows for 'failed' words to be attributed as nouns if the sequence would be correct without them (eg 'burned book' if there's a book but not a burned one. Not sure if I want this or not but that's what it is for now.)
 
         initial_dict, sequence = Parser.generate_initial_dict(tokens, length_checked_sequences) # culls to just the first sequence. Doesn't deal with 'picking the best version' if there's more than one yet. Needs to in the future.
         #print(f"About to go to build_dict: {initial_dict}\n")

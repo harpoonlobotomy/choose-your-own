@@ -18,23 +18,6 @@ from verbRegistry import VerbInstance
 MOVE_UP = "\033[A"
 movable_objects = ["put", "take", "combine", "separate", "throw", "push", "drop", "set", "move"]
 
-#flag_actions = {
-#    "can_pick_up": movable_objects,
-#    "flammable": ["burn", "set"],
-#    "dirty": "clean",
-#    "locked": "unlock",
-#    "can_be_locked": ["lock", "unlock"],
-#    "fragile": "break",
-#    "can_open": "open",
-#    "can_read": "read",
-#    "can_combine": "combine",
-#    "weird": "",
-#    "dupe": "",
-#    "is_child": "",
-#    "combine_with": "combine", ## falling asleep tbh.
-#    "can_remove_from": ""
-#    }
-
 null_words = set(("a", "plus", "the", "at"))
 
 combine_sems = ["into", "with", "to", "and"]
@@ -160,8 +143,10 @@ class Membrane:
 
         from interactions.item_interactions import find_local_item_by_name
         local_items = find_local_item_by_name()
-
-        self.local_nouns = list(local_items)
+        if local_items:
+            self.local_nouns = list(local_items)
+        else:
+            self.local_nouns = list()
         logging_fn(note = "end of get_local_nouns")
 
 membrane = Membrane()

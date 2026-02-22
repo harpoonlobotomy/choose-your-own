@@ -7,8 +7,7 @@
     "can_pick_up": true,
     "descriptions": {
       "generic": "An old dark-metal padlock.",
-      "if_open": "",
-      "if_closed": "",
+      "is_open": "",
       "is_broken": ""
     },
     "is_broken": false,
@@ -40,8 +39,8 @@
     "can_break": false,
     "can_examine": false,
     "descriptions": {
-      "if_closed": "Heavy wrought iron bars with little decoration, held closed with a padlock on a heavy chain.",
-      "if_open": "Heavy wrought iron bars with little decoration, now slightly ajar."
+      "generic": "Heavy wrought iron bars with little decoration, held closed with a padlock on a heavy chain.",
+      "is_open": "Heavy wrought iron bars with little decoration, now slightly ajar."
     },
     "event": "graveyard_gate_opens",
     "event_type": "item_triggered",
@@ -110,8 +109,8 @@
     "alt_names": ["clumps of moss", "clump of moss"],
     "can_pick_up": true,
     "descriptions": {
-      "if_singular": "a small clump of moss, mostly green with brown specks.",
-      "if_plural": "a few clumps of mostly green moss."
+      "is_singular": "a small clump of moss, mostly green with brown specks.",
+      "is_plural": "a few clumps of mostly green moss."
     },
     "has_multiple_instances": 3,
     "single_identifier": "moss",
@@ -123,8 +122,8 @@
       "standard"
     ],
     "nicenames": {
-      "if_singular": "a clump of moss",
-      "if_plural": "a few moss clumps"
+      "is_singular": "a clump of moss",
+      "is_plural": "a few moss clumps"
     },
     "slice_attack": 5,
     "slice_defence": 5,
@@ -262,10 +261,9 @@
     "can_read": true,
     "descriptions": {
       "generic": "An old parchment scroll, seemingly abandoned at a hidden shrine.",
-      "if_open": "",
-      "if_closed": ""
+      "is_open": ""
     },
-    "flammable": true,
+    "can_burn": true,
     "is_burned": false,
     "is_locked": true,
     "is_open": false,
@@ -504,8 +502,7 @@
     "can_be_opened": true,
     "descriptions": {
       "generic": "a window, facing out of the hotel room and down over the street below. Currently closed.",
-      "if_open": "",
-      "if_closed": ""
+      "is_open": ""
     },
     "is_locked": true,
     "is_open": false,
@@ -569,7 +566,7 @@
       "generic": "It's a puzzle magazine",
       "is_burned": "It's a burned puzzle magazine, barely legible with half the paged burned away"
     },
-    "flammable": true,
+    "can_burn": true,
     "is_burned": false,
     "item_size": "smaller_than_basketball",
     "item_type": [
@@ -595,7 +592,7 @@
     "descriptions": {
       "generic": "It's a fashion magazine"
     },
-    "flammable": true,
+    "can_burn": true,
     "is_burned": false,
     "item_size": "smaller_than_basketball",
     "item_type": [
@@ -621,7 +618,7 @@
     "descriptions": {
       "generic": "It's a gardening magazine"
     },
-    "flammable": true,
+    "can_burn": true,
     "is_burned": false,
     "item_size": "smaller_than_basketball",
     "item_type": [
@@ -646,7 +643,7 @@
     "descriptions": {
       "generic": "It's a mail order catalogue"
     },
-    "flammable": true,
+    "can_burn": true,
     "is_burned": false,
     "item_size": "smaller_than_basketball",
     "item_type": [
@@ -701,7 +698,7 @@
     "can_spoil": true,
     "descriptions": {
       "generic": "It's a fish food",
-      "if_spoiled": ""
+      "is_spoiled": ""
     },
     "effect": null,
     "is_safe": true,
@@ -728,7 +725,7 @@
     "can_spoil": true,
     "descriptions": {
       "generic": "It's a anxiety meds",
-      "if_spoiled": ""
+      "is_spoiled": ""
     },
     "effect": null,
     "is_safe": true,
@@ -889,7 +886,7 @@
       "generic": "A damp newspaper from about a week ago.",
       "is_broken": ""
     },
-    "flammable": true,
+    "can_burn": true,
     "is_broken": false,
     "is_burned": false,
     "item_size": "smaller_than_basketball",
@@ -948,7 +945,7 @@
       "generic": "A small scrap of torn, off-white paper with a hand-scrawled phone number written on it.",
       "is_broken": ""
     },
-    "flammable": true,
+    "can_burn": true,
     "is_broken": false,
     "is_burned": false,
     "item_size": "small_flat_things",
@@ -1106,8 +1103,7 @@
     "container_limits": 4,
     "descriptions": {
       "generic": "A cabinet with something weird about it.",
-      "if_open": "",
-      "if_closed": "",
+      "is_open": "",
       "starting_children_only": "",
       "any_children": "",
       "no_children": "",
@@ -1211,7 +1207,7 @@
     "can_spoil": true,
     "descriptions": {
       "generic": "A raven, sleek and black. You're pretty sure it knows your secrets.",
-      "if_spoiled": ""
+      "is_spoiled": ""
     },
     "effect": null,
     "is_safe": true,
@@ -1352,7 +1348,7 @@
     "can_spoil": true,
     "descriptions": {
       "generic": "The tiny, dried body of a long-dead mouse, curled up. You could think it was sleeping if it wasn't so frail and stiff.",
-      "if_spoiled": "",
+      "is_spoiled": "",
       "is_broken": ""
     },
     "effect": null,
@@ -1463,7 +1459,7 @@
       "generic": "a yellowed [[]] showing the region surrounding the graveyard.",
       "is_broken": ""
     },
-    "flammable": false,
+    "can_burn": false,
     "is_broken": false,
     "is_burned": false,
     "item_size": 0,
@@ -1519,8 +1515,8 @@
     "can_break": false,
     "can_examine": false,
     "descriptions": {
-      "if_closed": "a closed wooden door, with nail-marks from a cross-bar removed somewhat recently",
-      "if_open": "a plain wooden door, sitting slightly ajar"
+      "generic": "a closed wooden door, with nail-marks from a cross-bar removed somewhat recently",
+      "is_open": "a plain wooden door, sitting slightly ajar"
     },
     "is_door": false,
     "is_open": false,
@@ -1549,8 +1545,7 @@
     "can_examine": false,
     "descriptions": {
       "generic": null,
-      "if_open": "",
-      "if_closed": ""
+      "is_open": ""
     },
     "is_burned": false,
     "is_open": false,
@@ -1616,8 +1611,8 @@
     ],
     "can_pick_up": true,
     "descriptions": {
-      "if_singular": "a single match, not yet used.",
-      "if_plural": "a number of matches, all unused."
+      "is_singular": "a single match, not yet used.",
+      "is_plural": "a number of matches, all unused."
     },
     "firesource": true,
     "has_multiple_instances": 12,
@@ -1633,8 +1628,8 @@
     "single_identifier": "match",
     "plural_identifier": "matches",
     "nicenames": {
-      "if_singular": "a single match",
-      "if_plural": "a few matches"
+      "is_singular": "a single match",
+      "is_plural": "a few matches"
     },
     "slice_attack": 5,
     "slice_defence": 5,
@@ -1647,8 +1642,8 @@
     "on_break": null,
     "is_broken": true,
     "descriptions": {
-      "if_singular": "a shard of broken glass.",
-      "if_plural": "a scattering of broken glass."
+      "is_singular": "a shard of broken glass.",
+      "is_plural": "a scattering of broken glass."
     },
     "has_multiple_instances": 3,
     "single_identifier": "shard",
@@ -1660,8 +1655,8 @@
       "standard"
     ],
     "nicenames": {
-      "if_singular": "a glass shard",
-      "if_plural": "a few shards of glass"
+      "is_singular": "a glass shard",
+      "is_plural": "a few shards of glass"
     },
     "slice_attack": 10,
     "slice_defence": 4,
@@ -1674,8 +1669,8 @@
     "on_break": null,
     "is_broken": true,
     "descriptions": {
-      "if_singular": "a shard of ceramic glass.",
-      "if_plural": "a scattering of ceramic glass."
+      "is_singular": "a shard of ceramic glass.",
+      "is_plural": "a scattering of ceramic glass."
     },
     "has_multiple_instances": 3,
     "single_identifier": "shard",
@@ -1687,8 +1682,8 @@
       "standard"
     ],
     "nicenames": {
-      "if_singular": "a ceramic shard",
-      "if_plural": "a few shards of ceramic"
+      "is_singular": "a ceramic shard",
+      "is_plural": "a few shards of ceramic"
     },
     "slice_attack": 10,
     "slice_defence": 4,
@@ -1719,6 +1714,9 @@
     "nicenames": {}
   },
   "ash pile": {
-    "can_pick_up": "requires_scoop"
+    "can_pick_up": "requires_scoop",
+    "item_type": ["can_pick_up"],
+    "descriptions": {"generic": "a small pile of grey ash"},
+    "nicenames": {"generic": "an ash pile"}
   }
 }

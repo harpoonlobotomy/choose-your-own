@@ -485,8 +485,8 @@ class eventRegistry:
         #print(f"clean atered state def \n item name: {item_name} / item entry:\n{item_entry}")
         """
 Dict of broken glass as it arrives:
-{'alt_names': ['broken glass shards', 'glass shards', 'shards of glass', 'shard of glass', 'shard', 'shards'], 'can_pick_up': True, 'descriptions': {'if_singular': 'a shard of broken glass.', 'if_plural':
-'a scattering of broken glass.'}, 'has_multiple_instances': 3, 'single_identifier': 'shard', 'plural_identifier': 'shards', 'item_size': 'small_flat_things', 'item_type': ['can_pick_up', 'is_cluster', 'standard'], 'nicenames': {'if_singular': 'a glass shard', 'if_plural': 'a few shards of glass'}, 'slice_attack': 10, 'slice_defence': 4, 'smash_attack': 2, 'smash_defence': 2, 'material_type': 'generic', 'on_break': 'broken [[item_name]]'}
+{'alt_names': ['broken glass shards', 'glass shards', 'shards of glass', 'shard of glass', 'shard', 'shards'], 'can_pick_up': True, 'descriptions': {'is_singular': 'a shard of broken glass.', 'is_plural':
+'a scattering of broken glass.'}, 'has_multiple_instances': 3, 'single_identifier': 'shard', 'plural_identifier': 'shards', 'item_size': 'small_flat_things', 'item_type': ['can_pick_up', 'is_cluster', 'standard'], 'nicenames': {'is_singular': 'a glass shard', 'is_plural': 'a few shards of glass'}, 'slice_attack': 10, 'slice_defence': 4, 'smash_attack': 2, 'smash_defence': 2, 'material_type': 'generic', 'on_break': 'broken [[item_name]]'}
 
 So I just need to change {material_type}: {on_break: broken_name} to "already_broken": {None:None}. Most straightforward way.
 
@@ -850,8 +850,8 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                             if not target_itemname:
                                 print(f"No target_itemname for {noun}.")
 
-                                if "burned" in outcome_name and ("flammable" in noun.item_type or has_and_true(noun, "flammable")):
-                                    print("Burned in outcome name and item is flammable.")
+                                if "burned" in outcome_name and has_and_true(noun, "can_burn"):
+                                    print("Burned in outcome name and item can burn.")
                                     print(f"Is it already burned: (hasattr) {hasattr(noun, "is_burned")}?")
                                     if hasattr(noun, "is_burned"):
                                         target_itemname = f"burned [[item_name]]"
@@ -1221,19 +1221,20 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
 
         if noun_inst.event:
             if noun_inst.event and hasattr(noun_inst, "is_event_key") and noun_inst.is_event_key:
+                print(f"Noun {noun_inst.name} is an event trigger for {noun_inst.event}")
                 outcome, moved_children = check_triggers(noun_inst.event, noun=noun_inst, reason=reason)
                 return outcome, moved_children
+            else:
+                print(f"Noun is not event key. noun vars:\n{vars(noun_inst)}\n\n")
 
         if events.generate_events_from_itemname.get(noun_inst.name):
             event_name = events.generate_events_from_itemname[noun_inst.name]
-            print(f"generate events from itemname: {noun_inst.name} / {event_name}")
-
             intake_event = registrar.by_name.get(event_name)
 
             if intake_event and hasattr(intake_event, "start_trigger") and intake_event.start_trigger.get("item_trigger"):
                 if intake_event.start_trigger["item_trigger"].get("match_item_by_name_only"):
-                    print(f"Reason item is in this check? {reason}")
-                    print(f"INTAKE EVENT: \n{vars(intake_event)}")
+                    print(f"generate events from itemname: {noun_inst.name} / {event_name}\nReason item is in this check? {reason}")
+                    #print(f"INTAKE EVENT: \n{vars(intake_event)}")
                     if intake_event.start_trigger["item_trigger"].get("triggered_by"):
                         print(f"intake_event.triggered_by: {intake_event.start_trigger["item_trigger"].get("triggered_by"):}")
                         if isinstance(reason, str):

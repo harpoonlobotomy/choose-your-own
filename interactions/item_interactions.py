@@ -1,6 +1,7 @@
 #item_interactions.py
 
 
+from re import I
 from interactions.player_movement import turn_around
 from itemRegistry import ItemInstance, registry
 from env_data import cardinalInstance, locRegistry as loc
@@ -274,7 +275,7 @@ def find_local_item_by_name(noun:ItemInstance=None, noun_text = None, verb=None,
                 location = current_loc
             elif current_loc and isinstance(current_loc, str):
                 location = loc.by_cardinal_str(current_loc)
-            elif (not current_loc or not location) and noun:
+            elif (not current_loc or not location) and noun and isinstance(noun, ItemInstance):
                 location = noun.location
             if not location: #assume current.
                 from env_data import locRegistry
@@ -317,11 +318,11 @@ def find_local_item_by_name(noun:ItemInstance=None, noun_text = None, verb=None,
     if noun:
         if isinstance(noun, ItemInstance):
             if noun in final_items and "is_cluster" in noun.item_type:
-                if access_str in ("drop_target", "pick_up", "not_in_inv"):
+                if access_str in ("drop_target", "pick_up", "not_in_inv", "local_and_inv_containers_only"):
                     single_and_local = True
                 else:
                     single_and_local = False
-                test = get_correct_cluster_inst(noun, noun_text, local_items=final_items, local_only = True if single_and_local else False, access_str = access_str, allow_hidden=hidden_cluster, priority=priority if priority else None)
+                test = get_correct_cluster_inst(noun, noun_text, local_items=final_items, local_only = True if single_and_local else False, access_str = access_str, allow_hidden=hidden_cluster, priority=priority if priority else "single")
                 if test:
                     noun = test
                     return noun

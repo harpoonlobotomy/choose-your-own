@@ -701,6 +701,9 @@ class itemRegistry:
                 if hasattr(inst, "has_multiple_instances") and inst.has_multiple_instances == 0:
                     pass
                 else:
+                    if hasattr(inst, "has_multiple_instances"):
+                        print(f"hidden inst multiple instance count: {inst.has_multiple_instances}")
+
                     print("INST is_hidden in run_check.")
                     return inst, None, 9, accessible_dict[9]
 
@@ -735,7 +738,8 @@ class itemRegistry:
             if container:
                 if container in inventory_list:
                     confirmed_container = container
-                    if (hasattr(confirmed_container, "is_closed") and getattr(confirmed_container, "is_closed")):
+                    if hasattr(confirmed_container, "is_open") and confirmed_container.is_open == False:
+                        print(f"confirmed_container {confirmed_container} is_closed, apparently.") # need to remove half of this section tbh. Needs a full redo. #TODO
                         reason = 1
                     elif (hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked")):
                         reason = 2
@@ -1294,26 +1298,23 @@ class itemRegistry:
                 if has_and_true(inst, "is_broken") and inst.descriptions.get("is_broken"):
                     description = inst.descriptions["is_broken"]
 
-                elif has_and_true(inst, "is_open") and inst.descriptions.get("if_open"):
-                    description = inst.descriptions["if_open"]
+                elif has_and_true(inst, "is_open") and inst.descriptions.get("is_open"):
+                    description = inst.descriptions["is_open"]
 
-                elif hasattr(inst, "is_open") and not getattr(inst, "is_open") and inst.descriptions.get("if_closed"):
-                    description = inst.descriptions["if_closed"]
-
-                elif inst.descriptions.get("if_singular") and inst.has_multiple_instances == 1:
-                        description = inst.descriptions["if_singular"]
-                elif inst.descriptions.get("if_plural") and inst.has_multiple_instances > 1:
-                        description = inst.descriptions["if_plural"]
+                elif inst.descriptions.get("is_singular") and inst.has_multiple_instances == 1:
+                        description = inst.descriptions["is_singular"]
+                elif inst.descriptions.get("is_plural") and inst.has_multiple_instances > 1:
+                        description = inst.descriptions["is_plural"]
 
                 elif inst.descriptions.get("generic"):
                     description = inst.descriptions["generic"]
                     inst.description = description
 
         ## Update nicenames ##
-        if inst.nicenames.get("if_singular") and inst.has_multiple_instances == 1:
-                inst.nicename = inst.nicenames["if_singular"]
-        if inst.nicenames.get("if_plural") and inst.has_multiple_instances > 1:
-                inst.nicename = inst.nicenames["if_plural"]
+        if inst.nicenames.get("is_singular") and inst.has_multiple_instances == 1:
+                inst.nicename = inst.nicenames["is_singular"]
+        if inst.nicenames.get("is_plural") and inst.has_multiple_instances > 1:
+                inst.nicename = inst.nicenames["is_plural"]
         #print(f"inst.nicenames: {inst.nicenames}")
         #print(f"inst.nicename: {inst.nicename}")
         #if inst.nicename:
@@ -1340,12 +1341,12 @@ class itemRegistry:
             if not inst.children:
                 return inst.name_children_removed
 
-        if inst.nicenames.get("if_singular") and inst.has_multiple_instances == 1:
-                print("if_singular nicename in def nicename()")
-                inst.nicename = inst.nicenames["if_singular"]
-        if inst.nicenames.get("if_plural") and inst.has_multiple_instances > 1:
-                print("if_plural nicename in def nicename()")
-                inst.nicename = inst.nicenames["if_plural"]
+        if inst.nicenames.get("is_singular") and inst.has_multiple_instances == 1:
+                print("is_singular nicename in def nicename()")
+                inst.nicename = inst.nicenames["is_singular"]
+        if inst.nicenames.get("is_plural") and inst.has_multiple_instances > 1:
+                print("is_plural nicename in def nicename()")
+                inst.nicename = inst.nicenames["is_plural"]
         if not inst:
             print("[NICENAME] No such item.")
             return None
