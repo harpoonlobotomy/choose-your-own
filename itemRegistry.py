@@ -29,22 +29,22 @@ container_limit_sizes = {
     SMALLER_THAN_BASKETBALL: 5,
     BIGGER_THAN_BASKETBALL: 6
 }
-
+#"descriptions": {"if_locked": ""}
 print("Item registry is being run right now.")
 
 type_defaults = {
     "standard":
-        {f"descriptions": {"generic": None}, "nicenames": {}, "slice_defence": 5, "smash_defence": 5, "slice_attack": 5, "smash_attack": 5,},
+        {f"descriptions": {"generic": None}, "nicenames": {"generic": ""}, "slice_defence": 5, "smash_defence": 5, "slice_attack": 5, "smash_attack": 5,},
     "static":
         {"can_examine": False, "can_break": False},
     "can_open":
         {"is_open": False, "can_be_opened": True, "can_be_closed": True},
         "descriptions":
-            {"if_closed": "", "if_open": ""},
+            {"is_open": ""},
         "nicenames": {
-            "if_closed": None, "if_open": None},
+            "is_open": None},
     "can_lock":
-        {"can_be_locked": True, "is_locked": True, "requires_key": False},
+        {"can_be_locked": True, "is_locked": True, "requires_key": False, "descriptions": {"is_locked": ""}},
     "container":
         {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False, 'starting_children': None, 'container_limits': 4, "children_type_limited": False, "can_be_added_to": True, "children": None,
          "nicenames": {
@@ -54,7 +54,10 @@ type_defaults = {
         "descriptions": {
             "starting_children_only": "",
             "any_children": "",
-            "no_children": ""}},
+            "no_children": "",
+            "open_starting_children_only": "",
+            "open_any_children": "",
+            "open_no_children": ""}},
     "key":
         {"is_key": True, "is_key_to": None},
     "can_pick_up":
@@ -70,18 +73,18 @@ type_defaults = {
     "food_drink":
         {"can_consume": True, "can_spoil": True, "is_spoiled": True, "is_safe": True, "effect": None},
     "fragile":
-        {"is_broken": False, "slice_threshold": 1, "smash_threshold": 1},
+        {"is_broken": False, "slice_threshold": 1, "smash_threshold": 1, "description": {"is_broken": None}},
     "flammable":
-        {"is_burned": False},
+        {"can_burn": True, "is_burned": False, "description": {"is_burned": None}},
     "books_paper":
         {'print_on_investigate': True, 'flammable': True, 'is_burned': False, 'can_read': True, 'material_type': 'paper'},
     "electronics":
-        {"can_be_charged": True, "is_charged": False, "takes_batteries": True, "has_batteries": False},
+        {"requires_powered_location": False, "can_be_charged": True, "is_charged": False, "takes_batteries": True, "has_batteries": False},
     "battery": {"can_be_charged": True, "is_charged": True},
     "can_speak" :
         {'can_speak': True, 'speaks_common': True},
     "transition":
-        {"is_transition_obj": True, "enter_location": None, "exit_to_location": None},
+        {"is_transition_obj": True, "int_location": None, "ext_location": None},
     "loc_exterior":
         {"is_loc_exterior":True, "transition_objs": None, "has_door": False},
     "door_window":
@@ -102,7 +105,7 @@ type_defaults = {
 material_type = {
     "generic": {"on_break": f"broken [[item_name]]"},
     "glass": {"on_break": "broken glass shard"},
-    "paper": {"on_break": "ash pile"},
+    "paper": {"on_break": "torn [[item_name]]", "on_burn": "ash pile"},
     "fabric": {"on_break": "torn [[item_name]]"},
     "ceramic": {"on_break": "broken ceramic shard"},
     "already_broken": {None: None}
@@ -114,7 +117,8 @@ material_msgs = {
     "paper": "it is torn, left a shadow of its former self.",
     "fabric": "it is torn, left a shadow of its former self.",
     "ceramic": "it shatters into a clutter of ceramic shards",
-    "already_broken": "it can't be broken any further."
+    "already_broken": "it can't be broken any further.",
+    "already_burned": "it can't be burned any further."
     }
 
 
@@ -279,36 +283,36 @@ Note on descriptions: if self.descriptions, will have different descriptions dep
 
         if "transition" in self.item_type:
             # card_inst.transition_objs doesn't need to specify by location, because the instance has the location itself. If later there are many many transition objects, then bringing the dict back will make sense, but for now there's literally one item, def not worth the dict. When it's bigger, maybe reconsider.
-            enter_location = loc.by_cardinal_str(self.enter_location)
-            if not hasattr(enter_location, "entry_item"):
-                setattr(enter_location, "entry_item", set())
-            getattr(enter_location, "entry_item").add(self)
-            if not hasattr(enter_location, "transition_objs"):
-                setattr(enter_location, "transition_objs", set())
-            getattr(enter_location, "transition_objs").add(self)
-            if self.name in enter_location.transition_objs:
-                enter_location.transition_objs.remove(self.name)
-            self.enter_location = enter_location
-            setattr(enter_location, "location_entered", False)
+            int_location = loc.by_cardinal_str(self.int_location)
+            if not hasattr(int_location, "entry_item"):
+                setattr(int_location, "entry_item", set())
+            getattr(int_location, "entry_item").add(self)
+            if not hasattr(int_location, "transition_objs"):
+                setattr(int_location, "transition_objs", set())
+            getattr(int_location, "transition_objs").add(self)
+            if self.name in int_location.transition_objs:
+                int_location.transition_objs.remove(self.name)
+            self.int_location = int_location
+            setattr(int_location, "location_entered", False)
             self.is_transition_obj = True
 
-            registry.transition_objs[self.enter_location] = self # shuold not need this.
+            registry.transition_objs[self.int_location] = self # shuold not need this.
 
-            exit_to_location = loc.by_cardinal_str(self.exit_to_location)
+            ext_location = loc.by_cardinal_str(self.ext_location)
 
-            if not hasattr(exit_to_location, "exit_to_item"):
-                setattr(exit_to_location, "exit_to_item", set())
-            getattr(exit_to_location, "exit_to_item").add(self)
-            if self.name in exit_to_location.exit_to_item:
-                exit_to_location.exit_to_item.remove(self.name)
-            if not hasattr(exit_to_location, "transition_objs"):
-                setattr(exit_to_location, "transition_objs", set())
-            getattr(exit_to_location, "transition_objs").add(self)
-            if self.name in exit_to_location.transition_objs:
-                exit_to_location.transition_objs.remove(self.name)
+            if not hasattr(ext_location, "exit_to_item"):
+                setattr(ext_location, "exit_to_item", set())
+            getattr(ext_location, "exit_to_item").add(self)
+            if self.name in ext_location.exit_to_item:
+                ext_location.exit_to_item.remove(self.name)
+            if not hasattr(ext_location, "transition_objs"):
+                setattr(ext_location, "transition_objs", set())
+            getattr(ext_location, "transition_objs").add(self)
+            if self.name in ext_location.transition_objs:
+                ext_location.transition_objs.remove(self.name)
 
-            self.exit_to_location = exit_to_location
-            setattr(exit_to_location, "location_entered", False)
+            self.ext_location = ext_location
+            setattr(ext_location, "location_entered", False)
             self.is_transition_obj = True
 
     def __repr__(self):
@@ -760,7 +764,7 @@ class itemRegistry:
                         reason = 5
                     else:
                         if hasattr(inst, "is_transition_obj"):
-                            if hasattr(inst, "enter_location") and hasattr(inst, "enter_location") and inst.enter_location ==  loc.current:
+                            if hasattr(inst, "int_location") and hasattr(inst, "int_location") and inst.int_location ==  loc.current:
                                 reason = 0
                             else:
                                 reason = 6
@@ -815,7 +819,7 @@ class itemRegistry:
 
         return parent, was_in_container, new_container
 
-    def generate_alt_state_item(self, item_name, noun):
+    def generate_alt_state_item(self, item_name, noun, state_change):
         print(f"\nITEM NAME: {item_name} // NOUN: {noun} // in generate_alt_state_items\n")
         item_def = self.item_defs.get(noun.name)
         if not item_def:
@@ -833,12 +837,16 @@ class itemRegistry:
                 k = k.replace(noun.name, new_name)
             if isinstance(v, bool|int):
                 new_def[k] = v
+
             elif isinstance(v, dict):
                 for val, val2 in v.items():
+                    print(f"val, val2: {val}, {val2} // noun.name: {noun.name} // new_name: {new_name}")
                     if noun.name in val:
                         val = val.replace(noun.name, new_name)
+                        v[val] = val2
                     if noun.name in val2:
                         val2 = val2.replace(noun.name, new_name)
+                        v[val] = val2
             #elif isinstance(v, str):
             #    new_def[k] = v
                 #if k == "material_type":
@@ -852,7 +860,11 @@ class itemRegistry:
                     v = v.replace(noun.name, new_name)
                 new_def[k] = v
 
-        new_def["is_broken"] = True
+        if "broken" in state_change:
+            new_def["is_broken"] = True
+        if "burned" in state_change:
+            new_def["is_burned"] = True
+
         new_def["starting_location"] = noun.location.place_name
         #print(f"Applying to item_Defs: {new_def}")
         #self.item_defs[new_name] = new_def
@@ -1453,16 +1465,6 @@ class itemRegistry:
         for placeInstance in loc.places:
             for cardinal in loc.cardinals[placeInstance]:
                 self.by_location.setdefault(cardinal, set())
-
-
-    def get_action_flags_from_name(self, name):
-        print(f"get flag for this name: {name}")
-        inst = self.instances_by_name(name)
-        print(f"Inst: {inst}")
-        flag_actions = inst[0].verb_actions
-        print(f"flag actions: {flag_actions}")
-        return inst
-
 
     def add_plural_words(self, plural_words_dict):
         self.plural_words = plural_words_dict

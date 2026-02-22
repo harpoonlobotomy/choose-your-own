@@ -214,7 +214,7 @@ simple_assignments = ["drop_subject", "drop_target", "pick_up"]
 
 scope_to_verb = {
     "inv_and_inv_containers": ["drop"], # only things in inventory, including recursion.
-    "all_local": ["look", "find", "burn", "fire_source"], # everything accessable, carried/ local/etc
+    "all_local": ["look", "find", "burn", "fire_source", "use"], # everything accessable, carried/ local/etc
     "local_and_inv_containers_only": ["take"],
     "not_in_inv": ["pick_up"], # includes local containers, just nothing I'm already carrying.
     "only_loc_no_containers": [""], # No idea what would call for this tbh. It's just 'stuff you can see around you'.
@@ -334,7 +334,7 @@ def find_local_item_by_name(noun:ItemInstance=None, noun_text = None, verb=None,
             noun_name = registry.by_alt_names.get(noun_name)
 
         for item in final_items:
-            if item.name == noun_name and (not has_and_true(item, "is_hidden") or hidden_cluster):
+            if item.name == noun_name and (not has_and_true(item, "is_hidden") or "is_cluster" in item.item_type):
                 return item
     else:
         return final_items

@@ -9,7 +9,7 @@
       "generic": "An old dark-metal padlock.",
       "if_open": "",
       "if_closed": "",
-      "if_broken": ""
+      "is_broken": ""
     },
     "is_broken": false,
     "is_locked": true,
@@ -82,7 +82,7 @@
       "open_starting_children_only": "",
       "open_any_children": "",
       "open_no_children": "",
-      "if_broken": ""
+      "is_broken": ""
     },
     "is_broken": false,
     "is_hidden": true,
@@ -147,7 +147,7 @@
       "open_starting_children_only": "",
       "open_any_children": "",
       "open_no_children": "",
-      "if_broken": ""
+      "is_broken": ""
     },
     "is_broken": false,
     "is_locked": false,
@@ -561,11 +561,13 @@
     "smash_attack": 5,
     "smash_defence": 5
   },
-  "puzzle mag": {
+  "puzzle magazine": {
+    "alt_names": ["mag"],
     "can_pick_up": true,
     "can_read": true,
     "descriptions": {
-      "generic": "It's a puzzle magazine"
+      "generic": "It's a puzzle magazine",
+      "is_burned": "It's a burned puzzle magazine, barely legible with half the paged burned away"
     },
     "flammable": true,
     "is_burned": false,
@@ -586,7 +588,8 @@
     "smash_attack": 5,
     "smash_defence": 5
   },
-  "fashion mag": {
+  "fashion magazine": {
+    "alt_names": ["mag"],
     "can_pick_up": true,
     "can_read": true,
     "descriptions": {
@@ -611,7 +614,8 @@
     "smash_attack": 5,
     "smash_defence": 5
   },
-  "gardening mag": {
+  "gardening magazine": {
+    "alt_names": ["mag"],
     "can_pick_up": true,
     "can_read": true,
     "descriptions": {
@@ -651,7 +655,7 @@
       "random_loot",
       "standard"
     ],
-    "loot_type": "magazine",
+    "loot_type": "medium_loot",
     "nicenames": {
       "generic": "a mail order catalogue"
     },
@@ -829,7 +833,7 @@
       "open_starting_children_only": "",
       "open_any_children": "",
       "open_no_children": "",
-      "if_broken": ""
+      "is_broken": ""
     },
     "is_broken": false,
     "is_burned": false,
@@ -883,7 +887,7 @@
     "can_read": true,
     "descriptions": {
       "generic": "A damp newspaper from about a week ago.",
-      "if_broken": ""
+      "is_broken": ""
     },
     "flammable": true,
     "is_broken": false,
@@ -913,7 +917,7 @@
     "can_pick_up": true,
     "descriptions": {
       "generic": "A small amount of legal tender. Could be useful if you find a shop.",
-      "if_broken": ""
+      "is_broken": ""
     },
     "is_broken": false,
     "is_burned": false,
@@ -942,7 +946,7 @@
     "can_read": true,
     "descriptions": {
       "generic": "A small scrap of torn, off-white paper with a hand-scrawled phone number written on it.",
-      "if_broken": ""
+      "is_broken": ""
     },
     "flammable": true,
     "is_broken": false,
@@ -1284,7 +1288,7 @@
     "can_examine": false,
     "descriptions": {
       "generic": "A simple plastic comb, made matte by the environment and time.",
-      "if_broken": ""
+      "is_broken": ""
     },
     "is_broken": false,
     "item_type": [
@@ -1349,7 +1353,7 @@
     "descriptions": {
       "generic": "The tiny, dried body of a long-dead mouse, curled up. You could think it was sleeping if it wasn't so frail and stiff.",
       "if_spoiled": "",
-      "if_broken": ""
+      "is_broken": ""
     },
     "effect": null,
     "is_broken": false,
@@ -1457,7 +1461,7 @@
     "can_read": true,
     "descriptions": {
       "generic": "a yellowed [[]] showing the region surrounding the graveyard.",
-      "if_broken": ""
+      "is_broken": ""
     },
     "flammable": false,
     "is_broken": false,
@@ -1713,5 +1717,8 @@
     "item_size": "0",
     "item_type": ["data_noun"],
     "nicenames": {}
+  },
+  "ash pile": {
+    "can_pick_up": "requires_scoop"
   }
 }

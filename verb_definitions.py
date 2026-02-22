@@ -212,7 +212,7 @@ verb_defs_dict = {
     "drop": {"alt_words": ["discard", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun, verb_noun_dir_loc, verb_noun_dir_noun_dir_loc, verb_noun_dir_meta]},
     "read": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_loc, verb_noun_sem_sem, verb_noun_sem]},
     "use": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_dir_loc, verb_noun_dir_noun, verb_noun_noun]},
-    "burn": {"alt_words": ["fire", "alight"], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_dir_loc, sem_noun_dir_verb, sem_noun_verb], "inventory_check": "fire_source"},
+    "burn": {"alt_words": ["fire", "alight", "light"], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_dir_loc, sem_noun_dir_verb, sem_noun_verb], "inventory_check": "fire_source"},
     "lock": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_noun], "inventory_check": "key"},
     "unlock": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun_sem_noun, verb_noun, verb_noun_noun], "inventory_check": "key"},
     "open": {"alt_words": ["pry", ""], "allowed_null": None, "formats": [verb_noun, verb_meta, verb_dir_meta, verb_noun_sem_noun, verb_dir_meta, verb_noun_noun, verb_noun_dir_loc]},

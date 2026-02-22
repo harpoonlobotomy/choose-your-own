@@ -3629,4 +3629,189 @@ For some reason, 'burn fashion mag with match' skips the 'with', so the sentence
 I wonder if it was the addition of local_nouns that made the difference here. Because one of those would have worked, but it's not getting the correct one because it's only comparing to item defs I think.
 
 10.02pm
-Okay. Fixed again now. Omit_next is proper again, and matches and magazines work again.
+Okay. Fixed again now. Omit_next is proper again, and matches and magazines work again. Really need to eat though.
+
+12.05pm 21/2/26
+
+[<  open matchbox  >]
+You open the matchbox.
+
+[<  close matchbox  >]
+You close the matchbox.
+
+[<  take match  >]
+The match is now in your inventory.
+
+So apparently it doesn't close things properly, because you can still get stuff out after closing them. Oops.
+
+# Cannot process {0: {'verb': {'instance': <verbInstance use (782e8a54-0f03-43c4-bcd0-4296b07e8695)>, 'str_name': 'use', 'text': 'use'}}, 1: {'noun': {'instance': <ItemInstance iron key / (75d55d24-6899-4363-9565-27fe32cdd4de) / north inventory_place / <eventInstance reveal_iron_key (322c24cd-ee8d-4a68-be8e-8a3a2a05fa6e, event state: 2>/ >, 'str_name': 'iron key', 'text': 'iron key'}}} in def use_item() End of function, unresolved. (Function not yet written)
+
+# Failed to find the correct function to use for <verbInstance drop (61e2f469-0742-406e-be1e-07aa128f7e67)>: eventRegistry.is_event_trigger() got multiple values for argument 'reason'
+
+move noun-getter for 'use key on lock' to def use_item, and send noun/noun2 directly to lock_unlock.
+
+4.25pm
+"hidden_cluster=True" Should be able to be determined by verb + noun attr, right? Idk. I mean really the only time hidden is allowed (currently at least) is for clusters. So maybe 'if is_hidden and not is_cluster in item_type?'
+
+`if item.name == noun_name and (not has_and_true(item, "is_hidden") or "is_cluster" in item.item_type)`
+That should cover it, I think. I'll leave the 'is hidden' part in for now but at least until I add other hidden things it'll do. At that point I'll need a separate 'hidden_cluster' flag or something to say 'treat it as hidden but only in this context'.
+
+Am writing another get noun fn, but this one will replae others in verb_actions:
+
+get_correct_nouns(verb, input_dict)
+
+runs get_nouns_w_str, then if noun, runs find_local_item_by_name for that noun/verb.
+
+Certain cases will need the nouns gotten separately, such as 'drop' which needs different access_str whether it's the subject or target, but it works.
+
+Added access_str, so now even those can call it. So now each verb can call for both (potential) verbs with specific access_str for each if needed. Will need to test it but seems to work.
+
+Need to implement it across the board. Will do that today.
+
+Also, need to fix this:
+Failed to find the correct function to use for <verbInstance drop (bb32db4a-4491-4d13-8345-cfd20b41a9ca)>: eventRegistry.is_event_trigger() got multiple values for argument 'reason'
+
+Fixed now, had forgotten to remove noun.location from is_event_trigger.
+
+
+ .-                          -.
+[<  take match from matchbox  >]
+ '-                          -'
+
+There's no match around here to take.
+
+I really want to say 'you can't take anything from the matchbox, it's not open'. But the downside is explicitly revealing that the target is a container.
+
+--
+5.25pm
+Okay, have got the burning half working. The 'item burns' event runs, but no renaming.
+I guess with the breaking I didn't rename, I just replaced, but I suppose I made the 'broken glass' items, I don't think I actually finished the 'broken [x]' setup. Will do it now so it works with broken + burned both.
+
+
+5.41pm
+The issue I'm having now is that `if isinstance(reason, tuple):` in is_event_trigger sets the attribute sets the attribute immediately. So then when it gets to do_immediate_actions, it's already burned.
+
+But I guess I should check in def burn if it's already burned, not leave it to the event... Still. Feels like a bad way of doing it. Maybe #TODO fix this later.
+
+Oh goddamn.
+
+(  Func:  verbReg_Reciever    )
+values: ("top of token_role_options: Token(idx=2, text='fashion', kind={'noun'}, canonical='burned fashion mag')",)
+(  Func:  verbReg_Reciever    )
+values: ("token_role_options: Token(idx=2, text='fashion', kind={'noun'}, canonical='burned fashion mag') // kinds: {'noun'}",)
+(  Func:  verbReg_Reciever    )
+values: ("top of token_role_options: Token(idx=3, text='mag', kind={'noun'}, canonical='burned fashion mag')",)
+(  Func:  verbReg_Reciever    )
+values: ("token_role_options: Token(idx=3, text='mag', kind={'noun'}, canonical='burned fashion mag') // kinds: {'noun'}",)
+
+We're here again. 'burned fashion magazine' takes two tokens
+
+But specifically, this happens because I wrote 'magazine', but the actual name is 'mag'.
+
+I guess I need to explicitly make that an alt_name, and then ensure that burned items inherent 'burned {alt_name}' to some degree. They should by default anyway.
+
+Also, the burned magazine is /not/ burned:
+ 'is_burned': False,
+
+ ??
+
+Oh, I didn't change it from the 'broken', apparently, because
+ 'is_broken': True,
+
+Also, this:
+"paper": "it is torn, left a shadow of its former self.",
+message is poor. Makes no sense when
+#   As the mail order catalogue burns, it is torn, left a shadow of its former self.
+
+Need to split material_msgs into generic, break, burn etc.
+
+Also maybe I should just rename the magazines to 'magazine' instead of 'mag'. Don't know why I'm so stuck on that. Can still add 'mag' as an alt_name....
+
+Working on ~565 in verbReg to try to deal with the 'if no sequences and noun,noun in format, just omit one'. It's only partially done.-
+
+9.23am
+Have added
+  "ash pile": {
+    "can_pick_up": "requires_scoop"
+
+Everything else just has 'can_pick_up' as a bool but it feels like this makes more sense. Can just add a check to def take like I do for def burn.
+
+Also just changed 'x mag' to 'x magazine' and gave 'mag' as an alt_name. Far easier.
+
+********************
+I need to solidify the phrasing for the break/burn/etc.
+
+Right now I have:
+
+"can_break": true,
+"descriptions": {
+    "if_broken": ""}
+"is_broken": false,
+
+(currently nicename + if_broken are just the old one with the name replaced with 'broken {name}', but that's just 'cause I've not written anything else yet.)
+
+
+for burned, it's the same.
+
+"is_burned": false,
+"flammable": false,
+
+That's not the worst of it, the worst is the series of dicts for assigning/evaluating states. That's where the work needs to happen. But first, going to just replace 'if_broken' with 'is_broken', then I can just use the state to define the description, not need some arbitrary 'if is_broken, description = is_broken'.
+
+I think for the magazines/papers, I just need instead of doing this for each:
+
+      "generic": "It's a puzzle magazine",
+      "is_burned": "It's a burned puzzle magazine, barely legible with half the paged burned away"
+
+Just have somewhere 'burned_magazine' with
+`It's a burned [[]], barely legible with half the paged burned away`
+unless I want a specific description for a particular item.
+
+Note: If I want to add descriptions to burned, I need to make sure it doesn't overwrite the descriptions for container if present. Need to add additional container attrs/vals, not just replace 'descriptions'.
+
+Ahh see currently it would:
+    if flag not in item_dict:
+        item_dict[flag] = val
+
+Okay.
+Oh, this is what I was using 'item_type_descriptions' for earlier. but that was only in edit_item_descriptions, not part of the main script.
+
+Well, should be able to just add them to item_defaults now and have the descriptions merge without just overwriting previous. Will test.
+
+Also, going to change
+
+            {"if_closed": "", "if_open": ""},
+        "nicenames": {
+            "if_closed": None, "if_open": None},
+
+to {generic: "", "is_open": ""}
+Or no, actually. No generic in this section. Add 'generic' to 'standard', then just add `is_open` to desc/nicenames.
+
+Also adding optional description for is_locked.
+(Changing all these from 'if_x' to 'is_x' to match the attr formatting. No reason not to. It means that the base attr is is_open and the description is [description]["is_open"], and I don't think that's a problem.)
+
+Thinking of changing 'flammable: True' to 'can_burn' to match 'can_break'.
+
+Also adding 'requires_powered_location' to 'electronics', for things like the TV. Not that it can currently be moved, but feels like it should be there.
+
+I also really want to fix the phrasing for
+    "transition":
+        {"is_transition_obj": True, "enter_location": None, "exit_to_location": None},
+Aside from enter_loc and exit_to_loc not having the same structure, 'enter location' sounds like an action, not an assignment.
+I was avoiding 'int_location' and 'ext_location' because what if something is a substructure, but it still makes sense I think. the mall is the ext_location of a shop in that mall.
+
+So, changes so far:
+
+enter_location == int_location
+exit_to_location == ext_location
+flammable == can_burn
+if_x == is_x
+"if_closed" == "generic" in "standard"
+
+Apparently I don't use flag_actions in verb_membrane anymore? commenting it out for now to check for sure but it doesn't seem to be used anywhere. // wtf I also have the same thing in verb_actions, also unused. I guess that was earlier in the parser development?
+
+Yeah, I have this:
+get_action_flags_from_name(self, name):
+in itemRegistry that isn't used either.
+
+I could probably change item_burned to is_burned in eventRegistry too.

@@ -5,19 +5,21 @@
     {"item_trigger": {
         "trigger_item": "local map",
         "trigger_location": "north work shed",
-        "triggered_by": ["item_in_inv", "item_is_read", "item_opened"]}},
+        "triggered_by": ["item_in_inv", "item_is_read", "item_opened"]}
+        },
     "effects": {
         "hidden_items": {
             "0": {
                 "item_name": "iron key",
-                "item_location": "north work shed"}}},
+                "item_location": "north work shed"}}
+        },
     "messages": {
         "start_msg": null,
         "end_msg": "As you pick up the regional map, an iron key falls from the folded paper and lands on the desk with a heavy thwack.",
-        "held_msg": null}
+        "held_msg": null
+        }
     },
-
-"graveyard_gate_opens": {
+  "graveyard_gate_opens": {
     "starts_current":true,
     "end_trigger":
         {"item_trigger": {
@@ -28,7 +30,7 @@
                 "requires_key": "iron key",
                 "key_is_placed_elsewhere": {
                     "item_in_event": "reveal_iron_key"}}}
-    },
+        },
     "effects":
         {"held_items": {
             "0": {
@@ -43,45 +45,47 @@
     "messages": {
         "start_msg": "",
         "end_msg": "As the padlock falls to the ground and the chain unravells, the graveyard gate creaks open.\n\nYou see beyond the threshold of the graveyard, a variety of locations to explore.\n\n    [Look at your map to see where else you can go.]\n",
-        "held_msg": "Until the gate's unlocked, you don't see a way out of here."}},
+        "held_msg": "Until the gate's unlocked, you don't see a way out of here."
+        }
+    },
+  "moss_dries": {
+    "is_generated_event": true,
+    "remove_event_on_failure": true,
+    "is_timed_event": true,
+    "repeats": "forever",
 
-"moss_dries": {
-      "is_generated_event": true,
-      "remove_event_on_failure": true,
-      "is_timed_event": true,
-      "repeats": "forever",
+    "start_trigger": {
+        "item_trigger": {
+            "match_item_by_name_only": true,
+            "trigger_item": "moss",
+            "trigger_location": null,
+            "triggered_by": ["item_in_inv"],
+            "print_description_plain": true}
+        },
+    "end_trigger": {
+        "timed_trigger": {
+            "time_unit": "day",
+            "full_duration": 3,
+            "required_condition": {"item_in_inv": "moss"},
+            "persistent_condition": true,
+            "condition_item_is_start_trigger": true,
+            "end_type": "success"},
 
-      "start_trigger": {
-          "item_trigger": {
-              "match_item_by_name_only": true,
-              "trigger_item": "moss",
-              "trigger_location": null,
-              "triggered_by": ["item_in_inv"],
-              "print_description_plain": true}},
-
-        "end_trigger": {
-            "timed_trigger": {
-                "time_unit": "day",
-                "full_duration": 3,
-                "required_condition": {"item_in_inv": "moss"},
-                "persistent_condition": true,
-                "condition_item_is_start_trigger": true,
-                "end_type": "success"},
-
-            "item_trigger": {
-                "trigger_item": "moss",
-                "trigger_location": null,
-                "triggered_by": ["item_not_in_inv"],
-                "exceptions": ["current_loc_is_inside"],
-                "end_type": "failure",
-                "print_description_plain": true}
-            },
+        "item_trigger": {
+            "trigger_item": "moss",
+            "trigger_location": null,
+            "triggered_by": ["item_not_in_inv"],
+            "exceptions": ["current_loc_is_inside"],
+            "end_type": "failure",
+            "print_description_plain": true}
+        },
     "messages": {
         "start_msg": "You pick up the [[moss]], and feel it squish a little between your fingers.",
         "exception_msg": "You put the still-damp [[moss]] down in a nice dry spot.",
         "end_msg": "After a few days, you realise the [[moss]] you've been carrying around has tried out. Damn. Or maybe you wanted some dry [[moss]]...?",
-        "failure_msg": "You put down the still-damp [[moss]]."}},
-
+        "failure_msg": "You put down the still-damp [[moss]]."
+        }
+    },
 "scroll_drops_key": {
     "repeats": false,
     "starts_current": false,
@@ -89,32 +93,49 @@
         "item_trigger": {
             "trigger_item": "scroll",
             "trigger_location": "north shrine",
-            "triggered_by": ["item_opened", "item_is_read"]
-        }
-    },
+            "triggered_by": ["item_opened", "item_is_read"]}
+        },
     "effects": {
         "init_items": {
-            "0": {"item_name": "old gold key"}}},
+            "0": {"item_name": "old gold key"}}
+        },
     "messages": {
         "start_msg": "As the scroll rolls open in your hands, a small, tarnished gold key falls from it."
-    }
-  },
+        }
+    },
 "item_is_broken": {
     "is_generated_event": true,
     "repeats": "forever",
     "immediate_action": {
         "attribute_trigger": {
             "triggered_by": ["item_broken"]
-        }
-    },
+            }
+        },
     "effects": {
         "init_items": {
             "0": {"item_name": "is_broken"}},
         "remove_items": {
-            "0": {"item_name": "trigger_item"}}},
-
+            "0": {"item_name": "trigger_item"}}
+        },
     "messages": {
         "start_msg": "As the [[]] breaks, <material_msg>"
+        }
+    },
+  "item_is_burned": {
+    "is_generated_event": true,
+    "repeats": "forever",
+    "immediate_action": {
+        "attribute_trigger": {
+            "triggered_by": ["item_burned"]}
+        },
+    "effects": {
+        "init_items": {
+            "0": {"item_name": "is_burned"}},
+        "remove_items": {
+            "0": {"item_name": "trigger_item"}}
+        },
+    "messages": {
+        "start_msg": "As the [[]] burns, <material_msg>"
+        }
     }
-  }
 }

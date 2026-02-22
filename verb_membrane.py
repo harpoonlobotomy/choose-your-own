@@ -18,22 +18,22 @@ from verbRegistry import VerbInstance
 MOVE_UP = "\033[A"
 movable_objects = ["put", "take", "combine", "separate", "throw", "push", "drop", "set", "move"]
 
-flag_actions = {
-    "can_pick_up": movable_objects,
-    "flammable": ["burn", "set"],
-    "dirty": "clean",
-    "locked": "unlock",
-    "can_be_locked": ["lock", "unlock"],
-    "fragile": "break",
-    "can_open": "open",
-    "can_read": "read",
-    "can_combine": "combine",
-    "weird": "",
-    "dupe": "",
-    "is_child": "",
-    "combine_with": "combine", ## falling asleep tbh.
-    "can_remove_from": ""
-    }
+#flag_actions = {
+#    "can_pick_up": movable_objects,
+#    "flammable": ["burn", "set"],
+#    "dirty": "clean",
+#    "locked": "unlock",
+#    "can_be_locked": ["lock", "unlock"],
+#    "fragile": "break",
+#    "can_open": "open",
+#    "can_read": "read",
+#    "can_combine": "combine",
+#    "weird": "",
+#    "dupe": "",
+#    "is_child": "",
+#    "combine_with": "combine", ## falling asleep tbh.
+#    "can_remove_from": ""
+#    }
 
 null_words = set(("a", "plus", "the", "at"))
 
@@ -440,6 +440,7 @@ def run_membrane(input_str=None, run_tests=False):
                 #run_tests = False
 
     else:
+        print()
         test = loop(input_str)
         if test == "exit":
             print_blue(f"{MOVE_UP}Exiting now.\n")#Loop test at end == exit, returning `exit`.")

@@ -135,8 +135,8 @@
           ]
         },
         "wooden door": {
-          "enter_location": "north work shed",
-          "exit_to_location": "west graveyard",
+          "int_location": "north work shed",
+          "ext_location": "west graveyard",
           "item_type": [
             "wall",
             "can_open",

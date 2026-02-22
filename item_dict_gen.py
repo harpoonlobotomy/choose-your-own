@@ -6,29 +6,6 @@ from env_data import locRegistry as loc
 CARDINALS = ["north", "east", "south", "west"]
 excluded_itemnames = ["generic", "no_items", "no_starting_items"]
 
-
-item_type_descriptions = {
-"container": {
-    "starting_children_only": "",
-    "any_children": "",
-    "no_children": "",
-    "open_starting_children_only": "",
-    "open_any_children": "",
-    "open_no_children": ""
-    },
-"can_open": {
-    "if_open": "",
-    "if_closed": ""
-    },
-"fragile": {
-    "if_broken": "",
-    },
-"food_drink": {
-    "if_spoiled": ""
-    }
-}
-
-
 global loc_items_dict
 loc_items_dict = {}
 
@@ -96,6 +73,12 @@ def get_type_tags(new_str, item_dict):
         for flag, val in type_defaults[category].items():
             if flag not in item_dict: # so it doesn't overwrite any custom flag in a loc item entry
                 item_dict[flag] = val
+            elif isinstance(flag, dict):
+                for k, v in type_defaults[category][flag].items:
+                    if k not in item_dict[flag]:
+                        item_dict[flag].update({k: v})
+
+
 
     return item_dict
 

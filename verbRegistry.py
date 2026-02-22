@@ -168,7 +168,7 @@ class Parser:
                     canonical = locals[0]
                     omit_next += matches_count -1
                     kinds.add(word_type)
-                    perfect_match = canonical
+                    #perfect_match = canonical
                     return idx, word, kinds, canonical, potential_match, omit_next, perfect_match
 
 
@@ -238,8 +238,6 @@ class Parser:
 
             else:
                 canonical = None
-                if word == "magazine":
-                    word = "mag"
                 if word in verbs.all_meta_verbs:
                     if word not in verbs.meta_verbs:
                         for key_word in verbs.meta_verbs:
@@ -467,6 +465,7 @@ class Parser:
         meta_instances = []
         verb_entry = None
         strings = []
+        canonical_nouns = dict()
         for i, token in enumerate(tokens):
             options = Parser.token_role_options(token)
             strings.append(token.canonical)
@@ -491,6 +490,10 @@ class Parser:
                 meta_instances.append({i:token})
                 if token.text == "inventory":
                     token.kind.add("location")
+
+            if "noun" in options:
+                canonical_nouns[token.canonical] = i
+
 
             new_sequences = []
 
@@ -554,6 +557,25 @@ class Parser:
                                     viable_sequences.append(seq)
 
             return viable_sequences
+
+        for seq in sequences:
+            if "noun, noun" in str(seq) or "'noun', 'noun'" in str(seq):
+                print(f"'noun', 'noun' in seq: {seq}")
+                if canonical_nouns:
+                    print(f"Canonical_nouns: {canonical_nouns}")
+                    if len(canonical_nouns) == 2:
+                        bad_noun = good_noun = None
+                        for word in canonical_nouns:
+                            if word == "assumed_noun":
+                                bad_noun = word
+                            else: # None of  this does anything yet. Halfway through a thought.
+                                good_noun = word
+                        if bad_noun and good_noun:
+                            print(f"good noun: {good_noun}. bad noun: {bad_noun}")
+
+                    print(f"TOKENS:")
+                    for token in tokens:
+                        print(vars(token))
 
 
         viable_sequences = run_sequences(sequences, verb_instances)
