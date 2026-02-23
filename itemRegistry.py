@@ -684,21 +684,23 @@ class itemRegistry:
 
 
     def check_item_is_accessible(self, inst:ItemInstance) -> tuple[ItemInstance|None, int]:
+
+        """
+        0: "accessible"\n
+        1: "in a closed local/accessible container"\n
+        2: "in a locked local/accessible container"\n
+        3: "in an open container in your inventory"\n
+        4: "in an open container accessible locally, can pick up but not drop"\n
+        5: "in inventory"\n
+        6: "not at current location"\n
+        7: "other error, investigate"\n
+        8: "is a location exterior"\n
+        9: "item is hidden" (must be discovered somehow, not shown in general 'look around' views.)\n
+        10: "item is transitional, treat as local."
+        """
         logging_fn()
         from misc_utilities import is_item_in_container, accessible_dict
 
-        #accessible_dict = { ## just for printing, for my own sake because my memory is broken
-        #    0: "accessible",
-        #    1: "in a closed local/accessible container",
-        #    2: "in a locked local/accessible container",
-        #    3: "in an open container in your inventory",
-        #    4: "in an open container accessible locally, can pick up but not drop",
-        #    5: "in inventory",
-        #    6: "not at current location",
-        #    7: "other error, investigate",
-        #    8: "is a location exterior"
-        #    9: "item is hidden" (must be discovered somehow, not shown in general 'look around' views.)
-        #   10: "item is transitional, treat as local."
         #}
 
         #   10: "item is transitional" # may be in another location, but is treated as if local. (Really this is just '0', but I've written it here so I might remember.)
@@ -708,7 +710,7 @@ class itemRegistry:
         reason_val = 7
 
         def run_check(inst):
-            confirmed_inst = None
+
             confirmed_container = None
             reason = 7
             meaning = "other error, investigate"
@@ -720,39 +722,18 @@ class itemRegistry:
                     if hasattr(inst, "has_multiple_instances"):
                         print(f"hidden inst multiple instance count: {inst.has_multiple_instances}")
 
-                    print("INST is_hidden in run_check.")
+                    print("INST is_hidden in run_check; not a singleton multiple_instances.")
                     return inst, None, 9, accessible_dict[9]
 
-            #from set_up_game import game
-            inventory_list = loc.inv_place.items# game.inventory # using place instead of game.inventory for item storage. Not sure how I feel about it yet but trying it out.
+            container = is_item_in_container(inst)
 
-            local_items_list = self.get_item_by_location(loc.current)
-            #print(f"Local_items_list in run_check: {local_items_list}")
-            container, inst = is_item_in_container(inst)
-
-            if inst in inventory_list and not container:
-                confirmed_inst = inst
+            if inst.location == loc.inv_place and not container:
                 reason = 5
                 meaning = accessible_dict[reason]
-                return confirmed_inst, None, reason, meaning
-
-            def in_local_items_list(inst, inst_list):
-                temp_inst = None
-                if inst_list:
-                    if isinstance(inst_list, list|set|tuple):
-                        if inst in inst_list:
-                            temp_inst = inst
-                    else:
-                        if isinstance(inst_list, ItemInstance):
-                            if inst_list == inst:
-                                temp_inst = inst
-                    return temp_inst
-                else:
-                    #print("No items at this location.")
-                    return None
+                return inst, None, reason, meaning
 
             if container:
-                if container in inventory_list:
+                if container.location == loc.inv_place:
                     confirmed_container = container
                     if hasattr(confirmed_container, "is_open") and confirmed_container.is_open == False:
                         print(f"confirmed_container {confirmed_container} is_closed, apparently.") # need to remove half of this section tbh. Needs a full redo. #TODO
@@ -762,8 +743,7 @@ class itemRegistry:
                     else:
                         reason = 3
                 else:
-                    confirmed_container = in_local_items_list(container, local_items_list)
-                    if confirmed_container:
+                    if confirmed_container.location == loc.current:
                         if hasattr(confirmed_container, "is_open") and confirmed_container.is_open == False:
                             print(f"Container {confirmed_container.name} is closed by is_open flag.")
                             reason = 1
@@ -774,18 +754,17 @@ class itemRegistry:
                             reason = 4
                     else:
                         reason = 6
+
             else:
-                confirmed_inst = in_local_items_list(inst, local_items_list)
-                if confirmed_inst:
+                if inst.location == loc.current:
                     reason = 0
                 else:
-                    if inst in inventory_list:
-                        confirmed_inst = inst
+                    if inst.location == loc.inv_place:
                         reason = 5
                     else:
                         if hasattr(inst, "is_transition_obj"):
-                            if hasattr(inst, "int_location") and hasattr(inst, "int_location") and inst.int_location ==  loc.current:
-                                reason = 0
+                            if hasattr(inst, "int_location") and hasattr(inst, "int_location") and (inst.int_location ==  loc.current or inst.ext_location == loc.current):
+                                reason = 0 ## treat it as local whether we're inside or outside
                             else:
                                 reason = 6
                         elif hasattr(inst, "is_loc_exterior") and inst.location.place == loc.current:
@@ -796,19 +775,10 @@ class itemRegistry:
 
             meaning = accessible_dict[reason]
 
-            if confirmed_inst:
-                #print(f"inst: {inst} / meaning: {meaning}")
-                return confirmed_inst, confirmed_container, reason, meaning
+            if inst:
+                return inst, confirmed_container, reason, meaning
 
-            #print(f"not confirmed inst: {inst} / meaning: {meaning}, item vars: {vars(inst)}")
             return None, confirmed_container, reason, meaning
-
-        #if not isinstance(inst, ItemInstance):
-        #    if isinstance(inst, str) and inst != None:
-        #        named_instances = self.instances_by_name(inst)
-        #        if named_instances:
-        #            for item in named_instances:
-        #                confirmed_inst, confirmed_container, reason_val, meaning = run_check(item)
 
         confirmed_inst, confirmed_container, reason_val, meaning = run_check(inst)
 
@@ -901,14 +871,25 @@ class itemRegistry:
 
         if shard.location != loc.inv_place:
             print(f"\n{shard} is not in inv_place. This is bad, how are we combining if not removing from inventory?\n\n\n")
-
+        #print(f"Start of combine_clusters: shard: {shard} // target: {target}")
         if not target_is_location:
             return shard, "no_local_compound" # returning so it can be added to the container. No merging in containers. Not sure if I want to combine multiples inside containers or not, but for now we just treat them the same way as inventory.
+        compound_target = None
+        from interactions.item_interactions import find_local_item_by_name, get_correct_cluster_inst
+        if isinstance(target, ItemInstance):
+            compound_target = get_correct_cluster_inst(shard, shard.name, local_items=None, local_only = True, access_str = "drop_target", allow_hidden=False, priority="plural")
 
-        from interactions.item_interactions import find_local_item_by_name
-        compound_target = find_local_item_by_name(noun=shard.name, access_str="drop_target", hidden_cluster=True, current_loc=target)
         if not compound_target:
+            compound_target = get_correct_cluster_inst(shard, shard.name, local_items=None, local_only = True, access_str = "drop_target", allow_hidden=True, priority="plural")
+
+        if not compound_target:
+            from printing import print_yellow
+            print_yellow("No compound target")
             return shard, "no_local_compound"
+
+        if compound_target == shard:
+            return shard, "no_local_compound"
+        print(f"Compound target: {compound_target} // shard: {shard}")
 
         if not hasattr(shard, "has_multiple_instances") or not hasattr(compound_target, "has_multiple_instances") or shard.name != compound_target.name:
             return False, False
@@ -932,7 +913,7 @@ class itemRegistry:
         #print("total_instances: ", total_instances, "inst.has_multiple_instances: ", shard.has_multiple_instances, "+ inst_at_target: ", compound_target.has_multiple_instances)
         compound_target.has_multiple_instances = total_instances
         shard.has_multiple_instances = 0
-
+        print(f"AT END OF COMBINE_CLUSTERS: Compound_target: {compound_target} // shard: {shard}\n")
         return shard, compound_target
 
     def separate_cluster(self, compound_inst:ItemInstance|placeInstance, origin, origin_type:str):
@@ -948,19 +929,17 @@ class itemRegistry:
             print(f"Separate_cluster has a compound_inst that is not an inst: {compound_inst}")
             exit()
 
-        if hasattr(noun, "has_multiple_instances") and noun.has_multiple_instances == 0:
+        if hasattr(noun, "has_multiple_instances") and noun.has_multiple_instances in (0, 1):
             shard = noun ## we assume it's correct and don't check again.
             ## but we do need compound_noun to say where it 'came' from.
-            compound_test = find_local_item_by_name(noun=noun, verb="take", access_str = "pick_up", current_loc = loc.current, priority="plural")
+            compound_test = find_local_item_by_name(noun=noun, verb="take", access_str = "pick_up", current_loc = loc.current, priority = "plural")
             if compound_test:
-                #print(f"COMPOUND TEST IN SEPARATE CLUSTER. (Ideally in loc with +1 cluster parts): {compound_test}")
                 compound_inst = compound_test
         else:
             local_item = find_local_item_by_name(noun=noun, verb="take", access_str = "pick_up", current_loc = loc.current, hidden_cluster=True)
             if local_item and hasattr(noun, "has_multiple_instances") and noun.has_multiple_instances == 0:
                 shard = local_item
             else:
-                #print(f"Local item in separate cluster: {local_item}. multiple instances: {local_item.has_multiple_instances}")
                 new_def = registry.item_defs.get(compound_inst.name)
                 if origin_type == "location":
                     new_def["exceptions"] = {"starting_location": origin}
@@ -996,6 +975,7 @@ class itemRegistry:
             print(f"No origin? {shard} // critical failure.")
             exit()
 
+
         starting_instance_count = compound_inst.has_multiple_instances
         compound_inst.has_multiple_instances = starting_instance_count - 1
         shard.has_multiple_instances = 1
@@ -1005,7 +985,7 @@ class itemRegistry:
         loc.inv_place.items.add(shard)
         self.by_location[loc.inv_place].add(shard)
         setattr(shard, "is_hidden", False)
-
+        print(f"AT END OF SEPARATE_CLUSTERS: Compound_target: {compound_inst} // shard: {shard}\n")
         #print(f"returning {shard}")
         return compound_inst, shard # <- separated, new_singular
 
@@ -1018,7 +998,7 @@ class itemRegistry:
         old_loc = inst.location
         parent, was_in_container, new_container = self.get_parent_details(inst, old_container, new_container)
 
-        is_drop = "unconfirmed"
+        is_drop = True
 
         if location == loc.inv_place:
             is_drop = False
@@ -1036,6 +1016,7 @@ class itemRegistry:
             shard, compound_target = self.combine_clusters(inst, target)
             #printing.print_yellow(f"After combine_clusters: Shard: {shard} // compound target: {compound_target}")
             if compound_target == "no_local_compound":
+                print("no local compound, returning shard from move_cluster_item")
                 return shard, "process_as_normal"
             if compound_target.has_multiple_instances == 0: # This'll never happen in is_drop... #DETELEME later.
                 print(f"Compound_target {compound_target} is exhausted, removing from everywhere. compound_target.has_multiple_instances == 0 in itemReg.")
@@ -1072,11 +1053,6 @@ class itemRegistry:
             updated.add(inst)
             if other != "process_as_normal":
                 return outcome
-
-        # so there are no cluster items being processed from here on out. So I need to make sure that everything done here is also done there.
-        """
-        remove inst from original location, set to loc.no_place after recording old_loc. If old_loc == loc.inv_place, remove from inv_place.items.
-        """
 
         was_in_container = False # using this as a check to see if the cluster should use old_loc or parent.
 

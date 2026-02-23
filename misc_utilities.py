@@ -274,23 +274,10 @@ def from_inventory_name(test:str) -> ItemInstance:
 
 def is_item_in_container(item):
 
-    inst = None
-    if isinstance(item, ItemInstance) and item != None:
-        inst = item
-    elif isinstance(item, str) and item != None:
-        inst = from_inventory_name(item)
-
-    if inst == None:
-        print(f"Failed to get instance for {item}, type: {type(item)}")
-        exit()
-    if hasattr(inst, "contained_in") and inst.contained_in != None:
-        #print(f"Hasattr contained_in: {inst}:inst.contained_in {inst.contained_in}")
-        #print("Not necessary but I want to see:")
-        #print("inst.contained_in's vars:")
-        #print(f"{vars(inst.contained_in)}")
-        container = inst.contained_in
-        return container, inst
-    return None, inst
+    if hasattr(item, "contained_in") and item.contained_in != None:
+        container = item.contained_in
+        return container
+    return None
 
 def generate_clean_inventory(inventory_inst_list=None, will_print = False, coloured = False):
 
@@ -335,7 +322,7 @@ def generate_clean_inventory(inventory_inst_list=None, will_print = False, colou
                 no_xval_inventory_names.append(item_name)
             """
             children=None
-            has_parent, child_inst = is_item_in_container(item_name) # is it a child
+            has_parent = is_item_in_container(item_name) # is it a child
             if not has_parent:
                 inst = from_inventory_name(item_name)
                 if registry.by_container.get(inst):

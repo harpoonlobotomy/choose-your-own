@@ -4099,9 +4099,171 @@ I'm going to change the reprs for events/nouns for a min so I can compare ID num
 Changed and added some more colours to make it easier to see what's going on.
 
 Issue 1:
-'outcome' for 'take' often pics items that are in the inventory, which it shouldn't do.
+'outcome' for 'take' often pics items that are in the inventory, which it shouldn't do. // fixed already
 
 Issue 2:
 Drop moss e4f4 in shed.
 immediately pick up:
 it finds e4f4, but the intake event is still triggered and it generates c2e1.
+
+10.14am
+I think the issue with the moss is the various paths through is_event_trigger. On the second pickup, the moss is triggering noun.event, on the first time it's triggering generate_from_name.
+
+Oh, I think the trigger is only triggering on 'not in inv'. So because I've picked up the moss, the exception doesn't trigger. But the trigger shouldn't be triggering at all. But at least I should be able to fix it now.
+
+OH it's triggering the timed trigger.
+Weirdly, this:
+{<triggerInstance 2ea897b2-554c-4c85-a0e6-77a3f4b90dc9 for event moss_dries, event state: current/ongoing, Trigger item: moss>
+doesn't have the trigger item. Oh nvm, it was just a repr formatting thing.
+
+10.35
+Anyway. I think it's because it doesn't check if a trigger is start_ or end_trigger. So it just goes 'ah, this thing being in inventory is an event trigger', doesn't find an exception because the exception only applies when putting it down, and so the event ends. Was just not an issue before because picking things down always ended events.
+
+On the upside it does keep the right number of total mosses. It just needs to pick up the existing ones instead of generating new if existing exists.
+
+Fixed the issue where it ended because it had a timed trigger; it now has a slight diversion for those. It didn't trigger before because I'd change the verbiage.
+
+----
+11.39am
+The issue was can_take finding a different noun. Fixing.
+
+12.04pm
+Oh, it was twofold: can_take was looking up nouns again and often picking the wrong one, but move is also generating a new one. I assume it's because if you put down a thing in a new place, it has a no-0 value which it doesn't count as a singleton.
+
+-- deleted a bunch here because I was looking at event id and not noun id. I am too tired --
+
+
+It finds one, the one it should take. After first can_take finds the one in ny inventory, which is already a problem. But then the event generates a brand one one and adds that to my inventory.
+
+It does at least remove the old moss from my inventory, but still. Broken.
+
+Now def take finds inventory items when it shouldn't. Bleh.
+
+in_inv_children = ["local_and_inv_containers_only"] isn't being applied properly.
+
+Ahh. I didn't have it set to apply if there were children.
+
+So if no children, then it kept the full inventory. If there were children then it would apply properly. Seems fixed now.
+
+So, for commands ["go east", "take moss", "take moss", "take moss", "go to shed", "enter shed", "drop moss", "take moss", "drop moss", "drop moss", "take moss"]
+
+take red 3
+receive cyan 1
+
+take red2
+receive magenta 1
+
+take red1
+receive red 1
+
+Go to shed
+
+drop red1
+
+take red1, event continues
+
+drop red1 event continues (assume this continues)
+
+drop cyan 1
+
+take cyan 0 from red2
+
+drop cyan moss 1
+
+drop magenta moss 1
+
+take moss -- oh, finally found an error:
+
+[OUTCOME from def take: `<ItemInst moss / (a2d4541bb663) / north work shed / moss_dries / ..ac6c77bb96f2 / 1>`]
+hidden inst multiple instance count: 1
+INST is_hidden in run_check; not a singleton multiple_instances.
+Sorry, you can't take a moss right now. # Note: This line is referencing red moss.
+After first can_take: None // original noun: <ItemInst moss / (a2d4541bb663) / north work shed / moss_dries / ..ac6c77bb96f2 / 1>
+
+So there should have been 2 mosses on the ground, but instead I have a 1.
+
+<ItemInst moss / (a2d4541bb663) / north work shed / moss_dries / ..ac6c77bb96f2 / 1>,
+<ItemInst moss / (31af99158ed4) / north work shed / moss_dries / ..bd1ee7a8603b / 2>,
+<ItemInst moss / (67e49433f020) / north work shed / moss_dries / ..870737c12b84 / 0>
+
+663 is cyan.
+ed4 is red
+020 is magenta
+
+So for some reason, the last time I dropped cyan it didn't merge with red. But magenta did, properly removing the compound count and invisibling.
+
+See this run-through it worked properly.
+
+Tested, every few runs it doesn't properly merge. Need to figure out why. At least the triggers are working properly.
+
+12.55pm
+Oh, this is odd.
+Compound target: <ItemInst moss / (2e5adaa2be23) / north work shed / moss_dries / ..4bf5154b26df / 1> // shard: <ItemInst moss / (bec23d031e24) / north inventory_place / moss_dries / ..66b39f71f17f / 1>
+
+AT END OF COMBINE_CLUSTERS: Compound_target: <ItemInst moss / (2e5adaa2be23) / north work shed / moss_dries / ..4bf5154b26df / 2> // shard: <ItemInst moss / (bec23d031e24) / north work shed / moss_dries / ..66b39f71f17f / 0>
+
+So, e23 becomes cluster, e24 is singleton. All good.
+
+But, then I drop blue (9f1):
+Compound target: <ItemInst moss / (bec23d031e24) / north work shed / moss_dries / ..66b39f71f17f / 0> // shard: <ItemInst moss / (2afaa4bdea24) / north inventory_place / moss_dries / ..2b183a3129f1 / 1>
+AT END OF COMBINE_CLUSTERS: Compound_target: <ItemInst moss / (bec23d031e24) / north work shed / moss_dries / ..66b39f71f17f / 1> // shard: <ItemInst moss / (2afaa4bdea24) / north work shed / moss_dries / ..2b183a3129f1 / 0>
+
+It finds e24 as compound instead of e23, so I end up with the previous-0 at 1, and the previous-2 still at 2.
+
+Okay, so the issue is here:
+
+[OUTCOME from def take: `<ItemInst moss / (65380ca8732d) / north work shed / moss_dries / ..0d522625fd50 / 2>`]
+is_cluster in item_type, going to move_cluster_item
+AT END OF SEPARATE_CLUSTERS: Compound_target: <ItemInst moss / (65380ca8732d) / north work shed / moss_dries / ..0d522625fd50 / 1> // shard: <ItemInst moss / (bd09b9b8e42b) / north inventory_place / None / 1>
+
+Outcome after move_items: <ItemInst moss / (bd09b9b8e42b) / north inventory_place / None / 1>
+
+But, I just dropped
+ <ItemInst moss / (97639afd81aa) / north work shed / moss_dries / ..803cac5bd310 / 0>
+
+ So it took from the compound instead of taking the invisible singleton.
+
+Okay, so sometimes it says no compound target if dropping a 1 onto a 1.
+
+So it seems to be working now. But it was so inconsistent it's honestly hard to tell. But i have it doing an extra loop now so it only picks up an item >0 if there's no items with 0 present, and if you're dropping an item and the incoming noun is in inventory it just uses that and skips the correct_cluster bit.
+
+Okay, improved a little again. It was the plural_id that was making it fail to pick the right moss, so now it ignores plural_id if priority == plural or if there are no other options. Otherwise it was just picking the first option in local_clusters, that's why it was random.
+ There's a lot of wasteful code but it'll do for now.
+
+I think this is why:
+
+Not new noun: [<ItemInst moss / (186626d3fb85) / north work shed / moss_dries / ..75b49a38b221 / 0>, <ItemInst moss / (0b6e9b000e9b) / north work shed / moss_dries / ..b9c31e46bbb9 / 3>]
+AT END OF SEPARATE_CLUSTERS: Compound_target: <ItemInst moss / (186626d3fb85) / north inventory_place / moss_dries / ..75b49a38b221 / 1> // shard: <ItemInst moss / (186626d3fb85) / north inventory_place / moss_dries / ..75b49a38b221 / 1>
+
+it fails to get the plural.
+
+Oh, now this is the inverse:
+
+[OUTCOME from def take: `<ItemInst moss / (22f1e0ae1ce9) / north work shed / moss_dries / ..e3d511f78ef2 / 0>`]
+Going to move_item for <ItemInst moss / (22f1e0ae1ce9) / north work shed / moss_dries / ..e3d511f78ef2 / 0>
+
+allow_hidden:  False // access_str: pick_up // noun_text: moss
+Adding to plurals: <ItemInst moss / (208ca72d46ff) / north work shed / moss_dries / ..e8b87096d989 / 3>
+Not new noun: [<ItemInst moss / (22f1e0ae1ce9) / north work shed / moss_dries / ..e3d511f78ef2 / 0>, <ItemInst moss / (57457e231976) / north work shed / moss_dries / ..1c869ff6ecb9 / 0>, <ItemInst moss / (208ca72d46ff) / north work shed / moss_dries / ..e8b87096d989 / 3>]
+AT END OF SEPARATE_CLUSTERS: Compound_target: <ItemInst moss / (22f1e0ae1ce9) / north inventory_place / moss_dries / ..e3d511f78ef2 / 1> // shard: <ItemInst moss / (22f1e0ae1ce9) / north inventory_place / moss_dries / ..e3d511f78ef2 / 1>
+
+Outcome after move_items: <ItemInst moss / (22f1e0ae1ce9) / north inventory_place / moss_dries / ..e3d511f78ef2 / 1>
+After first can_take: <ItemInst moss / (22f1e0ae1ce9) / north inventory_place / moss_dries / ..e3d511f78ef2 / 1> // original noun: <ItemInst moss / (22f1e0ae1ce9) / north inventory_place / moss_dries / ..e3d511f78ef2 / 1>
+ADDED TO INV: <ItemInst moss / (22f1e0ae1ce9) / north inventory_place / moss_dries / ..e3d511f78ef2 / 1>, noun: <ItemInst moss / (22f1e0ae1ce9) / north inventory_place / moss_dries / ..e3d511f78ef2 / 1>
+noun going tyo trigger check: <ItemInst moss / (22f1e0ae1ce9) / north inventory_place / moss_dries / ..e3d511f78ef2 / 1>
+Noun <ItemInst moss / (22f1e0ae1ce9) / north inventory_place / moss_dries / ..e3d511f78ef2 / 1> is an event trigger for <eventInst moss_dries ..e3d511f78ef2>
+After if trig.is_item_trigger and trig.item_inst == noun:
+The moss is now in your inventory.
+
+
+ .-           -.
+[<  drop moss  >]
+ '-           -'
+
+allow_hidden:  True // access_str: drop_target // noun_text: moss
+Adding to plurals: <ItemInst moss / (208ca72d46ff) / north work shed / moss_dries / ..e8b87096d989 / 3>
+priority == plural. plurals: {<ItemInst moss / (208ca72d46ff) / north work shed / moss_dries / ..e8b87096d989 / 3>}
+Compound target: <ItemInst moss / (208ca72d46ff) / north work shed / moss_dries / ..e8b87096d989 / 3> // shard: <ItemInst moss / (22f1e0ae1ce9) / north inventory_place / moss_dries / ..e3d511f78ef2 / 1>
+AT END OF COMBINE_CLUSTERS: Compound_target: <ItemInst moss / (208ca72d46ff) / north work shed / moss_dries / ..e8b87096d989 / 4> // shard: <ItemInst moss / (22f1e0ae1ce9) / north work shed / moss_dries / ..e3d511f78ef2 / 0>
+
+For the first time ever, conceptually infinite moss.

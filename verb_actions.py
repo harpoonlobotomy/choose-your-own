@@ -1634,12 +1634,12 @@ def take(format_tuple, input_dict):
     from eventRegistry import events
     logging_fn()
 
-    noun, noun_str, _, _ = get_nouns_w_str(input_dict)
+    noun, noun_str, noun2, noun2_str = get_nouns_w_str(input_dict)
 
     added_to_inv = False
 
     outcome = item_interactions.find_local_item_by_name(noun, verb="take", current_loc=loc.current, hidden_cluster=True)
-    print(f"[OUTCOME from def take: `{outcome}`]")
+    #print(f"[OUTCOME from def take: `{outcome}`]")
     if isinstance(outcome, ItemInstance):
         noun = outcome
     else:
@@ -1653,37 +1653,19 @@ def take(format_tuple, input_dict):
         logging_fn()
         added_to_inv = False
 
-        inst, container, reason_val, meaning = registry.check_item_is_accessible(noun)
-        #print(f"CAN_TAKE: {noun_inst} / meaning: {meaning} / reason_val: {reason_val}")
-        if reason_val not in (0, 3, 4, 5):
+        _, container, reason_val, meaning = registry.check_item_is_accessible(noun)
+
+        if reason_val not in (0, 3, 4, 5, 8):
             for item, value in input_dict.items():
                 if 'noun' in value:
                     text = input_dict[item]["noun"].get("text")
             print(f"Sorry, you can't take a {assign_colour(text)} right now.")
-            return 1, added_to_inv
+            return 1, None
             #print(f"Reason code: {reason_val}")
         elif reason_val == 5:
-            local_items = registry.get_item_by_location(loc.current)
-            if local_items:
-                local_item_names = dict()
-                for loc_item in local_items:
-                    if loc_item != noun:
-                        local_item_names[loc_item.name] = loc_item
-
-                if noun.name in local_item_names:
-                    val, added_to_inv = can_take(local_item_names[noun.name])
-                    return val, added_to_inv
-            else:
-                items_by_name = registry.by_name.get(noun.name)
-                if items_by_name:
-                    #print(f"Items matching {noun_inst.name}: \n{items_by_name}\nThis won't do anything yet, but later it should.")
-                    if items_by_name:
-                        for item in items_by_name:
-                            if item != noun and item.location == loc.current: # maybe I should replace the above with this. Don't worry about the whole 'make a dict of local names' thing, just check the location of inst by name directly.
-                                print(f"There's another {noun.name} here, but it was not found in local_items. This means the item location wasn't assigned properly, something is broken.")
-
             print(f"The {assign_colour(noun)} {is_plural_noun(noun)} already in your inventory.")
-            return 1, added_to_inv
+            return 1, None # return none so it doesn't run the pick up check again
+
         else:
             if hasattr(noun, "can_pick_up") and noun.can_pick_up:
                 if reason_val in (3, 4):
@@ -1693,11 +1675,10 @@ def take(format_tuple, input_dict):
                     return 0, added_to_inv
                 elif reason_val == 0:
                     outcome = registry.move_item(noun, location = loc.inv_place)
-
                     if outcome in loc.inv_place.items:
                         #print("Outcome is in inventory. (line 1480)")
                         return 0, outcome
-                    if noun in loc.inv_place.items: # Once confirmed, remove the
+                    if noun in loc.inv_place.items:
                         #print("noun_inst is in inventory. line 1483")
                         added_to_inv = noun
                         return 0, added_to_inv
@@ -1705,14 +1686,13 @@ def take(format_tuple, input_dict):
             else:
                 print(f"You can't pick up the {assign_colour(noun)}.")
                 return 1, added_to_inv
-            print("Failed in can_take, returning defaults.")
-            return 0, added_to_inv
+        print("Failed in can_take, returning defaults.")
+        return 0, noun
 
     dir_or_sem = get_dir_or_sem(input_dict)
     location = get_location(input_dict)
     if format_tuple in (("verb", "noun"), ("verb", "direction", "noun")):
         cannot_take, added_to_inv = can_take(noun)
-
         if cannot_take and hasattr(noun, "can_consume"):
             print(f"\nDid you mean to consume the {assign_colour(noun)}? ")
             return
@@ -1759,11 +1739,10 @@ def take(format_tuple, input_dict):
         return
 
     if added_to_inv:
-        #print(f"ADDED TO INV: {added_to_inv}")
+        print(f"ADDED TO INV: {added_to_inv}, noun: {noun}")
         if isinstance(added_to_inv, ItemInstance):
             if added_to_inv != noun:
                 noun = added_to_inv
-
         outcome, moved_children = events.is_event_trigger(noun, reason = "item_in_inv")
         if not outcome:
             print(f"The {assign_colour(noun)} {is_plural_noun(noun)} now in your inventory.")
@@ -1917,7 +1896,7 @@ def drop(format_tuple, input_dict):
         return
 
     outcome = item_interactions.find_local_item_by_name(noun=noun, access_str="drop_subject") # item being dropped (drop_target may be later if dropping into container etc.)
-    print(f"[OUTCOME from def drop: `{outcome}`]")
+    #print(f"[OUTCOME from def drop: `{outcome}`]")
     if outcome and isinstance(outcome, ItemInstance):
         #print_yellow(f"Found noun from find_local_item_by_name: {outcome}. Original: {noun}")
         noun = outcome

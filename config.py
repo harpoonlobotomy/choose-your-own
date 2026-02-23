@@ -39,3 +39,5 @@ inv_loc_str = f"{key_dir} inventory_place"
 godmode = False
 
 coloured_repr = True
+
+record_event_starts_ends = True
