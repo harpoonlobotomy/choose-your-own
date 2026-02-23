@@ -4267,3 +4267,36 @@ Compound target: <ItemInst moss / (208ca72d46ff) / north work shed / moss_dries 
 AT END OF COMBINE_CLUSTERS: Compound_target: <ItemInst moss / (208ca72d46ff) / north work shed / moss_dries / ..e8b87096d989 / 4> // shard: <ItemInst moss / (22f1e0ae1ce9) / north work shed / moss_dries / ..e3d511f78ef2 / 0>
 
 For the first time ever, conceptually infinite moss.
+
+17.28pm
+Not sure how that actually happened but I did some more reinforcing and haven't seen it happen again.
+Also fixed and reformatted the inventory slightly, just a little prettier and getting rid of needless ties to old script parts.
+
+6.18.pm
+I want to add a line when travelling from outside the graveyard to the shed. 'You travel back to the graveyard and through the gates, and west until you return to the shed.' #TODO.
+
+Right now just clearing out old functions etc that aren't used anymore. Hoping not to break things.
+
+Ooh - "look in jar" breaks it and gets me an instant exit. Interesting.
+Specifically, if the jar is in the inventory. If not in inventory, then no error.
+
+6.28pm fixed
+
+Minor issue:
+
+ .-            -.
+[<  go to shed  >]
+ '-            -'
+
+def go len2 or len3. Format tuple: ('verb', 'direction', 'noun'), dict: {0: {'verb': {'instance': <verbInstance go (8b04e88b-f122-4fc6-bcc5-0fa8ab881fe5)>, 'str_name': 'go', 'text': 'go'}}, 1: {'direction': {'instance': None, 'str_name': 'to', 'text': 'to'}}, 2: {'noun': {'instance': <ItemInst work shed / (0bc140890a6a) / west graveyard / None / >, 'str_name': 'work shed', 'text': 'shed'}}}
+noun transition
+You see the closed wooden door in front of you; you can't phase through a closed door.
+
+
+ .-              -.
+[<  look at door  >]
+ '-              -'
+
+You can't see the door right now.
+
+'go to shed' apparently didn't actually move me. Need to fix that.

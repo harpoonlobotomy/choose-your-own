@@ -26,8 +26,8 @@ def show_map(noun):
 
 
 def look_at_item(item_inst, entry): ## this is just using everything from registry. Should really just be in registry....
+    """Checks an item is viable to be seen, then looks at the item. If the item is a loc_exterior that is nearby to the player, instead turns to face that cardinal and prints the description. If the item has children, they will be printed in a list. If the item is a map-item and show_map==True, it will open the map image externally."""
     if isinstance(item_inst, ItemInstance):
-
         #print(f"item_inst.location: {item_inst.location}")
         confirmed, container, reason_val, meaning = registry.check_item_is_accessible(item_inst)
         #print(f"Look at item MEANING: {meaning}")
@@ -56,6 +56,7 @@ def look_at_item(item_inst, entry): ## this is just using everything from regist
 
 
 def set_attr_by_loc(attr = "is_hidden", val = "False", location=None, items=None):
+    """Sets item attributes to all items in a given location. Used to set location-wide states (eg items hidden if location is made dark, etc.)"""
     logging_fn()
     from itemRegistry import registry
     instances = set()
@@ -95,7 +96,7 @@ def set_attr_by_loc(attr = "is_hidden", val = "False", location=None, items=None
             #print(f"SET ATTRIBUTE: {item}, {attr}, {val}")
 
 def add_item_to_loc(item_instance, location=None):
-
+    """Old function for moving an item to a location. Not sure why it doesn't just use move_item directly; need to remove this later."""
     if location == None:
         location = loc.current
     elif location != loc.current:
@@ -111,7 +112,7 @@ def add_item_to_loc(item_instance, location=None):
 #Kinda wish this was a class of lil functions. Might be an idea? idk. I'm used to classes holding data sets, not functions. Will have to look into it.
 
 def is_loc_ext(noun:ItemInstance, return_trans_obj=False) -> str|None:
-
+    """Used for finding and/or referring to transition objects for location exterior objects."""
     if hasattr(noun, "is_loc_exterior") and hasattr(noun, "transition_objs"):
         for trans_obj in noun.transition_objs:
             if return_trans_obj:
@@ -122,12 +123,13 @@ def is_loc_ext(noun:ItemInstance, return_trans_obj=False) -> str|None:
 
 
 def get_correct_cluster_inst(noun:ItemInstance, noun_text=None, priority="single", local_only=False, access_str = None, allow_hidden=False, local_items:set=None) -> ItemInstance: ## Not implemented yet. Moving from verb_
+    """For determining the correct ItemInstance to select when interacting with cluster-type items. Will prioritise 0-val cluster items when picking up, will prioritise multiple-val cluster items when looking for a drop target to merge with, etc. Can allow hidden objects to be selected.\n\nIf no local items are provided, will generate with find_local_item_by_name using the criteria it was given."""
     logging_fn()
-    #priority="single" # will just set this permanently later.
-    # Not sure if I want to have this here, or  have it above find_local_by_name and call it as part of that function.
+
     if not (hasattr(noun, "has_multiple_instances") and hasattr(noun, "single_identifier") and hasattr(noun, "plural_identifier")):
         print(f"Noun {noun} does not have the identifiers required for get_correct_cluster_inst. Returning.")
         return
+
     plural_id = noun.plural_identifier
     single_id = noun.single_identifier
 
@@ -137,9 +139,9 @@ def get_correct_cluster_inst(noun:ItemInstance, noun_text=None, priority="single
         else:
             noun_text = plural_id
 
-# If not noun_text, then it's probably in the move_cluster section. In that case, I need to find a multiple if there is one, else take a single.
     if not local_items:
-        local_items = find_local_item_by_name(current_loc=loc.current, hidden_cluster=allow_hidden, access_str=access_str)#priority = "plural" if (access_str and access_str in no_inventory) else "single"
+        local_items = find_local_item_by_name(current_loc=loc.current, hidden_cluster=allow_hidden, access_str=access_str)
+
     local_clusters = list((i for i in local_items if i.name == noun.name))
     if local_clusters and len(local_clusters) == 1:
         #print("Only one item in local_clusters, returning.")
@@ -196,6 +198,7 @@ def get_correct_cluster_inst(noun:ItemInstance, noun_text=None, priority="single
 
 
 def recurse_items_from_list(input_list:list) -> set:
+    """ Gets the first level of children from any provided list. Excludes hidden children and only searching in unlocked and unhidden containers."""
     logging_fn()
     children = set()
 
@@ -204,8 +207,7 @@ def recurse_items_from_list(input_list:list) -> set:
             continue
         if has_and_true(item, "children") and item.is_open:
             for child in item.children:
-                # Possibly we get cluster names /here/ rather than at print-time.
-                #Or, we do that when things open. When you open a container w/ children, check cluster status. Probably better to do it then  rather than just when looking.
+                print(f"child in item.children: {child}")
                 if not has_and_true(child, "is_hidden"):
                     children.add(child)
     return children
@@ -232,10 +234,9 @@ def find_local_item_by_name(noun:ItemInstance=None, noun_text = None, verb=None,
     """
     Builds relevant items set using verb scope derived from `access_str` or `verb`'s status in `verb_to_noun_access`. If `noun` provided, returns the relevant `ItemInstance` of that name if found. If no `noun` provided, returns the full set.
 
-    priority == "single" | "plural
+    priority == ('single' | 'plural')
     """
     logging_fn()
-
 
     if verb:
         from verbRegistry import VerbInstance
@@ -243,6 +244,7 @@ def find_local_item_by_name(noun:ItemInstance=None, noun_text = None, verb=None,
             verb = verb.name
 
     def build_relevant_items_set(verb=None, noun=None, access_str=None, current_loc=None) -> set:
+        """Builds a set of itemInstances based on the verb and access_str provided. Will generate the access_str from the verb if needed.\n\nDoes not pay attention to names, only the categories to allow/ignore."""
         logging_fn()
         location = None
 
@@ -260,10 +262,8 @@ def find_local_item_by_name(noun:ItemInstance=None, noun_text = None, verb=None,
                 print(f"find_local_items access_str is not a valid key: {access_str}. Expected one of:\n{list(scope_to_verb)} or \n{simple_assignments}. Cannot continue.")
                 exit()
         else:
-            access_str = "all_local" # arbitrarily get all, so it can be called with no args and still work for getting all local items.
-        #print(f"Access str: {access_str}")
+            access_str = "all_local"
 
-    # Now we know what's excluded, made the set.
         inv_items = None
         if access_str in no_inventory:
             inv_items = None
@@ -272,10 +272,8 @@ def find_local_item_by_name(noun:ItemInstance=None, noun_text = None, verb=None,
         if inv_items and access_str not in no_containers:
             children = recurse_items_from_list(inv_items)
             if children and access_str not in in_inv_children:
-                exit()
                 inv_items = set(children|set(inv_items))
             elif children and access_str in in_inv_children:
-                exit()
                 inv_items = children
             elif not children and access_str in in_inv_children:
                 inv_items = set()
@@ -359,5 +357,3 @@ def find_local_item_by_name(noun:ItemInstance=None, noun_text = None, verb=None,
                 return item
     else:
         return final_items
-
-        # includes trans obj, inv and inv containers, local items + items in open local containers (I don't yet have the discovered tag but need it for this, really - I don't want to tell you 'that open jar has a thing in it', but if you've already found it then I don't mind listing it as an option. For now I'll just use open containers but that needs doing, #TODO at some time.)

@@ -4,6 +4,7 @@ import config
 white_bg = config.white_bg
 
 def print_col(text, col, bg, invert=False):
+    """Simple function to return a coloured text string. col and bg must be given as ints (30-39 and 40-49 respectively). Always outputs underlined text.\n'invert=True' will swap the bg and colour options."""
     if bg == False or white_bg == False:
         bg = 40
     else:
@@ -36,5 +37,6 @@ def print_yellow(text, bg=False, invert=False):
     print_col(text, colour, bg, invert)
 
 def printkind(text):
+    """Prints `Text: {text}, type: {type(text)}` in yellow text."""
     text = f"Text: {text}, type: {type(text)}"
     print_yellow(text, invert=True)

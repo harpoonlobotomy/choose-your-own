@@ -8,7 +8,7 @@ from logger import logging_fn, traceback_fn
 from eventRegistry import events
 
 def get_viable_cardinal(cardinal_inst:cardinalInstance): # 0 == match, 1 == had to find an alt
-
+    """Returns the first viable cardinal for a given location based on the input cardinal. Used for locations that have less than 4 cardinals to ensure an available cardinal is chosen."""
     if hasattr(cardinal_inst, "cardinal_data") and cardinal_inst.cardinal_data != None and cardinal_inst.cardinal_data.get("item_desc"):
         #print('cardinal_inst.cardinal_data.get("item_desc"): {cardinal_inst.cardinal_data.get("item_desc")}')
         return cardinal_inst, 0

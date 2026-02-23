@@ -134,6 +134,7 @@ def compile_long_desc(long_desc):
     return new_desc
 
 def init_loc_descriptions(place=None, card=None):
+    """Generates or updates the location description for the given place and/or cardinal instances.\n\nUses current item presence and state to ensure the description matches the world-state."""
 
     desc_dict = {}
     location_description = {}

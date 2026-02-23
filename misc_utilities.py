@@ -1,5 +1,5 @@
 from env_data import cardinalInstance, placeInstance
-from itemRegistry import ItemInstance, registry
+from itemRegistry import ItemInstance
 from logger import logging_fn
 
 ## utilities to be used by any script at any point
@@ -32,11 +32,11 @@ MOVE_UP = "\033[A"
 ### STRING MANIPULATION
 
 def smart_capitalise(s: str) -> str:
+    """Capitalises the first character of the string and returns it."""
     return s[0].upper() + s[1:] if s else s
 
 def is_plural_noun(noun_inst, singular = None, plural = None, bool_test=False):
-    #from itemRegistry import registry
-    #registry.item_defs
+    """Checks if the given noun_inst is a plural noun.name. If so, returns `'are'`, `1` if bool_test, or `plural` if given, and similarly for singular. `singular` and `plural` can be specified as anything and will be appled in the same fashion."""
     plural_nouns = set(("dried flowers", "bedsheets",))
     if noun_inst.name in plural_nouns:
         if bool_test:
@@ -51,21 +51,26 @@ def is_plural_noun(noun_inst, singular = None, plural = None, bool_test=False):
     return "is"
 
 def check_name(item_name):
+    """Gets `plain_name` from `item_name`, as well as `plural_val` if the item ends in '` (x)`'. Removes various formatting options from `item_name`, with the intent of returning the searchable inst.name"""
     logging_fn()
     special_type = {
         "name": 0,
         "container": 1,
         "plural": 2
     }
+    if "  - " in item_name:
+        item_name = item_name.replace("  - ", "")
+        plain_name = item_name
+        name_type = 0
 
-    if "*" in item_name:
-        plain_name = item_name.replace("*", "")
-        name_type = special_type["container"]
-
-    elif " x" in item_name:
+    if " x" in item_name:
         plain_name = item_name.split(" x")[0]
         plural_val = item_name.split(" x")[1]
         name_type = int(plural_val)
+
+    elif "*" in item_name:
+        plain_name = item_name.replace("*", "")
+        name_type = special_type["container"]
 
     else:
         plain_name = item_name
@@ -74,7 +79,7 @@ def check_name(item_name):
     return plain_name, name_type
 
 def switch_the(text:str|ItemInstance|list, replace_with:str="the")->str:
-
+    """Replace `a/an ` with `the `, unless an alterative is given in replace_with."""
     if isinstance(text, list):
         if len(text) == 1:
             text=text[0]
@@ -100,7 +105,6 @@ def switch_the(text:str|ItemInstance|list, replace_with:str="the")->str:
         text = "the "+ text
 
     return text
-
 
 def clean_separation_result(result:list, to_print=False):
     logging_fn()
@@ -140,11 +144,12 @@ def clean_separation_result(result:list, to_print=False):
         coloured_list = "".join(coloured_list)
 
         if to_print:
-            do_print(coloured_list)
+            print(coloured_list)
 
 ### END STRING MANIPULATION
 
 def look_around():
+    """Generates and prints `loc.currentPlace.overview` and `loc.current.description`."""
     from env_data import locRegistry as loc, get_loc_descriptions
     from itemRegistry import registry
     get_loc_descriptions(place=loc.currentPlace) # Is this still needed? Aren't we updating this on item change?
@@ -167,16 +172,16 @@ def look_around():
 
 
 def print_failure_message(input_str=None, message=None, noun=None, verb=None, idx_kind=None, init_dict=None, format = None):
+    """prints a failure message using `input_str`, `noun`, `verb`, `inx_kind`, `init_dict` and `format`, depending on which elements are given. If nothing else, just prints a generic message using `input_str`."""
     logging_fn()
     if input_str:
         print(f'{MOVE_UP}\033[1;32m[[  {input_str}  ]]\033[0m\n')
-    #print(f"start of print_failure_message: noun: {noun}, input_str: {input_str}, idx_kind: {idx_kind}, init_dict: {init_dict}")
-    #print(f"Print failure message\nmessage: {message} / idx_kind: {idx_kind}, init_dict: {init_dict}")
+
     from verb_actions import get_verb
     if not init_dict and not (noun and verb):
         print(f"Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
         return
-    noun_name = None
+
     if not verb and init_dict:
         verb = get_verb(init_dict)
 
@@ -199,10 +204,11 @@ def print_failure_message(input_str=None, message=None, noun=None, verb=None, id
         print(f"Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
         return
 
+    noun_name = None
     if noun:
         if isinstance(noun, ItemInstance):
             noun_name = noun.name
-        if isinstance(noun, str):
+        elif isinstance(noun, str):
             noun_name = noun
 
     entry2 = noun2 = None
@@ -243,6 +249,7 @@ def print_failure_message(input_str=None, message=None, noun=None, verb=None, id
 ### INVENTORY LIST MANAGEMENT (possible all should be in item_management instead, but keeping here for now.)
 
 def get_inst_list_names(inventory_inst_list) -> list:
+    """Returns a list of all inventory items' names using the inputted inventory list."""
     logging_fn()
     inventory_names_list=list()
     for item in inventory_inst_list:
@@ -251,28 +258,26 @@ def get_inst_list_names(inventory_inst_list) -> list:
     return inventory_names_list
 
 def from_inventory_name(test:str) -> ItemInstance:
+    """Returns an itemInstance from the inventory based on a given `test` string. `test` is run through `check_name` first to remove common formatting before searching."""
     logging_fn()
     if isinstance(test, ItemInstance):
         test = test.name
 
     from env_data import locRegistry
     inst_inventory = locRegistry.inv_place.items
-        #from set_up_game import game ## might break
-        #inst_inventory = game.inventory
 
     cleaned_name,_ = check_name(test)
-    #print(f"Test: {test}, cleaned_name: {cleaned_name}")
     for inst in inst_inventory:
-        if inst.name == cleaned_name: # always returns the first, even if there are multiples. This is fine though I think.
+        if inst.name == cleaned_name:
             return inst
 
-    #print(f"Inst inventory: {inst_inventory}")
     logging_fn()
     print(f"Could not find inst `{test}` in inst_inventory.")
     input()
 
 
 def is_item_in_container(item):
+    """Just checks if the given `item` is in a container, and returns that `container` or None."""
 
     if hasattr(item, "contained_in") and item.contained_in != None:
         container = item.contained_in
@@ -280,17 +285,11 @@ def is_item_in_container(item):
     return None
 
 def generate_clean_inventory(inventory_inst_list=None, will_print = False, coloured = False):
-
-    from itemRegistry import registry
+    """Generates a nice looking inventory list, applying '` (x)` for plural entries' and adds colour and formatting."""
     from env_data import locRegistry as loc
-    from tui.tui_update import update_text_box
-    from config import enable_tui
-    tui_enabled = enable_tui
 
     if inventory_inst_list == None:
         inventory_inst_list = loc.inv_place.items
-        #from set_up_game import game
-        #inventory_inst_list = game.inventory
 
     no_xval_inventory_names = []
 
@@ -305,53 +304,32 @@ def generate_clean_inventory(inventory_inst_list=None, will_print = False, colou
                 continue
             else:
                 checked.add(item_name)
-        else:
-            """
-        else:#
-            # check if it's a child:
-            has_parent, child_inst = is_item_in_container(inventory_inst_list, item_name)
-            #print(f"In generate clean inventory: has_parent: {has_parent}, child_inst: {child_inst}")
-            if not has_parent:
-                # check if it's a parent:
-                inst = from_inventory_name(item_name, inventory_inst_list)
-                children = registry.instances_by_container(inst)
-                if children:
-                    inventory_names.append(item_name+"*") ## add to inventory with asterisk if has children inside.
-                else:
-                    inventory_names.append(item_name) ## add to inventory if item does not have a parent(container)
-                no_xval_inventory_names.append(item_name)
-            """
-            children=None
-            has_parent = is_item_in_container(item_name) # is it a child
-            if not has_parent:
-                inst = from_inventory_name(item_name)
-                if registry.by_container.get(inst):
-                    children = registry.instances_by_container(inst)
-                if children:
-                    inventory_names.append(item_name+"*") ## add to inventory with asterisk if has children inside.
-                else:
-                    inventory_names.append(item_name) ## add to inventory if item does not have a parent(container)
-                no_xval_inventory_names.append(item_name)
+        else: # Removed all the notes about children, because children of inventory items are no longer stored directly in the inventory.
+            inventory_names.append(item_name) ## add to inventory if item does not have a parent(container)
+            no_xval_inventory_names.append(item_name)
 
     second_checked = set()
-    for inst_name in checked: # because it's a set, should only be one per item
-        dupe_items = (registry.get_duplicate_details(inst_name, inventory_inst_list))
+    for inst_name in checked:
+        dupe_items = len(list(i for i in loc.inv_place.items if i.name == inst_name))#registry.get_duplicate_details(inst_name, inventory_inst_list))
         if inst_name in second_checked:
             continue
         name_index = inventory_names.index(inst_name)
-        inventory_names[name_index] = f"{inst_name} x{len(dupe_items)}"
+        inventory_names[name_index] = f"{inst_name} x{str(dupe_items)}"
         second_checked.add(inst_name)
 
     if coloured:
-        coloured_list = []
         coloured_and_spaced = []
         for item_name in inventory_names:
-            coloured_and_spaced.append(f"    {assign_colour(item_name)}")
-            coloured_list.append(f"{assign_colour(item_name)}")
-        if will_print and tui_enabled:
-            update_text_box(coloured_and_spaced)
-        elif will_print:
-            update_text_box(inventory_names)
+            coloured_and_spaced.append(f"  - {item_name}")
+            #coloured_list.append(f"{assign_colour(item_name)}")
+
+        if coloured_and_spaced:
+            if isinstance(coloured_and_spaced, list):
+                for item in coloured_and_spaced:
+                    if item != None:
+                        print(assign_colour(item))
+            elif isinstance(coloured_and_spaced, str):
+                print(coloured_and_spaced)
 
     return inventory_names, no_xval_inventory_names
 
@@ -394,7 +372,7 @@ def separate_loot(child_input=None, parent_input=None, inventory=[]): ## should 
 ### COLOUR ASSIGNMENT
 
 def get_itemname_from_sqrbrkt(string, noun):
-
+    """To replace [[item]] with <{noun} with noun.colour applied>."""
     parts = string.split("[[")
     other_parts = parts[1].split("]]")
     item_name_raw = other_parts[0].strip()
@@ -412,12 +390,25 @@ def get_itemname_from_sqrbrkt(string, noun):
 
 
 def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=False, not_bold=False, caps=False, card_type = None, noun=None):
+    """Take an item and apply its colour. If the item has .colour, that will be applied (either 'colour' if colour provided, otherwise a selection from the colour list on a rotating basis). If item is an instance or instance.name without associated colour, will assign that colour to item.colour and apply the colour.\n\ncard_type specifies the variation of cardinalInstance name to print, the options are\n
+        * "name"
+        * "ern_name"
+        * "place"
+        * "place_name"
+        * "in_loc_facing_card"\n\n
 
+    By default 'switch' replaces 'a/an x' with 'the x', though this is not used often anymore. 'not_bold' removes any bolding applid by other attributes. caps uses smart_capitalise to capitalise the first character. If noun is provided, get_itemname_from_sqrbrkt can be used to add noun_name into strings with [[name]].\n\n
+    If "  - " is in the item name, it will be removed and re-applied at the end of the function, so that inventory items can have the correct colouring applied while maintaining the spacing.
+    """
     from tui.colours import Colours
-    string = item
+    string = f"{(item if isinstance(item, str) else '')}"
+
     if colour == "event_msg":
         if "[[" in string and not "[[]]" in string:
             return get_itemname_from_sqrbrkt(string, noun)
+
+    if isinstance(item, str) and "  - " in item:
+        item = item.replace("  - ", "")
 
     bg = None
     bld = ita = u_line = invt = False
@@ -467,25 +458,6 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
                 if specials_dict[colour].get("colour"):
                     colour = specials_dict[colour]["colour"]
 
-            #if "loc" in colour:
-            #    colour="green" # set 'loc' in colours.C instead of hardcoding the actual colours here. Only code here for bold, or if the colour named is inaccurate.
-            #    bld=True
-            #if colour == "title_bg":
-            #    colour="black"
-            #    bg="green"
-            #if colour == "equals":
-            #    u_line=True
-            #    bg="blue"
-            #if colour == "hash":
-            #    bg="blue"
-            #if colour == "title_white":
-            #    colour="white"
-            #if colour == "title":
-            #    bld=True
-            #if colour == "event_msg":
-            #    ita=True
-            #    colour = "yellow"
-
     elif isinstance(item, list):
         print(f"Item instance in assign_colour is a list: {item}")
         from time import sleep
@@ -493,7 +465,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
         item=item[0] #arbitrarily take the first one.
 
     def check_instance_col(item):
-
+        """Checks for `item.colour`. If not found, assigns `item.colour` using `Colours.colour_counter`."""
         from itemRegistry import registry
         if isinstance(item, ItemInstance|placeInstance|cardinalInstance):
             entry = item
@@ -503,8 +475,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
                 bld=True
                 if isinstance(item, placeInstance):
                     item=item.name
-                if isinstance(item, ItemInstance):
-                    #print(f"ITEM: {item}, print_name: {item.print_name}, nicename: {item.nicename}")
+                elif isinstance(item, ItemInstance):
                     item = item.print_name
             else:
                 colour=cardinals[Colours.colour_counter%len(cardinals)]
@@ -525,7 +496,6 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
     if item in cardinals:
         colour=cardinal_cols[item]
         bld=True
-
 
     elif (isinstance(item, str) and not colour) or isinstance(item, ItemInstance|placeInstance|cardinalInstance):
         from itemRegistry import registry
@@ -561,8 +531,6 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
             colour=cardinal_cols[colour]
             bld=True
 
-    #if nicename:
-    #    item=nicename # can't remember what this was used for
     if switch:
         item=switch_the(item)
     if caps:
@@ -588,10 +556,13 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
     elif isinstance(item, placeInstance):
         item=item.name
 
+    if string and "  - " in string and isinstance(item, str):
+        item = "  - " + item
     coloured_text=Colours.c(item, colour, bg, bold=bld, italics=ita, underline=u_line, invert=invt, no_reset=no_reset)
     return coloured_text
 
-def col_list(print_list:list=[], colour:str=None, nicename=False)->list: ## merge this to the above, to it just deals with lists automatically instead of being a separate call.
+def col_list(print_list:list=[], colour:str=None, nicename=False)->list:
+    """Takes a list and assigns colour to each list entry. If `colour` and/or `nicename` is supplied, those will be applied to each item."""
     coloured_list=[]
 
     for i, item in enumerate(print_list):
@@ -609,7 +580,7 @@ def col_list(print_list:list=[], colour:str=None, nicename=False)->list: ## merg
 
 
 def in_loc_facing_card(cardinal:cardinalInstance):
-    # just putting this here because the things that will need it probably import locRegistry anyway.
+    """Returns `the {assign_colour(cardinal.place,)}, facing {assign_colour(cardinal)}` using the provided `cardinalInstance`."""
     text = f"the {assign_colour(cardinal.place,)}, facing {assign_colour(cardinal)}."
     return text
 
@@ -618,17 +589,16 @@ def in_loc_facing_card(cardinal:cardinalInstance):
 ### SHORTHAND FNs
 
 def has_and_true(item, attr):
-    #print(f"HAS AND TRUE: item: {item}, attr: {attr}")
-    #if hasattr(item, attr) and getattr(item, attr) == True:
-    #    return True
-    if hasattr(item, attr) and getattr(item, attr):# shouldn't be this didn't work for some things and I don't know why. Trying it again so I'm not exclusively checking 'true', but a truthy val.
+    """Returns True or False based on the results of `if hasattr(item, attr) and getattr(item, attr)` for the provided `item` and `attr`."""
+
+    if hasattr(item, attr) and getattr(item, attr):
         return True
     return False
 
 ### SIMPLE UTILITIES
 
 def print_type(item, exit=False, disabled=False):
-
+    """Returns `Item: {item}, type: {type(item)}`. I'm pretty sure I already wrote this, so this function may exist elsewhere too."""
     if disabled:
         return
 
@@ -647,7 +617,7 @@ def do_print(text=None, end=None, do_edit_list=False, print_func=None):
     #if isinstance(text, str) and text.strip=="":
     #    do_edit_list=True
 
-    update_text_box(to_print=text, edit_list=do_edit_list) ## enable_tui removed from here, instead tui_update pulls it itself.
+    #update_text_box(to_print=text, edit_list=do_edit_list) ## enable_tui removed from here, instead tui_update pulls it itself.
 #    if end != "no": # bit weak but it'll do, lets me force no extra newlines even with the messy af print sequence I hae for now.
 #        update_text_box(to_print="  ")
 

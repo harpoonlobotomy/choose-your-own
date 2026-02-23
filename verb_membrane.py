@@ -1,11 +1,9 @@
-#I like the idea of the verb-word-objects being different from the verb-action-objects. One's grammatical, one's an action-driver. With the third that is actually a list of functions for specific verbs.
-
-### input_membrane, now.
-# Takes the raw input.
-# Sends it to verbRegistry.
-# Gets the format and the dict back.
-# Checks the nouns are viable for the verb.
-# Then sends the format and dict onward to verb_actions.
+"""
+* Takes the raw input.
+* Sends it to verbRegistry.
+* Gets the format and the dict back.
+* Checks the nouns are viable for the verb.
+* Then sends the format and dict onward to verb_actions."""
 
 from env_data import cardinalInstance, placeInstance
 from eventRegistry import eventInstance

@@ -38,36 +38,8 @@ class Colours:
 
     colour_counter = 0
 
-    #col_dict={
-    #    "blue": BLUE,
-    #    "b_blue": B_BLUE,
-    #    "cyan": CYAN,
-    #    "u_cyan": U_CYAN,
-    #    "green": GRN,
-    #    "red": RED,
-    #    "yellow": YEL,
-    #    "b_yellow": B_YEL,
-    #    "magenta":MAG,
-    #    "description": B_YEL,
-    #    "deco_1": B_GRN,
-    #    "title": B_YEL,
-    #    "pipe": GRN,
-    #    "underscore": YEL,
-    #    "equals": U_BLUE,
-    #    "dash": GRN,
-    #    "hash": BG_GRN,
-    #    "slash": YEL,
-    #    "up": GRN,
-    #    "title_white": B_WHITE,
-    #    "bg_yellow": BG_YEL,
-    #    "title_bg": TITLE_BG
-    #    }
-#
-#
-#
-
     @classmethod
-    def c(cls, text, fg="green", bg=None, *, bold=False, italics=False, underline=False, invert=False, no_reset=False): ## * == after this point, all arguments are not positional
+    def c(cls, text, fg="green", bg=None, *, bold=False, italics=False, underline=False, invert=False, no_reset=False):
 
         codes = []
 
