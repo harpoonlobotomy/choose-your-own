@@ -37,3 +37,5 @@ no_place_str = f"{key_dir} no_place"
 inv_loc_str = f"{key_dir} inventory_place"
 
 godmode = False
+
+coloured_repr = True

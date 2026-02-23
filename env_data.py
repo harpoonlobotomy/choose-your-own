@@ -151,12 +151,12 @@ class placeRegistry:
                     traceback_fn()
                     return
 
-
                 self.current = cardinal
                 self.currentPlace = loc
                 if cardinal.place != self.currentPlace:
                     self.currentPlace = cardinal.place
                     self.route.append(loc)
+                    loc.visit() ## could just use route above... Might get long though.
                 return
 
         elif loc:
@@ -180,12 +180,14 @@ class placeRegistry:
                 self.current = new_card
                 self.currentPlace = loc
                 self.route.append(loc)
+                loc.visit()
 
-            if isinstance(loc, cardinalInstance):
+            elif isinstance(loc, cardinalInstance):
                 self.current = loc
                 if loc.place != self.currentPlace:
                     self.currentPlace = loc.place
                     self.route.append(loc)
+                    loc.place.visit()
 
             assert isinstance(self.current, cardinalInstance)
             return
@@ -201,6 +203,7 @@ class placeRegistry:
                 if cardinal.place != self.currentPlace:
                     self.currentPlace = cardinal.place
                     self.route.append(cardinal.place)
+                    cardinal.place.visit()
                 self.current = cardinal
                 #print("self.current_cardinal.name: ", cardinal.place_name)
 

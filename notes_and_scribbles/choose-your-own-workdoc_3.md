@@ -4059,3 +4059,49 @@ Think it's fixed now. Seems it. 5.59pm
 Added 'door_opens to itemReg, want to use more random-from-a-list descriptions. Not today though.
 
 I think trans_nouns etc should work better now.
+
+
+Hm.
+Was in testing grounds.
+Said go to graveyard.
+And because graveyard hasattr location_entry it was directed through entry.
+
+[<  go to graveyard  >]
+move_through_trans_obj
+You're now in the testing grounds, facing north.
+
+So I need to check. If current loc == int_loc or to_loc == int_loc, an same for ext. If there's not a connection, we don't do it. This is going from 'random place to location that happens to have a door on it going somewhere else', we don't use the door for that. Shed is different because it's internal and behind the door. Need to formalise that.
+
+22.13pm
+Okay, so 'go to work shed' should absolutely go inside if I've been there already and it's open. Otherwise it's just frustrating.
+
+
+9.22am 23/2/26
+
+'take moss' is sometimes putting things down.
+Picked up three moss, went to shed, drop [purple] moss, take [cyan] moss, drop [cyan] moss, drop [red] moss, all good.
+
+Then I 'take moss', but
+"You put down the still-damp moss." and the event was ended, which is wrong on two fronts - one, I already put the red moss down. Two, it shouldn't have ended the moss. I'm inside, and the previous time I put the red down moss it gave the proper "You put the still-damp moss down in a nice dry spot." exception print.
+
+It's the same moss.
+
+I think maybe what happened is that it chose a moss already on the ground for pickup which is correct, but then it ended the event as if I had put it down outside.
+
+![drop_moss_take_moss_error](image.png)
+
+Okay, so:
+
+It looks like the moss wasn't actually dropped in the second case when it was meant to take it, just the event said so. The event message was just lying.
+
+I'm going to change the reprs for events/nouns for a min so I can compare ID numbers more easily.
+
+Changed and added some more colours to make it easier to see what's going on.
+
+Issue 1:
+'outcome' for 'take' often pics items that are in the inventory, which it shouldn't do.
+
+Issue 2:
+Drop moss e4f4 in shed.
+immediately pick up:
+it finds e4f4, but the intake event is still triggered and it generates c2e1.

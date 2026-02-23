@@ -688,24 +688,42 @@ def meta(format_tuple, input_dict):
 
 def move_through_trans_obj(noun, input_dict, open_door=False):
 
-    if not hasattr(noun, "int_location") or not hasattr(noun, "ext_location"):
+    if noun and (not hasattr(noun, "int_location") or not hasattr(noun, "ext_location")):
         print(f"Noun {noun} does not have an int_location or ext_location (or either). Aborting.")
         return
-
+    #print(f"move_through_trans_obj. input_dict: {input_dict}")
     verb = get_verb(input_dict, get_str=True)
+    location = get_location(input_dict)
+    if not noun:
+        if not noun:
+            noun = get_noun(input_dict)
+        if not noun:
+            print("Not much to go on here, no noun, no location...")
 
+    entry_words = ("enter", "go")
+    leaving_words = ("leave", "depart", "exit")
     if verb in ("enter", "leave", "depart", "exit"):
         open_door = True
 
     inside_location = noun.int_location ## Noun must have both enter loc and exit_to_loc if it has either.
     outside_location = noun.ext_location
+    if not location:
+        location = inside_location
+    elif location and isinstance(location, placeInstance):
+        location = inside_location
 
     #print(f"noun has ext_location: {outside_location} and int_location: {inside_location}")
-    if outside_location.place == loc.current.place:
-        if verb in ("leave", "depart", "exit"):
-            print(f"You're already outside the {assign_colour(inside_location, card_type="place")}.")
-            return
-        if outside_location == loc.current:
+    if verb in leaving_words and loc.current != inside_location:
+        print(f"You're already outside the {assign_colour(inside_location, card_type="place")}.")
+        return 1
+    #print(f"loc.current: {loc.current} // inside_location: {inside_location}")
+    if verb in entry_words and loc.current == inside_location and location == inside_location:
+        print(f"You're already in the {assign_colour(loc.current.place)}.")
+        return 1
+
+    if outside_location.place == loc.current.place or inside_location.place.visited or location == inside_location or location == outside_location:
+
+        if (outside_location == loc.current or (inside_location.place.visited and loc.current != inside_location)) and verb in entry_words:
             if (hasattr(noun, "is_open") and noun.is_open == True) or open_door:
                 print(assign_colour("The door creaks, but allows you to head inside.", colour="event_msg"))
                 print()
@@ -740,50 +758,60 @@ def move_through_trans_obj(noun, input_dict, open_door=False):
             print(f"You're already in the {assign_colour(loc.current.place)}.")
 
     else:
+        if inside_location.visited:
+            new_relocate(inside_location)
+
         new_relocate(outside_location)
         return 1
 
 
 def go(format_tuple, input_dict, no_noun=None): ## move to a location/cardinal/inside
     logging_fn()
-
+    #print(f"format for def go: {format_tuple}")
     if len(format_tuple) == 1:
         if not "cardinal" in format_tuple and not "location" in format_tuple:
             print("Where do you want to go?")
             return
-
+    noun=None
     current_loc, current_card = get_current_loc()
 
     verb_entry, noun_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
 
-    if len(format_tuple) == 2 and noun_entry or len(format_tuple) == 3 and direction_entry["text"] in to_words:
-        #print(f"def go len2 or len3. Format tuple: {format_tuple}")
+    if (len(format_tuple) == 2 and noun_entry) or (len(format_tuple) == 3 and direction_entry["text"] in to_words):
+        print(f"def go len2 or len3. Format tuple: {format_tuple}, dict: {input_dict}")
         if noun_entry:
             noun = noun_entry["instance"]
-        elif location_entry:
-            if registry.by_name.get(location_entry.get("str_name")):
-                noun = registry.instances_by_name(location_entry.get("str_name"))
-                if noun:
-                    noun = noun[0] # arbitrary, while we check for transition items we don't want to pick locations etc yet.
+        elif location_entry and registry.by_name.get(location_entry.get("str_name")):
+            noun = registry.instances_by_name(location_entry.get("str_name"))
+            if noun:
+                noun = noun[0] # arbitrary, while we check for transition items we don't want to pick locations etc yet.
 
         if noun and ("transition" in noun.item_type or "loc_exterior" in noun.item_type):
+            print("noun transition")
             return enter(format_tuple, input_dict, noun)
 
     if (direction_entry and direction_entry["str_name"] in to_words and len(format_tuple) < 5) or (not direction_entry and len(format_tuple) < 4) or (direction_entry and not cardinal_entry and not location_entry):
         if location_entry and not cardinal_entry:
-            if location_entry["instance"] == loc.current.place:
+            location = location_entry["instance"]
+            if location == loc.current.place:
+                print("location instance == loc.current.place")
                 if input_dict[0].get("verb") and input_dict[0]["verb"]["str_name"] == "leave":
-                    if enter(format_tuple, input_dict, noun=list(loc.current.transition_objs)[0]):
+                    if enter(format_tuple, input_dict, noun=(list(loc.current.transition_objs)[0]) if noun else None):
                         return
 
                     print("You can't leave without a new destination in mind. Where do you want to go?")
                     return
 
-            if hasattr(location_entry["instance"], "transition_objs") and not no_noun:
-                #print(f"hasattr location_entry[instance], entry_item: {location_entry["instance"].transition_objs}")
-                enter(format_tuple, input_dict) # Anything that needs you to go through a door goes via enter.
-                return
-            new_relocate(new_location=location_entry["instance"])
+            if hasattr(location, "transition_objs") and location not in ({}, None) and location.transition_objs and not no_noun:
+                print(f"hasattr location_entry[instance], transition_objs: {location.transition_objs}")
+                for obj in location.transition_objs:
+                    print(f"OBJ: {obj}")
+                    if obj.int_location in (loc.current, location):
+                        if enter(format_tuple, input_dict, noun=obj): # this only goes to enter if we're aiming for or leaving the interior location.
+                            return
+
+            print("Going to new_relocate")
+            new_relocate(new_location=location)
             return
 
         elif cardinal_entry and not location_entry:
@@ -809,6 +837,7 @@ def go(format_tuple, input_dict, no_noun=None): ## move to a location/cardinal/i
         elif location_entry and cardinal_entry:
             new_relocate(new_location=location_entry["instance"], new_cardinal = cardinal_entry["instance"])
             return
+        print("End of if location_entry and not cardinal_entry: elif chain")
 
     elif direction_entry["str_name"] == "from":
         if location_entry and location_entry["instance"] != current_loc():
@@ -963,10 +992,15 @@ def find(format_tuple, input_dict):
 
 def read(format_tuple, input_dict):
     logging_fn()
-    verb_inst = get_verb(input_dict)
-    noun = get_noun(input_dict)
+    #verb_inst = get_verb(input_dict)
+    noun, noun_str, _, _ = get_nouns_w_str(input_dict)
+    if noun:
+        outcome = item_interactions.find_local_item_by_name(noun, noun_str, verb="look")
+        if outcome:
+            noun = outcome
+
     if hasattr(noun, "location") and (noun.location == loc.inv_place or noun.location == loc.current):
-        if hasattr(noun, "description_detailed"):
+        if hasattr(noun, "description_detailed") and noun.description_detailed:
             if noun.description_detailed.get("is_tested"):
                 from rolling import roll_risk
                 outcome = roll_risk()
@@ -1605,6 +1639,7 @@ def take(format_tuple, input_dict):
     added_to_inv = False
 
     outcome = item_interactions.find_local_item_by_name(noun, verb="take", current_loc=loc.current, hidden_cluster=True)
+    print(f"[OUTCOME from def take: `{outcome}`]")
     if isinstance(outcome, ItemInstance):
         noun = outcome
     else:
@@ -1882,6 +1917,7 @@ def drop(format_tuple, input_dict):
         return
 
     outcome = item_interactions.find_local_item_by_name(noun=noun, access_str="drop_subject") # item being dropped (drop_target may be later if dropping into container etc.)
+    print(f"[OUTCOME from def drop: `{outcome}`]")
     if outcome and isinstance(outcome, ItemInstance):
         #print_yellow(f"Found noun from find_local_item_by_name: {outcome}. Original: {noun}")
         noun = outcome

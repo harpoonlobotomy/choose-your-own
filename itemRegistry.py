@@ -5,6 +5,7 @@ import uuid
 from env_data import cardinalInstance, placeInstance, locRegistry as loc
 from logger import logging_fn, traceback_fn
 import printing
+import config
 
 global all_item_names_generated, all_items_generated
 all_item_names_generated = list()
@@ -131,11 +132,11 @@ detail_data = { #moved this from item_definitions.
 
 "scroll_details": {"is_tested": True, "failure": "Unrolling the scroll, pieces of it fall to dust in your hands.", "crit": "You carefully unroll the scroll, and see a complex drawing on the surface - you've seen something like it in a book somewhere..."},
 
-"puzzle_mag_details": {"is_tested":False, "print_str": "A puzzle magazine. Looks like someone had a bit of a go at one of the Sudoku pages but gave up. Could be a nice way to wait out a couple of hours if you ever wanted to."},
+"puzzle_magazine_details": {"is_tested":False, "print_str": "A puzzle magazine. Looks like someone had a bit of a go at one of the Sudoku pages but gave up. Could be a nice way to wait out a couple of hours if you ever wanted to."},
 
-"fashion_mag_details": {"is_tested":False, "print_str": "A glamourous fashion magazine, looks like it's a couple of years old. Not much immediate value to it, but if you wanted to kill some time it'd probably be servicable enough."},
+"fashion_magazine_details": {"is_tested":False, "print_str": "A glamourous fashion magazine, looks like it's a couple of years old. Not much immediate value to it, but if you wanted to kill some time it'd probably be servicable enough."},
 
-"gardening_mag_details": {"is_tested":False, "print_str": f"A gardening magazine, featuring the latest popular varieties of {random.choice(plant_type)} and a particularly opinionated think-piece on the Organic vs Not debate. Could be a decent way to wait out a couple of hours if you ever wanted to."},
+"gardening_magazine_details": {"is_tested":False, "print_str": f"A gardening magazine, featuring the latest popular varieties of {random.choice(plant_type)} and a particularly opinionated think-piece on the Organic vs Not debate. Could be a decent way to wait out a couple of hours if you ever wanted to."},
 
 "mail_order_catalogue_details": {"is_tested":False, "print_str": "A mail order catalogue, with the reciever's address sticker ripped off. Clothes, homegoods, toys, gadgets - could be a nice way to wait out a couple of hours if you ever wanted to."},
 
@@ -210,6 +211,7 @@ class ItemInstance:
         #print(f"\n\n@@@@@@@@@@@@@@@@@ITEM {definition_key} in INIT ITEMINANCE@@@@@@@@@@@@@@@\n\n")
         #print(f"definition_key: {definition_key}, attr: {attr}")
         self.id = str(uuid.uuid4())  # unique per instance
+        self.short_id = self.id.split("-")[-1]
         self.material_type = "generic"
         self.on_break = "generic"
         for attribute in attr:
@@ -228,14 +230,8 @@ class ItemInstance:
         self.is_transition_obj = False
         self.item_type = self.clean_item_types(attr["item_type"])
         self.colour = None
-        self.descriptions:dict = attr.get("descriptions") # dict of different descriptions for different item states.
+        self.descriptions:dict = attr.get("descriptions")
 
-
-
-
-        """
-Note on descriptions: if self.descriptions, will have different descriptions depending on type, flags. Will automate it with a dict later (which flags determine which description options). Not sure yet if all items will always have descriptions, or or simple objects with no alternate names will only ever have 'description' and use that always. Will allow for self.description as-is for now.
-        """
         self.description:str = attr.get("description") # will be initd shortly, depending on item conditions. Use default if found for simple objects with no alt names.
         #print(f"Name: {self.name} // self.description in init: {self.description}")
         self.starting_location:dict = attr.get("starting_location") # currently is styr
@@ -284,7 +280,22 @@ Note on descriptions: if self.descriptions, will have different descriptions dep
 
 
     def __repr__(self):
-        return f"<ItemInstance {self.name} / ({self.id}) / {self.location.place_name} / {self.event if hasattr(self, "event") else ''}/ {(self.has_multiple_instances if hasattr(self, 'has_multiple_instances') else '')}>"
+        #print("self.colour: ", self.colour)
+
+        #item = f"\033[30;44m<eventInst {self.name} ..{self.short_id}>\033[0m"
+        event = self.event if hasattr(self, "event") else ''
+        if event:
+            event = f"{event.name} / ..{event.short_id}"
+        text = f"<ItemInst {self.name} / ({self.short_id}) / {self.location.place_name} / {event} / {(self.has_multiple_instances if hasattr(self, 'has_multiple_instances') else '')}>"
+        if self.colour and config.coloured_repr:
+            if not hasattr(self, "code"):
+                from tui.colours import Colours
+                self.code = getattr(Colours, self.colour.upper())
+            coloured_text = f"\033[{self.code + 10}m{text}"
+        else:
+            coloured_text=text
+        return coloured_text + "\033[0m"
+        #return f"<ItemInstance {self.name} / ({self.id}) / {self.location.place_name} / {self.event if hasattr(self, "event") else ''}/ {(self.has_multiple_instances if hasattr(self, 'has_multiple_instances') else '')}>"
 
 
 class itemRegistry:
@@ -1661,7 +1672,6 @@ def init_loc_items(place=None, cardinal=None):
     from item_dict_gen import generator, excluded_itemnames
     import json
     registry.alt_names = generator.alt_names
-    import config
     with open(config.loc_data, 'r') as file:
         loc_dict = json.load(file)
 

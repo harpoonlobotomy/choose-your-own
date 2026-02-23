@@ -72,6 +72,7 @@ class eventInstance:
     def __init__(self, name, attr):
         self.name = name
         self.id = str(uuid.uuid4())
+        self.short_id = self.id.split("-")[-1]
         if attr.get("starts_current"):
             self.state:int = 1
             #print(f"Event {self.name} starts current: {self.state}")
@@ -116,7 +117,10 @@ class eventInstance:
             self.limits_travel = True
 
     def __repr__(self):
-        return f"<eventInstance {self.name} ({self.id}, event state: {self.state}>"#, all attributes: {self.attr})>"
+
+        event = f"\033[30;44m<eventInst {self.name} ..{self.short_id}>\033[0m"
+        return event
+        #return f"<eventInst {self.name} ..{self.short_id}>"#, event state: {self.state}>"#, all attributes: {self.attr})>"
 
 
 class timedTrigger:
@@ -1032,9 +1036,9 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
 
         if event_to_end in self.event_by_state(1):
             self.by_state[1].remove(event_to_end)
-            self.by_state[2].add(event_to_end)
-            if event_to_end in self.by_state[2]: # redundant but just in case anything went super wrong:
-                event_to_end.state = 2
+            self.by_state[0].add(event_to_end)
+            if event_to_end in self.by_state[0]: # redundant but just in case anything went super wrong:
+                event_to_end.state = 0
 
             if event_to_end.limits_travel:
                 no_limits = True
@@ -1119,6 +1123,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                         event_to_end.items.remove(item)
                         item.event = None
                 events.events.remove(event_to_end)
+                print(f"Event ended for noun {noun}")
         else:
             print(f"Cannot set event {event_name} as ended event, because it is not present in current_events: {self.event_by_state(1)} (type: { type(self.event_by_state(1))})")
             exit()
@@ -1162,7 +1167,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
             moved_children = None
             if event.end_triggers:
                 for trig in event.end_triggers:
-                    print(f"TRIG in event.end_triggers: {trig}")#\nvars: \n{vars(trig)}\n\n")
+                    #print(f"TRIG in event.end_triggers: {trig}")#\nvars: \n{vars(trig)}\n\n")
                     if hasattr(trig, "constraint_tracking"):
                         print("Whether the event ends or not depends on this constraint. Maybe it should be checked earlier, I feel like I do this check in item_interactions. Needs to be one or the other.")
                         exit()
@@ -1170,15 +1175,18 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                     if trig.is_item_trigger and trig.item_inst == noun:
                         if isinstance(reason, str):
                             if reason in trig.triggers:
-                                print(f"reason in trig.triggers: {trig.triggers}")
+                                print(f"reason in trig.triggers: {reason} /// {trig.triggers}")
                                 if reason in requires_end_trigger_loc:
                                     if hasattr(trig, "item_inst_loc") and getattr(trig, "item_inst_loc") != None and trig.item_inst_loc != noun.location:
                                         continue
 
                                 if hasattr(trig, "exceptions") and trig.exceptions:
                                     for exception in trig.exceptions:
+                                        print(f"Exception: {exception}")
                                         if exception == "current_loc_is_inside":
                                             from env_data import locRegistry
+                                            print(f"locRegistry.current.place: {locRegistry.current.place}")
+                                            print(f"inside: {locRegistry.current.place.inside}")
                                             if locRegistry.current.place.inside:
                                                 self.play_event_msg( msg_type="exception", event=event, print_txt=True, noun=noun)
                                                 return 1, None
@@ -1213,7 +1221,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                         if isinstance(reason, str):
                             if reason in trig.triggers:
                                 reason = tuple((reason))
-                                print(f"Reason is in trig.triggers: {reason}")
+                                print(f"Reason is in trig.triggers: {reason} // trig.triggers: {trig.triggers}")
                         if isinstance(reason, tuple):
                             print("checking reason tuple")
                             outcome, moved_children = self.check_reason_tuple(reason, event, trig, noun_inst)
@@ -1243,6 +1251,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                             if reason in intake_event.start_trigger["item_trigger"].get("triggered_by"):
                                 event = register_generated_event(event_name, noun_inst, reason_str = reason)
                                 self.start_event(event_name = event.name, event = event, noun=noun_inst)
+                                print(f"STARTED EVENT: {event}, ITEM: {noun_inst}")
                                 return "success", None # I don't think this will ever have moved_children? If it does I'll need to change things.
 
             if event.no_item_restriction[noun_inst.name] == noun_inst:
