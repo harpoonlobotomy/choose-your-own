@@ -4411,3 +4411,20 @@ There's not much else to see around here. Dusty and largely disused, nothing rea
 That message shouldn't print twice. And we should still arrive somewhere. Because while yes, we arrive at south work shed which isn't a legit destination, should have moved us to a legit destination instead. But despite it giving a new_card_inst, when the next command 'leave shed' runs, it says we're already outside.
 
 Changed 'ItemInstance' to 'itemInstance' so it matches the rest of the instance classes.
+
+8.24am 25/2/26
+Another issue with word ordering:
+
+ .-                        -.
+[<  put paperclip into jar  >]
+ '-                        -'
+
+glass jar is already in <ItemInst paperclip / (c0276eaf270c) / north no_place / None / >
+
+1: reversed from input intention.
+2: Not even accurate, the paperclip is the thing in the jar, as one would expect.
+
+Okay, easy fix, I'd just mixed it around in def put.
+
+Today's thing:
+I want to implement 'use key to unlock padlock' type order switching. Going to commit everything from the last few days to main first though.

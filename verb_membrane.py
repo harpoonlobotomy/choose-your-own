@@ -283,7 +283,8 @@ class UserEncoder(json.JSONEncoder):
             return list(o)
         return super().default(o)
 
-from notes_and_scribbles.test_commands import input_command_list
+#from notes_and_scribbles.test_commands import input_command_list
+from archived.test_commands import input_command_list # moved so it doesn't try to update every commit.
 
 input_outcome_dict = {}
 import config

@@ -311,7 +311,7 @@ def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
 
 def can_interact(noun_inst): # succeeds if accessible
     """Runs `noun_inst` through `registry.check_item_is_accessible`, returning a boolean for `interactable/not interactable`, and the `reason_val` and `meaning`."""
-    reason_val, meaning = registry.run_check(noun_inst)
+    _, reason_val, meaning = registry.run_check(noun_inst)
 
     if reason_val in interactable_codes:
         return 1, reason_val, meaning
@@ -1746,20 +1746,14 @@ def put(format_tuple, input_dict, location=None):
             return
         if sem_or_dir in ("in", "to", "into", "inside") and len(format_tuple) == 4:
             if hasattr(noun, "contained_in") and noun2 == noun.contained_in:
-                print(f"{noun2.name} is already in {noun}")
+                print(f"The {assign_colour(noun)} is already in {assign_colour(noun2)}")
                 return
-            registry.move_item(noun, new_container=noun2)
-
-            #if noun in loc.inv_place.items or noun in registry.by_location[loc.inv_place]: # All this should be being done inside move_item.
-            #    if noun in loc.inv_place.items:
-            #        loc.inv_place.items.remove(noun)
-            #    if noun in registry.by_location[loc.inv_place]:
-            #        registry.by_location[loc.inv_place].remove(noun)
+            registry.move_item(noun, new_container=noun2, no_print=True)
 
             if noun in loc.inv_place.items or noun in registry.by_location[loc.inv_place]:
                 exit(f"{assign_colour(noun)} still in inventory, something went wrong. Exiting.")
             else:
-                text = smart_capitalise(f"{action_word} {assign_colour(noun)} {sem_or_dir} {assign_colour(noun2)}")
+                text = smart_capitalise(f"{action_word} the {assign_colour(noun)} {sem_or_dir} the {assign_colour(noun2)}")
                 print(text)
             return
 

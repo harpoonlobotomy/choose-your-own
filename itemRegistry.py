@@ -668,14 +668,14 @@ class itemRegistry:
                     print(f"hidden inst multiple instance count: {inst.has_multiple_instances}")
 
                 print("INST is_hidden in run_check; not a singleton multiple_instances.")
-                return inst, None, 9, accessible_dict[9]
+                return None, 9, accessible_dict[9]
 
         container = is_item_in_container(inst)
 
         if inst.location == loc.inv_place and not container:
             reason = 5
             meaning = accessible_dict[reason]
-            return inst, None, reason, meaning
+            return None, reason, meaning
 
         if container:
             if container.location == loc.inv_place:
@@ -1031,7 +1031,8 @@ class itemRegistry:
                 updated.add(new_container)
 
                 return_text.append((f"Added [{inst}] to new container [{new_container}]", inst, new_container))
-                print(f"Added {assign_colour(inst)} to {assign_colour(new_container)}.")
+                if not no_print:
+                    print(f"Added {assign_colour(inst)} to {assign_colour(new_container)}.")
             else:
                 inst.contained_in = None
 
