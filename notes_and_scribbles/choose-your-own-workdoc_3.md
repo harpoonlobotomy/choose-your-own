@@ -4300,3 +4300,114 @@ You see the closed wooden door in front of you; you can't phase through a closed
 You can't see the door right now.
 
 'go to shed' apparently didn't actually move me. Need to fix that.
+
+"go to graveyard" >> "You're already in work shed".
+I need to rework transitional objects again. Damn.
+
+Added a specific check for 'if leaving words + already inside + destination != inside. Seems to work okay but given how often it breaks I don't want to speak too soon again.
+
+Hm.
+
+ .-            -.
+[<  go to shed  >]
+ '-            -'
+
+You see the closed wooden door in front of you; you can't phase through a closed door.
+
+ .-            -.
+[<  enter shed  >]
+ '-            -'
+
+The door creaks, but allows you to head inside.
+
+You're now in the work shed, facing north.
+
+The work shed is simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's a yellowed local map showing the region surrounding the graveyard, and a pair of secateurs.
+
+But, then if I look at the door, it's still closed. So it's printing the entrance text but not actually opening the door.
+
+Fixed now.
+
+3.55pm
+Hm.
+
+Enter shed plays the proper message. But 'leave shed' doesn't. You move, but it doesn't respect the door being open/not.
+
+4.10
+It's because it's failing the if and ending up in def turn, avoiding the new_relocate clauses. Okay. So that's another issue, which is good to know. 'turn around' should never be called if we're changing loc.place.
+
+Okay. So I think I need to break down move_through_trans_obj.
+
+First, we establish target location. We can hardcode behaviours for 'enter location/leave location'.
+
+And really I need to break the function up so 'check the door is open' is a defined throughpoint of any travel to internal locations. Hell, maybe put it in turn/relocate directly.
+
+
+Okay. So, 'leave shed' is verb_noun
+leave_shed works properly; if you try to leave again, it tells you you're already outside. But enter works like a toggle, and you just enter/leave repeatedly with every 'enter shed' command.
+
+Okay it seems more fixed now. go to shed/enter shed/leave shed all seem to work as you'd expect. The fn could still do with some more cleanup as it's a real mess.
+
+5.14pm
+Hm.
+'leave shed' makes you face west graveyard. 'go to graveyard' makes you face north graveyard.
+
+Oh, it's because 'leave x' is dependent (often) on the noun?
+
+Yeah that was it. Okay so now, both options send you north, so 'leave shed' just sends you to 'graveyard' which then defaults to north.
+
+Buuuuut that's still not exactly right. It should probably specify the opposite of the current cardinal, no?
+
+Right now, any time you give just location with no cardinal, it uses your current cardinal and just applies it to the new location, or finds an alternative if the new loc doesn't have that card. Which works in general, but when leaving an interior, you really should be either facing that door again as if you left and immediately looked at it, or the opposing cardinal (so you leave a door in the west, and arrive at the east).
+
+Okay. Once again, it seems to be working better. If you're not right at the shed an the door is shut and you've not been inside before, it stops you at the door. Thereafter if you enter/leave again, it no longer requires you to manually open the door, but plays the door opening text automatically and opens the door for you.
+
+5.55pm
+Oh, I should add 'go outside'/'go inside', for when you're at a transitional object loc.
+
+Also, 'look at shed' should move you to the shed location. Well, not 'shed' specifically, but external location nouns.
+
+8.33pm
+New one:
+unlock padlock with key fails with no proper error because the iron key is still in the shed.
+
+Oh, interesting:
+'enter map' goes through to def find, and responds with
+`There's a local map at northern work shed, is that what you were looking for?`.
+
+
+---
+move_through_trans_obj, noun: <ItemInst wooden door / (efb3a9e95fdc) / west graveyard / None / >
+VERB: enter // location: None // noun: <ItemInst wooden door / (efb3a9e95fdc) / west graveyard / None / >
+NOUN for move_through_trans_obj: <ItemInst wooden door / (efb3a9e95fdc) / west graveyard / None / >. is_open: True, leaving_words: ('leave', 'depart', 'exit')
+Failed to find the correct function to use for <verbInstance enter (93228f87-2a89-43c9-b5e9-372413d52c50)>: 'cardinalInstance' object has no attribute 'visited'
+---
+
+[[  unlock padlock with eky  ]]
+
+There's no padlock around here to unlock the eky with.
+
+The order of the nouns here is wrong in failure printing.
+
+---
+
+I think 'enter shed' should only work if you're in the same location.place. 'Go to shed' should take you to the external, unless you're in the same place in which case it depends on whether the door is open or not. 'Enter shed' from the Church.place should fail with 'there's no shed around here'.
+
+I need to make more use of this:
+
+get_transition_noun(noun, format_tuple, input_dict, take_first=False):
+
+Need to test, how does just typing 'shed' get directed?
+
+Oh - I can't flip the cardinals when going in. Entering the internal has to go to int_location. Inverting gets messy.
+
+Also,
+
+This <cardinalInstance south work shed (c40eb052-ccaa-41ee-972c-4c1bdae092a3)> is not a viable direction for <placeInstance work shed (55c8843f-ece6-474e-b575-2495c2d40bc1)>
+There's not much else to see around here. Dusty and largely disused, nothing really catches your eye.
+new_card_inst: <cardinalInstance north work shed (df431bbd-ddfa-4e26-893b-98c2a7f84d13)>
+There's not much else to see around here. Dusty and largely disused, nothing really catches your eye.
+
+That message shouldn't print twice. And we should still arrive somewhere. Because while yes, we arrive at south work shed which isn't a legit destination, should have moved us to a legit destination instead. But despite it giving a new_card_inst, when the next command 'leave shed' runs, it says we're already outside.
+
+Changed 'ItemInstance' to 'itemInstance' so it matches the rest of the instance classes.

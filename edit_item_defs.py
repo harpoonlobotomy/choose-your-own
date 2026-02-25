@@ -1,7 +1,7 @@
 import uuid
 from pprint import pprint
 from env_data import cardinalInstance, placeInstance
-from itemRegistry import ItemInstance
+from itemRegistry import itemInstance
 from misc_utilities import assign_colour
 import printing
 
@@ -831,7 +831,7 @@ def serialise_item_defs(dictionary):
                 temp_list = list(field)
                 dictionary[item] = sorted(temp_list)
                 #dictionary[item][k] = list(v)
-            if isinstance(field, ItemInstance|placeInstance):
+            if isinstance(field, itemInstance|placeInstance):
                 dictionary[item] = field.name
             if isinstance(field, cardinalInstance):
                 dictionary[item] = field.place_name

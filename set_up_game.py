@@ -179,7 +179,7 @@ class game:
 
     import config
     place = config.starting_location_str
-    time = "morning"
+    time = "mid-morning"
     #pops = "few"
     weather = "fine"
     bad_weather = False

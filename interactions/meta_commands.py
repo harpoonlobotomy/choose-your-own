@@ -1,6 +1,6 @@
 #meta_commands.py Place to centralise all meta commands except the baseline logger/args. Item data visibility, editing item/env data, etc, all comes through here.
 
-from itemRegistry import ItemInstance, cardinalInstance
+from itemRegistry import itemInstance, cardinalInstance
 from item_dict_gen import CARDINALS
 from printing import print_green, print_blue, print_yellow, print_col
 
@@ -123,7 +123,7 @@ def edit_noun(noun):
     if not noun:
         return
 
-    if not isinstance(noun, ItemInstance):
+    if not isinstance(noun, itemInstance):
         if isinstance(noun, str):
             noun = select_noun(noun)
     else:

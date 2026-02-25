@@ -3,7 +3,7 @@
 
 from re import I
 from interactions.player_movement import turn_around
-from itemRegistry import ItemInstance, registry
+from itemRegistry import itemInstance, registry
 from env_data import cardinalInstance, locRegistry as loc
 from misc_utilities import assign_colour, has_and_true
 from logger import logging_fn
@@ -27,9 +27,11 @@ def show_map(noun):
 
 def look_at_item(item_inst, entry): ## this is just using everything from registry. Should really just be in registry....
     """Checks an item is viable to be seen, then looks at the item. If the item is a loc_exterior that is nearby to the player, instead turns to face that cardinal and prints the description. If the item has children, they will be printed in a list. If the item is a map-item and show_map==True, it will open the map image externally."""
-    if isinstance(item_inst, ItemInstance):
+    logging_fn()
+    if isinstance(item_inst, itemInstance):
         #print(f"item_inst.location: {item_inst.location}")
-        confirmed, container, reason_val, meaning = registry.check_item_is_accessible(item_inst)
+        container, reason_val, meaning = registry.run_check(item_inst)
+        logging_fn(f"reason_val: {reason_val}")
         #print(f"Look at item MEANING: {meaning}")
         if reason_val not in (0, 5, 8):
             text = entry["text"]
@@ -61,7 +63,7 @@ def set_attr_by_loc(attr = "is_hidden", val = "False", location=None, items=None
     from itemRegistry import registry
     instances = set()
 
-    if items and isinstance(items, ItemInstance):
+    if items and isinstance(items, itemInstance):
         if hasattr(items, attr) and getattr(items, attr):
             print(f"Items {items} is an instance and will be set directly.")
             setattr(items, attr, val)
@@ -111,7 +113,7 @@ def add_item_to_loc(item_instance, location=None):
 ### Now a whole bunch of functions for parsing out open/close actions.
 #Kinda wish this was a class of lil functions. Might be an idea? idk. I'm used to classes holding data sets, not functions. Will have to look into it.
 
-def is_loc_ext(noun:ItemInstance, return_trans_obj=False) -> str|None:
+def is_loc_ext(noun:itemInstance, return_trans_obj=False) -> str|None:
     """Used for finding and/or referring to transition objects for location exterior objects."""
     if hasattr(noun, "is_loc_exterior") and hasattr(noun, "transition_objs"):
         for trans_obj in noun.transition_objs:
@@ -122,7 +124,7 @@ def is_loc_ext(noun:ItemInstance, return_trans_obj=False) -> str|None:
     return None
 
 
-def get_correct_cluster_inst(noun:ItemInstance, noun_text=None, priority="single", local_only=False, access_str = None, allow_hidden=False, local_items:set=None) -> ItemInstance: ## Not implemented yet. Moving from verb_
+def get_correct_cluster_inst(noun:itemInstance, noun_text=None, priority="single", local_only=False, access_str = None, allow_hidden=False, local_items:set=None) -> itemInstance: ## Not implemented yet. Moving from verb_
     """For determining the correct ItemInstance to select when interacting with cluster-type items. Will prioritise 0-val cluster items when picking up, will prioritise multiple-val cluster items when looking for a drop target to merge with, etc. Can allow hidden objects to be selected.\n\nIf no local items are provided, will generate with find_local_item_by_name using the criteria it was given."""
     logging_fn()
 
@@ -207,7 +209,6 @@ def recurse_items_from_list(input_list:list) -> set:
             continue
         if has_and_true(item, "children") and item.is_open:
             for child in item.children:
-                print(f"child in item.children: {child}")
                 if not has_and_true(child, "is_hidden"):
                     children.add(child)
     return children
@@ -230,7 +231,7 @@ scope_to_verb = {
     "loc_w_inv_no_containers": [""], # this one either. This'll take some development.
     }
 
-def find_local_item_by_name(noun:ItemInstance=None, noun_text = None, verb=None, access_str:str=None, current_loc:cardinalInstance=None, hidden_cluster=False, priority="single") -> ItemInstance|set:
+def find_local_item_by_name(noun:itemInstance=None, noun_text = None, verb=None, access_str:str=None, current_loc:cardinalInstance=None, hidden_cluster=False, priority="single") -> itemInstance|set:
     """
     Builds relevant items set using verb scope derived from `access_str` or `verb`'s status in `verb_to_noun_access`. If `noun` provided, returns the relevant `ItemInstance` of that name if found. If no `noun` provided, returns the full set.
 
@@ -285,7 +286,7 @@ def find_local_item_by_name(noun:ItemInstance=None, noun_text = None, verb=None,
                 location = current_loc
             elif current_loc and isinstance(current_loc, str):
                 location = loc.by_cardinal_str(current_loc)
-            elif (not current_loc or not location) and noun and isinstance(noun, ItemInstance):
+            elif (not current_loc or not location) and noun and isinstance(noun, itemInstance):
                 location = noun.location
             from env_data import locRegistry
             if not location or location == locRegistry.inv_place: #assume current.
@@ -327,7 +328,7 @@ def find_local_item_by_name(noun:ItemInstance=None, noun_text = None, verb=None,
         return None
 
     if noun:
-        if isinstance(noun, ItemInstance):
+        if isinstance(noun, itemInstance):
             if noun in final_items and "is_cluster" in noun.item_type:
                 if access_str in ("pick_up", "not_in_inv", "local_and_inv_containers_only"):
                     single_and_local = True

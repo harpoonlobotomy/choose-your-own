@@ -1,5 +1,5 @@
 from env_data import cardinalInstance, placeInstance
-from itemRegistry import ItemInstance
+from itemRegistry import itemInstance
 from logger import logging_fn
 
 ## utilities to be used by any script at any point
@@ -78,7 +78,7 @@ def check_name(item_name):
 
     return plain_name, name_type
 
-def switch_the(text:str|ItemInstance|list, replace_with:str="the")->str:
+def switch_the(text:str|itemInstance|list, replace_with:str="the")->str:
     """Replace `a/an ` with `the `, unless an alterative is given in replace_with."""
     if isinstance(text, list):
         if len(text) == 1:
@@ -88,7 +88,7 @@ def switch_the(text:str|ItemInstance|list, replace_with:str="the")->str:
             print("Trying to `switch_the`, but text is a list with more than one item.")
             exit()
 
-    if isinstance(text, ItemInstance):
+    if isinstance(text, itemInstance):
         text=text.name
 
     if replace_with == "a ":
@@ -162,7 +162,7 @@ def look_around():
         is_items = registry.get_item_by_location() ## Need to merge this with the dict writing to account for missing items.
         if is_items:
             for item in is_items:
-                _, _, reason_val, _ = registry.check_item_is_accessible(item)
+                _, reason_val, _ = registry.run_check(item)
                 if reason_val == 0:
                     applicable_items.append(item)
             if applicable_items:
@@ -206,7 +206,7 @@ def print_failure_message(input_str=None, message=None, noun=None, verb=None, id
 
     noun_name = None
     if noun:
-        if isinstance(noun, ItemInstance):
+        if isinstance(noun, itemInstance):
             noun_name = noun.name
         elif isinstance(noun, str):
             noun_name = noun
@@ -257,10 +257,10 @@ def get_inst_list_names(inventory_inst_list) -> list:
 
     return inventory_names_list
 
-def from_inventory_name(test:str) -> ItemInstance:
+def from_inventory_name(test:str) -> itemInstance:
     """Returns an itemInstance from the inventory based on a given `test` string. `test` is run through `check_name` first to remove common formatting before searching."""
     logging_fn()
-    if isinstance(test, ItemInstance):
+    if isinstance(test, itemInstance):
         test = test.name
 
     from env_data import locRegistry
@@ -339,13 +339,13 @@ def separate_loot(child_input=None, parent_input=None, inventory=[]): ## should 
     parent = None
 
     if child_input:
-        if isinstance(child_input, ItemInstance):
+        if isinstance(child_input, itemInstance):
             child = child_input
         else:
             child = from_inventory_name(child_input)
 
     if parent_input:
-        if isinstance(parent_input, ItemInstance):
+        if isinstance(parent_input, itemInstance):
             parent = parent_input
         else:
             parent = from_inventory_name(parent_input)
@@ -467,7 +467,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
     def check_instance_col(item):
         """Checks for `item.colour`. If not found, assigns `item.colour` using `Colours.colour_counter`."""
         from itemRegistry import registry
-        if isinstance(item, ItemInstance|placeInstance|cardinalInstance):
+        if isinstance(item, itemInstance|placeInstance|cardinalInstance):
             entry = item
 
             if entry and entry.colour != None:
@@ -475,14 +475,14 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
                 bld=True
                 if isinstance(item, placeInstance):
                     item=item.name
-                elif isinstance(item, ItemInstance):
+                elif isinstance(item, itemInstance):
                     item = item.print_name
             else:
                 colour=cardinals[Colours.colour_counter%len(cardinals)]
                 colour=cardinal_cols[colour] # TODO: is there any reason fo this to be separate? Can't we just use the %len directly against cardinal_cols?
                 Colours.colour_counter += 1
 
-                if isinstance(item, ItemInstance):
+                if isinstance(item, itemInstance):
                     item=registry.register_name_colour(item, colour)
                     bld=True
                 elif isinstance(item, placeInstance|cardinalInstance):
@@ -497,7 +497,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
         colour=cardinal_cols[item]
         bld=True
 
-    elif (isinstance(item, str) and not colour) or isinstance(item, ItemInstance|placeInstance|cardinalInstance):
+    elif (isinstance(item, str) and not colour) or isinstance(item, itemInstance|placeInstance|cardinalInstance):
         from itemRegistry import registry
 
         if isinstance(item, str):
@@ -513,14 +513,14 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
                     colour, item, bld = check_instance_col(item)
                     #colour = item.colour
 
-        if isinstance(item, ItemInstance|placeInstance|cardinalInstance):
+        if isinstance(item, itemInstance|placeInstance|cardinalInstance):
             if nicename:
                 held_name = item.nicename
             colour, item, bld = check_instance_col(item)
             if nicename and held_name: # Need to check here to make sure nicename exists and isn't None. Maybe the issue with the matchbox?
                 item = held_name
 
-            if isinstance(item, ItemInstance):
+            if isinstance(item, itemInstance):
                 print(f"ITEM INSTANCE PRINT_NAME: {item.print_name}/name: {item.name}")
                 item = item.print_name
 
@@ -569,7 +569,7 @@ def col_list(print_list:list=[], colour:str=None, nicename=False)->list:
         if item == None:
             continue
         if not colour:
-            if isinstance(item, ItemInstance):
+            if isinstance(item, itemInstance):
                 coloured_text = assign_colour(item, nicename=nicename)
             else:
                 coloured_text = assign_colour(item, i, nicename=nicename)

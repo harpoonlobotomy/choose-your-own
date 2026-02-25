@@ -147,7 +147,6 @@ class placeRegistry:
         """ Sets locRegistry.current, and checks against locRegistry.currentPlace to see if it should add the new location to route."""
         logging_fn()
         #print(f"set current: loc: {loc}, cardinal: {cardinal}")
-
         if loc and cardinal:
             if isinstance(loc, placeInstance) and isinstance(cardinal, cardinalInstance):
                 if loc != cardinal.place:
@@ -256,7 +255,7 @@ class placeRegistry:
 
 locRegistry = placeRegistry()
 
-def add_new_loc(name, reset_current=True):
+def add_new_loc(name, reset_current=False):
     """Add a new placeInstance to placeRegistry, using the data from the loc defs file."""
     place = placeInstance(name)
 

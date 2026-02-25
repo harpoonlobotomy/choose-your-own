@@ -7,27 +7,38 @@ from misc_utilities import assign_colour
 from logger import logging_fn, traceback_fn
 from eventRegistry import events
 
-def get_viable_cardinal(cardinal_inst:cardinalInstance): # 0 == match, 1 == had to find an alt
+def get_viable_cardinal(cardinal_inst:cardinalInstance=None, place:placeInstance=None) -> tuple[(cardinalInstance, int)]: # 0 == match, 1 == had to find an alt
     """Returns the first viable cardinal for a given location based on the input cardinal. Used for locations that have less than 4 cardinals to ensure an available cardinal is chosen."""
-    if hasattr(cardinal_inst, "cardinal_data") and cardinal_inst.cardinal_data != None and cardinal_inst.cardinal_data.get("item_desc"):
-        #print('cardinal_inst.cardinal_data.get("item_desc"): {cardinal_inst.cardinal_data.get("item_desc")}')
-        return cardinal_inst, 0
-    else:
+    if cardinal_inst:
+        if hasattr(cardinal_inst, "cardinal_data") and cardinal_inst.cardinal_data != None and cardinal_inst.cardinal_data.get("item_desc"):
+            #print('cardinal_inst.cardinal_data.get("item_desc"): {cardinal_inst.cardinal_data.get("item_desc")}')
+            return cardinal_inst, 0
+        else:
 
-        #print(f"No item desc, {cardinal_inst} is not a viable cardinal. Need a better way of doing this tho.")
-        for card in cardinal_inst.place.cardinals:
-            #print(f"CARD: {card}")
-            #if cardinal_inst.place.cardinals.get(card) and getattr(cardinal_inst.place.cardinals[card].cardinal_data, "item_desc"):
-            if cardinal_inst.place.cardinals.get(card) and cardinal_inst.place.cardinals[card].cardinal_data.get("item_desc"):
-                #print(f"Next viable cardinal: {cardinal_inst.place.cardinals[card]}")
-                return cardinal_inst.place.cardinals[card], 1
+            #print(f"No item desc, {cardinal_inst} is not a viable cardinal. Need a better way of doing this tho.")
+            for card in cardinal_inst.place.cardinals:
+                #print(f"CARD: {card}")
+                #if cardinal_inst.place.cardinals.get(card) and getattr(cardinal_inst.place.cardinals[card].cardinal_data, "item_desc"):
+                if cardinal_inst.place.cardinals.get(card) and cardinal_inst.place.cardinals[card].cardinal_data.get("item_desc"):
+                    #print(f"Next viable cardinal: {cardinal_inst.place.cardinals[card]}")
+                    return cardinal_inst.place.cardinals[card], 1
+    if place:
+        for card in place.cardinals:
+            if place.cardinals.get(card) and place.cardinals[card].cardinal_data.get("item_desc"):
+                return place.cardinals[card], 1
 
 
-def check_loc_card(location, cardinal):
+
+def check_loc_card(location, cardinal=None):
     to_loc = None
     to_card = None
     is_same_loc = False
     is_same_card = False
+
+    if cardinal and not location:
+        if isinstance(cardinal, placeInstance):
+            location = cardinal
+            cardinal = loc.current # default to current because it needs something to default to
 
     if location:
         if isinstance(location, cardinalInstance) and not cardinal:
@@ -67,6 +78,8 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
     logging_fn()
 
     def update_loc_data(prev_loc, new_location):
+        print("Update loc data")
+        from misc_utilities import assign_colour
         from set_up_game import game
         from choices import time_of_day
         from env_data import weatherdict
@@ -88,8 +101,8 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
             new_weather_index=0
         game.weather=weather_options[new_weather_index]
         game.bad_weather = weatherdict[game.weather].get("bad_weather")
-
-        if loc.current.place==prev_loc:
+        print("After changing weather etc")
+        if new_location==prev_loc:
             print(f"loc.places[loc.current]: {loc.current.place.name}")
             print(f"You decided to stay at {assign_colour(loc.current.place.the_name, 'loc')} a while longer.")
         else:
@@ -101,6 +114,9 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
             else:
                 loc.current.place.visited = True # maybe a counter instead of a bool. Maybe returning x times means something. No idea what. Probably not.
                 loc.current.place.first_weather = current_weather
+
+    if new_cardinal and isinstance(new_cardinal, cardinalInstance) and not new_location:
+        new_location = new_cardinal.place
 
     to_loc, to_card, is_same_loc, is_same_card = check_loc_card(new_location, new_cardinal)
 
@@ -149,6 +165,8 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
             if new_cardinal.place.missing_cardinal:
                 #print("new_cardinal.missing_cardinal")
                 print(assign_colour(new_cardinal.missing_cardinal, "event_msg"))
+            if not new_location:
+                new_location == loc.current.place
             for card in new_location.cardinals:
                 new_card_inst = new_location.cardinals.get(card)
                 if new_card_inst.cardinal_data:
@@ -161,6 +179,8 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
             loc.set_current(loc = new_location, cardinal=new_cardinal)
         else:
             loc.set_current(cardinal=new_cardinal)
+
+
 
     from misc_utilities import in_loc_facing_card
     print(f"You're now in {in_loc_facing_card(loc.current)}\n")

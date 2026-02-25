@@ -8,7 +8,7 @@
 from env_data import cardinalInstance, placeInstance
 from eventRegistry import eventInstance
 import eventRegistry
-from itemRegistry import ItemInstance, registry
+from itemRegistry import itemInstance, registry
 from logger import logging_fn
 from printing import print_blue, print_yellow
 from verbRegistry import VerbInstance
@@ -249,7 +249,7 @@ def immediate_commands(input_str):
                         item = inst
                         break
             else:
-                if isinstance(item, ItemInstance):
+                if isinstance(item, itemInstance):
                     item = item
 
             new_loc_str = input("Enter the name of the location, as <location>, <cardinal location> or 'current'.")
@@ -277,7 +277,7 @@ class UserEncoder(json.JSONEncoder):
         else:
             return str(iterable)
 
-        if isinstance(o, ItemInstance|placeInstance|cardinalInstance|eventInstance|VerbInstance):
+        if isinstance(o, itemInstance|placeInstance|cardinalInstance|eventInstance|VerbInstance):
             return str(o)
         elif isinstance(o, set):
             return list(o)

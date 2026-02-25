@@ -12,7 +12,7 @@ Pick up moss, keep it dry for three days, it becomes dry moss. [Not fully implem
 
 import uuid
 
-from itemRegistry import ItemInstance
+from itemRegistry import itemInstance
 from logger import logging_fn
 from misc_utilities import assign_colour, has_and_true
 from testing_coloured_descriptions import init_loc_descriptions
@@ -182,7 +182,7 @@ class timedTrigger:
                     #print(f"self.required_condition[condition]: {self.required_condition[condition]}")
                     condition_item = self.required_condition[condition]
                     #print(f"TRIGGER DICT: {trigger_dict} ::: entry: {trigger_dict["trigger_item"]}")
-                    if trigger_dict.get("trigger_item") and isinstance(trigger_dict["trigger_item"], ItemInstance):
+                    if trigger_dict.get("trigger_item") and isinstance(trigger_dict["trigger_item"], itemInstance):
                         #print(f"TRIGGER ITEM: {trigger_dict["trigger_item"]}")
                         self.is_item_trigger = True
                         if trigger_dict["trigger_item"].name == condition_item:
@@ -240,7 +240,7 @@ class timedTrigger:
             coloured_text = f"\033[{self.item_inst.code + 10}m{item}\033[0m"
         else:
             coloured_text = item
-        return f"<{timedTrigger.trigger_coloured} {self.id} for event {self.event.name}, event state: {event_state_by_int[self.state]}, {((coloured_text if isinstance(self.item_inst, ItemInstance) else f'Trigger item: {self.item_inst}') if self.is_item_trigger else None)}>"
+        return f"<{timedTrigger.trigger_coloured} {self.id} for event {self.event.name}, event state: {event_state_by_int[self.state]}, {((coloured_text if isinstance(self.item_inst, itemInstance) else f'Trigger item: {self.item_inst}') if self.is_item_trigger else None)}>"
 
 class Trigger:
 
@@ -279,7 +279,7 @@ class Trigger:
         if trigger_dict["trigger_model"] == "item_trigger":
             self.is_item_trigger = True
             if self.is_item_trigger:
-                if isinstance(trigger_dict["trigger_item"], ItemInstance):
+                if isinstance(trigger_dict["trigger_item"], itemInstance):
                     self.item_inst = trigger_dict["trigger_item"]
                 else:
                     if (isinstance(trigger_dict["trigger_item"], list|set|tuple) and len(len(trigger_dict["trigger_item"]) == 1)):
@@ -292,7 +292,7 @@ class Trigger:
                 self.item_flags_on_start = trigger_dict["item_flags_on_start"]
                 self.item_flags_on_end = trigger_dict["item_flags_on_end"]
 
-                if isinstance(self.item_inst, ItemInstance):
+                if isinstance(self.item_inst, itemInstance):
                     setattr(self.item_inst, "event", event)
                     if self.state == 1:
                         if self.item_flags_on_start:
@@ -316,7 +316,7 @@ class Trigger:
         event.triggers.add(self)
 
     def __repr__(self):
-        return f"<{Trigger.trigger_coloured} {self.id} for event {self.event.name}, event state: {event_state_by_int[self.state]}, {((f'Trigger item: {self.item_inst.name}/{self.item_inst.short_id}' if isinstance(self.item_inst, ItemInstance) else f'Trigger item: {self.item_inst}') if self.is_item_trigger else None)}>"
+        return f"<{Trigger.trigger_coloured} {self.id} for event {self.event.name}, event state: {event_state_by_int[self.state]}, {((f'Trigger item: {self.item_inst.name}/{self.item_inst.short_id}' if isinstance(self.item_inst, itemInstance) else f'Trigger item: {self.item_inst}') if self.is_item_trigger else None)}>"
 
 class eventRegistry:
 
@@ -614,7 +614,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                         trigger_actions = trig_data["attribute_trigger"]["triggered_by"]
                         item_flags_on_start = item_flags_on_end = None
 
-                trigger_item_loc = (trigger_item.location if isinstance(trigger_item, ItemInstance) else None)
+                trigger_item_loc = (trigger_item.location if isinstance(trigger_item, itemInstance) else None)
                 if not trigger_item_loc and trig_data.get("item_trigger"):
                     if trig_data["item_trigger"].get("trigger_item_location"):
                         trigger_item_loc = trig_data["item_trigger"]["trigger_item_location"]
@@ -675,7 +675,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                     effects_dict[effect] = {}
 
                     for item in getattr(event, effect):
-                        if isinstance(item, ItemInstance):
+                        if isinstance(item, itemInstance):
                             event_item = item
                         else:
                             event_item = event.item_name_to_inst.get(item)
@@ -724,7 +724,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
 
             for item in event.items:
                 #print(f"ITEM IN EVENT ITEMS: {item}")
-                if isinstance(item, ItemInstance):
+                if isinstance(item, itemInstance):
                     events.item_names[item.name] = item
                     setattr(item, "event", event) # TODO: Doing this way too often, need to find the single choke point they all pass through no matter where they're added from.
                     if hasattr(event, "event_keys") and item in event.event_keys:
@@ -796,7 +796,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
     def play_event_msg(self, msg_type="held", event=None, print_txt=True, noun=None):
         logging_fn()
 
-        def print_current(event, state_type="held", print_text=False, noun:ItemInstance=noun):
+        def print_current(event, state_type="held", print_text=False, noun:itemInstance=noun):
             logging_fn()
             if not event.msgs:
                 print(f"NO EVENT MESGS: {event}")
@@ -844,7 +844,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
         return print_current(event, state_type=msg_type, print_text=print_txt, noun=noun)
 
     def do_immediate_actions(self, event:eventInstance, trig:Trigger|
-                             timedTrigger, noun:ItemInstance=None):
+                             timedTrigger, noun:itemInstance=None):
 
         inst = children = None
         if hasattr(event, "init_items") and event.init_items:
@@ -948,7 +948,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                         #print(f"ITEMS: {items}\nEVENT: {event}")
                         for item in items:
                             inst = item
-                            if isinstance(inst, ItemInstance):
+                            if isinstance(inst, itemInstance):
                                 #print("end hasattr children")
                                 if hasattr(inst, "children") and inst.children:
                                     children = set()
@@ -1173,7 +1173,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
     def is_event_trigger(self, noun_inst, reason = None) -> (int|None):
         logging_fn()
         #print(f"Start of is_event_trigger. Noun details: {vars(noun_inst)}")
-        def check_triggers(event:eventInstance, noun:ItemInstance, reason) -> (int|None)|list:
+        def check_triggers(event:eventInstance, noun:itemInstance, reason) -> (int|None)|list:
             logging_fn()
             moved_children = None
             if event.end_triggers:
@@ -1436,7 +1436,7 @@ def add_items_to_events(event = None, noun_inst = None):
                             key_item_names = {}
 
                             for potential_key in key_event.items:
-                                if isinstance(potential_key, ItemInstance):
+                                if isinstance(potential_key, itemInstance):
                                     key_item_names[potential_key.name] = potential_key
 
                             if key_item_names.get(item.requires_key):

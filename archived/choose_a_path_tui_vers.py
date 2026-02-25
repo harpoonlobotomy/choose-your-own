@@ -9,7 +9,7 @@ from set_up_game import load_world, set_up, init_settings
 from choices import choose, time_of_day, night, trip_over, emphasis
 
 from item_definitions import container_limit_sizes, detail_data
-from itemRegistry import ItemInstance, registry
+from itemRegistry import itemInstance, registry
 
 from tui.tui_elements import add_infobox_data, print_commands
 from tui.tui_update import update_infobox
@@ -79,7 +79,7 @@ def get_items_at_here(print_list=False, return_coloured=True, place=loc.current)
             return coloured_list
     return to_print_list
 
-def do_action(action:str, inst:ItemInstance|str)->list:
+def do_action(action:str, inst:itemInstance|str)->list:
     logging_fn()
     if action == "continue":
         return
@@ -88,7 +88,7 @@ def do_action(action:str, inst:ItemInstance|str)->list:
 
         if isinstance(inst,str):
             parent = from_inventory_name(inst)
-        elif isinstance(inst,ItemInstance):
+        elif isinstance(inst,itemInstance):
             parent = inst
         else:
             parent=None
@@ -112,7 +112,7 @@ def do_action(action:str, inst:ItemInstance|str)->list:
         ##TODO ooh. I should stop listing child items in the inventory and just have inventory marked with '<item>*' if it contains something (and the something is known about (so not wallet* if we haven't looked in it yet, etc.))
 
     elif "drop" in action:
-        if isinstance(inst, ItemInstance):
+        if isinstance(inst, itemInstance):
             new_inst = inst.name
         else:
             new_inst = inst
@@ -181,7 +181,7 @@ def item_interaction(inst:str, inventory_names:list=None, no_xval_names:list=Non
             if inv_test:
                 inst=inv_test
 
-    if not isinstance(inst, ItemInstance):
+    if not isinstance(inst, itemInstance):
         print(f"Is not an instance. Something is wrong. `{inst}`, type: {type(inst)}")
         exit()
 
@@ -297,7 +297,7 @@ def god_mode():
             do_print("Returning to game with changes made.")
             break
 
-def instance_name_in_inventory(inst_name:str)->ItemInstance:
+def instance_name_in_inventory(inst_name:str)->itemInstance:
     logging_fn()
 
     item_entry = registry.instances_by_name(inst_name)
@@ -455,7 +455,7 @@ def outcomes(state, activity):
         item = dropped
     return outcome
 
-def drop_loot(named:ItemInstance|str=None, forced_drop=False)->str:
+def drop_loot(named:itemInstance|str=None, forced_drop=False)->str:
     logging_fn()
 
     if forced_drop:
@@ -478,7 +478,7 @@ def drop_loot(named:ItemInstance|str=None, forced_drop=False)->str:
     else:
         test = option(inventory_names, print_all=True, preamble="[Type the name of the object you want to leave behind]", inventory=True)
     inst_test=None
-    if isinstance(test, ItemInstance):
+    if isinstance(test, itemInstance):
         inst_test = test
     elif test in inventory_names:
         inst_test=from_inventory_name(test)
@@ -551,7 +551,7 @@ def get_loot(value=None, random=True, named="", message:str=None):
             #        print(f"Dupe list: {dupe_list}")
             #        do_print(f"You have {len(dupe_list)} {item}s.") ### This does work. Not useful here, but works.
 
-        elif isinstance(named, ItemInstance):
+        elif isinstance(named, itemInstance):
             item = named
 
         if not item:

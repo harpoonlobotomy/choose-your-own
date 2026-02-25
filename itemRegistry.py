@@ -145,9 +145,7 @@ detail_data = { #moved this from item_definitions.
 "damp_newspaper": {"is_tested":True, 1: "Despite your best efforts, the newspaper is practically disintegrating in your hands. You make out something about an event in ballroom, but nothing beyond that..", 3: "After carefully dabbing off as much of the mucky water and debris as you can, you find the front page is a story about the swearing in of a new regional governor, apparenly fraught with controversy.", 4: "Something about a named official and a contraversy from years ago where a young man went missing in suspicious circumstances."} ## no idea where this would go, but I need some placeholder text so here it is.
 }
 
-door_opens = ["The door creaks, but allows you to head inside.", "The door creaks slightly as you make your way inside."]
-
-class ItemInstance:
+class itemInstance:
     """
     Represents a single item in the game world or player inventory.
     """
@@ -305,13 +303,11 @@ class itemRegistry:
     """
 
     def __init__(self):
-        #print(f"Init in lootregistry is running now.") ## it only seems to be running once.
-        #sleep(1)
 
-        self.instances = set()  # CHANGE: Is now a set.
+        self.instances = set()
         self.by_id = {}    # id -> ItemInstance
-        self.by_location = {}  # (cardinalInstance) -> set of instances
-        self.by_name = {}        # definition_key -> set of instances
+        self.by_location = {}  # (cardinalInstance) -> set of itemInstances
+        self.by_name = {}        # definition_key -> set of itemInstances
         self.by_alt_names = {} # less commonly used variants. Considering just adding them to 'by name' though, I can't imagine it matters if they're alt or original names... # changed mind, nope. Not duplicating them randomly for no good reason. Just an alt:name lookup.
 
         self.by_category = {}        # category (loot value) -> set of instance IDs
@@ -335,7 +331,7 @@ class itemRegistry:
         self.item_defs = {}
 
         self.transition_objs = set()
-
+        self.door_open_strings = ["The door creaks, but allows you to head [[inside]].", "The door creaks slightly as you make your way [[inside]].", "You open the door and make your way [[inside]].", "You open the door and head [[inside]]."]
     # -------------------------
     # Creation / deletion
     # -------------------------
@@ -386,7 +382,7 @@ class itemRegistry:
             else:
                 print(f"No item entry provided for `{item_name}` and no entry found in registry.item_defs. Cannot build without knowing what it is.")
                 exit()
-        inst = ItemInstance(item_name, item_entry)
+        inst = itemInstance(item_name, item_entry)
         all_items_generated.add(inst)
         self.instances.add(inst)
 
@@ -454,7 +450,7 @@ class itemRegistry:
             return inst
 
 
-    def delete_instance(self, inst: ItemInstance):
+    def delete_instance(self, inst: itemInstance):
         """Removes an instance from:
              * itemRegistry.by_location
              * locRegistry.inv_place.items if present
@@ -522,7 +518,7 @@ class itemRegistry:
         """Generates child itemInstances for the given parent from parent.starting_children."""
         logging_fn()
 
-        def get_children(parent:ItemInstance):
+        def get_children(parent:itemInstance):
 
             instance_children = []
             instance_count = 0
@@ -538,7 +534,7 @@ class itemRegistry:
 
                     def find_or_make_children(child, parent, instance_count, instance_children):
                         target_child = None
-                        if isinstance(child, ItemInstance):
+                        if isinstance(child, itemInstance):
                             instance_children.append(child)
                             instance_count += 1
                             parent.children.add(child) # changed from 'target_child' here and next line. Not sure why there was the distinction.
@@ -599,7 +595,7 @@ class itemRegistry:
                     exit(f"Failed to get instance by id in cleaning_loop for instance ({item_id}).")
 
                 if hasattr(item, "requires_key") and not isinstance(getattr(item, "requires_key"), bool):
-                    if isinstance(item.requires_key, ItemInstance):
+                    if isinstance(item.requires_key, itemInstance):
                         continue
                     key_found = False
                     for maybe_key in registry.keys:
@@ -641,7 +637,8 @@ class itemRegistry:
         except Exception as E:
             print(f"Exception: {E}")
 
-    def check_item_is_accessible(self, inst:ItemInstance) -> tuple[ItemInstance|None, int]:
+
+    def run_check(self, inst:itemInstance) -> tuple[itemInstance|None, int, str]: ## replaced check_item_is_accessible with this, as all check_item_is_accessible did was run this. Previously it used to do noun selection, but it doesn't any more.
         """
         Checks the current state of the given itemInstance, returning (the instance, its container if found, the reason_val, and the meaning string for that reason.)\n
         ### Reason_val: meaning --\n
@@ -659,96 +656,81 @@ class itemRegistry:
         """
         logging_fn()
         from misc_utilities import is_item_in_container, accessible_dict
-
-        confirmed_inst = None
         confirmed_container = None
-        reason_val = 7
+        reason = 7
+        meaning = "other error, investigate"
 
-        def run_check(inst):
+        if hasattr(inst, "is_hidden") and inst.is_hidden == True:
+            if hasattr(inst, "has_multiple_instances") and inst.has_multiple_instances == 0:
+                pass
+            else:
+                if hasattr(inst, "has_multiple_instances"):
+                    print(f"hidden inst multiple instance count: {inst.has_multiple_instances}")
 
-            confirmed_container = None
-            reason = 7
-            meaning = "other error, investigate"
+                print("INST is_hidden in run_check; not a singleton multiple_instances.")
+                return inst, None, 9, accessible_dict[9]
 
-            if hasattr(inst, "is_hidden") and inst.is_hidden == True:
-                if hasattr(inst, "has_multiple_instances") and inst.has_multiple_instances == 0:
-                    pass
+        container = is_item_in_container(inst)
+
+        if inst.location == loc.inv_place and not container:
+            reason = 5
+            meaning = accessible_dict[reason]
+            return inst, None, reason, meaning
+
+        if container:
+            if container.location == loc.inv_place:
+                confirmed_container = container
+                if hasattr(confirmed_container, "is_open") and confirmed_container.is_open == False:
+                    print(f"confirmed_container {confirmed_container} is_closed, apparently.")
+                    reason = 1
+                elif (hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked")):
+                    reason = 2
                 else:
-                    if hasattr(inst, "has_multiple_instances"):
-                        print(f"hidden inst multiple instance count: {inst.has_multiple_instances}")
-
-                    print("INST is_hidden in run_check; not a singleton multiple_instances.")
-                    return inst, None, 9, accessible_dict[9]
-
-            container = is_item_in_container(inst)
-
-            if inst.location == loc.inv_place and not container:
-                reason = 5
-                meaning = accessible_dict[reason]
-                return inst, None, reason, meaning
-
-            if container:
-                if container.location == loc.inv_place:
-                    confirmed_container = container
+                    reason = 3
+            else:
+                if confirmed_container.location == loc.current:
                     if hasattr(confirmed_container, "is_open") and confirmed_container.is_open == False:
-                        print(f"confirmed_container {confirmed_container} is_closed, apparently.") # need to remove half of this section tbh. Needs a full redo. #TODO
+                        print(f"Container {confirmed_container.name} is closed by is_open flag.")
                         reason = 1
-                    elif (hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked")):
+                    elif hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked"):
+                        print(f"Container {confirmed_container} is locked.")
                         reason = 2
                     else:
-                        reason = 3
+                        reason = 4
                 else:
-                    if confirmed_container.location == loc.current:
-                        if hasattr(confirmed_container, "is_open") and confirmed_container.is_open == False:
-                            print(f"Container {confirmed_container.name} is closed by is_open flag.")
-                            reason = 1
-                        elif hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked"):
-                            print(f"Container {confirmed_container} is locked.")
-                            reason = 2
-                        else:
-                            reason = 4
-                    else:
-                        reason = 6
+                    reason = 6
 
+        else:
+            if inst.location == loc.current:
+                reason = 0
             else:
-                if inst.location == loc.current:
-                    reason = 0
+                if inst.location == loc.inv_place:
+                    reason = 5
                 else:
-                    if inst.location == loc.inv_place:
-                        reason = 5
-                    else:
-                        if hasattr(inst, "is_transition_obj"):
-                            if hasattr(inst, "int_location") and hasattr(inst, "int_location") and (inst.int_location ==  loc.current or inst.ext_location == loc.current):
-                                reason = 0 ## treat it as local whether we're inside or outside
-                            else:
-                                reason = 6
-                        elif hasattr(inst, "is_loc_exterior") and inst.location.place == loc.current:
-                            reason = 8
-
+                    if hasattr(inst, "is_transition_obj") and inst.is_transition_obj:
+                        if hasattr(inst, "int_location") and (inst.int_location ==  loc.current or inst.ext_location == loc.current):
+                            reason = 0 ## treat it as local whether we're inside or outside
                         else:
                             reason = 6
 
-            meaning = accessible_dict[reason]
+                    elif hasattr(inst, "is_loc_exterior") and inst.location.place == loc.current.place:
+                        reason = 8
 
-            if inst:
-                return inst, confirmed_container, reason, meaning
+                    else:
+                        reason = 6
 
-            return None, confirmed_container, reason, meaning
+        meaning = accessible_dict[reason]
 
-        confirmed_inst, confirmed_container, reason_val, meaning = run_check(inst)
+        return confirmed_container, reason, meaning
 
-        if confirmed_inst != None:
-            return confirmed_inst, confirmed_container, reason_val, meaning
 
-        return inst, confirmed_container, reason_val, meaning
-
-    def set_print_name(self, inst:ItemInstance, new_print_name:str):
+    def set_print_name(self, inst:itemInstance, new_print_name:str):
         """Sets inst.print_name to the given string, and updates instance descriptions before returning."""
         logging_fn()
         inst.print_name = new_print_name
         self.init_descriptions(inst)
 
-    def get_parent_details(self, inst, old_container, new_container)->tuple[ItemInstance, bool, ItemInstance]:
+    def get_parent_details(self, inst, old_container, new_container)->tuple[itemInstance, bool, itemInstance]:
         """Gets current parent/container of itemInstance, and prepares the new_container (if given) with .children."""
         was_in_container = False
         parent = None
@@ -811,7 +793,7 @@ class itemRegistry:
 
         return new_def
 
-    def combine_clusters(self, shard:ItemInstance, target: (cardinalInstance|ItemInstance)):
+    def combine_clusters(self, shard:itemInstance, target: (cardinalInstance|itemInstance)):
         """For combining cluster items when dropped at a location. Will attempt to merge the 'shard' (instance in inventory) with any existing cluster instance of the same type.\n\n The shard is assigned .is_hidden=True and remains in this place to be picked up again later, while the cluster it merged with gains its cluster value.\n\nIf no cluster exists, the shard is dropped like a regular item."""
         logging_fn()
         target_is_location = False
@@ -825,7 +807,7 @@ class itemRegistry:
             return shard, "no_local_compound" # returning so it can be added to the container. No merging in containers. Not sure if I want to combine multiples inside containers or not, but for now we just treat them the same way as inventory.
         compound_target = None
         from interactions.item_interactions import get_correct_cluster_inst
-        if isinstance(target, ItemInstance):
+        if isinstance(target, itemInstance):
             compound_target = get_correct_cluster_inst(shard, shard.name, local_items=None, local_only = True, access_str = "drop_target", allow_hidden=False, priority="plural")
 
         if not compound_target:
@@ -865,7 +847,7 @@ class itemRegistry:
         print(f"AT END OF COMBINE_CLUSTERS: Compound_target: {compound_target} // shard: {shard}\n")
         return shard, compound_target
 
-    def separate_cluster(self, compound_inst:ItemInstance|placeInstance, origin, origin_type:str):
+    def separate_cluster(self, compound_inst:itemInstance|placeInstance, origin, origin_type:str):
         """To select the correct cluster instance to pick up,  and/or separate a single instance from a multiple-value cluster.\n\nEnsures the total value of the cluster is maintained, so a source is not infinite but limited to the starting value of has_multiple_instances of the initial cluster item."""
         ## PICKING UP FROM CLUSTER IN LOCATION/CONTAINER
         logging_fn()
@@ -873,7 +855,7 @@ class itemRegistry:
             return False, None
 
         from interactions.item_interactions import find_local_item_by_name
-        if isinstance(compound_inst, ItemInstance):
+        if isinstance(compound_inst, itemInstance):
             noun=compound_inst
         else:
             print(f"Separate_cluster has a compound_inst that is not an inst: {compound_inst}")
@@ -943,7 +925,7 @@ class itemRegistry:
     # Movement
     # -------------------------
 
-    def move_cluster_item(self, inst:ItemInstance, location:cardinalInstance=None, new_container:ItemInstance=None, old_container:ItemInstance=None)->ItemInstance:
+    def move_cluster_item(self, inst:itemInstance, location:cardinalInstance=None, new_container:itemInstance=None, old_container:itemInstance=None)->itemInstance:
         """Move a cluster-type item from A-B. Uses preset preferences to determine best option for subject/target, and uses combine_cluster and separate_cluster as needed for the operation."""
 
         old_loc = inst.location
@@ -984,7 +966,7 @@ class itemRegistry:
         if not success:
             print(f"separate cluster failed. Reported shard: {shard}, original inst: {inst}, origin: {origin}")
             exit()
-        if success and isinstance(success, ItemInstance):
+        if success and isinstance(success, itemInstance):
             if hasattr(success, "has_multiple_instances"):
                 if success.has_multiple_instances == 0:
                     self.delete_instance(success)
@@ -994,7 +976,7 @@ class itemRegistry:
 
         return shard, None
 
-    def move_item(self, inst:ItemInstance, location:cardinalInstance=None, new_container:ItemInstance=None, old_container:ItemInstance=None, no_print=False)->ItemInstance:
+    def move_item(self, inst:itemInstance, location:cardinalInstance=None, new_container:itemInstance=None, old_container:itemInstance=None, no_print=False)->itemInstance:
         """Moves an itemInstance from its current location to a new 'location'. The new location can be the player inventory, a cardinalInstance or a container object. Updates item descriptions when complete."""
         logging_fn()
         from misc_utilities import assign_colour
@@ -1064,7 +1046,7 @@ class itemRegistry:
             init_loc_descriptions(loc.current.place, loc.current)
         return inst
 
-    def move_from_container_to_inv(self, inst:ItemInstance, parent:ItemInstance=None) -> ItemInstance:
+    def move_from_container_to_inv(self, inst:itemInstance, parent:itemInstance=None) -> itemInstance:
         """Simply ensures that a suitable parent is available before sending the itemInstance and parent to `move_item`."""
         logging_fn()
         if parent == None:
@@ -1076,7 +1058,7 @@ class itemRegistry:
     # -------------------------
     # Lookup
     # -------------------------
-    def get_instance_from_id(self, inst_id:str)->ItemInstance:
+    def get_instance_from_id(self, inst_id:str)->itemInstance:
         logging_fn()
 
         return self.instances.get(inst_id)
@@ -1116,7 +1098,7 @@ class itemRegistry:
 
         #print(f"self.by_alt_names: {self.by_alt_names}")
 
-    def instances_by_container(self, container:ItemInstance)->list:
+    def instances_by_container(self, container:itemInstance)->list:
         logging_fn()
         return [i for i in self.by_container.get(container, list())]
 
@@ -1149,7 +1131,7 @@ class itemRegistry:
 
         return random.choice(items)# if items else "No Items (RANDOM_FROM)"
 
-    def describe(self, inst: ItemInstance, caps=False)->str:
+    def describe(self, inst: itemInstance, caps=False)->str:
         logging_fn()
 
         if not hasattr(inst, "description"):
@@ -1167,7 +1149,7 @@ class itemRegistry:
             return description
 
 
-    def init_descriptions(self, inst: ItemInstance):
+    def init_descriptions(self, inst: itemInstance):
         """Generate or update itemInstance descriptions, as well as nicenames, based on container/child status, plural cluster instances, item state, etc."""
         logging_fn()
         from misc_utilities import has_and_true
@@ -1185,7 +1167,7 @@ class itemRegistry:
             print(f"Not inst.descriptions. inst.description: {inst.description}")
             return
 
-        def get_if_open(inst:ItemInstance, label:str):
+        def get_if_open(inst:itemInstance, label:str):
 
             if has_and_true(inst, label):
                 #getattr(inst.descriptions, f"open_{label}")
@@ -1272,7 +1254,7 @@ class itemRegistry:
     def get_duplicate_details(self, inst, inventory_list):
         logging_fn()
 
-        if isinstance(inst, ItemInstance):
+        if isinstance(inst, itemInstance):
             items = self.instances_by_name(inst.name)
         else:
             items = self.instances_by_name(inst)
@@ -1286,7 +1268,7 @@ class itemRegistry:
             return dupe_list
         print(f"{inst} not found in instances by name. {type(inst)}")
 
-    def register_name_colour(self, inst:ItemInstance, colour:str)->str:
+    def register_name_colour(self, inst:itemInstance, colour:str)->str:
         """Assigns `colour` to `inst`, and returns `inst.print_name`."""
         logging_fn()
 
@@ -1294,7 +1276,7 @@ class itemRegistry:
 
         return inst.print_name
 
-    def pick_up(self, inst:str|ItemInstance, location=None, starting_objects=False) -> tuple[ItemInstance, list]:
+    def pick_up(self, inst:str|itemInstance, location=None, starting_objects=False) -> tuple[itemInstance, list]:
         """Remnant of an old script. Will be replaced with a separate generation for starting items."""
         logging_fn()
 
@@ -1308,7 +1290,7 @@ class itemRegistry:
         if location == None:
             location = loc.current
 
-        if not isinstance(inst, ItemInstance):
+        if not isinstance(inst, itemInstance):
             item_list = self.instances_by_name(inst)
             if item_list and location != loc.current:
                 local_items = self.get_item_by_location(location)
@@ -1351,12 +1333,12 @@ class itemRegistry:
 
         if not hasattr(self, "starting_location"): # so it only updates once, instead of being the 'last picked up at'. Though that could be useful tbh. Hm.
             self.starting_location = {location} # just temporarily, not in use yet. Needs formalising how it's going to work.
-        if isinstance(new_inst, ItemInstance) and new_inst != inst:
+        if isinstance(new_inst, itemInstance) and new_inst != inst:
             print(f"Picked up {new_inst} instead of {inst}.")
             inst = new_inst
         return inst
 
-    def drop(self, inst: ItemInstance):
+    def drop(self, inst: itemInstance):
         """ Replace this with a direct link to {self.move_item(inst, location = loc.current)} instead."""
         logging_fn()
 
@@ -1419,7 +1401,7 @@ def use_generated_items(input_=None):
     return gen_items
 
 
-def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, partial_dict=None)->str|ItemInstance:
+def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, partial_dict=None)->str|itemInstance:
     """Generates an item def entry from item_name and, if given, input_str an a partial dict. Input_str should be a list of item_type categories to be assigned to the item. If loc_cardinal is None, items will be generated in a default location.\n\n`init_single` will be run with this new item def."""
 
     if partial_dict:
