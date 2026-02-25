@@ -1660,14 +1660,11 @@ def initialise_itemRegistry():
 
     for obj in registry.instances: # should be able to delete this entirely now.
         if hasattr(obj, "is_loc_exterior"):
-            print(f"obj.name: {obj.name}")
             location = loc.place_by_name(obj.name)
             if hasattr(location, "transition_objs") and location.transition_objs:
                 if not hasattr(obj, "transition_objs") or not isinstance(obj.transition_objs, set):
                     obj.transition_objs = set()
                 for item in location.transition_objs:
-                    print(f"ITEM: {item}")
-                    print("Item from location.transition_objs added to obj.transition_objs")
                     obj.transition_objs.add(item)
     return
 

@@ -225,7 +225,12 @@ def print_failure_message(input_str=None, message=None, noun=None, verb=None, id
             if "noun" in kind and init_dict[i][kind].get("text") != entry['text']:
                 entry2 = init_dict[i][kind]
                 if entry2.get("instance") and not isinstance(entry2["instance"], str):
-                    noun2 = entry2["instance"]
+                    if (not hasattr(entry2["instance"], "is_hidden") or entry2["instance"].is_hidden == False):
+                        noun2 = entry2["instance"]
+                        a_or_the = "the "
+                    else:
+                        noun2 = entry2["text"]
+                        a_or_the = "a "
 
     if noun_name:# and entry["instance"] == 'assumed_noun':
         if verb == "drop":
@@ -235,7 +240,7 @@ def print_failure_message(input_str=None, message=None, noun=None, verb=None, id
             if verb == "look":
                 print(f"There's no {assign_colour(noun_name, colour="yellow")} around here to {assign_colour(verb, colour="green")} at.")
                 return
-            if verb == "go":
+            if verb in ("go", "move"):
                 print(f"There's no {assign_colour(noun_name, colour="yellow")} around here to {assign_colour(verb, colour="green")} to.")
                 return
             print(f"There's no {assign_colour(noun_name, colour="yellow")} around here to {assign_colour(verb, colour="green")}.")
@@ -243,7 +248,16 @@ def print_failure_message(input_str=None, message=None, noun=None, verb=None, id
         if not noun2:
             print(f"There's no {assign_colour(noun_name, colour="yellow")} around here to {assign_colour(verb, colour="green")} {assign_colour(entry2['text'], colour="yellow")} with.")
             return
-        print(f"There's no {assign_colour(noun2)} around here to {assign_colour(verb, colour="green")} the {assign_colour(entry['text'], colour="yellow")} with.")
+        #print(f"There's no {assign_colour(noun2)} around here to {assign_colour(verb, colour="green")} the {assign_colour(entry['text'], colour="yellow")} with.")
+        from verb_actions import get_dir_or_sem
+        dir_or_sem = get_dir_or_sem(init_dict)
+        if dir_or_sem:
+            if dir_or_sem == "with":
+                temp = noun_name
+                noun_name = noun2
+                noun2 = temp
+
+        print(f"There's no {assign_colour(noun_name, colour="yellow") if isinstance(noun_name, str) else assign_colour(noun_name)} around here to {assign_colour(verb, colour="green")} {a_or_the}{assign_colour(noun2) if isinstance(noun2, itemInstance) else assign_colour(noun2, colour="yellow")} with.")
 
 
 ### INVENTORY LIST MANAGEMENT (possible all should be in item_management instead, but keeping here for now.)
@@ -401,6 +415,22 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
     If "  - " is in the item name, it will be removed and re-applied at the end of the function, so that inventory items can have the correct colouring applied while maintaining the spacing.
     """
     from tui.colours import Colours
+
+    if hasattr(item, "colour") and not colour and not nicename and not caps and not card_type and not noun:
+        simple = True
+    else:
+        simple = False
+
+    if isinstance(item, itemInstance) and simple and item.colour:
+        coloured_text=Colours.c(item.print_name, item.colour, bold=True)
+        return coloured_text # shortcut for simple assign_colour(noun) calls.
+
+    if isinstance(item, placeInstance) and simple:
+        coloured_text=Colours.c(item.name, fg="green", bold=True)
+        return coloured_text # shortcut for simple assign_colour(noun) calls.
+
+
+
     string = f"{(item if isinstance(item, str) else '')}"
 
     if colour == "event_msg":

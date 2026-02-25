@@ -446,15 +446,15 @@ class Parser:
                     if sequence[matched] in token.kind:
                         #print(f"sequence[matched]: {sequence[matched]}, token.kind: {token.kind}")
                         #print(f"This is {token.kind}")
-                        #print(f"Token: {token}")
+                        #print(Returning viable_sequencef"Token: {token}")
 
                         reformed_dict[matched] = {sequence[matched]: {"canonical": token.canonical, "text": token.text}}
                         #print(reformed_dict[matched])
 
                         matched += 1
-                    #else:
-                        #print(f"NO MATCH: sequence[matched]: {sequence[matched]}, token.kind: {token.kind}")
-
+                    else:
+                        print(f"NO MATCH: sequence[matched]: {sequence[matched]}, token.kind: {token.kind}")
+        #print(f"full matches: {full_matches}")
         if len(full_matches) > 1:
             print(f"More than one fully viable sequence:\n{full_matches}")
         elif len(full_matches) == 1:
@@ -518,6 +518,13 @@ class Parser:
                 #print(f"TOKENS: {tokens}")
                 return None, None, tokens
 
+        if verb_instances and len(verb_instances) > 1:
+            #print(f"VERB INSTANCES[0]: {verb_instances[0]} \nSequences: {sequences}\n") # have to add newlines so it doesn't get overlapped by the input text.
+            if list(('verb', 'noun', 'direction', 'verb', 'noun')) in sequences:
+                #print("       That pattern exists.\n")
+                new_seq = ["verb", "noun", "sem", "noun"] # new_verb, noun with noun2 == use noun2 to verb noun
+                sequences.append(new_seq)
+                ## So I need to fix the instances before it goes forward, because it needs to output a sequence viable with unlock, not use.
         #print(f"verb instances: {verb_instances}")
         #print(f"meta instances: {meta_instances}")
         def run_sequences(sequences, verb_instances):
@@ -529,7 +536,7 @@ class Parser:
 
             for seq in sequences:
                 if seq:
-                    #print(f"SEQ: {seq}")
+                    #print(f"SEQ: {seq}, type: {type(seq)}")
                     if verb_instances:
                         for verb_entry in verb_instances:
                             for verb in verb_entry.values():
@@ -537,6 +544,8 @@ class Parser:
                                     viable_sequences.append(seq)
                                 elif seq in viable_sequences and seq not in viable_sequences:
                                     viable_sequences.append(seq)
+                                #else:
+                                    #print(f"SEQ is not in verb.formats: {tuple(seq)} // verb formats: {verb.formats}")
                     #print("before meta_instances")
                     elif meta_instances:
                         for entry in meta_instances:
@@ -558,7 +567,7 @@ class Parser:
                             if hasattr(instance, "formats"):
                                 if tuple(seq) in instance.formats:
                                     viable_sequences.append(seq)
-
+            #print(f"Returning viable_sequences: {viable_sequences}\n")
             return viable_sequences
 
         for seq in sequences:
@@ -617,7 +626,7 @@ class Parser:
                 #exit()
                 sequences.append(new_seq)
 
-        viable_sequences = run_sequences(sequences, verb_instances)
+                viable_sequences = run_sequences(sequences, verb_instances) # why did I run this twice on the mainline?
         verbReg_Reciever(f"return for sequences: viable sequences: {viable_sequences}, verb_instances: {verb_instances}, sequences: {sequences}")
         return [tuple(seq) for seq in viable_sequences if seq], verb_instances, tokens
 
@@ -680,6 +689,88 @@ class Parser:
 
         return dict_for_output, tokens # including tokens for any minor input detail that might matter later.
 
+    def reorder_tokens_to_sequence(tokens, sequence):
+        logging_fn()
+        sequences = list(())
+        no_verb = no_noun = True
+        verb1 = verb2 = noun1 = noun2 = direction = None
+        for token in tokens:
+            #print(f"TOKEN: {token}, vars: {vars(token)}")
+            if "verb" in token.kind:
+                if no_verb:
+                    if token.text != "use":
+                        print("This should only be used for `use` x to verb y. It probably won't work with anything else.")
+                    verb1 = token
+                    no_verb = False
+                else:
+                    verb2 = token
+            if "direction" in token.kind:
+                direction = token
+
+            if "noun" in token.kind:
+                if no_noun:
+                    noun1 = token
+                    no_noun = False
+                else:
+                    noun2 = token
+
+        if direction.text == "to" and verb1.text == "use":
+            #print("use + to  confirmed")
+            if noun1 and noun2:
+                #print("Two nouns confirmed.")
+                sequences.append(sequence)
+
+        if not (direction.text == "to" and verb1.text == "use" and noun1 and noun2):
+            return None, None, False # Return if it doesn't meet the minimums.
+
+        verb1_idx = verb1.idx
+        #print(f"TOKENS type: {type(tokens)}")
+        verb2.idx = verb1_idx
+        noun2.idx = noun2.idx - 1
+
+
+        def sort_tokens(counter, token, verb1):
+            #print(f"sort_tokens({counter}, {token})")
+            if token != verb1 and token.idx == counter:
+                if "direction" in token.kind:
+                    #print("direction in token kind")
+                    token.text = "with"
+                    token.str_name = "with"
+                    token.canonical = "with"
+                    token.kind.remove("direction")
+                    token.kind.add("sem")
+                #print(f"Token is not verb1 and counter == counter: {token} // counter == {counter} ")
+                counter += 1
+                #print(f"token in tokens at end: {token}")
+                return token, counter
+            else:
+                #print(f"token == verb or token idx != counter: {token}, counter: {counter}")
+                return None, counter
+
+        counter = 0
+        new_tokens = list()
+        recursion_counter = 0
+        while len(new_tokens) < len(sequence):
+            if recursion_counter > len(tokens):
+                #print("Ending due to recursion limiter.")
+                break
+            for token in tokens:
+                test, counter = sort_tokens(counter, token, verb1)
+                #print(f"After sort_tokens: {test} // {counter}")
+                if test:
+                    new_tokens.append(test)
+            recursion_counter += 1
+            #print(f"Length of new_tokens: {len(new_tokens)}, new_tokens: {new_tokens}")
+        #print(f"If new tokens: {new_tokens}")
+        if len(new_tokens) == len(sequence):
+            tokens = new_tokens
+
+        #print(f"sequence: {sequence}, type: {type(sequence)}. Print sequences: {sequences}/ tokens on leaving reorder: {tokens}")
+        return tokens, sequences, True if sequences else False
+
+        ## must make sequence a list inside a list before returning
+
+
     def input_parser(self, input_str):
         logging_fn()
         from verb_membrane import membrane
@@ -724,22 +815,6 @@ class Parser:
             from misc_utilities import print_failure_message
             print_failure_message(input_str=input_str)
             return None, None
-            MOVE_UP = "\033[A"
-            print(f"{MOVE_UP}\033[1;31m[ Couldn't find anything to do with the input `{input_str}`, sorry. <after get_sequences_from_tokens>]\033[0m")
-            clean_parts = []
-            token_parts = [i.kind for i in tokens if i.kind != "null"]
-            for parts in token_parts:
-                if isinstance(parts, str):
-                    clean_parts.append(parts)
-                else:
-                    for part in parts:
-                        if part != "null":
-                            clean_parts.append(part)
-                            break
-
-            #print(" ".join(clean_parts))
-            #print(f"Raw tokens: {tokens}")
-            return clean_parts, None
 
             #TODO:  If no functional sequences, need to pick out parts that might be applicable to make reasonable guesses. Like if we have 'go'  and 'location', 'did you mean 'go to location', etc. Need a way to pause mid-parse, get confirmation then come back and run the sequencer again. Not today, but soon.
 
@@ -751,6 +826,16 @@ class Parser:
                 length_checked_sequences.append(sequence)
         if not length_checked_sequences and len(sequences) == 1:
             length_checked_sequences = sequences # may make things fail unexpectedly, but allows for 'failed' words to be attributed as nouns if the sequence would be correct without them (eg 'burned book' if there's a book but not a burned one. Not sure if I want this or not but that's what it is for now.)
+
+        for seq in length_checked_sequences:
+            if seq == tuple(('verb', 'noun', 'sem', 'noun')) and len(tokens) == 5 and len(verb_instances) == 2:
+                # use x to verb y switcharoo time.
+                #print("Going to reorder_tokens_to_sequence")
+                test_tokens, test_length_checked_sequences, success = self.reorder_tokens_to_sequence(tokens, seq)
+                if success:
+                    tokens = test_tokens
+                    length_checked_sequences = test_length_checked_sequences
+                    break
 
         initial_dict, sequence = Parser.generate_initial_dict(tokens, length_checked_sequences) # culls to just the first sequence. Doesn't deal with 'picking the best version' if there's more than one yet. Needs to in the future.
         #print(f"About to go to build_dict: {initial_dict}\n")

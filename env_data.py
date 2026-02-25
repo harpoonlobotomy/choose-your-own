@@ -306,7 +306,7 @@ def initialise_placeRegistry():
                     target_place = locRegistry.by_cardinal_str(cardinal_str=int_location)
                     if target_place and isinstance(target_place, cardinalInstance):
                         target_place = target_place.place
-                    print(f"target_place: {target_place}")
+
                     if not hasattr(target_place, "transition_objs") or (hasattr(target_place, "transition_objs") and not target_place.transition_objs):
                         target_place.transition_objs = dict()
 

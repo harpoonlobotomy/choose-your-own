@@ -211,7 +211,9 @@ def init_loc_descriptions(place=None, card=None):
     return location_description, compiled_cardinals
 
 def loc_descriptions(place=None, card_inst=None):
-
+    from env_data import locRegistry as loc
+    if place and place == loc.current.place:
+        card_inst = loc.current
     location_description, cardinal_descriptions = init_loc_descriptions(place, card=card_inst)
     combined_dict = {}
 

@@ -4428,3 +4428,128 @@ Okay, easy fix, I'd just mixed it around in def put.
 
 Today's thing:
 I want to implement 'use key to unlock padlock' type order switching. Going to commit everything from the last few days to main first though.
+
+I need to set up a better test setup. Right now, I have everyting, which is useful for specific tests but not most, and Testing Grounds, but that seems to break things in weird ways.
+
+8.42am
+Hm. This is unexpected.
+
+ .-            -.
+[<  enter shed  >]
+ '-            -'
+
+Failed to find the correct function to use for <verbInstance enter (204b0530-137a-48cb-94fe-ef3f78b9d554)>: cannot access local variable 'noun_str' where it is not associated with a value
+
+Also,
+
+ .-            -.
+[<  go to shed  >]
+ '-            -'
+
+You see the closed wooden door in front of you; you can't phase through a closed door.
+
+-- it should be printing the location description, not just stopping at the door. How the hell did this break?
+
+Ah, right. Because it's passing the door to move_through_trans_obj, so if not noun isn't passed.
+
+What the hell has changed????? 'Go to shed' now directs me outside and describes the /door/, not the shed. After fixing the logic error, now while standing /at the shed/, it gives me 'There's no shed here to enter.'.
+
+Okay why the hell is this:
+
+            if loc.current.place == outside_location.place or verb == "go":
+                print("loc current place == outside loc place or verb == go")
+
+not triggering.
+
+Ooooh. Okay. So the error is not exactly what I thought. The `You see the closed wooden door in front of you` was correct, it's 'go to shed' that errored.
+
+I set the game to start in testing grounds.
+
+`verb in entry_words and no location or location == inside location`
+`current.place: <placeInstance testing grounds (2ed41085-4743-40d4-b63b-9b863b3f33cf)>, outside_location.place: <placeInstance graveyard (a435daab-6b2f-479e-a2c9-1efb50340127)>`
+`loc current place == outside loc place or verb == go. Print current.place: <placeInstance testing grounds (2ed41085-4743-40d4-b63b-9b863b3f33cf)>, outside_location.place: <placeInstance graveyard (a435daab-6b2f-479e-a2c9-1efb50340127)>
+You see the closed wooden door in front of you; you can't phase through a closed door.`
+
+So the actual issue is that it described the door being closed as if you moved there, but it didn't actually move player to the shed location.
+
+8.59am Okay, re-fixed I think. I hadn't added new_relocate if the door was closed, now it does new_relocate to noun.location, so you arrive at the correct cardinal.
+
+Ooh, good to find:
+[<  go north graveyard  >]
+
+Failed to find the correct function to use for <verbInstance go (efb78887-73fe-422d-91e9-36652ca7e5a7)>: 'NoneType' object is not subscriptable
+
+Omitting the dir kills it. Will fix.
+Okay, fixed. Was missing a check for direction_entry existing at all.
+
+Ooooh dammit.
+[[  use key on padlock  ]]
+
+There's no iron key around here to use the padlock with.
+
+I don't have the iron key, it shouldn't be naming it.
+
+Oh wait it's slightly weirder. The iron key is local, because I'm actually in the shed. But it's invisible, I've not picked up the map yet.
+
+Okay, better:
+
+[[  use key on padlock  ]]
+
+There's no padlock around here to use a key with.
+
+10.20am
+
+Hey it works~~
+
+[[  use key to unlock padlock  ]]
+
+There's no padlock around here to use a key with.
+
+Needs more extensive testing, but manually rejigging the tokens seems to have done the job. Need to test for edge cases because it's probably weaker than it looks, but seems to work.
+
+Now the downside to the way it's done (assuming it works more broadly in further testing) is that it permanently changes the tokens; the original data is simply gone. So it needs to be absolutely sure to work, I can't just loop it to a different verb_actions fn.
+
+Okay, it properly works:
+
+#   [<  use key to unlock padlock  >]
+
+#   lock_unlock: noun, noun_str, noun2, noun2_str:  <ItemInst iron key / (3e6121345430) / north inventory_place / reveal_iron_key / ..6cd2069de13c / > key <ItemInst padlock / (54839ef394fa) / north graveyard / graveyard_gate_opens / ..9d5eca0e93db / > padlock
+#   Format is len 4: ('verb', 'noun', 'sem', 'noun')
+#   <ItemInst iron key / (3e6121345430) / north inventory_place / reveal_iron_key / ..6cd2069de13c / > and <ItemInst padlock / (54839ef394fa) / north graveyard / graveyard_gate_opens / ..9d5eca0e93db / > are both accessible.
+#   KEY: <ItemInst iron key / (3e6121345430) / north inventory_place / reveal_iron_key / ..6cd2069de13c / >, LOCK: <ItemInst padlock / (54839ef394fa) / north graveyard / graveyard_gate_opens / ..9d5eca0e93db / >
+#   You use the iron key to unlock the padlock
+#   Noun <ItemInst padlock / (54839ef394fa) / north graveyard / graveyard_gate_opens / ..9d5eca0e93db / > is an event trigger for <eventInst graveyard_gate_opens ..9d5eca0e93db>
+
+#   As the padlock falls to the ground and the chain unravells, the graveyard gate creaks open.
+
+#   You see beyond the threshold of the graveyard, a variety of locations to explore.
+#
+#       [Look at your map to see where else you can go.]
+
+
+Hm.
+
+[[  unlock padlock with key  ]]
+
+There's no padlock around here to unlock a key with.
+
+Okay:
+[[  unlock padlock with key  ]]
+
+There's no key around here to unlock a padlock with.
+
+
+[[  use key to unlock padlock  ]]
+
+There's no key around here to unlock a padlock with.
+
+So now it works the same way when it errors. Now to test if it works the same way when it works.
+
+Yeah, it does. Goodgood.
+
+11.31am
+I think I want to change it to not pre-setting the colour for nouns.
+
+Okay, changed it. Now it gets the colour when the item is encountered or loaded for location description. Also, changed it so it only runs init_loc_description for the current cardinal if you're at loc.current.place, instead of the full location.
+
+[neatened_the_input_decoration](image-1.png)

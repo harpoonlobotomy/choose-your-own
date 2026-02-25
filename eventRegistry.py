@@ -1257,8 +1257,8 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                 print(f"Noun {noun_inst} is an event trigger for {noun_inst.event}")
                 outcome, moved_children = check_triggers(noun_inst.event, noun=noun_inst, reason=reason)
                 return outcome, moved_children
-            else:
-                print(f"Noun is not event key. noun vars:\n{vars(noun_inst)}\n\n")
+            #else:
+                #print(f"Noun is not event key. noun vars:\n{vars(noun_inst)}\n\n")
 
         if events.generate_events_from_itemname.get(noun_inst.name):
             event_name = events.generate_events_from_itemname[noun_inst.name]
@@ -1292,7 +1292,6 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
 
         if isinstance(reason, tuple):
             #for inner in reason:
-            print("Reason is tuple")
             reason_str, _ = reason
             if reason_str in acts:
                 print("reason str in acts")

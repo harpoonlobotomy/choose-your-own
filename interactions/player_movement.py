@@ -3,7 +3,6 @@
 """Right now, player movement is very very simple. But I want a way to track it in slightly more detail. So, this is that. Not so much the immediate tracking, as that's taken care of, but going places"""
 
 from env_data import cardinalInstance, locRegistry as loc, placeInstance, get_loc_descriptions
-from misc_utilities import assign_colour
 from logger import logging_fn, traceback_fn
 from eventRegistry import events
 
@@ -76,7 +75,7 @@ def check_loc_card(location, cardinal=None):
 
 def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=None):
     logging_fn()
-
+    from misc_utilities import assign_colour
     def update_loc_data(prev_loc, new_location):
         print("Update loc data")
         from misc_utilities import assign_colour
@@ -204,7 +203,7 @@ def turn_around(new_cardinal):
         print(f"{new_cardinal}")
         traceback_fn()
         exit()
-
+    from misc_utilities import assign_colour
     cardinal, alt_match = get_viable_cardinal(new_cardinal)
     if alt_match:
         if cardinal.place.missing_cardinal:

@@ -671,7 +671,7 @@ def go_through_door(noun:itemInstance, open_door:bool, destination:cardinalInsta
 
     else:
         print(f"You see the closed {assign_colour(noun)} in front of you; you can't phase through a closed door.")
-        return 1
+        return new_relocate(new_cardinal=noun.location)
 
 def move_through_trans_obj(noun, input_dict):
     #print(f"move_through_trans_obj, noun: {noun}")
@@ -682,6 +682,8 @@ def move_through_trans_obj(noun, input_dict):
     #print(f"move_through_trans_obj. input_dict: {input_dict}")
     verb = get_verb(input_dict, get_str=True)
     location = get_location(input_dict)
+    if noun:
+        noun_str = get_noun(input_dict, get_str=True)
     if not noun:
         #get_transition_noun()
         noun, noun_str, _, _ = get_nouns(input_dict)
@@ -750,7 +752,6 @@ def move_through_trans_obj(noun, input_dict):
         if verb in entry_words and (location == None and noun) or (location == inside_location or location == inside_location.place):
             if loc.current.place == outside_location.place or verb == "go":
                 if inside_location.place.visited:
-                    print(f"inside_location.place.visited: {inside_location.place.visited}")
                     open_door = True
                 return go_through_door(noun, open_door=open_door, destination = inside_location, inside_location = inside_location)
             else:
@@ -780,7 +781,7 @@ def go(format_tuple, input_dict, no_noun=None): ## move to a location/cardinal/i
 
     verb_entry, noun_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
 
-    if (len(format_tuple) == 2 and (noun_entry or location_entry)) or (len(format_tuple) == 3 and direction_entry["text"] in to_words):
+    if (len(format_tuple) == 2 and (noun_entry or location_entry)) or (len(format_tuple) == 3 and (direction_entry and direction_entry["text"] in to_words)):
         #print(f"def go len2 or len3. Format tuple: {format_tuple}, dict: {input_dict}")
         if noun_entry:
             noun = noun_entry["instance"]
@@ -809,7 +810,7 @@ def go(format_tuple, input_dict, no_noun=None): ## move to a location/cardinal/i
                 #print(f"hasattr location_entry[instance], transition_objs: {location.transition_objs}")
                 for obj in location.transition_objs:
                     #print(f"OBJ: {obj}")
-                    if obj.int_location in (loc.current, location):
+                    if obj.int_location.place in (loc.current, location):
                         return enter(format_tuple, input_dict, noun=obj)#: # this only goes to enter if we're aiming for or leaving the interior location.
 
             print("Going to new_relocate")
@@ -927,7 +928,8 @@ def look(format_tuple=None, input_dict=None):
                     else:
                         turn_cardinal(inst_from_idx(input_dict[2], "location"), turning = True)
             else:
-                print(f"Not noun from location. Dict: {input_dict}")
+                from misc_utilities import look_around
+                return look_around()
 
 
 
@@ -1221,19 +1223,19 @@ def lock_unlock(format_tuple, input_dict, do_open=False, noun=None, noun2=None):
     verb = get_verb(input_dict)
     if not noun or not noun2:
         noun, noun_str, noun2, noun2_str = get_correct_nouns(input_dict, verb="use")
-    print("lock_unlock: noun, noun_str, noun2, noun2_str: ", noun, noun_str, noun2, noun2_str)
+    #print("lock_unlock: noun, noun_str, noun2, noun2_str: ", noun, noun_str, noun2, noun2_str)
 
     if len(format_tuple) == 2:
         print(f"{assign_colour(noun.name)} requires a key, no?")
         return
 
     if len(format_tuple) == 4:
-        print(f"Format is len 4: {format_tuple}")
+        #print(f"Format is len 4: {format_tuple}")
         if noun2:
             accessible_1, _, _ = can_interact(noun)
             accessible_2, _, _ = can_interact(noun2)
             if accessible_1 and accessible_2:
-                print(f"{noun} and {noun2} are both accessible.")
+                #print(f"{noun} and {noun2} are both accessible.")
                 success = check_key_lock_pairing(noun, noun2)
                 if success:
                     key = noun
@@ -2034,16 +2036,16 @@ def enter(format_tuple, input_dict, noun=None):
         return look(format_tuple, input_dict)
 
 MOVE_UP = "\033[A"
-print_extra_decorations = True
+print_extra_decorations = False#True
 
 def make_foreline(new_str, input_str):
-
     diff = len(new_str) - len(input_str)
+    new_str = f"\033[0;32m[\033[1;32m<  {input_str}  >\033[0;32m]"
     half = int(diff/2)
     leftovers = diff - (half + half) - 1 -2
-    foreline = f"\033[1;32m" + " .-" + (f" " * (half-3)) + (" " * (len(input_str))) + (f" " * (half + leftovers)) + "-."
+    foreline = f"\033[0;32m" + " .-" + (f" " * (half-3)) + (" " * (len(input_str))) + (f" " * (half + leftovers)) + "-."
     print(foreline)
-    return f"\033[1;32m" + " '-" + (f" " * (half-2)) + (" " * (len(input_str))) + (f" " * (half + leftovers-1)) + "-'"
+    return f"\033[0;32m" + " '-" + (f" " * (half-2)) + (" " * (len(input_str))) + (f" " * (half + leftovers-1)) + "-'", new_str
 
 def router(viable_format, inst_dict, input_str=None):
     logging_fn()
@@ -2061,7 +2063,7 @@ def router(viable_format, inst_dict, input_str=None):
         new_str = f"[<  {input_str}  >]"
         print(f"{MOVE_UP}", end="")
         if print_extra_decorations:
-            foreline = make_foreline(new_str, input_str)
+            foreline, new_str = make_foreline(new_str, input_str)
         input_str = new_str
         if input_str:
             print(f'{MOVE_UP}\n\033[1;32m{input_str}\033[0m')
