@@ -2036,7 +2036,7 @@ def enter(format_tuple, input_dict, noun=None):
         return look(format_tuple, input_dict)
 
 MOVE_UP = "\033[A"
-print_extra_decorations = False#True
+print_extra_decorations = True
 
 def make_foreline(new_str, input_str):
     diff = len(new_str) - len(input_str)
@@ -2044,7 +2044,10 @@ def make_foreline(new_str, input_str):
     half = int(diff/2)
     leftovers = diff - (half + half) - 1 -2
     foreline = f"\033[0;32m" + " .-" + (f" " * (half-3)) + (" " * (len(input_str))) + (f" " * (half + leftovers)) + "-."
-    print(foreline)
+    #print(MOVE_UP, end='')
+    print(MOVE_UP, end='')
+    print(foreline) # Needs this little dance to print correctly whether it's user input or test. If I wasn't running the text commands I could just hardcode it directly at input.
+    print()
     return f"\033[0;32m" + " '-" + (f" " * (half-2)) + (" " * (len(input_str))) + (f" " * (half + leftovers-1)) + "-'", new_str
 
 def router(viable_format, inst_dict, input_str=None):
@@ -2060,13 +2063,14 @@ def router(viable_format, inst_dict, input_str=None):
 
     from config import print_input_str # This will probably be the default. Definitely don't need three options.
     if print_input_str:
+        print(f"{MOVE_UP}", len(input_str) * " ")
         new_str = f"[<  {input_str}  >]"
-        print(f"{MOVE_UP}", end="")
+        #print(f"{MOVE_UP}", end="")
         if print_extra_decorations:
             foreline, new_str = make_foreline(new_str, input_str)
         input_str = new_str
         if input_str:
-            print(f'{MOVE_UP}\n\033[1;32m{input_str}\033[0m')
+            print(f'{MOVE_UP}\033[1;32m{input_str}\033[0m')
             if print_extra_decorations:
                 print(foreline, "\033[0m")
             print()

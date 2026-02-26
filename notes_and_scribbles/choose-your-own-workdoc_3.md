@@ -4553,3 +4553,13 @@ I think I want to change it to not pre-setting the colour for nouns.
 Okay, changed it. Now it gets the colour when the item is encountered or loaded for location description. Also, changed it so it only runs init_loc_description for the current cardinal if you're at loc.current.place, instead of the full location.
 
 [neatened_the_input_decoration](image-1.png)
+
+12.46pm
+I need to clean the print lines again.
+
+After the intro text prints, it adds a line. But if you print that same text again later, it doesn't print a line.
+
+Okay. Think it's cleaned up now. Always adds 2 newlines before input str, and prints the fancy input_str on the same line (unless decorations are on).
+
+9.01am
+Going to work on the time passage now to properly implement timed triggers. Currently time passage doesn't happen at all so it's not implemented beyond a print line, let alone testable.

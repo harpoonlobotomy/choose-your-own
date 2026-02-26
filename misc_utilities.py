@@ -146,6 +146,12 @@ def clean_separation_result(result:list, to_print=False):
         if to_print:
             print(coloured_list)
 
+def underline_central(text_str):
+    half = len(text_str) / 2
+    quart = half / 2
+    spacing = " " * int(quart) + "_" * int(half)
+    print(spacing, "\n")
+
 ### END STRING MANIPULATION
 
 def look_around():
@@ -288,7 +294,6 @@ def from_inventory_name(test:str) -> itemInstance:
     logging_fn()
     print(f"Could not find inst `{test}` in inst_inventory.")
     input()
-
 
 def is_item_in_container(item):
     """Just checks if the given `item` is in a container, and returns that `container` or None."""
@@ -635,40 +640,4 @@ def print_type(item, exit=False, disabled=False):
     print(f"Item: {item}, type: {type(item)}")
     if exit:
         exit()
-
-def do_print(text=None, end=None, do_edit_list=False, print_func=None):
-
-    from tui.tui_update import update_text_box
-
-    if text==None:
-        text=" "
-    if print_func:
-        text = text + "[" + print_func + "]"
-    #if isinstance(text, str) and text.strip=="":
-    #    do_edit_list=True
-
-    #update_text_box(to_print=text, edit_list=do_edit_list) ## enable_tui removed from here, instead tui_update pulls it itself.
-#    if end != "no": # bit weak but it'll do, lets me force no extra newlines even with the messy af print sequence I hae for now.
-#        update_text_box(to_print="  ")
-
-def do_input():
-
-    #from choose_a_path_tui_vers import enable_tui
-    SHOW = "\033[?25h"
-
-    HIDE = "\033[?25l"
-
-    move_up = MOVE_UP
-    import config
-    enable_tui=config.enable_tui
-    if enable_tui:
-        print(SHOW, end='') ## is this right? Not sure...
-        move_up = ""
-    text=input()
-
-    #if text == "" or text == None:
-    #    do_print(assign_colour(f"{move_up}{HIDE}(Chosen: <NONE>)", "yellow"))
-    #else:
-    #    do_print(assign_colour(f'{move_up}{HIDE}Chosen: ({text.strip()})', 'yellow'))
-    return text
 

@@ -28,7 +28,7 @@ items_template = {
 
 currency = random.choice(("dollar", "pound", "yen"))
 
-paintings = ["a ship in rough seas", "a small farmstead", "a businessman in front of a large window in an office", "a dog, running around in a field of flowers"]
+paintings = ["a ship in rough seas", "a small farmstead", "a businessman, sitting in an office in front of a large window", "a dog, running in a field of flowers"]
 
 time_of_day = ["pre-dawn", "early morning", "mid-morning", "late morning", "midday", "early afternoon", "late afternoon", "evening", "late evening", "late night", "midnight", "2am"]
 

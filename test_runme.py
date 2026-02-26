@@ -7,7 +7,8 @@ def test_main():
     #    import os
     #    os.system("cls")
 
-    print("\n\nStarting Run.\n\n")
+    textline = "Starting Run."
+    print(f"\n\n{textline}\n\n")
 
     from initialise_all import initialise_all
 

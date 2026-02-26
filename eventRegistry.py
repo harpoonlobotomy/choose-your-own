@@ -799,7 +799,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
         def print_current(event, state_type="held", print_text=False, noun:itemInstance=noun):
             logging_fn()
             if not event.msgs:
-                print(f"NO EVENT MESGS: {event}")
+                print(f"NO EVENT MESSAGES FOR EVENT: {event}")
                 return
             if event.msgs.get(f"{state_type}_msg"):
                 msg = event.msgs[f"{state_type}_msg"]

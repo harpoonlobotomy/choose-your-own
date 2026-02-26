@@ -2,7 +2,6 @@
 from set_up_game import game
 from logger import logging_fn
 import random
-from misc_utilities import do_print
 
 def roll_risk(rangemin=None, rangemax=None):
     logging_fn()
@@ -25,7 +24,7 @@ def roll_risk(rangemin=None, rangemax=None):
     for r, msg, val in results:
         if r[0] <= roll <= r[1] or roll in r:
             if game.show_rolls:
-                do_print(f"Roll: {roll}\n{msg}")
+                print(f"Roll: {roll}\n{msg}")
             return val
 
 

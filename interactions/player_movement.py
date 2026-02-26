@@ -53,7 +53,9 @@ def check_loc_card(location, cardinal=None):
     if cardinal:
         if isinstance(cardinal, cardinalInstance):
             to_card = cardinal
-        elif isinstance(cardinal, cardinalInstance):
+            if not to_loc:
+                to_loc = to_card.place
+        elif isinstance(cardinal, str):
             test = loc.by_cardinal_str(cardinal, to_loc)
             if test:
                 to_card = test
@@ -170,16 +172,16 @@ def new_relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=
                 new_card_inst = new_location.cardinals.get(card)
                 if new_card_inst.cardinal_data:
                     print(f"new_card_inst: {new_card_inst}")
-                    turn_around(new_cardinal)
-                    #new_relocate(new_cardinal=new_card_inst)
+                    if new_card_inst.place == loc.current.place:
+                        turn_around(new_cardinal)
+                    else:
+                        new_relocate(new_cardinal=new_card_inst) # changed so it'll do the full relocate unless the new_inst is in the same .place as loc.current, not just turn.
                     return
 
         if new_location:
             loc.set_current(loc = new_location, cardinal=new_cardinal)
         else:
             loc.set_current(cardinal=new_cardinal)
-
-
 
     from misc_utilities import in_loc_facing_card
     print(f"You're now in {in_loc_facing_card(loc.current)}\n")

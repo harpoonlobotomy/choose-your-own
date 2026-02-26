@@ -306,7 +306,7 @@ def run_membrane(input_str=None, run_tests=False):
 
         immediate_command = ["print local items", "print inventory items", "print named items", "print current events", "print all events", "godmode", "god mode"]
         while input_str == None or input_str == "":
-            input_str = input("\n")
+            input_str = input("\n\n")
             if input_str in immediate_command or input_str.startswith("godmode"):
                 immediate_commands(input_str)
                 input_str = input()
@@ -411,20 +411,21 @@ def run_membrane(input_str=None, run_tests=False):
         test_inputs = input_command_list
         for i, input_str in enumerate(test_inputs):
 
-            print()
+            print("\n")
             test = loop(input_str)
             if test == "exit":
                 return "exit"
 
-            print()
+            #print()
             sleep(.05)
             #input("Press any key to continue to next.")
             if i == len(test_inputs)-1:
                 config.run_tests = False
                 #run_tests = False
+            else:
+                print()
 
     else:
-        print()
         test = loop(input_str)
         if test == "exit":
             print_blue(f"{MOVE_UP}Exiting now.\n")#Loop test at end == exit, returning `exit`.")

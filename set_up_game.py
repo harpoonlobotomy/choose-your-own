@@ -1,24 +1,12 @@
 # Choose your own adventure
 
 import random
-from itemRegistry import registry
+from env_data import locRegistry as loc
+from itemRegistry import registry, new_item_from_str
 import choices
 from logger import logging_fn
 import misc_utilities
-"""
-Sample start:
-Starting items: ['paperclip', 'puzzle magazine']
 
-Starting game:
-{'blind': True,
- 'full': False,
- 'hp': 5,
- 'in love': True,
- 'overwhelmed': True,
- 'sad': False,
- 'tired': True}
-
-"""
 
 def test_for_weird():
 
@@ -32,21 +20,41 @@ def test_for_weird():
 def set_inventory():
 
     if game.w_value != 0:
-        registry.pick_up("severed tentacle", starting_objects=True)
+        instances = registry.by_name.get("severed tentacle")
+        if not instances:
+            from item_dict_gen import generator
+            item_dict = generator.item_defs.get("severed tentacle")
+            instance = new_item_from_str(item_name="severed tentacle", loc_cardinal=(loc.inv_place), partial_dict=item_dict)
+            if instance:
+                loc.inv_place.items.add(instance)
+        else:
+            instance = registry.move_item(instances[0], location = loc.inv_place)
+
         game.weirdness = True
 
 def loadout():
 
+    set_inventory()
     paperclip_inst = registry.get_item_from_defs("paperclip")
+    registry.move_item(paperclip_inst, location=loc.inv_place)
     #paperclip_list = registry.instances_by_name("paperclip")
 
-    registry.pick_up(paperclip_inst, starting_objects=True)
+    #registry.pick_up(paperclip_inst, starting_objects=True)
 
     ### Need to get list of item def entries with 'magazine'
     magazines = registry.item_def_by_attr(loot_type="magazine")
     #print(f"MAGAZINES: {magazines}")
     mag_choice = random.choice(magazines)
-    registry.pick_up(mag_choice, starting_objects=True)
+    instances = registry.instances_by_name(mag_choice)
+    if not instances:
+        from item_dict_gen import generator
+        item_dict = generator.item_defs.get(mag_choice)
+        instance = new_item_from_str(item_name=mag_choice, loc_cardinal=(loc.inv_place), partial_dict=item_dict)
+        if instance:
+            loc.inv_place.items.add(instance)
+    else:
+        instance = registry.move_item(instances[0], location = loc.inv_place)
+
     game.carryweight = 12
 
     starting_items = registry.instances_by_category("starting") ## starting items ==
@@ -59,7 +67,7 @@ def loadout():
         for item in temp_inventory:
             if item == None:
                 continue
-            registry.pick_up(item, starting_objects=True)
+            registry.move_item(item, location=loc.inv_place)
 
 def calc_emotions():
     counter = 0
@@ -86,8 +94,12 @@ def calc_emotions():
 
 def load_world(relocate=False, rigged=False, new_loc=None):
     logging_fn()
-    print("Starting load_world in set_up_game.py\n\n")
-    from env_data import locRegistry as loc, weatherdict
+    textline = "Starting load_world in set_up_game.py"
+    print(textline)
+    from misc_utilities import underline_central
+    underline_central(textline)
+
+    from env_data import weatherdict
 
     rigged = False#True
     rig_weather = "perfect"
@@ -106,15 +118,13 @@ def load_world(relocate=False, rigged=False, new_loc=None):
         weatherlist = list(weatherdict.keys())
         game.weather = random.choice(weatherlist)
         if not new_loc:
-            loc.set_current(random.choice(list(loc.places.values())))
+            new_loc = (random.choice(list(loc.places.values())))
 
     if new_loc:
         loc.set_current(new_loc)
 
     return loc.currentPlace
 
-def init_settings(manual=False):
-    print()#"No settings in this version.")
 
 def init_game():
 
@@ -122,12 +132,10 @@ def init_game():
     game.emotional_summary = calc_emotions()
     import config
 
-    init_settings()
     test_for_weird()
     #choices.set_choices()
     load_world(new_loc=config.starting_location_str) # always start at graveyard
     #initialise_itemRegistry()
-    set_inventory()
     loadout() ## move loadout after load_world to allow for time_management to run first. Testing...
     #print("Initial inventory:: ", game.inventory)
 
@@ -136,14 +144,9 @@ def set_up(weirdness, bad_language, player_name): # skip straight to init_game t
     game.bad_language = bad_language
     game.playername = player_name
     game.facing_direction = random.choice(list(misc_utilities.cardinal_cols.keys()))
-    game.painting = random.choice(choices.paintings) # new, testing. Only needed for city hotel room at present. May update later if more locations. Nice to have semi-randomised location aspects.
-    #print(f"game.painting: {game.painting}")
+    game.painting = random.choice(choices.paintings)
     init_game()
-    #print(f"Player name: {player_name}")
-    #print(f"Starting items: {game.inventory}")
-    #print("Starting game:")
-    #pprint(game.player)
-    #print(f"Starting location: {game.place}")
+
     return game
 
 class game:
@@ -161,7 +164,6 @@ class game:
         "inventory_on": False,
         "play_again": False
     }
-    inventory = list()
     #inventory_names = list()
     playername = "Test"
     player = {

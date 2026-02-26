@@ -308,7 +308,8 @@ class itemRegistry:
         self.by_id = {}    # id -> ItemInstance
         self.by_location = {}  # (cardinalInstance) -> set of itemInstances
         self.by_name = {}        # definition_key -> set of itemInstances
-        self.by_alt_names = {} # less commonly used variants. Considering just adding them to 'by name' though, I can't imagine it matters if they're alt or original names... # changed mind, nope. Not duplicating them randomly for no good reason. Just an alt:name lookup.
+        self.by_alt_names = {}
+        #self.by_alt_names: dict[str: str] = {}
 
         self.by_category = {}        # category (loot value) -> set of instance IDs
         self.by_container = {}
@@ -328,7 +329,7 @@ class itemRegistry:
 
         self.locks_keys = {}
 
-        self.item_defs = {}
+        self.item_defs: dict[str: dict] = {}
 
         self.transition_objs = set()
         self.door_open_strings = ["The door creaks, but allows you to head [[inside]].", "The door creaks slightly as you make your way [[inside]].", "You open the door and make your way [[inside]].", "You open the door and head [[inside]]."]
@@ -1286,6 +1287,8 @@ class itemRegistry:
             item_name = inst
 
         if isinstance(inst, set) or isinstance(inst, list):
+            if isinstance(inst, set):
+                inst = list(inst)
             inst=inst[0]
 
         if location == None:
@@ -1434,9 +1437,9 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, part
         input_str = input_str.replace(",", "")
         parts = input_str.strip().split(" ")
         parts = list(i for i in parts if i != None and i in list(type_defaults))
-        print(f"PARTS: {parts}, type: {type(parts)}")
+        #print(f"PARTS: {parts}, type: {type(parts)}")
         if len(parts) > 1:
-            print(f"Parts len >1 : {parts}, type: {type(parts)}")
+            #print(f"Parts len >1 : {parts}, type: {type(parts)}")
             new_str = list(parts)
         else:
             new_str = list([parts])
@@ -1453,7 +1456,7 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, part
         loc_cardinal = "graveyard north"
 
     if partial_dict and isinstance(partial_dict, dict):
-        print("elif partial_dict.get('name'): Not sure this'll work any more now I've renamed it to 'nicename'.")
+        #print("elif partial_dict.get('name'): Not sure this'll work any more now I've renamed it to 'nicename'.")
         if partial_dict.get(item_name):
             new_item_dict = partial_dict[item_name]
         elif partial_dict.get("name"):
@@ -1476,12 +1479,12 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, part
     all_item_names_generated.append((inst, "new_item_from_str"))
     registry.temp_items.add(inst)
 
-    if registry.temp_items:
-        from edit_item_defs import add_new_item
-        add_new_item(item_name, new_item_dict)
+    #if registry.temp_items:
+    #    from edit_item_defs import add_new_item
+    #    add_new_item(item_name, new_item_dict)
 
     #print(f"\nend of new_item_from_str for {inst}")
-    printing.print_green(text=vars(inst), bg=False, invert=True)
+    #printing.print_green(text=vars(inst), bg=False, invert=True)
     return inst
 
 def apply_loc_data_to_item(item, item_data, loc_data):
