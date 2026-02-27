@@ -70,6 +70,10 @@
             "persistent_condition": true,
             "condition_item_is_start_trigger": true,
             "end_type": "success"},
+            "effect_on_completion":
+                {"init_items": {"item_name": "dried moss"},
+                "start_event": "finding_dried_moss",
+                "remove_items": {"item_name": "moss", "item_is_trigger_inst": true}},
 
         "item_trigger": {
             "trigger_item": "moss",
@@ -82,8 +86,20 @@
     "messages": {
         "start_msg": "You pick up the [[moss]], and feel it squish a little between your fingers.",
         "exception_msg": "You put the still-damp [[moss]] down in a nice dry spot.",
-        "end_msg": "After a few days, you realise the [[moss]] you've been carrying around has tried out. Damn. Or maybe you wanted some dry [[moss]]...?",
+        "end_msg": "",
         "failure_msg": "You put down the still-damp [[moss]]."
+        }
+    },
+"finding_dried_moss": {
+    "is_generated_event": true,
+    "triggered_by_event": "moss_dries",
+    "immediate_action": {
+        "item_trigger": {
+            "trigger_item": "dried moss",
+            "triggered_by": ["item_interacted_with", "item_in_inv", "inv_in_current_loc"]}
+        },
+    "messages": {
+        "start_msg": "After a few days, you realise the moss you've been carrying around has tried out. Damn. Or, maybe you wanted some [[dried moss]]...?"
         }
     },
 "scroll_drops_key": {
@@ -121,7 +137,7 @@
         "start_msg": "As the [[]] breaks, <material_msg>"
         }
     },
-  "item_is_burned": {
+"item_is_burned": {
     "is_generated_event": true,
     "repeats": "forever",
     "immediate_action": {

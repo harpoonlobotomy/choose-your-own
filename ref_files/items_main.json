@@ -130,6 +130,31 @@
     "smash_attack": 5,
     "smash_defence": 5
   },
+  "dried moss": {
+    "alt_names": ["dry moss", "clump of dry moss"],
+    "can_pick_up": true,
+    "descriptions": {
+      "is_singular": "a small clump of dried moss. Dry and brown but still soft, you're oddly glad you have it.",
+      "is_plural": "a few clumps of brown dried moss."
+    },
+    "has_multiple_instances": 1,
+    "single_identifier": "moss",
+    "plural_identifier": "clumps of dry moss",
+    "item_size": "a_few_marbles",
+    "item_type": [
+      "can_pick_up",
+      "is_cluster",
+      "standard"
+    ],
+    "nicenames": {
+      "is_singular": "a clump of dry moss",
+      "is_plural": "a few dry moss clumps"
+    },
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
+  },
   "glass jar": {
     "can_be_added_to": true,
     "can_be_closed": false,

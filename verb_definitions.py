@@ -38,7 +38,7 @@ meta = "meta"
 #    "verb_noun_noun": f"{verb} o{null} {noun} {null} o{null} {noun}"
 #}
 cardinals = ["north", "east", "south", "west"]
-directions = ["down", "up", "left", "right", "away", "toward", "towards", "closer", "further", "to", "into", "against", "across", "at", "in", "on", "from", "inside", "away", "into", "elsewhere", "here", "through"]
+directions = ["down", "up", "left", "right", "away", "toward", "towards", "closer", "further", "to", "into", "against", "across", "at", "in", "on", "from", "inside", "outside", "away", "into", "elsewhere", "here", "through"]
 ## "in front of"?? Need to be able to cope with that.
 
 nulls = ["the", "a", "an"]

@@ -4563,3 +4563,109 @@ Okay. Think it's cleaned up now. Always adds 2 newlines before input str, and pr
 
 9.01am
 Going to work on the time passage now to properly implement timed triggers. Currently time passage doesn't happen at all so it's not implemented beyond a print line, let alone testable.
+
+Well I was. Trying to make sure the routing is consistent, so all player movement goes through the same place etc. Have realised I have `def turn_around(new_cardinal)` (in player_movement), and `def turn_cardinal(prospective_cardinal, turning = True)` (in verb_actions), and both get called directly. turn_cardinal gets called 13 times in player_movement, and if a turn is suitable it then refers to turn_around(). But, turn_around() never gets called directly andmore, I changed the only call that did, only  turn_cardinal. I guess the question is if turn_around even needs to be called, or if it should always just go through relocate() which then determines if it's a turn or a move (turn == same place, different cardinal, move == different place)
+
+Oh - and relocate /does/ use turn_around. So then is it better to always send through relocate and let that call turn_around, rather than having a separate function tell it to turn around and relocate also calling turn_around?
+
+Well turn_cardinal does do the turn left/right, which does belong there because that's exclusively a turn action.
+
+So I guess no. relocate only takes new_location and new_cardinal, which are pre-processed. Though I wonder if that preprocessing can be done through a common router.
+
+Have added 'go inside/go outside'; will now check if loc.current has transition objects, and if so, will try to pass through the first. Currently works well. If I later have locations with multiple transition objs, esp if they lead to different places, will need to rework a little to prefer already open options to closed ones, etc. But for now it just takes the first and goes with that.
+
+Going to leave def turn_cardinal as is for now, I think the purposes are distinct enough, just. It is silly though, it really should just be one big function of 'you wanna go somewhere'. But rn how that's determined is very function specific. But maybe it should be relocate that directs through doors etc, instead of def go having to figure it out. Not sure yet.
+
+Anyway. Was going to work on time passage.
+
+Also - For timed triggers, do we always want to make them time-block based, not days? So just multiply the days accordingly and over ever use timeblocks? Makes more sense to just calculate it once.
+
+        self.is_item_trigger = False
+        self.item_inst = None
+        self.time_unit = timed_dict["time_unit"]  # "days",
+        self.full_duration = timed_dict["full_duration"]  # 3,
+        timed_dict = trigger_dict["timed_trigger"]
+        event.constraint_tracking[self.time_unit] = {"full_duration": self.full_duration, "current_duration": 0}
+
+Oh, the moss events aren't added to by_state. Oops.
+
+Fixed that.
+
+2.50
+            "effect_on_end": {"init_items": {
+            "0": {"item_name": "dried moss"}}},
+Have added this to the timedTrigger. Going to backdate it to add it to the event so it fits inside 'do_immediate_actions'.
+
+#3.37pm
+Only thing about adding end_types to triggers instead of events is that I have to assign that trigger's end type to events so it prints correctly unless I want to start sending triggers to event printing, which I don't.
+(That's a nonsequiter, have been working on issue with the triggers.)
+
+Hmmmm.
+Need to figure out the best way to set an event so that if the moss dries when you're not carrying it, it plays a variant 'moss has dried' event, but only when you interact with that dried moss.
+Perhaps, the successful event end doesn't trigger an end print, but generates the moss and starts a new event and checks it for triggers immediately. If in inventory, play new event msg immediately. If not, then the new event trigger is basically 'when you interact with the dry moss again'.
+
+
+Oh interesting:
+
+After a few days, you realise the dried moss you've been carrying around has tried out. Damn. Or maybe you wanted some dry
+Failed to find the correct function to use for <verbInstance enter (13d011d1-9f9c-4bf2-a144-2ec085f2cdc5)>: Set changed size during iteration
+
+So it errored here:
+        "end_msg": "After a few days, you realise the [[moss]] you've been carrying around has tried out. Damn. Or maybe you wanted some dry [[moss]]...?",
+
+I'm assuming the moss didn't get colour yet, and so it errored. Yup.
+
+6.05pm
+Okay so it took all day because I'm exhausted and it's not very well done. But changing locations now:
+a) adds 1 to the timeblock counter for timed triggers of current events (which I added today)
+b) inits items if required by the timed event ending due to completion of required duration.
+c) as above but for starting new events. Specifically: If you keep the moss dry for three days, it becomes dry moss. 'becoming dry moss' is an event, because it can't just be the event-end print - what if you put it down and left? Weird to get a random message that moss you've not seen for 3 days is dry now. So instead, next time you interact with the moss, then it prints it. That's done by a secondary event, triggered by the end of the timer. If the moss is in inv or interacted with thereafter, that event runs and prints the line. Not entirely working yet but it kinda works.
+
+11.28am, 27.2.26
+Hm.
+
+(  Func:  init_descriptions    )
+self.location in repr: <placeInstance work shed (2f63234f-c841-4a72-9c32-ac7e31800879)>, self: dried moss
+
+So at some point, it applies a placeinstance as location for dried moss, the item being init-d by init_items effect of moss_dries.
+
+clean_altered_state (eventRegistry) is not always needed. Not everything has an altered state.
+
+The error is somewhere in move_item:
+
+(  Func:  move_item    )
+self.location in repr: <cardinalInstance north no_place (f7dfa448-b622-410a-9865-d4e23be14dbf)>, self: dried moss
+inst: <ItemInst dried moss / (940bf802e245) / north no_place / None / 1>
+location: <placeInstance work shed (e0dcd1c8-5adc-45dd-98f8-b3b494a40456)>
+(  Func:  combine_clusters    )
+self.location in repr: <cardinalInstance north no_place (f7dfa448-b622-410a-9865-d4e23be14dbf)>, self: dried moss
+no local compound, returning shard from move_cluster_item
+(  Func:  init_descriptions    )
+self.location in repr: <placeInstance work shed (e0dcd1c8-5adc-45dd-98f8-b3b494a40456)>, self: dried moss
+
+Adding some prints to see what's happening in move_item.
+
+Removes from original location, which is north no_place.
+The location is <placeInstance work shed (b7925ac9-44f4-4385-9605-40f9ea31e66f)> - not a cardinal as is required.
+
+Oh, it's the location being sent to update_timed_events.
+
+12.09pm
+
+Fixed that.
+
+Now, trying to get the newly init'd item to work better. I think I just need to redo this whole thing, it's so messy.
+
+Immediate issue:
+
+This:
+    [<ItemInst dried moss / (b13636cc41cb) / north inventory_place / finding_dried_moss / ..fb13e6034218 / 1>]
+is found by_alt_name.
+
+But local_nouns doesn't include it:
+
+local_nouns: {'moss': <ItemInst moss / (4023a3c7d9e2) / north inventory_place / moss_dries / ..4cd2357c25f2 / 1>, 'secateurs': <ItemInst secateurs / (256483686abb) / north work shed / None / >, 'severed tentacle': <ItemInst severed tentacle / (2614cc4b3471) / north inventory_place / None / >, 'local map': <ItemInst local map / (c4f1ca47bbec) / north work shed / reveal_iron_key / ..45f075238a44 / >, 'paperclip': <ItemInst paperclip / (e1a2513e5fb0) / north inventory_place / None / >, 'iron key': <ItemInst iron key / (26c84348502c) / north work shed / reveal_iron_key / ..45f075238a44 / >, 'fashion magazine': <ItemInst fashion magazine / (6b58b538c5f2) / north inventory_place / None / >, 'wooden door': <ItemInst wooden door / (3f5b21e77b9c) / west graveyard / None / >}
+
+"remove_items": {"item_name": "moss", "item_is_trigger_inst": true},
+
+I hadn't added it to locRegistry.inv_place.items. It's much more convenient to have that option available but it's stupid to keep a separate set instead of just checking for items with that location attr. :/

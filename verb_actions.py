@@ -3,7 +3,7 @@
 from logger import logging_fn, traceback_fn
 from env_data import cardinalInstance, placeInstance, locRegistry as loc
 from interactions import item_interactions
-from interactions.player_movement import new_relocate, turn_around
+from interactions.player_movement import relocate
 from itemRegistry import itemInstance, registry
 from misc_utilities import assign_colour, col_list, generate_clean_inventory, has_and_true, is_plural_noun, smart_capitalise, print_failure_message
 from printing import print_yellow
@@ -124,11 +124,11 @@ def is_loc_current_loc(location=None, cardinal=None):
             return 1, current_location, current_cardinal
     return 0, current_location, current_cardinal # 0 if not matching. Always returns current.
 
-def get_transition_noun(noun, format_tuple, input_dict, take_first=False):
+def get_transition_noun(noun, format_tuple, input_dict, take_first=False, return_if_exterior = False):
     """Finds transition objects from `loc_exterion` nouns, returning the first transition object found."""
     logging_fn()
     local_items_list = registry.get_item_by_location(loc.current)
-
+    print(f"local items list: {local_items_list}")
     if isinstance(noun, list) and len(noun) == 1:
         noun = noun[0]
 
@@ -137,7 +137,9 @@ def get_transition_noun(noun, format_tuple, input_dict, take_first=False):
             if loc.by_name.get(noun.name):
                 location = loc.by_name[noun.name]
                 if hasattr(location, "loc_exterior_items") and location.loc_exterior_items:
-                    print(f"Location {location.name} has exterior items: {location.loc_exterior_items}")
+                    print(f"Location {location.name} has exterior items: {location.loc_exterior_items}") ### I don't know it this ever applies...
+                    if return_if_exterior:
+                        return True
                 if hasattr(location, "transition_objs") and location.transition_objs:
                     print(f"Location {location.name} has transition items: {location.transition_objs}")
 
@@ -599,6 +601,7 @@ def turn_cardinal(prospective_cardinal, turning = True):
             return
 
         else:
+            from interactions.player_movement import turn_around
             turn_around(to_card)
     else:
         if turning:
@@ -665,13 +668,13 @@ def go_through_door(noun:itemInstance, open_door:bool, destination:cardinalInsta
             print()
         # want like, recklessly/cautiously/quietly, depending on playstyle. Long way off that but wanted to note it.
         if isinstance(destination, cardinalInstance):
-            return new_relocate(new_location = destination.place, new_cardinal=destination)
+            return relocate(new_location = destination.place, new_cardinal=destination)
         else:
-            return new_relocate(new_location=destination)
+            return relocate(new_location=destination)
 
     else:
         print(f"You see the closed {assign_colour(noun)} in front of you; you can't phase through a closed door.")
-        return new_relocate(new_cardinal=noun.location)
+        return relocate(new_cardinal=noun.location)
 
 def move_through_trans_obj(noun, input_dict):
     #print(f"move_through_trans_obj, noun: {noun}")
@@ -691,7 +694,7 @@ def move_through_trans_obj(noun, input_dict):
     if not noun:
         print("Not much to go on here, no noun, no location...")
     #print(f"VERB: {verb} // location: {location} // noun: {noun}")
-    entry_words = ("enter", "go")
+    entry_words = ("enter", "go", "inside")
     leaving_words = ("leave", "depart", "exit")
     if verb in ("enter", "leave", "depart", "exit"):
         open_door = True
@@ -717,7 +720,7 @@ def move_through_trans_obj(noun, input_dict):
         currently_inside = False
 
     if currently_inside:
-        if verb in leaving_words:
+        if verb in leaving_words or (get_dir_or_sem(input_dict) and get_dir_or_sem(input_dict) == "outside" and verb == "go"):
             #print(f"verb in leaving words ({verb}) // Location: {location}")
             if location == inside_location or location == inside_location.place or not location:
                 #print("location == inside_location or not location")
@@ -814,7 +817,7 @@ def go(format_tuple, input_dict, no_noun=None): ## move to a location/cardinal/i
                         return enter(format_tuple, input_dict, noun=obj)#: # this only goes to enter if we're aiming for or leaving the interior location.
 
             print("Going to new_relocate")
-            new_relocate(new_location=location)
+            relocate(new_location=location)
             return
 
         elif cardinal_entry and not location_entry:
@@ -822,7 +825,7 @@ def go(format_tuple, input_dict, no_noun=None): ## move to a location/cardinal/i
                 turn_cardinal(cardinal_entry["instance"])
                 return
             else:
-                new_relocate(new_location=location_entry["instance"], new_cardinal = cardinal_entry["instance"])
+                relocate(new_location=location_entry["instance"], new_cardinal = cardinal_entry["instance"])
                 return
 
         elif direction_entry and not location_entry and not cardinal_entry:# and verb_entry["str_name"] in ("go", "turn", "head", "travel", "move"):
@@ -834,11 +837,15 @@ def go(format_tuple, input_dict, no_noun=None): ## move to a location/cardinal/i
                     ("Going to enter via get_noun")
                     enter(format_tuple, input_dict, get_noun(input_dict))
                     return
+                if direction_entry["text"] in ("outside", "inside"):
+                    if enter(format_tuple, input_dict):
+                        return
+                    #has_and_true(loc.current, "is_ext_location")
                 print("Sorry, where do you want to go?")
                 return
 
         elif location_entry and cardinal_entry:
-            new_relocate(new_location=location_entry["instance"], new_cardinal = cardinal_entry["instance"])
+            relocate(new_location=location_entry["instance"], new_cardinal = cardinal_entry["instance"])
             return
         print("End of if location_entry and not cardinal_entry: elif chain")
 
@@ -2018,7 +2025,9 @@ def enter(format_tuple, input_dict, noun=None):
                 for item in noun.transition_objs:
                     return move_through_trans_obj(item, input_dict)
 
-    if location:
+    if location or (not location and not noun and get_dir_or_sem(input_dict) and get_dir_or_sem(input_dict) in ("outside", "inside")):
+        if not location:
+            location = loc.current
         if hasattr(location, "transition_objs") and location.transition_objs:
             for item in location.transition_objs:
                 return move_through_trans_obj(item, input_dict)

@@ -51,7 +51,7 @@ trigger_acts = { # the k/v a verb action has to send in order to meet the trigge
 ## very similar to the one above but slightly different and worth it to keep them separate. Later events may make them diverge further, at which point I'll make it clearer.
 # the action name from verb_actions that needs to be in trig.triggers.
 
-trigger_actions = ["item_in_inv", "item_broken", "item_burned", "item_unlocked", "item_not_in_inv"]
+trigger_actions = ["item_in_inv", "item_broken", "item_burned", "item_unlocked", "item_not_in_inv", "item_interacted_with", "inv_in_current_loc"]
 
 requires_end_trigger_loc = ["none yet", "just a placeholder", "for something that needs you to be in a specific place."]
 
@@ -94,6 +94,7 @@ class eventInstance:
         self.limits_travel = False
         #print(f"\n{name} ATTR@ ::: {attr} \n\n")
         #print(f"STATE: {self.state}")
+        self.init_items = {}
         self.held_items = (attr.get("held_items") if attr.get("held_items") else set())
         self.hidden_items = (attr.get("hidden_items") if attr.get("hidden_items") else set()) # These were dicts with item: item_loc. I can't see where/why I'm using the location though, that should be done with in item inst identification. Changing (back?) to sets.
         self.locked_items = (attr.get("locked_items") if attr.get("locked_items") else set())
@@ -120,13 +121,21 @@ class eventInstance:
             self.limits_travel = True
 
     def __repr__(self):
-
-        event = f"\033[30;44m<eventInst {self.name} ..{self.short_id}>\033[0m"
-        return event
-        #return f"<eventInst {self.name} ..{self.short_id}>"#, event state: {self.state}>"#, all attributes: {self.attr})>"
+        from config import coloured_repr
+        if coloured_repr:
+            event = f"\033[30;44m<eventInst {self.name} ..{self.short_id}>\033[0m"
+            return event
+        else:
+            return f"<eventInst {self.name} ..{self.short_id}>"#, event state: {self.state}>"#, all attributes: {self.attr})>"
 
 
 class timedTrigger:
+
+    def convert_to_timeblocks(self): # putting it here for now so it's more obvious for later alteration.
+        if self.time_unit == "day":
+            self.full_duration = self.full_duration * 12
+
+        return self
 
     trigger_coloured = "[\033[42mtimedTrigger\033[0m]]"
 
@@ -159,8 +168,18 @@ class timedTrigger:
         timed_dict = trigger_dict["timed_trigger"]
         self.time_unit = timed_dict["time_unit"]  # "days",
         self.full_duration = timed_dict["full_duration"]  # 3,
+        self.current_duration = 0
+        self.convert_to_timeblocks()
 
-        event.constraint_tracking[self.time_unit] = {"full_duration": self.full_duration, "current_duration": 0}
+           # if attr["end_trigger"].get("item_trigger"):
+           #     self.end_type = (attr["end_trigger"]["item_trigger"].get("end_type") if attr["end_trigger"]["item_trigger"].get("end_type") != None else "success")
+        self.end_type = trigger_dict.get("end_type") if trigger_dict.get("end_type") else "end"
+        print(f"timed trigger {trigger_dict.get("end_type")}")# // end type: self.end_type: {self.end_type}")
+        self.effect_on_completion = trigger_dict["effect_on_completion"]
+
+        event.timed_triggers.add(self)
+
+        #event.constraint_tracking[self.time_unit] = {"full_duration": self.full_duration, "current_duration": 0}
 
         self.persistent_condition = timed_dict["persistent_condition"]  # true,
 
@@ -215,7 +234,7 @@ class timedTrigger:
 
             event.condition_items.add(self.item_inst)
 
-            event.constraint_tracking[self.time_unit].update({"required_condition": condition, "condition_item": self.item_inst})
+            #event.constraint_tracking[self.time_unit].update({"required_condition": condition, "condition_item": self.item_inst})
 
             event.items.add(self.item_inst)
 
@@ -289,6 +308,7 @@ class Trigger:
                 self.item_inst_loc = trigger_dict["trigger_item_loc"]
                 if self.end_trigger:
                     event.end_trigger_location = self.item_inst_loc
+
                 self.item_flags_on_start = trigger_dict["item_flags_on_start"]
                 self.item_flags_on_end = trigger_dict["item_flags_on_end"]
 
@@ -326,6 +346,9 @@ class eventRegistry:
         self.by_id = {}
         self.by_name = {}
         self.by_state = {}
+        #self.by_state = {0: (i for i in self.events if self.events and i.state == 0),
+        #                 1: (i for i in self.events if self.events and i.state == 1),
+        #                 2: (i for i in self.events if self.events and i.state == 2)}
         self.trigger_items = {}
         self.travel_is_limited = False
         self.triggers = set([Trigger])
@@ -341,7 +364,7 @@ class eventRegistry:
         self.condition_items = set()
 
         for state in event_states.values():
-            self.by_state[state] = set()
+            self.by_state[state] = set()#set(i for i in self.events if i.state == state)
 
         #self.remove_event_on_failure = set() #add instances with remove_event_on_failure: true here, delete them and their triggers (and item.event assignement) when failed. Mostly things like the moss, which will stop/start and have no impact. Not standard, usually I'll keep them around and just not marked as event_keys. # Just storing it on the event instead, makes more sense.
 
@@ -367,7 +390,10 @@ class eventRegistry:
             event.state = 2 # (future event)
 
         if self.timed_triggers:
-            events.timed_events.add(self)
+            print("Event has timed triggers")
+            events.timed_triggers.add(self)
+        else:
+            print("Event does not have timed triggers")
 
         return event, event_attr
 
@@ -400,8 +426,10 @@ class eventRegistry:
 
         if noun and noun.name not in event.item_names:
             event.item_names.add(noun.name)
+            print(f"Event.item_names: {event.item_names}")
 
         for item in event.item_names:
+            print(f"item in event.item_names: {item}\n\n")
             if event.item_name_to_inst.get(item) and not noun:
                 continue
             instance = None
@@ -418,6 +446,8 @@ class eventRegistry:
                             event.item_name_to_inst[loc_item.name] = instance
                             event.items.add(instance) # vv
                             instance.event = event ## ^^ These were not added previously. I'm pretty sure they should be.
+
+
 
             if noun:
                 instance = noun
@@ -436,7 +466,11 @@ class eventRegistry:
             if event.state != 1:
                 for item in missing:
                     event.generate_on_start.add(item)
-            print(f"Missing instances: [[{missing}]]")
+                print(f"Missing instances: [[{missing}]]")
+            else:
+                for item in missing:
+                    inst = registry.init_single(item)
+                    registry.move_item(inst, location = "current")
 
     def get_event_by_noun(self, event_name, noun_inst):
 
@@ -508,6 +542,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
 'material_type': 'generic', 'on_break': 'broken [[item_name]]'}
         """
         #from itemRegistry import material_type
+        action = None
         if state_change == "is_burned":
             state_change = "already_burned"
             action = "on_burn"
@@ -517,11 +552,81 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
         #print(f"state change: {state_change}")
         item_entry["material_type"] = state_change
         #if not item_entry["nicenames"]:
-        if "is_cluster" in item_entry["item_type"] and not item_entry.get("is_broken"):
+        if "is_cluster" in item_entry["item_type"] and not item_entry.get("is_broken") and action: ## This is silly. Why would the nicenames of cluster items vary from the parents?
             item_entry["nicenames"] = {"generic": f"some {item_name}"}
             item_entry[action] = None
         return item_entry
 
+    def update_timed_events(self, new_location):
+        logging_fn()
+        current_events = set(events.by_state[1])
+        for event in current_events:
+            print(f"event in events.by_state: {event}")
+            event:eventInstance # this is handy. Only for type hints, but handy.
+            if event.timed_triggers:
+                print(f"Event timed triggers: {event.timed_triggers}")
+                for trigger in event.timed_triggers:
+                    trigger:timedTrigger
+                    trigger.current_duration += 1
+                    print(f"trigger current_duration:: {trigger.current_duration}")
+                    if trigger.current_duration >= trigger.full_duration:
+                        print("Timed trigger requirements met.")
+                        print(f"Trigger end type: {trigger.end_type}")
+                        #if trigger.end_type == "success": # doesn't matter what the end type is, it's still completed. The full duration being met means success regardless.
+                        #    print("Trigger has triggered event success")
+                        if hasattr(trigger, "effect_on_completion"):
+                            print("trigger.effect_on_completion: ", trigger.effect_on_completion)
+### Everything below here should only run from the above branch. It's just here for testing on move 1.
+                    if hasattr(trigger, "effect_on_completion"):
+                        print("trigger.effect_on_completion: ", trigger.effect_on_completion)
+                        noun = None
+
+                        if trigger.effect_on_completion.get("start_event"):
+                            if trigger.effect_on_completion.get("init_items"):
+                                print("start_event/init_items")
+                                from itemRegistry import registry
+                                item_name = trigger.effect_on_completion["init_items"].get("item_name")
+                                if not item_name:
+                                    print("init_items does not have item_name")
+                                    return None, None
+                                print(f"item name: {item_name}")
+                                if len(item_name.split()) > 1:
+                                    registry.plural_words[item_name] = tuple(item_name.split())
+
+                                entry = registry.item_defs.get(item_name)
+                                print(f"entry: {entry}")
+                                if entry:
+                                    print(f"New location: {new_location}")
+                                    inst = registry.init_single(item_name, entry)
+                                    if hasattr(trigger, "item_inst") and trigger.item_inst:
+                                        new_location = trigger.item_inst.location
+                                    print(f"trigger.item_inst: {trigger.item_inst}")
+                                    print(f"New location: {new_location}")
+                                    if registry.by_location.get(inst.location):
+                                        registry.by_location[inst.location].remove(inst)
+                                    inst.location = new_location
+                                    registry.by_location[inst.location].add(inst)
+                                    from env_data import locRegistry
+                                    if inst.location == locRegistry.inv_place:
+                                        locRegistry.inv_place.items.add(inst)
+                                    #registry.move_item(inst, new_location) # so new items are added immediately to where you just arrived. Actually though it should get its location from the original item that triggered this..... #TODO
+                                    if inst:
+                                        print(f"Noun: {noun} // inst: {inst}")
+                                        noun = inst
+                                else:
+                                    print(f"No item entry for {item_name} in item defs.\n\n")
+                                    return None, None
+                            print(f"About to do immediate actions to start event. Noun: {noun}")
+                            if trigger.effect_on_completion.get("remove_items"):
+                                print(f"remove items: {trigger.effect_on_completion["remove_items"]}")
+                                if trigger.effect_on_completion["remove_items"].get("item_is_trigger_inst"):
+                                    if not trigger.item_inst:
+                                        print("Event requires a trigger.item_inst but none found.")
+                                    item_to_remove = trigger.item_inst
+                                    registry.delete_instance(item_to_remove)
+                        new_event = register_generated_event(trigger.effect_on_completion["start_event"], noun)
+                        self.start_event(event_name = new_event.name, event = new_event, noun=noun)
+                        logging_fn(f"STARTED EVENT: {new_event}, ITEM: {noun}, event state: {new_event.state}")
 
     def manage_constraint_tracking(event):
         """
@@ -621,7 +726,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
 
                 trigger_dict.update({
                     "event": event,
-                    "end_type": (trig_data["item_trigger"].get("end_type") if trig_data.get("item_trigger") else None),
+                    "end_type": (trig_data["item_trigger"].get("end_type") if trig_data.get("item_trigger") else "end"),
                     "trigger_model": "item_trigger",
                     "trigger_type": trigger,
                     "trigger_item": trigger_item,
@@ -661,9 +766,11 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                             print("no trigger check")
                     #else:
                         #print(f"event {event} is not is_generated_event")
-                    #print(f"Trig data timed trigger: {trig_data["timed_trigger"]}")
+                    print(f"Trig data timed trigger: {trig_data["timed_trigger"]}")
+                    trigger_dict["end_type"] = trig_data["timed_trigger"].get("end_type") if trig_data["timed_trigger"].get("end_type") else "end"
                     trigger_dict["trigger_model"] = "timed_trigger"
                     trigger_dict["timed_trigger"] = trig_data["timed_trigger"]
+                    trigger_dict["effect_on_completion"] = trig_data["effect_on_completion"]
                     event.event_keys.add(trigger_item)
                     event.triggers.add(timedTrigger(trigger_dict, event))
                     #print(f"EVENT TRIGGERS: {event.triggers}")
@@ -836,20 +943,24 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
             return ""
 
         end_type = event.end_type
-        if msg_type in ("start", "end"):
+        if msg_type in ("start", "end", "success"):
             if msg_type == "end":
                 if end_type and end_type == "failure":
                     msg_type = "failure"
+            elif msg_type == "success":
+                msg_type = "end" ## This is so dumb.
 
         return print_current(event, state_type=msg_type, print_text=print_txt, noun=noun)
 
     def do_immediate_actions(self, event:eventInstance, trig:Trigger|
-                             timedTrigger, noun:itemInstance=None):
+                             timedTrigger, noun:itemInstance=None, end_of_timed=False):
 
         inst = children = None
         if hasattr(event, "init_items") and event.init_items:
             for each in event.init_items:
+                print(f"Each: {each}")
                 for k, outcome_name in event.init_items[each].items():
+                    print(f"k: {k}, outcome_name: {outcome_name}")
                     if k == "item_name":
                         entry = None
                         inst = None
@@ -901,7 +1012,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                         if not entry:
                             print(f"No item def to use as a basis for {outcome_name}/{item_name}. Exiting. K: {k}, outcome_name: {outcome_name}")
                             exit()
-
+        ## clean_altered_state is not always needed. Not everything has an altered state.
                         entry = self.clean_altered_state_def(item_name, entry, outcome_name)
                         registry.item_defs[item_name] = entry
                         plural_words_dict = registry.plural_words
@@ -913,6 +1024,10 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                             from logger import traceback_fn
                             traceback_fn()
                             exit()
+
+                        if end_of_timed:
+                            print(f"Returning with inst: {inst}")
+                            return inst
 
                         if hasattr(inst, "on_burn") and inst.on_burn == "ash pile": # for papers etc that can be burned twice. Need to define this clearly somewhere but this'll work for now.
                             inst.is_burned = False
@@ -934,7 +1049,15 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
 
                     else:
                         print(f"No item definition for {item_name}, cannot generate item for event {event}.")
-                        return None
+                        return None, None
+
+
+        if hasattr(event, "event_to_start") and event.event_to_start:
+            new_event_name = event.event_to_start
+            print(f"New event name in do_immediate_actions: {new_event_name}")
+            new_event = register_generated_event(new_event_name, noun)
+            return new_event
+            #outcome, moved_children = check_triggers(new_event, noun=noun, reason=reason)
 
         if event.remove_items:
             #print(f"event.remove_items: {event.remove_items}")
@@ -995,6 +1118,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
             return
 
         if to_be_current.generate_on_start:
+            print(f"to_be_current.generate_on_start: {to_be_current.generate_on_start}")
             from itemRegistry import registry
             for item in to_be_current.generate_on_start: # will only generate one per item_name (as it's a set), but I think this is preferred. Will need to add a way for an object to have multiple instances of item_name, though. TODO: this.
                 inst = None
@@ -1040,6 +1164,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
     def end_event(self, event_name, trigger:Trigger=None, noun=None):
         logging_fn()
         print_desc_again = False # Use to reprint the local description if items have become unhidden. Do it in a better way later, for now this will do.
+        print(f"Event: {event_name}, trigger: {trigger}, noun: {noun}")
         if isinstance(event_name, str):
             event_to_end = self.event_by_name(event_name)
         else:
@@ -1048,8 +1173,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
         if event_to_end in self.event_by_state(1):
             self.by_state[1].remove(event_to_end)
             self.by_state[0].add(event_to_end)
-            if event_to_end in self.by_state[0]: # redundant but just in case anything went super wrong:
-                event_to_end.state = 0
+            event_to_end.state = 0
 
             if event_to_end.limits_travel:
                 no_limits = True
@@ -1102,12 +1226,20 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                 if hasattr(item, "is_event_key"):
                     item.is_event_key = False
 
-            if hasattr(event_to_end, "end_type") and event_to_end.end_type == "failure":
-                self.play_event_msg(msg_type="failure", event=event_to_end, print_txt=True, noun=noun)
-
-            else:
-                print("")
-                self.play_event_msg(msg_type="end", event=event_to_end, print_txt=True, noun=noun)
+            #print(f"End_type: {event_to_end.end_type}")
+            #print(f"Trigger: {trigger} // End_type: {trigger.end_type}")
+            event_to_end.end_type = trigger.end_type
+            self.play_event_msg(msg_type=trigger.end_type, event=event_to_end, print_txt=True, noun=noun)
+            #if hasattr(trigger, "end_type") and trigger.end_type == "failure":
+            #    print("printing failure message")
+            #    self.play_event_msg(msg_type="failure", event=event_to_end, print_txt=True, noun=noun)
+#
+            #elif hasattr(trigger, "end_type") and trigger.end_type != None:
+            #    self.play_event_msg(msg_type=trigger.end_type, event=event_to_end, print_txt=True, noun=noun)
+#
+            #else:
+            #    #print("") ## Why does this differ?
+            #    self.play_event_msg(msg_type="end", event=event_to_end, print_txt=True, noun=noun)
 
             if trigger:
                 trigger.state = 0
@@ -1116,9 +1248,9 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                 get_loc_descriptions(event_to_end.end_trigger_location)
                 print(f"\nYou're facing {assign_colour(event_to_end.end_trigger_location.name)}. {event_to_end.end_trigger_location.description}")
 
+
             if hasattr(event_to_end, "end_type") and event_to_end.end_type == "failure" and hasattr(event_to_end, "remove_event_on_failure") and event_to_end.remove_event_on_failure:
         ## Genuinely not sure how useful or needed this is. If I just remove the event from events.events and remove the flag from the items, would that be enough? Idk. Will loko it up later. for now, this.
-
                 triggers_to_remove = set()
                 if event_to_end.triggers:
                     for trigger in event_to_end.triggers:
@@ -1138,10 +1270,13 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
         else:
             print(f"Cannot set event {event_name} as ended event, because it is not present in current_events: {self.event_by_state(1)} (type: { type(self.event_by_state(1))})")
             exit()
+        print("End of event")
 
     def check_movement_limits(self)-> dict:
 
         allowed_locations_by_loc = {}
+
+        print("for event in iter")
         for event in self.by_state[1]:
             if hasattr(event, "travel_limited_to"):
                 for loc in event.travel_limited_to:
@@ -1170,51 +1305,58 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                 self.start_event(event_name = event.name, event = event, noun=noun_inst)
                 return 1, None
 
+    def test_str_triggers(self, reason, trig, noun, event):
+        if reason in trig.triggers:
+            # print(f"reason in trig.triggers: {reason} /// {trig.triggers}")
+            #if not trig.start_trigger:
+                #print(f"This trigger [{trig}] is not a start trigger.")
+            if reason in requires_end_trigger_loc:
+                if hasattr(trig, "item_inst_loc") and getattr(trig, "item_inst_loc") != None and trig.item_inst_loc != noun.location:
+                    return 0
+
+            if hasattr(trig, "exceptions") and trig.exceptions:
+                for exception in trig.exceptions:
+                    print(f"Exception: {exception}")
+                    if exception == "current_loc_is_inside":
+                        from env_data import locRegistry
+                        #print(f"locRegistry.current.place: {locRegistry.current.place}")
+                        #print(f"inside: {locRegistry.current.place.inside}")
+                        if locRegistry.current.place.inside:
+                            self.play_event_msg( msg_type="exception", event=event, print_txt=True, noun=noun)
+                            return 1
+
+            self.end_event(event, trig, noun)
+            return 1
+
     def is_event_trigger(self, noun_inst, reason = None) -> (int|None):
         logging_fn()
-        #print(f"Start of is_event_trigger. Noun details: {vars(noun_inst)}")
+        print(f"Start of is_event_trigger. Noun details: {vars(noun_inst)}")
         def check_triggers(event:eventInstance, noun:itemInstance, reason) -> (int|None)|list:
             logging_fn()
             moved_children = None
             if event.end_triggers:
+                #end_triggers = list(i for i in event.end_triggers)
                 for trig in event.end_triggers:
-                    if hasattr(trig, "persistent_condition"):
-                        #print("Trigger is a persistent_condition")
-                        if reason and isinstance(reason, tuple): # new rule: persistent conditions should always send reason as a tuple.
-                            duration, time_unit = reason
-                            if time_unit != trig.time_unit:
-                                print(f"Incoming time_unit (`{time_unit}`) doesn't match the trigger's expectation: `{trig.time_unit}`")
-                                exit()
-                            if duration >= trig.full_duration:
-                                print("Duration met, end trigger.")
-                                self.end_event(event, trig, noun=noun_inst)
-                                return 1, None
-                        # This should only trigger by time
+                    if isinstance(trig, timedTrigger):
+                        print("This will be dealt with as time passes. Ignore here.")
                         continue
-
+                    print(f"Trig is item trigger: {trig.is_item_trigger}")
+                    print(f"noun: {noun}")
+                    print(f"trig.item_inst: {trig.item_inst}")
                     if trig.is_item_trigger and trig.item_inst == noun:
                         if isinstance(reason, str):
-                            if reason in trig.triggers:
-                               # print(f"reason in trig.triggers: {reason} /// {trig.triggers}")
-                                #if not trig.start_trigger:
-                                    #print(f"This trigger [{trig}] is not a start trigger.")
-                                if reason in requires_end_trigger_loc:
-                                    if hasattr(trig, "item_inst_loc") and getattr(trig, "item_inst_loc") != None and trig.item_inst_loc != noun.location:
-                                        continue
+                           success = self.test_str_triggers(reason, trig, noun, event)
+                           if success:
+                               return 1, None
 
-                                if hasattr(trig, "exceptions") and trig.exceptions:
-                                    for exception in trig.exceptions:
-                                        print(f"Exception: {exception}")
-                                        if exception == "current_loc_is_inside":
-                                            from env_data import locRegistry
-                                            #print(f"locRegistry.current.place: {locRegistry.current.place}")
-                                            #print(f"inside: {locRegistry.current.place.inside}")
-                                            if locRegistry.current.place.inside:
-                                                self.play_event_msg( msg_type="exception", event=event, print_txt=True, noun=noun)
-                                                return 1, None
-
-                                self.end_event(event, trig, noun)
-                                return 1, None
+                        elif isinstance(reason, list):
+                            for item in reason:
+                                success = self.test_str_triggers(item, trig, noun, event)
+                                if success:
+                                    print(f"Success for {item}")
+                                    return 1, None
+                                else:
+                                    print(f"No success for {item}")
 
                         elif isinstance(reason, tuple):
                             #print(f"REASON TUPLE: {reason}, len: {len(reason)}") # will it always need to go to inner? Not sure.
@@ -1243,13 +1385,34 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                         print(f"trig.is_item_trigger: {trig.is_item_trigger}")
                         if isinstance(reason, str):
                             if reason in trig.triggers:
-                                reason = tuple((reason))
-                                print(f"Reason is in trig.triggers: {reason} // trig.triggers: {trig.triggers}")
+                                #reason = tuple((reason))
+                                print(f"str Reason is in trig.triggers: {reason} // trig.triggers: {trig.triggers}")
+                                success = self.test_str_triggers(reason, trig, noun, event)
+                                if success:
+                                    print(f"Success for {item}")
+                                    return 1, None
+
+                        elif isinstance(reason, list):
+                            for item in reason:
+                                success = self.test_str_triggers(item, trig, noun, event)
+                                if success:
+                                    print(f"Success for {item}")
+                                    return 1, None
+                                else:
+                                    print(f"No success for {item}")
                         if isinstance(reason, tuple):
                             print("checking reason tuple")
                             outcome, moved_children = self.check_reason_tuple(reason, event, trig, noun_inst)
                             if outcome:
                                 return outcome, moved_children
+                        elif isinstance(reason, list): ## currently only happening for the immediate action timed triggers. Needs fixing so badly.
+                            print(f"Reason is a list: {reason}")
+                            for item in reason:
+                                item = tuple((item))
+                                outcome, moved_children = self.check_reason_tuple(reason, event, trig, noun_inst)
+                                if outcome:
+                                    return outcome, moved_children
+
                 print("end of event.start_triggers")
 
         if noun_inst.event:
@@ -1279,9 +1442,9 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                         print(f"intake_event.triggered_by: {intake_event.start_trigger["item_trigger"].get("triggered_by"):}")
                         if isinstance(reason, str):
                             if reason in intake_event.start_trigger["item_trigger"].get("triggered_by"):
-                                event = register_generated_event(event_name, noun_inst, reason_str = reason)
+                                event = register_generated_event(event_name, noun_inst)
                                 self.start_event(event_name = event.name, event = event, noun=noun_inst)
-                                print(f"STARTED EVENT: {event}, ITEM: {noun_inst}")
+                                print(f"STARTED EVENT: {event}, ITEM: {noun_inst}, event state: {event.state}")
                                 return "success", None # I don't think this will ever have moved_children? If it does I'll need to change things.
 
             if event.no_item_restriction[noun_inst.name] == noun_inst:
@@ -1303,8 +1466,8 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                 if not event_name:
                     print(f"No event found with this attr trigger reason: {reason}. Cannot generate event. (Not a problem if it wasn't expected. Tailor this later.)")
                     return None, None
-                event = register_generated_event(event_name, noun_inst, reason_str)
-                outcome, moved_children = check_triggers(event, noun=noun_inst, reason=reason) # Should this not be reason=reason_str? I just do the loop again here... #TODO
+                event = register_generated_event(event_name, noun_inst)
+                outcome, moved_children = self.is_event_trigger(noun=noun_inst, reason=reason) # Should this not be reason=reason_str? I just do the loop again here... #TODO
                 return outcome, moved_children
             else:
                 return None, None
@@ -1314,7 +1477,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
             if not event_name:
                 #print(f"No event found with this attr trigger reason: {reason}. Not unexpected, no current enents would trigger this. Delete msg later.)")
                 return None, None
-            event = register_generated_event(event_name, noun_inst, reason_str)
+            event = register_generated_event(event_name, noun_inst)
             outcome, moved_children = check_triggers(event, noun=noun_inst, reason=reason)
 
         return outcome, moved_children
@@ -1382,11 +1545,8 @@ class eventIntake:
                             for item in val["triggered_by"]:
                                 self.attr_triggers.add(item)
 
-        if self.end_trigger:
-            if attr["end_trigger"].get("item_trigger"):
-                self.end_type = (attr["end_trigger"]["item_trigger"].get("end_type") if attr["end_trigger"]["item_trigger"].get("end_type") != None else "success")
-        else:
-            self.end_type = None
+        self.end_type = "end" ## just default to 'end', overwrite with specifics by trigger.
+
         if attr.get("effects"):
             for effect in attr.get("effects"):
                 if effect_attrs.get(effect):
@@ -1403,7 +1563,8 @@ class eventIntake:
 
         if self.is_generated_event:
             if self.start_trigger_is_item:
-                self.match_item_to_name_only = attr["start_trigger"]["item_trigger"].get("match_item_by_name_only")
+                if attr.get("start_trigger") and attr["start_trigger"].get("item_trigger"):
+                    self.match_item_to_name_only = attr["start_trigger"]["item_trigger"].get("match_item_by_name_only")
 
             self.repeats = attr.get("repeats")
 
@@ -1475,7 +1636,6 @@ def add_items_to_events(event = None, noun_inst = None):
             assign_event_keys(event)
 
 
-
 class eventRegistrar:
 
     def __init__(self):
@@ -1517,14 +1677,15 @@ class eventRegistrar:
 
 registrar = eventRegistrar()
 
-def register_generated_event(event_name, noun, reason_str):
+def register_generated_event(event_name, noun):
+
     if not event_dict.get(event_name):
         print(f"Cannot generate event `{event_name}` as {event_name} is not in the event defs file.")
         exit()
 
     intake_event, _ = registrar.add_to_intake(event_name, event_dict[event_name])
     event_inst, event_entry = events.add_event(intake_event.name, vars(intake_event))
-
+    print(f"Event inst: {event_inst} // noun: {noun}")
     events.get_all_item_instances(event_inst, event_entry, noun)
     add_items_to_events(event_inst, noun)
     return event_inst

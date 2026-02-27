@@ -392,6 +392,7 @@ def separate_loot(child_input=None, parent_input=None, inventory=[]): ## should 
 
 def get_itemname_from_sqrbrkt(string, noun):
     """To replace [[item]] with <{noun} with noun.colour applied>."""
+
     parts = string.split("[[")
     other_parts = parts[1].split("]]")
     item_name_raw = other_parts[0].strip()
@@ -400,11 +401,14 @@ def get_itemname_from_sqrbrkt(string, noun):
     else:
         item_name = assign_colour(item_name_raw)
     joined = [parts[0], item_name]
+
     for part in other_parts:
         if part == item_name_raw:
             continue
         joined.append(part)
+
     compiled_str = "".join(joined)
+
     return compiled_str
 
 

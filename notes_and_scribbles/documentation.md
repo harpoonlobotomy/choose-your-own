@@ -1,5 +1,12 @@
 I need to start doing some documentation of a sort.
 
+* All items are moved (whether to/from a location, to/from inventory, etc) through `def move_item` in itemRegistry.
+* Items are run through `def is_event_trigger` in eventRegistry to check for relevant event triggers.
+* All player movement is controlled by `def relocate` in player_movement if changing .place, or .
+* Player movement that travels through transition objects to/from internal locations (eg the shed in the graveyard) is routed through `def move_through_trans_obj` in verb_actions to check the door is open and how close the player is to the internal location to determine the data sent to def relocate.
+
+* `logging_fn` is run at the top of every function (and in some additional places) to provided function traversal data with `logging` or `logging args` is set.
+
 EVENTS JSON:
 
 "event_name": {

@@ -472,7 +472,7 @@ class itemRegistry:
             inst.contained_in = None
         self.by_name.get(inst.name, list()).remove(inst)
 
-        if " " in inst.name:
+        if " " in inst.name and not self.by_name.get(inst.name): # don't remove from plural words if there are other instances with the same name.
             from verb_membrane import membrane
             if membrane.plural_words_dict.get(inst.name):
                 membrane.plural_words_dict.pop(inst.name)
@@ -751,7 +751,7 @@ class itemRegistry:
 
     def generate_alt_state_item(self, item_name, noun, state_change):
         """Generates the item_def for an altered version of an existing item, based on a specified state change (eg 'is_burned', 'is_broken').\n\nUsed for permanent replacement of one instance with another, not a simple attribute/value change."""
-
+        logging_fn()
         #print(f"\nITEM NAME: {item_name} // NOUN: {noun} // in generate_alt_state_items\n")
         item_def = self.item_defs.get(noun.name)
         if not item_def:
@@ -802,7 +802,9 @@ class itemRegistry:
             target_is_location = True
 
         if shard.location != loc.inv_place:
-            print(f"\n{shard} is not in inv_place. This is bad, how are we combining if not removing from inventory?\n\n\n")
+            ## Actually not always bad - dried moss is just instantiated in no_place, so it's allowed to start elsewhere.
+            if shard.location != loc.no_place:
+                print(f"\n{shard} is not in inv_place OR NO_PLACE. This is bad, how are we combining if not removing from inventory?\n\n\n")
         #print(f"Start of combine_clusters: shard: {shard} // target: {target}")
         if not target_is_location:
             return shard, "no_local_compound" # returning so it can be added to the container. No merging in containers. Not sure if I want to combine multiples inside containers or not, but for now we just treat them the same way as inventory.
@@ -982,6 +984,9 @@ class itemRegistry:
         logging_fn()
         from misc_utilities import assign_colour
         updated = set()
+        if isinstance(location, str) and location == "current":
+            location = loc.current
+
         if "is_cluster" in inst.item_type:
             outcome, other = self.move_cluster_item(inst, location, new_container, old_container)
             updated.add(outcome)
@@ -1007,6 +1012,7 @@ class itemRegistry:
 
         ## MOVE TO NEW LOCATION IF PROVIDED
         if location != None:
+            print(f"Location != None: {location}")
             if not self.by_location.get(location):
                 self.by_location[location] = set()
 
