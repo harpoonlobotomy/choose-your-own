@@ -87,7 +87,6 @@
     "messages": {
         "start_msg": "You pick up the [[moss]], and feel it squish a little between your fingers.",
         "exception_msg": "You put the still-damp [[moss]] down in a nice dry spot.",
-        "end_msg": "",
         "failure_msg": "You put down the still-damp [[moss]]."
         }
     },
@@ -95,7 +94,7 @@
     "remove_event_on_run": true,
     "is_generated_event": true,
     "triggered_by_event": "moss_dries",
-    "immediate_action": {
+    "end_trigger": {
         "item_trigger": {
             "trigger_item": "dried moss",
             "triggered_by": ["item_interacted_with", "item_in_inv", "inv_in_current_loc"]}

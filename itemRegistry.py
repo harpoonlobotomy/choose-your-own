@@ -920,7 +920,7 @@ class itemRegistry:
         loc.inv_place.items.add(shard)
         self.by_location[loc.inv_place].add(shard)
         setattr(shard, "is_hidden", False)
-        print(f"AT END OF SEPARATE_CLUSTERS: Compound_target: {compound_inst} // shard: {shard}\n")
+        #print(f"AT END OF SEPARATE_CLUSTERS: Compound_target: {compound_inst} // shard: {shard}\n")
         #print(f"returning {shard}")
         return compound_inst, shard # <- separated, new_singular
 
@@ -952,7 +952,7 @@ class itemRegistry:
             shard, compound_target = self.combine_clusters(inst, target)
             #printing.print_yellow(f"After combine_clusters: Shard: {shard} // compound target: {compound_target}")
             if compound_target == "no_local_compound":
-                print("no local compound, returning shard from move_cluster_item")
+                #print("no local compound, returning shard from move_cluster_item")
                 return shard, "process_as_normal"
             if compound_target.has_multiple_instances == 0: # This'll never happen in is_drop... #DETELEME later.
                 print(f"Compound_target {compound_target} is exhausted, removing from everywhere. compound_target.has_multiple_instances == 0 in itemReg.")

@@ -279,7 +279,6 @@ class placeRegistry:
         if str_loc and str_loc != loc.name:
             print(f"Cardinal gives a different location than the given loc: {str_loc} // {loc}")
 
-        print(locRegistry.cardinals[loc][cardinal_str])
         cardinal_inst = locRegistry.cardinals[loc][cardinal_str]
         return cardinal_inst
 

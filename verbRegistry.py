@@ -865,10 +865,11 @@ def initialise_verbRegistry():
                 verbs.all_meta_verbs.add(alt_word)
     verbs.formats = set(formats.values())
     verbs.adjectives = set(i.lower() for i in colours) | set(i.lower() for i in sizes)
+
     verbs.semantics = set(i for i in semantics)
     verbs.list_null_words = allowed_null
     verbs.cardinals = set(("north", "south", "east", "west"))
-    verbs.null_sem_combinations
+    verbs.null_sem_combinations = null_sem_combinations
 
     from itemRegistry import registry
 

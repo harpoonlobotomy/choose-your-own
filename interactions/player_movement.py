@@ -54,26 +54,25 @@ def check_loc_card(to_loc:placeInstance, to_card:cardinalInstance=None):
         exit(code="Exiting because reason given above.")
     return is_same_loc, is_same_card
 
+def update_loc_data(prev_loc:placeInstance, new_cardinal:cardinalInstance, print_txt = False, timeblocks = None):
 
-def relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=None):
-    logging_fn()
     from misc_utilities import assign_colour
+    from set_up_game import game
+    from choices import time_of_day
+    from env_data import weatherdict
+    import random
 
-    def update_loc_data(prev_loc:placeInstance, new_cardinal:cardinalInstance, print_txt = False):
+    new_location = new_cardinal.place
+    if prev_loc == new_cardinal.place and not timeblocks:
+        if not new_cardinal.visited:
+            new_cardinal.visited = True
+            return
 
-        from misc_utilities import assign_colour
-        from set_up_game import game
-        from choices import time_of_day
-        from env_data import weatherdict
-        import random
-        new_location = new_cardinal.place
+    if prev_loc != new_cardinal.place:
+        if not timeblocks:
+            timeblocks = 1
+
         current_weather = game.weather
-        time_index=time_of_day.index(game.time)
-        new_time_index=time_index + 1 # works
-        if new_time_index == len(time_of_day):
-            new_time_index=0
-        game.time=time_of_day[new_time_index]
-
         weather_options = list(weatherdict)
         weather_index=weather_options.index(game.weather)
         weather_variance=random.choice([int(-1), int(1)])
@@ -83,24 +82,43 @@ def relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=None
         game.weather=weather_options[new_weather_index]
         game.bad_weather = weatherdict[game.weather].get("bad_weather")
 
-        if new_location==prev_loc:
-            if print_txt:
-                print(f"You decided to stay at {assign_colour(loc.current.place.the_name, 'loc')} a while longer.\n")
+    if timeblocks:
+        time_index=time_of_day.index(game.time)
+        new_time_index=(time_index + timeblocks) % len(time_of_day) # works
+        if new_time_index == len(time_of_day):
+            new_time_index=0
+        game.time=time_of_day[new_time_index]
+        if game.time == time_of_day[0] or time_index + timeblocks > len(time_of_day):
+            game.day_number += 1
+            export = f"START OF DAY {game.day_number}"
+        else:
+            export = None
+
+    if new_location==prev_loc:
+        if print_txt:
+            print(f"You decided to stay at {assign_colour(loc.current.place.the_name, 'loc')} a while longer.\n")
+        #events.update_timed_events(new_cardinal, timeblocks) # Sending cardinal so events have the data they need.
+    else:
+        if print_txt:
+            print(f"You make your way to {assign_colour(new_location.the_name, 'loc')}. It's {game.time}, the weather is {game.weather}, and you're feeling {game.emotional_summary}.")
+        if not new_location.visited:
+            new_location.visited = True # maybe a counter instead of a bool. Maybe returning x times means something. No idea what. Probably not.
+            new_location.first_weather = current_weather
         else:
             if print_txt:
-                print(f"You make your way to {assign_colour(new_location.the_name, 'loc')}. It's {game.time}, the weather is {game.weather}, and you're feeling {game.emotional_summary}.")
-            if not new_location.visited:
-                new_location.visited = True # maybe a counter instead of a bool. Maybe returning x times means something. No idea what. Probably not.
-                new_location.first_weather = current_weather
-            else:
-                if print_txt:
-                    print(f"You've been here before... It was {new_location.first_weather} the first time you came.")
-                    if new_location.first_weather == game.weather:
-                        print(weatherdict[game.weather].get("same_weather"))
+                print(f"You've been here before... It was {new_location.first_weather} the first time you came.")
+                if new_location.first_weather == game.weather:
+                    print(weatherdict[game.weather].get("same_weather"))
 
-            events.update_timed_events(new_cardinal) # Sending cardinal so events have the data they need.
-        if not new_cardinal.visited:
-            new_cardinal.visited = True
+    events.update_timed_events(new_cardinal, timeblocks) # Sending cardinal so events have the data they need.
+    if not new_cardinal.visited:
+        new_cardinal.visited = True
+
+    return export
+
+def relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=None):
+    logging_fn()
+    from misc_utilities import assign_colour
 
     if new_location and isinstance(new_location, cardinalInstance) and not new_cardinal:
         new_cardinal = new_location
@@ -152,9 +170,7 @@ def relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=None
 
     if new_location and isinstance(new_location, placeInstance) and not new_cardinal:
         new_cardinal = loc.current.name
-        print("new cardinal")
         new_card_inst = loc.by_cardinal_str(new_cardinal, new_location.name)
-        print(f"new card inst: {new_card_inst}")
         if not new_card_inst.cardinal_data:
             for card in new_location.cardinals:
                 new_card_inst = new_location.cardinals.get(card)
@@ -171,24 +187,21 @@ def relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=None
                     new_cardinal = test
                     break
                     #loc.set_current(loc = new_location, cardinal=new_card_inst) # if just going from place to place, just pick the first viable cardinal silently.
-
-
-
     update_loc_data(loc.current.place, new_cardinal)
     if new_cardinal.place != loc.current.place:
         from misc_utilities import in_loc_facing_card
         print(f"You're now in {in_loc_facing_card(new_cardinal)}\n")
+    from itemRegistry import registry
+    #items = registry.get_item_by_location(loc.current)
+    #print(f"ITEMS: {items}")
+    items = list(item for item in registry.get_item_by_location(new_cardinal) if registry.get_item_by_location(new_cardinal) and hasattr(item, "event") and item.event and item.event.state == 1)
+    if items:
+        for item in items:
+            events.check_trigs_in_current_loc_and_inv(item.event, item, new_cardinal)
 
     if new_location != loc.current.place:
-        get_loc_descriptions(new_location, new_cardinal)
         loc.set_current(cardinal=new_cardinal)
-        from itemRegistry import registry
-        items = registry.get_item_by_location(loc.current)
-        print(f"ITEMS: {items}")
-        if items:
-            for item in items:
-                if hasattr(item, "event") and item.event and item.event.state == 1:
-                    print(f"Item {item} has current event: {item.event}")
+        get_loc_descriptions(new_location, new_cardinal)
         print(loc.current.place.overview)
         print(f"\n{loc.current.description}")
     else:

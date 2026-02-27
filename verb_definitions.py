@@ -42,7 +42,7 @@ directions = ["down", "up", "left", "right", "away", "toward", "towards", "close
 ## "in front of"?? Need to be able to cope with that.
 
 nulls = ["the", "a", "an"]
-semantics = ["with", "and", "around", "for", "while", "set", "on"]
+semantics = ["with", "and", "around", "for", "while", "set", "on", "hour", "day"] # adding 'hour' and 'day' here because it'll work with 'read'/'wait' for explicit time skipping without going into meta.
 
 null_sem_combinations = ["a while"]
 
@@ -86,6 +86,7 @@ formats = {
     ### SINGLE NOUNS ###
     "verb_noun": (verb, noun), # drop paperclip
     "verb_sem_noun": (verb, sem, noun), # 'look at watch'
+    "verb_sem_sem": (verb, sem, sem),
     "verb_dir_noun": (verb, direction, noun), # 'look at watch'
     "verb_noun_sem": (verb, noun, sem), # 'read book a while
     "verb_noun_dir": (verb, noun, direction), # throw ball up
@@ -154,6 +155,7 @@ verb_dir_loc_car = formats["verb_dir_loc_car"]
 verb_dir_loc = formats["verb_dir_loc"]
 verb_dir_noun = formats["verb_dir_noun"]
 verb_sem_noun = formats["verb_sem_noun"] # wait with book
+verb_sem_sem = formats["verb_sem_sem"] # wait an hour
 verb_noun_sem = formats["verb_noun_sem"] # read book a while
 verb_noun_dir = formats["verb_noun_dir"] # [enter] [work shed] [door]
 
@@ -226,7 +228,7 @@ verb_defs_dict = {
     "set": {"alt_words": [""], "allowed_null": None, "formats": [verb_noun_dir, verb_noun_sem_noun, verb_noun], "distinction": {"second_noun":"fire", "new_verb":"burn", "else_verb":"put"}}, ## not implemented, just an idea. 'if fire is the second noun, the correct verb to use is 'burn', else the verb is 'put'. So 'set' is not its own thing, just a membrane/signpost.
     "clean": {"alt_words": ["wipe"], "allowed_null": None, "formats": [verb_noun, verb_loc, verb_noun_sem_noun]},
     "enter": {"alt_words": [], "allowed_null": None, "formats": [verb_loc, verb_dir_loc, verb_noun, verb_dir_noun, verb_noun_noun]},
-    "time": {"alt_words": ["wait", "waste time", "spend time"], "allowed_null": None, "formats": [verb_only, verb_dir, verb_sem_noun, verb_noun_sem_sem]},
+    "time": {"alt_words": ["wait", "waste time", "spend time"], "allowed_null": None, "formats": [verb_only, verb_dir, verb_sem, verb_sem_noun, verb_sem_sem, verb_noun_sem_sem]},
     "find": {"alt_words": ["search"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_loc, verb_loc, verb_sem_noun]}
     }
 
