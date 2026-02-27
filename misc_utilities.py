@@ -390,9 +390,9 @@ def separate_loot(child_input=None, parent_input=None, inventory=[]): ## should 
 
 ### COLOUR ASSIGNMENT
 
-def get_itemname_from_sqrbrkt(string, noun):
+def get_itemname_from_sqrbrkt(string, noun, colour):
     """To replace [[item]] with <{noun} with noun.colour applied>."""
-
+# colour = "event_msg": {"ita":True, "colour": "yellow"}
     parts = string.split("[[")
     other_parts = parts[1].split("]]")
     item_name_raw = other_parts[0].strip()
@@ -400,12 +400,12 @@ def get_itemname_from_sqrbrkt(string, noun):
         item_name = assign_colour(item = noun)
     else:
         item_name = assign_colour(item_name_raw)
-    joined = [parts[0], item_name]
+    joined = [assign_colour(parts[0], colour=colour), item_name]
 
     for part in other_parts:
         if part == item_name_raw:
             continue
-        joined.append(part)
+        joined.append(assign_colour(part, colour=colour))
 
     compiled_str = "".join(joined)
 
@@ -438,13 +438,18 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
         coloured_text=Colours.c(item.name, fg="green", bold=True)
         return coloured_text # shortcut for simple assign_colour(noun) calls.
 
-
+    event_msg_states = ("event_msg", "end", "start", "held", "success", "failure", "exception")
 
     string = f"{(item if isinstance(item, str) else '')}"
 
-    if colour == "event_msg":
+    if colour and colour in event_msg_states:
+        if colour in ("start", "exception"):
+            colour = "white"#
+            bld = False
+        else:
+            colour = "event_msg"
         if "[[" in string and not "[[]]" in string:
-            return get_itemname_from_sqrbrkt(string, noun)
+            return get_itemname_from_sqrbrkt(string, noun, colour=colour)
 
     if isinstance(item, str) and "  - " in item:
         item = item.replace("  - ", "")
@@ -452,7 +457,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
     bg = None
     bld = ita = u_line = invt = False
 
-    specials = ("location", "loc", "description", "title_bg", "title", "deco", "hash", "title_white", "equals", "underscore", "event_msg")
+    specials = ("location", "loc", "description", "title_bg", "title", "deco", "hash", "title_white", "equals", "underscore", "event_msg", "enter_door")
 
     specials_dict = {
         "loc": {"colour":"green", "bld":True},
@@ -461,7 +466,8 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
         "hash": {"bg":"blue"},
         "title_white": {"colour":"white"},
         "title": {"bld":True},
-        "event_msg": {"ita":True, "colour": "yellow"}
+        "event_msg": {"ita":True, "bld":False, "colour": "green"},
+        "enter_door": {"ita":True, "colour": "white"}
     }
 
     Colours.colour_counter = Colours.colour_counter%len(cardinals)

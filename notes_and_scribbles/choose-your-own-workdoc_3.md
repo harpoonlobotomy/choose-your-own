@@ -4708,3 +4708,34 @@ Going to have to add a 'visited' to cardinals as well as places for things like 
 Well it doesn't work if you just turn, because that's not done via relocate.
 
 Going to do what I thought about earlier and push everything through relocate. The reason I didn't was because they took different inputs, but honestly I can just make def turn_around convert its intake for relocate if I need to. Also need to massively streamline relocate itself.
+
+I mean it's so silly. def turn_around runs check_loc_card, prints descriptions etc, but then so does relocate.
+
+turn_cardinal is used a heap, so I don't want to rip it out immediately, but I think the plan is to keep the left/right stuff there for now (but change it later), but once it has a confirmed prospective_cardinal, just go to relocate immediately and let relocate deal with it from there.
+
+One exception:
+Check if new_cardinal == loc.current, if so, we can use the 'turning' bool that some functions use (eg 'look', so it prints the card description instead of 'you're already facing x'.)
+
+4.33pm
+I think it's improving? Easier to follow, at least.
+
+Want to work on this bit:
+
+#   There's not much else to see around here. Dusty and largely disused, nothing really catches your eye.
+
+#       You decide to turn back.
+
+#   You're now in the work shed, facing north.
+
+The 'You decide to turn back' should only be if the previous locattion was the new target cardinal. In this case, we came from the graveyard straight to south shed, so it should either a different message or, what is the expected behaviour, just leaves off the 'decide to head back' message and just says 'you're facing north'.
+
+Done that.
+
+Would like to be able to set different formatting for event messages. Eg, when you pick up the moss I jsut want regular formatting, but a different formatting for event successful. Well I guess I could just set start_msg to be different from end_msg at a stopgap in the meantime.
+
+5.45pm
+Hm.
+# You use the iron key to unlock the padlock
+# As the padlock falls to the ground and the chain unravells, the graveyard gate creaks open.
+
+I need a newline between the unlocking and the padlock.

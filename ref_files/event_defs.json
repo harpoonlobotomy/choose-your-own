@@ -101,7 +101,7 @@
             "triggered_by": ["item_interacted_with", "item_in_inv", "inv_in_current_loc"]}
         },
     "messages": {
-        "start_msg": "After a few days, you realise the moss you picked up has dried out. Damn. Or, maybe you wanted some [[dried moss]]...?"
+        "end_msg": "You realise the moss you picked up a few days ago has dried out. Damn. Or, maybe you wanted some [[dried moss]]...?"
         }
     },
 "scroll_drops_key": {

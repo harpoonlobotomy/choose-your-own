@@ -152,6 +152,21 @@ class placeRegistry:
         if cardinal and isinstance(cardinal, cardinalInstance):
             if not cardinal.visited:
                 cardinal.visited = True
+            if cardinal == self.current:
+                return
+            if not loc:
+                loc = cardinal.place
+
+        if loc and not cardinal:
+            if not isinstance(loc, placeInstance):
+                loc = self.place_by_name(loc)
+            if not self.current:
+                print("env_data/ No current_cardinal, defaulting to 'north'.")
+                current_card = config.starting_facing_direction
+            else:
+                current_card = self.current.name
+            from interactions.player_movement import get_viable_cardinal
+            cardinal, success = get_viable_cardinal(current_card, place=loc)
 
         if loc and cardinal:
             if isinstance(loc, placeInstance) and isinstance(cardinal, cardinalInstance):
@@ -169,6 +184,11 @@ class placeRegistry:
                 return
 
         elif loc:
+            if not self.current:
+                print("env_data/ No current_cardinal, defaulting to 'north'.")
+                current_card = config.starting_facing_direction
+            else:
+                current_card = self.current.name
             if isinstance(loc, str):
                 # TODO: Set up by_cardinal_str here, don't add a bunch of new string parsers.
                 loc_test = self.by_name[loc]
@@ -180,11 +200,7 @@ class placeRegistry:
 
             if isinstance(loc, placeInstance) and not cardinal:
                 self.currentPlace = loc
-                if not self.current:
-                    print("env_data/ No current_cardinal, defaulting to 'north'.")
-                    current_card = config.starting_facing_direction
-                else:
-                    current_card = self.current.name
+
                 new_card = self.cardinals[self.currentPlace][current_card]
                 self.current = new_card
                 self.currentPlace = loc
@@ -241,20 +257,29 @@ class placeRegistry:
     def by_cardinal_str(self, cardinal_str:str|dict, loc=None) -> cardinalInstance:
         """Used to get the cardinalInstance from a string, with or without separate 'loc'. cardinal_str can be a dict (but this is not regularly used anymore) or more often, a string in the form 'graveyard east'. 'east graveyard' will also be found. If no location is found, it will take the cardinal str and apply it to the current location (eg `east` will return the cardinalInstance for '{currentPlace} east')."""
         #logging_fn()
+        str_loc = None
         if isinstance(cardinal_str, dict):
             loc, cardinal_str = next(iter(cardinal_str.items()))
         elif isinstance(cardinal_str, str):
             if " " in cardinal_str:
-                [loc, cardinal_str2] = cardinal_str.rsplit(" ", 1)
-                if not self.by_name.get(loc):
-                    [cardinal_str2, loc] = cardinal_str.split(" ", 1)
+                [str_loc, cardinal_str2] = cardinal_str.rsplit(" ", 1)
+                if not self.by_name.get(str_loc):
+                    [cardinal_str2, str_loc] = cardinal_str.split(" ", 1)
                 cardinal_str = cardinal_str2
+                if str_loc and not loc:
+                    loc = str_loc
 
         if loc == None:
             loc = self.currentPlace
         elif isinstance(loc, str):
             loc = self.place_by_name(loc)
+        elif isinstance(loc, placeInstance):
+            loc = loc
 
+        if str_loc and str_loc != loc.name:
+            print(f"Cardinal gives a different location than the given loc: {str_loc} // {loc}")
+
+        print(locRegistry.cardinals[loc][cardinal_str])
         cardinal_inst = locRegistry.cardinals[loc][cardinal_str]
         return cardinal_inst
 

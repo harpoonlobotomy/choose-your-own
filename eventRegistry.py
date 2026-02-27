@@ -541,65 +541,65 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                 logging_fn(f"event with timed triggers: {event} // {event.timed_triggers}")
                 #print(f"Event with timed triggers: {event} // trigger: {event.timed_triggers}")
                 for trigger in event.timed_triggers:
-                    print(f"TRIGGER: {trigger}")
+                    #print(f"TRIGGER: {trigger}")
                     trigger:timedTrigger
                     trigger.current_duration += 1
                     if trigger.current_duration >= trigger.full_duration:
                         if hasattr(trigger, "effect_on_completion"):
                             print("trigger.effect_on_completion: ", trigger.effect_on_completion)
 ### Everything below here should only run from the above branch. It's just here for testing on move 1.
-                    if hasattr(trigger, "effect_on_completion"):
-                        print("trigger.effect_on_completion: ", trigger.effect_on_completion)
-                        noun = None
+                    #if hasattr(trigger, "effect_on_completion"):
+                            logging_fn(trigger.effect_on_completion)
+                            noun = None
 
-                        if trigger.effect_on_completion.get("trigger_event"):
-                            if trigger.effect_on_completion.get("init_items"):
-                                from itemRegistry import registry
-                                item_name = trigger.effect_on_completion["init_items"].get("item_name")
-                                if not item_name:
-                                    print("init_items does not have item_name")
-                                    return None, None
-                                if len(item_name.split()) > 1:
-                                    registry.plural_words[item_name] = tuple(item_name.split())
+                            if trigger.effect_on_completion.get("trigger_event"):
+                                if trigger.effect_on_completion.get("init_items"):
+                                    from itemRegistry import registry
+                                    item_name = trigger.effect_on_completion["init_items"].get("item_name")
+                                    if not item_name:
+                                        print("init_items does not have item_name")
+                                        return None, None
+                                    if len(item_name.split()) > 1:
+                                        registry.plural_words[item_name] = tuple(item_name.split())
 
-                                entry = registry.item_defs.get(item_name)
-                                if entry:
-                                    inst = registry.init_single(item_name, entry)
-        ## Doing the item moving manually, so it skips the cluster checks etc and just moves it directly.
-                                    if hasattr(trigger, "item_inst") and trigger.effect_on_completion["init_items"].get("use_trigger_inst_location") and trigger.item_inst:
-                                        new_location = trigger.item_inst.location
-                                    if hasattr(trigger, "item_inst") and trigger.effect_on_completion["init_items"].get("use_trigger_inst_colour") and hasattr(trigger.item_inst, "colour") and trigger.item_inst.colour:
-                                        inst.colour = trigger.item_inst.colour
+                                    entry = registry.item_defs.get(item_name)
+                                    if entry:
+                                        inst = registry.init_single(item_name, entry)
+            ## Doing the item moving manually, so it skips the cluster checks etc and just moves it directly.
+                                        if hasattr(trigger, "item_inst") and trigger.effect_on_completion["init_items"].get("use_trigger_inst_location") and trigger.item_inst:
+                                            new_location = trigger.item_inst.location
+                                        if hasattr(trigger, "item_inst") and trigger.effect_on_completion["init_items"].get("use_trigger_inst_colour") and hasattr(trigger.item_inst, "colour") and trigger.item_inst.colour:
+                                            inst.colour = trigger.item_inst.colour
 
-                                    registry.move_item(inst, location = new_location, simple_move = True)
-                                    #if registry.by_location.get(inst.location):
-                                    #    registry.by_location[inst.location].remove(inst)
-                                    #inst.location = new_location
-                                    #registry.by_location[inst.location].add(inst)
-                                    #from env_data import locRegistry
-                                    #if inst.location == locRegistry.inv_place:
-                                    #    locRegistry.inv_place.items.add(inst)
-                                    if inst:
-                                        noun = inst
-                                else:
-                                    print(f"No item entry for {item_name} in item defs.\n\n")
-                                    return None, None
-    ## The original intent was to do this via do_immediate_events, but that triggers other checks. I've combined too many things based on specific events and it's not easily reused for different variants. (This fn is another example of that.)
-                            if trigger.effect_on_completion.get("remove_items"):
-                                if trigger.effect_on_completion["remove_items"].get("item_is_trigger_inst"):
-                                    if not trigger.item_inst:
-                                        print("Event requires a trigger.item_inst but none found.")
-                                    item_to_remove = trigger.item_inst
-                                    registry.delete_instance(item_to_remove)
-                        new_event = register_generated_event(trigger.effect_on_completion["trigger_event"], noun)
-                        self.start_event(event_name = new_event.name, event = new_event, noun=noun)
-                        if hasattr(new_event, "remove_event_on_run") and new_event.remove_event_on_run:
-                            #print("new event remove_event_on_run from update_timed_events")
-                            self.end_event(new_event)
-                        logging_fn(f"STARTED EVENT: {new_event}, ITEM: {noun}, event state: {new_event.state}")
+                                        registry.move_item(inst, location = new_location, simple_move = True)
+                                        #if registry.by_location.get(inst.location):
+                                        #    registry.by_location[inst.location].remove(inst)
+                                        #inst.location = new_location
+                                        #registry.by_location[inst.location].add(inst)
+                                        #from env_data import locRegistry
+                                        #if inst.location == locRegistry.inv_place:
+                                        #    locRegistry.inv_place.items.add(inst)
+                                        if inst:
+                                            noun = inst
+                                    else:
+                                        print(f"No item entry for {item_name} in item defs.\n\n")
+                                        return None, None
+        ## The original intent was to do this via do_immediate_events, but that triggers other checks. I've combined too many things based on specific events and it's not easily reused for different variants. (This fn is another example of that.)
+                                if trigger.effect_on_completion.get("remove_items"):
+                                    if trigger.effect_on_completion["remove_items"].get("item_is_trigger_inst"):
+                                        if not trigger.item_inst:
+                                            print("Event requires a trigger.item_inst but none found.")
+                                        item_to_remove = trigger.item_inst
+                                        registry.delete_instance(item_to_remove)
+                            new_event = register_generated_event(trigger.effect_on_completion["trigger_event"], noun)
+                            self.start_event(event_name = new_event.name, event = new_event, noun=noun)
+                            if hasattr(new_event, "remove_event_on_run") and new_event.remove_event_on_run:
+                                #print("new event remove_event_on_run from update_timed_events")
+                                self.end_event(new_event)
+                            logging_fn(f"STARTED EVENT: {new_event}, ITEM: {noun}, event state: {new_event.state}")
 
-                    if event.remove_event_on_completion:
-                        self.end_event(event, trigger)
+                        if event.remove_event_on_completion:
+                            self.end_event(event, trigger)
 
     def get_event_triggers(self, event, event_name = None, trigger_check = None):
         logging_fn()
@@ -874,7 +874,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
 
                 msg = events.clean_messages(event, noun, msg)
                 if print_text:
-                    print(f"{assign_colour(msg, colour='event_msg', noun=noun)}")
+                    print(f"{assign_colour(msg, colour=state_type, noun=noun)}\n")
                 return msg
 
             return f"Nothing to print print for event `{event}`, msg_type `{msg_type}`." # remove this later and replace with a type-defined default.
@@ -1204,7 +1204,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
             if print_desc_again:
                 from env_data import get_loc_descriptions
                 get_loc_descriptions(event_to_end.end_trigger_location)
-                print(f"\nYou're facing {assign_colour(event_to_end.end_trigger_location.name)}. {event_to_end.end_trigger_location.description}")
+                print(f"You're facing {assign_colour(event_to_end.end_trigger_location.name)}. {event_to_end.end_trigger_location.description}")
 
 
             if (hasattr(event_to_end, "end_type") and event_to_end.end_type == "failure" and hasattr(event_to_end, "remove_event_on_failure") and event_to_end.remove_event_on_failure) or event_to_end.remove_event_on_run or event_to_end.remove_event_on_completion:
@@ -1231,7 +1231,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
             exit()
         if event_to_end.state != 0:
             print(f"Event {event} was meant to be ended, but is not state 0: {event_to_end}")
-        print(f"End of event {event_to_end}")
+        #print(f"End of event {event_to_end}")
 
     def check_movement_limits(self)-> dict:
         logging_fn()
@@ -1374,7 +1374,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
 
         if noun_inst.event:
             if noun_inst.event and hasattr(noun_inst, "is_event_key") and noun_inst.is_event_key:
-                print(f"Noun {noun_inst} is an event trigger for {noun_inst.event}")
+                #print(f"Noun {noun_inst} is an event trigger for {noun_inst.event}")
                 outcome, moved_children = check_triggers(noun_inst.event, noun=noun_inst, reason=reason)
                 return outcome, moved_children
             #else:

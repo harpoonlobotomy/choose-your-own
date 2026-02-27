@@ -554,7 +554,7 @@ def inst_from_idx(dict_entry:dict, kind_str:str, return_str=False) -> itemInstan
 def turn_cardinal(prospective_cardinal, turning = True):
     logging_fn()
 
-    if prospective_cardinal in ("left", "right"):
+    if prospective_cardinal in ("left", "right"): ## TODO move this to relocate so it's all done in the same place
         print("prospective cardinal in left/right")
         current_facing = loc.current.name
         turning_dict = {
@@ -570,43 +570,32 @@ def turn_cardinal(prospective_cardinal, turning = True):
 
         for k, v in turning_dict.items():
             if v == new_int:
-                prospective_cardinal = loc.by_cardinal_str(k)
-
+                test = loc.by_cardinal_str(k)
+                if test:
+                    prospective_cardinal = test
 
     if isinstance(prospective_cardinal, dict):
-        test = prospective_cardinal.get("cardinal")
-        if test:
-            prospective_cardinal = test.get("instance")
-        else:
-            test = prospective_cardinal.get("instance")
-            if test:
-                prospective_cardinal = test
+        print(f"PROSPECTIVE CARDINAL IS A DICT: {prospective_cardinal}")
+        traceback_fn()
+        #test = prospective_cardinal.get("cardinal")
+        #if test:
+        #    prospective_cardinal = test.get("instance")
+        #else:
+        #    test = prospective_cardinal.get("instance")
+        #    if test:
+        #        prospective_cardinal = test
 
-    from interactions.player_movement import check_loc_card
-    to_loc, to_card, is_same_loc, is_same_card = check_loc_card(location=None, cardinal=prospective_cardinal)
-    from env_data import get_loc_descriptions
+    if not isinstance(prospective_cardinal, cardinalInstance):
+        print("turn_cardinal: prospective_cardinal is not cardinal_inst")
+        traceback_fn()
 
-    if not is_same_card:
-    #if not bool_test:
-        if not to_card.cardinal_data:
-            if hasattr(to_card.place, "missing_cardinal"):
-                print(assign_colour(to_card.place.missing_cardinal, "event_msg"))
-
-            else:
-                print(assign_colour("There's nothing over that way.", colour="event_msg"))
-
-            print(assign_colour("\n    You decide to turn back.\n", colour="event_msg"))
-            get_loc_descriptions(place=loc.currentPlace)
-            print(loc.current.description)
-            return
-
-        else:
-            from interactions.player_movement import turn_around
-            turn_around(to_card)
+    if prospective_cardinal != loc.current:
+        relocate(new_cardinal = prospective_cardinal)
     else:
         if turning:
             print(f"You're already facing the {assign_colour(loc.current, card_type="ern_name")}.\n")
         else:
+            from env_data import get_loc_descriptions
             print(f"You're facing the {assign_colour(loc.current, card_type="place_name")}.")
             get_loc_descriptions(place=loc.current.place, cardinal=loc.current)
             print(loc.current.description)
@@ -651,8 +640,8 @@ def meta(format_tuple, input_dict):
         return
 
 def go_through_door(noun:itemInstance, open_door:bool, destination:cardinalInstance|placeInstance, inside_location):
-
-    #print(f"go through door // noun: {noun}, open door: {open_door} // destination: {destination}")
+    logging_fn()
+    print(f"go through door // noun: {noun}, open door: {open_door} // destination: {destination}")
     if (destination == inside_location or destination == inside_location.place) and loc.current == noun.ext_location:
         open_door = True
     if (hasattr(noun, "is_open") and noun.is_open == True) or open_door:
@@ -664,7 +653,7 @@ def go_through_door(noun:itemInstance, open_door:bool, destination:cardinalInsta
                 door_open_text = door_open_text.replace("[[inside]]", "inside")
             else:
                 door_open_text = door_open_text.replace("[[inside]]", "outside")
-            print(assign_colour(door_open_text, colour="event_msg"))
+            print(assign_colour(door_open_text, colour="enter_door"))
             print()
         # want like, recklessly/cautiously/quietly, depending on playstyle. Long way off that but wanted to note it.
         if isinstance(destination, cardinalInstance):
@@ -678,11 +667,11 @@ def go_through_door(noun:itemInstance, open_door:bool, destination:cardinalInsta
         return relocate(new_cardinal=noun.location)
 
 def move_through_trans_obj(noun, input_dict):
-    #print(f"move_through_trans_obj, noun: {noun}")
+    print(f"move_through_trans_obj, noun: {noun}")
     logging_fn()
     if noun and (not hasattr(noun, "int_location") or not hasattr(noun, "ext_location")):
         print(f"Noun {noun} does not have an int_location or ext_location (or either). Aborting.")
-        return
+        return None
     #print(f"move_through_trans_obj. input_dict: {input_dict}")
     verb = get_verb(input_dict, get_str=True)
     location = get_location(input_dict)
@@ -725,19 +714,26 @@ def move_through_trans_obj(noun, input_dict):
             #print(f"verb in leaving words ({verb}) // Location: {location}")
             if location == inside_location or location == inside_location.place or not location:
                 #print("location == inside_location or not location")
-                return go_through_door(noun, open_door=True, destination = invert_cardinal_str(outside_location), inside_location = inside_location)
+                if get_cardinal(input_dict):
+                    cardinal = get_cardinal(input_dict)
+                else:
+                    cardinal = invert_cardinal_str(outside_location)
+                return go_through_door(noun, open_door=True, destination = cardinal, inside_location = inside_location)
         if verb in leaving_words or verb == "go":
             if location and location != inside_location and location != inside_location.place:
                 dir_or_sem = get_dir_or_sem(input_dict)
                 if dir_or_sem and dir_or_sem == "to":
                     #print("go to > go through door")
-                    new_card = invert_cardinals.get(outside_location.name)
+                    if get_cardinal(input_dict):
+                        cardinal = get_cardinal(input_dict)
+                    else:
+                        new_card = invert_cardinals.get(outside_location.name)
+
                     if isinstance(location, placeInstance):
                         location = loc.by_cardinal_str(cardinal_str = new_card, loc = location)
                     else:
                         location = loc.by_cardinal_str(cardinal_str = new_card, loc = location.place)
 
-                    invert_cardinal_str(loc.current)
                     return go_through_door(noun, open_door=True, destination = location, inside_location = inside_location)
 
         if verb in entry_words:
@@ -757,7 +753,13 @@ def move_through_trans_obj(noun, input_dict):
             if loc.current.place == outside_location.place or verb == "go":
                 if inside_location.place.visited:
                     open_door = True
-                return go_through_door(noun, open_door=open_door, destination = inside_location, inside_location = inside_location)
+
+                if get_cardinal(input_dict):
+                    cardinal = get_cardinal(input_dict)
+                else:
+                    cardinal = inside_location
+
+                return go_through_door(noun, open_door=open_door, destination = cardinal, inside_location = inside_location)
             else:
                 if not noun_str:
                     noun_str = get_noun(input_dict, get_str=True)
@@ -776,11 +778,17 @@ def move_through_trans_obj(noun, input_dict):
 
 def go(format_tuple, input_dict, no_noun=None): ## move to a location/cardinal/inside
     logging_fn()
-    #print(f"format for def go: {format_tuple}")
+    print(f"format for def go: {format_tuple}, input_dict: {input_dict}")
     if len(format_tuple) == 1:
         if not "cardinal" in format_tuple and not "location" in format_tuple:
             print("Where do you want to go?")
             return
+        else:
+            if "cardinal" in format_tuple:
+                return relocate(new_cardinal=get_cardinal(input_dict))
+            else:
+                return relocate(new_location=get_location(input_dict))
+
     noun=None
 
     verb_entry, noun_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
@@ -795,8 +803,10 @@ def go(format_tuple, input_dict, no_noun=None): ## move to a location/cardinal/i
                 noun = noun[0] # arbitrary, while we check for transition items we don't want to pick locations etc yet.
 
         if noun and ("transition" in noun.item_type or "loc_exterior" in noun.item_type):
-            #print(f"noun transition: {noun}")
-            return enter(format_tuple, input_dict, noun)
+            #if location_entry and location_entry["instance"] == loc.current.place:
+            print(f"noun transition: {noun}")
+            if enter(format_tuple, input_dict, noun):
+                return
 
     if (direction_entry and direction_entry["str_name"] in to_words and len(format_tuple) < 5) or (not direction_entry and len(format_tuple) < 4) or (direction_entry and not cardinal_entry and not location_entry):
         if location_entry and not cardinal_entry:
@@ -813,7 +823,7 @@ def go(format_tuple, input_dict, no_noun=None): ## move to a location/cardinal/i
             if hasattr(location, "transition_objs") and location not in ({}, None) and location.transition_objs and not no_noun:
                 #print(f"hasattr location_entry[instance], transition_objs: {location.transition_objs}")
                 for obj in location.transition_objs:
-                    #print(f"OBJ: {obj}")
+                    print(f"OBJ: {obj}")
                     if obj.int_location.place in (loc.current, location):
                         return enter(format_tuple, input_dict, noun=obj)#: # this only goes to enter if we're aiming for or leaving the interior location.
 
@@ -2034,15 +2044,7 @@ def enter(format_tuple, input_dict, noun=None):
                 return move_through_trans_obj(item, input_dict)
 
     else:
-        #target_loc = find(format_tuple, input_dict)
-        #if target_loc:
-        #    if target_loc == loc.current:
-        #        look(format_tuple, input_dict)
-        #        return
-        #    else:
-        #        print("You'll have to go there first.")
-        #        return
-        #print(f"This {noun} doesn't lead anywhere")
+        print("enter else")
         return look(format_tuple, input_dict)
 
 MOVE_UP = "\033[A"

@@ -2,7 +2,7 @@
 
 
 from re import I
-from interactions.player_movement import turn_around
+from interactions.player_movement import relocate
 from itemRegistry import itemInstance, registry
 from env_data import cardinalInstance, locRegistry as loc
 from misc_utilities import assign_colour, has_and_true
@@ -39,7 +39,7 @@ def look_at_item(item_inst, entry): ## this is just using everything from regist
             return
         else:
             if reason_val == 8:
-                turn_around(item_inst.location)
+                relocate(new_cardinal=item_inst.location)
                 return
 
             if reason_val == 2:
