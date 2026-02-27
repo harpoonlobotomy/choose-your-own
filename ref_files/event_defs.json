@@ -51,6 +51,7 @@
   "moss_dries": {
     "is_generated_event": true,
     "remove_event_on_failure": true,
+    "remove_event_on_completion": true,
     "is_timed_event": true,
     "repeats": "forever",
 
@@ -69,11 +70,11 @@
             "required_condition": {"item_in_inv": "moss"},
             "persistent_condition": true,
             "condition_item_is_start_trigger": true,
-            "end_type": "success"},
+            "end_type": "success",
             "effect_on_completion":
-                {"init_items": {"item_name": "dried moss"},
-                "start_event": "finding_dried_moss",
-                "remove_items": {"item_name": "moss", "item_is_trigger_inst": true}},
+                {"trigger_event": "finding_dried_moss",
+                "init_items": {"item_name": "dried moss", "use_trigger_inst_location": true, "use_trigger_inst_colour": true},
+                "remove_items": {"item_name": "moss", "item_is_trigger_inst": true}}},
 
         "item_trigger": {
             "trigger_item": "moss",
@@ -91,6 +92,7 @@
         }
     },
 "finding_dried_moss": {
+    "remove_event_on_run": true,
     "is_generated_event": true,
     "triggered_by_event": "moss_dries",
     "immediate_action": {
@@ -99,7 +101,7 @@
             "triggered_by": ["item_interacted_with", "item_in_inv", "inv_in_current_loc"]}
         },
     "messages": {
-        "start_msg": "After a few days, you realise the moss you've been carrying around has tried out. Damn. Or, maybe you wanted some [[dried moss]]...?"
+        "start_msg": "After a few days, you realise the moss you picked up has dried out. Damn. Or, maybe you wanted some [[dried moss]]...?"
         }
     },
 "scroll_drops_key": {

@@ -979,7 +979,7 @@ class itemRegistry:
 
         return shard, None
 
-    def move_item(self, inst:itemInstance, location:cardinalInstance=None, new_container:itemInstance=None, old_container:itemInstance=None, no_print=False)->itemInstance:
+    def move_item(self, inst:itemInstance, location:cardinalInstance=None, new_container:itemInstance=None, old_container:itemInstance=None, no_print=False, simple_move = False)->itemInstance:
         """Moves an itemInstance from its current location to a new 'location'. The new location can be the player inventory, a cardinalInstance or a container object. Updates item descriptions when complete."""
         logging_fn()
         from misc_utilities import assign_colour
@@ -987,7 +987,7 @@ class itemRegistry:
         if isinstance(location, str) and location == "current":
             location = loc.current
 
-        if "is_cluster" in inst.item_type:
+        if "is_cluster" in inst.item_type and not simple_move: # added 'simple move' for certain event inits where move_cluster_items gets really confused. It's a workaround.
             outcome, other = self.move_cluster_item(inst, location, new_container, old_container)
             updated.add(outcome)
             updated.add(inst)
@@ -1012,7 +1012,6 @@ class itemRegistry:
 
         ## MOVE TO NEW LOCATION IF PROVIDED
         if location != None:
-            print(f"Location != None: {location}")
             if not self.by_location.get(location):
                 self.by_location[location] = set()
 

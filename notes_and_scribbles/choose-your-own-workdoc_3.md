@@ -4669,3 +4669,42 @@ local_nouns: {'moss': <ItemInst moss / (4023a3c7d9e2) / north inventory_place / 
 "remove_items": {"item_name": "moss", "item_is_trigger_inst": true},
 
 I hadn't added it to locRegistry.inv_place.items. It's much more convenient to have that option available but it's stupid to keep a separate set instead of just checking for items with that location attr. :/
+
+2.00pm
+Have it set now so the events end properly:
+After a few days, you realise the moss you picked up has dried out. Damn. Or, maybe you wanted some dried moss...?
+End of event <eventInst finding_dried_moss ..d759b11ae64c // state: 0>
+End of event <eventInst moss_dries ..4f83909b57f8 // state: 0>
+
+So, the time trigger hits, event is deemed completed. It runs its trigger actions, including starting finding_dried_moss (which just checks for the nearby-ness of the dried moss item, which replaced the moss item whereever it was at the time) to alert player to the new state of the moss next time they encounter it. In this example the moss was in inventory, so it started and ended immediately; still need to set up 'what it you walk into a room with now-dry moss in it'.
+Then, once finding_dried_moss has ended, it ends moss_dries too, so future movement doesn't trigger it again.
+
+I want the new dried moss to take the old moss's colour. It's a small touch but it's weird having cyan moss becoming magenta when it dries. I like the conceptual consistency of the moss being ""the same item"" even though it's not.
+
+2.09pm Okay that's done. It's a little thing but it's nice.
+
+Have started adding attributes to the item itself:
+
+"init_items": {"item_name": "dried moss", "use_trigger_inst_location": true, "use_trigger_inst_colour": true}
+
+
+It's a bit weird to have effect_on_completion under the trigger for timed events, but 'effects' under the event itself for regular events. But it kind of makes more sense that way because otherwise I'd need to instruct it not to apply the events until the trigger was hit, and the timed triggers are triggered from an entirely different place.
+
+2:17pm
+Accidentally had the "effect_on_completion" as a separate trigger from the timed trigger itself. It worked by only by accidentally. Fixed now.
+
+
+# [<  go to shed  >]
+
+# You see the closed wooden door in front of you; you can't phase through a closed door.
+# You turn to face the west graveyard
+
+# Standing in unkempt long grass, you see what looks like a work shed of some kind, with a wooden door that looks like it was barricaded until recently.
+
+I only want it to print the 'phase through a closed door' part if you've seen the shed before.
+Going to have to add a 'visited' to cardinals as well as places for things like this.
+
+2.28pm
+Well it doesn't work if you just turn, because that's not done via relocate.
+
+Going to do what I thought about earlier and push everything through relocate. The reason I didn't was because they took different inputs, but honestly I can just make def turn_around convert its intake for relocate if I need to. Also need to massively streamline relocate itself.

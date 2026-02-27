@@ -67,6 +67,8 @@ class cardinalInstance:
                             "int_location": loc_dict[self.place.name][self.name]["items"][item].get("int_location"),
                             "ext_location": (loc_dict[self.place.name][self.name]["items"][item].get("ext_location") if loc_dict[self.place.name][self.name]["items"][item].get("ext_location") != self.name else self)}
 
+        self.visited = False # Same as .placeInstances have, not tracked in route but used for directing some descriptions etc.
+
     def __repr__(self):
         return f"<cardinalInstance {self.place_name} ({self.id})>"
 
@@ -147,6 +149,10 @@ class placeRegistry:
         """ Sets locRegistry.current, and checks against locRegistry.currentPlace to see if it should add the new location to route."""
         logging_fn()
         #print(f"set current: loc: {loc}, cardinal: {cardinal}")
+        if cardinal and isinstance(cardinal, cardinalInstance):
+            if not cardinal.visited:
+                cardinal.visited = True
+
         if loc and cardinal:
             if isinstance(loc, placeInstance) and isinstance(cardinal, cardinalInstance):
                 if loc != cardinal.place:

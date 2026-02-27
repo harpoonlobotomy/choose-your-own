@@ -673,7 +673,8 @@ def go_through_door(noun:itemInstance, open_door:bool, destination:cardinalInsta
             return relocate(new_location=destination)
 
     else:
-        print(f"You see the closed {assign_colour(noun)} in front of you; you can't phase through a closed door.")
+        if noun.location.visited:
+            print(f"You see the closed {assign_colour(noun)} in front of you; you can't phase through a closed door.\n")
         return relocate(new_cardinal=noun.location)
 
 def move_through_trans_obj(noun, input_dict):

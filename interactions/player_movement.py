@@ -27,7 +27,6 @@ def get_viable_cardinal(cardinal_inst:cardinalInstance=None, place:placeInstance
                 return place.cardinals[card], 1
 
 
-
 def check_loc_card(location, cardinal=None):
     to_loc = None
     to_card = None
@@ -78,8 +77,8 @@ def check_loc_card(location, cardinal=None):
 def relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=None):
     logging_fn()
     from misc_utilities import assign_colour
-    print(f"Relocate new_location: {new_location} // new_cardinal: {new_cardinal}")
-    def update_loc_data(prev_loc, new_cardinal):
+
+    def update_loc_data(prev_loc:placeInstance, new_cardinal:cardinalInstance):
         print("Update loc data")
         from misc_utilities import assign_colour
         from set_up_game import game
@@ -88,13 +87,11 @@ def relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=None
         import random
         new_location = new_cardinal.place
         current_weather = game.weather
-        print(f"game.time at start: {game.time}")
         time_index=time_of_day.index(game.time)
         new_time_index=time_index + 1 # works
         if new_time_index == len(time_of_day):
             new_time_index=0
         game.time=time_of_day[new_time_index]
-        print(f"game.time at end: {game.time}")
 
         weather_options = list(weatherdict)
         weather_index=weather_options.index(game.weather)
@@ -104,7 +101,7 @@ def relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=None
             new_weather_index=0
         game.weather=weather_options[new_weather_index]
         game.bad_weather = weatherdict[game.weather].get("bad_weather")
-        print("After changing weather etc")
+
         if new_location==prev_loc:
             print(f"loc.places[loc.current]: {loc.current.place.name}")
             print(f"You decided to stay at {assign_colour(loc.current.place.the_name, 'loc')} a while longer.")
@@ -119,6 +116,8 @@ def relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=None
                 new_location.first_weather = current_weather
 
             events.update_timed_events(new_cardinal) # Sending cardinal so events have the data they need.
+        if not new_cardinal.visited:
+            new_cardinal.visited = True
 
     if new_cardinal and isinstance(new_cardinal, cardinalInstance) and not new_location:
         new_location = new_cardinal.place
@@ -130,9 +129,7 @@ def relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=None
         return
     #print(f"new_relocate: TRAVEL_IS_LIMITED?: {events.travel_is_limited}")
     if events.travel_is_limited and not (to_loc and to_loc == loc.current.place):
-        print("here")
         allowed_locations = events.check_movement_limits()
-        print(f"Allowed_locations: {allowed_locations}")
         if not allowed_locations.get(to_loc.name):
             holding_event = list(allowed_locations[loc.current.place.name])[0]
             msg = events.play_event_msg("held", holding_event, print_txt=False)
@@ -148,7 +145,9 @@ def relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=None
 
     if new_location and isinstance(new_location, placeInstance) and not new_cardinal:
         new_cardinal = loc.current.name
+        print("new cardinal")
         new_card_inst = loc.by_cardinal_str(new_cardinal, new_location.name)
+        print(f"new card inst: {new_card_inst}")
         if not new_card_inst.cardinal_data:
             for card in new_location.cardinals:
                 new_card_inst = new_location.cardinals.get(card)
@@ -156,10 +155,9 @@ def relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=None
                     new_cardinal = new_card_inst
                     break
         #update_loc_data(loc.current.place, new_card_inst)
-
-        if not new_card_inst:
-            #loc.set_current(loc = new_location, cardinal=new_card_inst)
-        #else:
+        if new_card_inst:
+            new_cardinal = new_card_inst
+        else:
             for card in new_location.cardinals:
                 test = (new_location.cardinals.get(card) if new_location.cardinals.get(card) else None)
                 if test and test.cardinal_data.get("item_desc"):
@@ -168,7 +166,6 @@ def relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=None
                     #loc.set_current(loc = new_location, cardinal=new_card_inst) # if just going from place to place, just pick the first viable cardinal silently.
 
     elif new_cardinal and isinstance(new_cardinal, cardinalInstance):
-
         if not new_cardinal.cardinal_data:
         #if not (hasattr(new_card_inst, new_card_inst.name) and getattr(new_card_inst, new_card_inst.name)):
             print(f"This {new_cardinal} is not a viable direction for {new_cardinal.place}")
@@ -182,11 +179,9 @@ def relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=None
                     new_cardinal = new_card_inst
                     break
 
-    print(f"new_card_inst: {new_cardinal}")
     if new_cardinal.place == loc.current.place:
         turn_around(new_cardinal)
     else:
-        #relocate(new_cardinal.place, new_cardinal) # changed so it'll do the full relocate unless the new_inst is in the same .place as loc.current, not just turn.
         update_loc_data(loc.current.place, new_cardinal)
         loc.set_current(cardinal=new_cardinal)
 
