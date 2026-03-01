@@ -459,6 +459,20 @@ def get_location(input_dict:dict, get_str=False) -> placeInstance:
                 else:
                     return entry["instance"]
 
+def get_number(input_dict:dict, x_val=None) -> str:
+    """Returns `str_name` for the first `direction` or `sem` entry in `input_dict`."""
+    logging_fn()
+    num_counter = 0
+    for data in input_dict.values():
+        for kind, entry in data.items():
+            if "number" in kind:
+                if not x_val:
+                    return entry["text"]
+
+                num_counter += 1
+                if num_counter == x_val:
+                    return entry["text"]
+
 def get_dir_or_sem(input_dict:dict, x_val=None) -> str:
     """Returns `str_name` for the first `direction` or `sem` entry in `input_dict`."""
     logging_fn()
@@ -467,7 +481,7 @@ def get_dir_or_sem(input_dict:dict, x_val=None) -> str:
         for kind, entry in data.items():
             if "direction" in kind or "sem" in kind:
                 if not x_val:
-                    return entry["str_name"]
+                    return entry["text"] # was str_name; shoul be text, no? For dirs/sems, should always be the same. Need to check.
 
                 sem_counter += 1
                 if sem_counter == x_val:
@@ -1033,6 +1047,41 @@ def find(format_tuple, input_dict):
     #        print(f"There's a {assign_colour(noun)} at {assign_colour(card.place_name, "loc")}, is that what you were looking for?")
     #        return card
 
+def get_timeblocks(input_dict, verb:str):
+
+    timeblock = 1
+    sem = get_dir_or_sem(input_dict)
+    sem2 = get_dir_or_sem(input_dict, 2)
+    num = get_number(input_dict)
+
+    if num == "0":
+        print(f"You can't {verb} for no duration. Returning.")
+        return
+    if sem and sem2 and sem == "for":
+        sem = sem2
+ # ^  make this bit a reusable fn.  v
+    if (sem and sem2 and sem == sem2) or not sem2:
+        if sem in ["while", "hour", "hours"]:
+            if not num:
+                timeblock = 1
+            else:
+                timeblock = int(int(num)/2)
+                if timeblock == 0:
+                    timeblock == 1
+            if verb == "read" and timeblock > 5:
+                print("You can't read for that long, but a you sit down to read for a few hours.")
+                timeblock = 4
+        elif sem in ("day", "days"):
+            if not num:
+                timeblock = 12
+            else:
+                timeblock = int(num) * 12
+            if verb == "read":
+                print("You can't read for days at a time, but maybe for a few hours...")
+                timeblock = 4
+
+        ## TODO: At some point put a reasonable limit on how long you can read/wait for, or have a set of potential random interruptions. Assumedly there'll be tasks like learning information from a book you've read, and if you can just 'read for 12 hrs'. For now just limited to 4 hours (unless you specify 5 hrs, I've allowed that.)
+    return timeblock, num
 
 def read(format_tuple, input_dict):
     """Reads `description_details` for the noun in `input_dict` if found, otherwise directs to `def look`."""
@@ -1044,8 +1093,39 @@ def read(format_tuple, input_dict):
         if outcome:
             noun = outcome
 
-    if hasattr(noun, "location") and (noun.location == loc.inv_place or noun.location == loc.current):
+    if not noun:
+        ### access_str options for this part: "inventory_only" initially, then run again with "not_in_inv"
+        # Using 'inv_then_local lets it run these optins internally, checking local if no results from inv, instead of calling it twice here.
+        ## Amendment: Using 'look' to get both inv and local, will prioritise non-maps then prioritise inv.
+        options = item_interactions.find_local_items_by_itemtype("books_paper", "all_local")
+        if not options:
+            print("What do yo want to read?")
+            return
+        nouns = list(i for i in options if hasattr(i, "description_detailed") and i.description_detailed and not hasattr(i, "is_map"))
+        if not nouns: # allow map if nothing else to read.
+            # Hm. Maybe we get inv and local and then determine. Because if there's a magazine locally and a map in inv, we should read the magazine first.
+            nouns = list(i for i in options if hasattr(i, "description_detailed") and i.description_detailed)
+        if not nouns:
+            print("There's nothing here to read.")
+            return
+
+        else:
+            if len(nouns) == 1:
+                noun = nouns[0]
+            else:
+                noun = list(i for i in nouns if i.location == loc.inv_place)
+                if noun:
+                    noun = noun[0]
+                else:
+                    noun = nouns[0] # if no option in inventory, just take what you find.
+
+    if not noun:
+        print("There's nothing here to read. (We should never hit this point. If this prints, fix whatever's wrong in def read(). Exiting.)")
+        exit()
+
+    if hasattr(noun, "location") and (noun.location == loc.inv_place or noun.location == loc.current): # shouldn't need this, it should be selected by outcome already.
         if hasattr(noun, "description_detailed") and noun.description_detailed:
+            to_print = None
             if noun.description_detailed.get("is_tested"):
                 from rolling import roll_risk
                 outcome = roll_risk()
@@ -1054,16 +1134,44 @@ def read(format_tuple, input_dict):
                     test = noun.description_detailed.get("crit")
                     if not test:
                         test = noun.description_detailed.get(1)
+                    if test:
+                        to_print = test
                         #NOTE: have not accounted for various degrees of success here. Need to.
-                    print(assign_colour(test, "b_yellow"))
                 else:
                     test = noun.description_detailed.get("failure")
                     if not test:
                         test = noun.description_detailed.get(4)
-                    print(assign_colour(test, "b_yellow"))
+                    if test:
+                        to_print = test
             else:
                 to_print = noun.description_detailed.get("print_str")
+
+            if to_print:
+
+                timeblock, num = get_timeblocks(input_dict, verb="read")
+
+                from interactions.player_movement import update_loc_data
+                from set_up_game import game
+                beforetime = game.time
+                _ = update_loc_data(loc.current, loc.current, timeblocks = timeblock)
+                aftertime = game.time
+                text = aftertime
+                extra2 = ""
+                if noun.location == loc.inv_place:
+                    nountext = f"your {assign_colour(noun)}"
+                else:
+                    nountext = f"a nearby {assign_colour(noun)}"
+
+                print(f"You settle down to read {nountext} in the {loc.current.ern_name}.\n")
+    # ignore the next bit, it's not implemented yet.
+                to_print = "A gardening magazine, featuring the latest popular varieties of [[choose.plant]] and a particularly opinionated think-piece on the Organic vs Not debate. Could be a decent way to wait out a couple of hours if you ever wanted to."
+                if "[[choose." in to_print: ## TODO: This must be done in item init, not at runtime.
+                    from misc_utilities import choose_option
+                    to_print = choose_option(to_print)
+
                 print(assign_colour(to_print, "b_yellow"))
+                print(f"\nIt was {beforetime}, now it's {text}.{extra2}")
+                return
 
             if hasattr(noun, "is_map"):
                 item_interactions.show_map(noun)
@@ -1332,7 +1440,6 @@ def print_children_in_container(noun_inst:itemInstance):
                 print(f"Child: {child}, type: {type(child)}")
                 print(f"VARS CHILDREN: {vars(child)}")
         print(f"  {children}")
-
 
 
 def simple_open_close(format_tuple, input_dict):
@@ -1913,38 +2020,32 @@ def use_item(format_tuple, input_dict):
     print(f"Cannot process {input_dict} in def use_item() End of function, unresolved. (Function not yet written)")
 
 def wait(format_tuple, input_dict):
-    sem = get_dir_or_sem(input_dict)
-    sem2 = get_dir_or_sem(input_dict, 2)
 
-    if sem and sem2 and sem == "for":
-        sem = sem2
-        sem2 = None
+    timeblock, num = get_timeblocks(input_dict, verb="wait")
 
-    if sem and not sem2:
-        if sem in ["while", "hour"]:
-            timeblock = 1
-        elif sem == "day":
-            timeblock = 12
-        if not get_noun(input_dict):
-            from interactions.player_movement import update_loc_data
-            from set_up_game import game
-            beforetime = game.time
-            beforeday = game.day_number
-            export = update_loc_data(loc.current, loc.current, timeblocks = timeblock)
-            if export:
-                aftertime = game.time
-            #afterday = game.day_number
-            #if beforeday < afterday:
-                extra = "the next "
-                extra2 = " You've been stood here a while..."
+    if not get_noun(input_dict):
+        from interactions.player_movement import update_loc_data
+        from set_up_game import game
+        beforetime = game.time
+        export = update_loc_data(loc.current, loc.current, timeblocks = timeblock)
+        aftertime = game.time
+        if export:
+            if num:
+                text = f"{num} {aftertime}s later"
             else:
-                extra = ""
-                extra2 = ""
-            print(f"You stand around for a while, just letting time pass. \n\nIt was {beforetime}, now it's {extra}{aftertime}.{extra2}\n")
+                extra = "the next "
+                text = f"{extra}{aftertime}"
+            extra2 = " You've been stood here a while..."
+        else:
+            text = aftertime
+            extra2 = ""
+        print(f"You stand around for a while, just letting time pass. \n\nIt was {beforetime}, now it's {text}.{extra2}")
+        return
 
-            if export:
-                from printing import print_yellow
-                print_yellow(f"\n{export}")
+    print(f"This is the end of def wait(); what went wrong? Format: {format_tuple} // input dict: {input_dict}")
+            #if export: # this is the "LATE MORNING OF DAY 10" text.
+            #    from printing import print_yellow
+            #    print_yellow(f"\n{export}")
 
 def enter(format_tuple, input_dict, noun=None):
     logging_fn()

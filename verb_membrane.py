@@ -106,9 +106,10 @@ class Membrane:
         from env_data import loc_dict
         self.locations = list(loc_dict.keys())
 
-        from itemRegistry import registry
-        self.nouns_list = list(registry.item_defs.keys())
+        #from itemRegistry import registry
+        #self.item_defs_keys = list(registry.item_defs.keys())
 
+        from itemRegistry import registry
         self.plural_words_dict = registry.plural_words
 
         compound_locs = {}
@@ -127,7 +128,6 @@ class Membrane:
                     local_items[child.name] = child
             return local_items
 
-        from itemRegistry import registry
         from env_data import locRegistry
 
         ## check to see if they ever diverge:
@@ -146,6 +146,8 @@ class Membrane:
         else:
             self.local_nouns = list()
         logging_fn(note = "end of get_local_nouns")
+
+        self.numbers = list(str(i) for i in list(range(0, 102)))
 
 membrane = Membrane()
 

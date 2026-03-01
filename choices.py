@@ -31,6 +31,9 @@ currency = random.choice(("dollar", "pound", "yen"))
 paintings = ["a ship in rough seas", "a small farmstead", "a businessman, sitting in an office in front of a large window", "a dog, running in a field of flowers"]
 
 time_of_day = ["pre-dawn", "early morning", "mid-morning", "late morning", "midday", "early afternoon", "late afternoon", "evening", "late evening", "late night", "midnight", "2am"]
+#time_of_day = ["pre-dawn", "daybreak", "sunrise", "early morning", "", "mid-morning", "", "late morning", "", "midday", "", "early afternoon", "mid afternoon", "late afternoon", "early evening", "evening", "late evening", "twilight", "night", "late night", "11pm", "midnight", "1am", "2am"] ## goddamn I need 6 more.
+
+plant_type = ["tuber", "legume", "arctic carrot"] # moving here from itemReg
 
 night = ["midnight", "late evening", "late night", "2am"]
 

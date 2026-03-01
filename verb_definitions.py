@@ -28,6 +28,7 @@ sem = "sem" # semantic operator (with, to, from etc)
 direction = "direction"
 car = "cardinal"
 meta = "meta"
+num = "number"
 
 # o[type] == 'optional {type}'
 
@@ -42,7 +43,7 @@ directions = ["down", "up", "left", "right", "away", "toward", "towards", "close
 ## "in front of"?? Need to be able to cope with that.
 
 nulls = ["the", "a", "an"]
-semantics = ["with", "and", "around", "for", "while", "set", "on", "hour", "day"] # adding 'hour' and 'day' here because it'll work with 'read'/'wait' for explicit time skipping without going into meta.
+semantics = ["with", "and", "around", "for", "while", "set", "on", "hour", "hours", "day", "days"] # adding 'hour' and 'day' here because it'll work with 'read'/'wait' for explicit time skipping without going into meta.
 
 null_sem_combinations = ["a while"]
 
@@ -77,7 +78,6 @@ formats = {
     "verb_car_loc": (verb, car, location),
     "verb_loc_car": (verb, location, car),
     "dir": (direction,), #direction only, assume verb 'go'.
-    "verb_sem": (verb, sem),
     "verb_dir": (verb, direction), #go up, go outside
     "verb_sem": (verb, sem), # 'look around'
     "verb_loc": (verb, location), # go graveyard
@@ -103,7 +103,11 @@ formats = {
     "verb_dir_noun_sem_noun": (verb, direction, noun, sem, noun), #go to table with box
 
     "sem_noun_verb": (sem, noun, verb), # 'set magazine alight
-    "sem_noun_dir_verb": (sem, noun, direction, verb) # set magazine on fire
+    "sem_noun_dir_verb": (sem, noun, direction, verb), # set magazine on fire
+    ## Numbers:
+    "verb_num_sem": (verb, num, sem), # wait 3 days
+    "verb_sem_num_sem": (verb, sem, num, sem), # wait for 3 days
+    "verb_noun_sem_num_sem": (verb, noun, sem, num, sem) # read book for 2 hours
     ## NOTE: Will likely break at several points in the parser, as they expect 'verb' to always be first. Also may break because 'set' is a verb, too.
 
 }
@@ -155,7 +159,9 @@ verb_dir_loc_car = formats["verb_dir_loc_car"]
 verb_dir_loc = formats["verb_dir_loc"]
 verb_dir_noun = formats["verb_dir_noun"]
 verb_sem_noun = formats["verb_sem_noun"] # wait with book
-verb_sem_sem = formats["verb_sem_sem"] # wait an hour
+verb_sem_sem = formats["verb_sem_sem"] # wait for an hour
+verb_num_sem = formats["verb_num_sem"] # wait 3 days
+verb_sem_num_sem = formats["verb_sem_num_sem"] # wait for 3 days
 verb_noun_sem = formats["verb_noun_sem"] # read book a while
 verb_noun_dir = formats["verb_noun_dir"] # [enter] [work shed] [door]
 
@@ -166,6 +172,7 @@ verb_noun_dir_noun_dir_loc = formats["verb_noun_dir_noun_dir_loc"]
 verb_noun_dir_loc = formats["verb_noun_dir_loc"]
 #verb_noun_dir_sem = formats["verb_noun_dir_sem"]
 verb_noun_sem_sem = formats["verb_noun_sem_sem"]
+verb_noun_sem_num_sem = formats["verb_noun_sem_num_sem"] # read book for 3 hours ## Note, it's not actually hours though. A timeblock == ~2hrs.
 verb_noun_sem_noun = formats["verb_noun_sem_noun"]
 verb_dir_noun_sem_noun = formats["verb_dir_noun_sem_noun"]
 
@@ -212,7 +219,7 @@ verb_defs_dict = {
     "throw": {"alt_words": ["chuck", "lob"], "allowed_null": ["at"], "formats": [verb_noun, verb_noun_dir, verb_noun_sem_noun, verb_noun_dir_noun, verb_noun_dir_loc]}, # throw ball down, throw ball at tree
     "push": {"alt_words": ["shove", "pull"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun, verb_noun_noun]},
     "drop": {"alt_words": ["discard", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun, verb_noun_dir_loc, verb_noun_dir_noun_dir_loc, verb_noun_dir_meta]},
-    "read": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_loc, verb_noun_sem_sem, verb_noun_sem]},
+    "read": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_loc, verb_noun_sem_sem, verb_noun_sem, verb_sem_sem, verb_num_sem, verb_sem_num_sem, verb_noun_sem_num_sem]},
     "use": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_dir_loc, verb_noun_dir_noun, verb_noun_noun]},
     "burn": {"alt_words": ["fire", "alight", "light"], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_dir_loc, sem_noun_dir_verb, sem_noun_verb], "inventory_check": "fire_source"},
     "lock": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_noun], "inventory_check": "key"},
@@ -228,7 +235,7 @@ verb_defs_dict = {
     "set": {"alt_words": [""], "allowed_null": None, "formats": [verb_noun_dir, verb_noun_sem_noun, verb_noun], "distinction": {"second_noun":"fire", "new_verb":"burn", "else_verb":"put"}}, ## not implemented, just an idea. 'if fire is the second noun, the correct verb to use is 'burn', else the verb is 'put'. So 'set' is not its own thing, just a membrane/signpost.
     "clean": {"alt_words": ["wipe"], "allowed_null": None, "formats": [verb_noun, verb_loc, verb_noun_sem_noun]},
     "enter": {"alt_words": [], "allowed_null": None, "formats": [verb_loc, verb_dir_loc, verb_noun, verb_dir_noun, verb_noun_noun]},
-    "time": {"alt_words": ["wait", "waste time", "spend time"], "allowed_null": None, "formats": [verb_only, verb_dir, verb_sem, verb_sem_noun, verb_sem_sem, verb_noun_sem_sem]},
+    "time": {"alt_words": ["wait", "waste time", "spend time"], "allowed_null": None, "formats": [verb_only, verb_dir, verb_sem, verb_sem_noun, verb_sem_sem, verb_num_sem, verb_sem_num_sem, verb_noun_sem_sem, verb_noun_sem_num_sem]},
     "find": {"alt_words": ["search"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_loc, verb_loc, verb_sem_noun]}
     }
 

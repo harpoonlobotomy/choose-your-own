@@ -66,7 +66,7 @@ def update_loc_data(prev_loc:placeInstance, new_cardinal:cardinalInstance, print
     if prev_loc == new_cardinal.place and not timeblocks:
         if not new_cardinal.visited:
             new_cardinal.visited = True
-            return
+            #return
 
     if prev_loc != new_cardinal.place:
         if not timeblocks:
@@ -89,10 +89,16 @@ def update_loc_data(prev_loc:placeInstance, new_cardinal:cardinalInstance, print
             new_time_index=0
         game.time=time_of_day[new_time_index]
         if game.time == time_of_day[0] or time_index + timeblocks > len(time_of_day):
-            game.day_number += 1
-            export = f"START OF DAY {game.day_number}"
+            #print(f"timeblocks: {timeblocks} / 12: {timeblocks/12}")
+            if int(timeblocks/12) > 1:
+                game.day_number += int(timeblocks/12)
+            else:
+                game.day_number += 1
+            export = f"{game.time.upper()} OF DAY {game.day_number}"
         else:
             export = None
+    else:
+        export = None
 
     if new_location==prev_loc:
         if print_txt:
@@ -109,8 +115,8 @@ def update_loc_data(prev_loc:placeInstance, new_cardinal:cardinalInstance, print
                 print(f"You've been here before... It was {new_location.first_weather} the first time you came.")
                 if new_location.first_weather == game.weather:
                     print(weatherdict[game.weather].get("same_weather"))
-
-    events.update_timed_events(new_cardinal, timeblocks) # Sending cardinal so events have the data they need.
+    if timeblocks:
+        events.update_timed_events(new_cardinal, timeblocks) # Sending cardinal so events have the data they need.
     if not new_cardinal.visited:
         new_cardinal.visited = True
 

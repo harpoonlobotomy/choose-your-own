@@ -588,7 +588,7 @@
     "can_pick_up": true,
     "can_read": true,
     "descriptions": {
-      "generic": "It's a puzzle magazine",
+      "generic": "A puzzle magazine. Looks like someone had a bit of a go at one of the Sudoku pages but gave up. Could be a nice way to wait out a couple of hours if you ever wanted to.",
       "is_burned": "It's a burned puzzle magazine, barely legible with half the paged burned away"
     },
     "can_burn": true,
@@ -615,7 +615,8 @@
     "can_pick_up": true,
     "can_read": true,
     "descriptions": {
-      "generic": "It's a fashion magazine"
+      "generic": "A glamourous fashion magazine, looks like it's a couple of years old. Not much immediate value to it, but if you wanted to kill some time it'd probably be servicable enough.",
+      "is_burned": "It's a burned fashion magazine, barely legible with half the paged burned away"
     },
     "can_burn": true,
     "is_burned": false,
@@ -641,7 +642,8 @@
     "can_pick_up": true,
     "can_read": true,
     "descriptions": {
-      "generic": "It's a gardening magazine"
+      "generic": "A gardening magazine, featuring the latest popular varieties of [[choose.plant]] and a particularly opinionated think-piece on the Organic vs Not debate. Could be a decent way to wait out a couple of hours if you ever wanted to.",
+      "is_burned": "It's a burned gardening magazine, barely legible with half the paged burned away"
     },
     "can_burn": true,
     "is_burned": false,

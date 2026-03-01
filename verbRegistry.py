@@ -211,17 +211,23 @@ class Parser:
 
         return idx, word, kinds, canonical, potential_match, omit_next, perfect_match
 
-    def tokenise(input_str, nouns_list, locations, directions, cardinals, membrane):
+    def tokenise(input_str, membrane):
 
         current_location = get_current_loc()
+
+        locations = membrane.locations
+        directions = membrane.directions
+        cardinals = membrane.cardinals
+
         word_phrases = membrane.combined_wordphrases
         parts = input_str.split()
         loc_options = locations
         compound_locs = membrane.compound_locations
         compound_nouns = membrane.plural_words_dict
-        #items = nouns_list
+        numbers = membrane.numbers
+
         items = membrane.local_nouns
-        #local_items = membrane.local_nouns
+
         tokens = []
         omit_next = 0
 
@@ -251,7 +257,10 @@ class Parser:
                         #print(f"word in meta_verbs: {word}")
                         kinds.add("meta")
                         canonical = word
-
+                if word in numbers:
+                        #print(f"word in verbs.semantics: {word}")
+                        kinds.add("number")
+                        canonical = word
                 if word in initial or f"a {word}" in initial:
                     #print(f"Word in initial: {word}")
                     if word in word_phrases and (word_phrases.get(word) and parts[0] in word_phrases.get(word)):
@@ -532,7 +541,7 @@ class Parser:
             #for verb_entry in verb_instances:
                 #for verb in verb_entry.values():
                     #if hasattr(verb, "formats"):
-                        #print(f"VERB FORMATS: {verb.formats}")
+                        #print(f"\nVERB FORMATS: {verb.formats}\n")
 
             for seq in sequences:
                 if seq:
@@ -775,18 +784,13 @@ class Parser:
         logging_fn()
         from verb_membrane import membrane
 
-        nouns_list = membrane.nouns_list
-        locations = membrane.locations
-        directions = membrane.directions
-        cardinals = membrane.cardinals
-
         from interactions.item_interactions import find_local_item_by_name
         local_nouns = find_local_item_by_name()
         clean_nouns  = {}
         if not local_nouns:
             clean_nouns = dict()
         else:
-            for item in local_nouns:
+            for item in local_nouns: # make this a fn to reuse for all plural gets.
                 clean_nouns[item.name] = item
                 if " " in item.name:
                     if not membrane.plural_words_dict.get(item.name):
@@ -795,7 +799,8 @@ class Parser:
 
         membrane.local_nouns = clean_nouns
 
-        tokens = self.tokenise(input_str, nouns_list, locations, directions, cardinals, membrane)
+        tokens = self.tokenise(input_str, membrane)
+
         if not tokens:
             return None, None
         verbReg_Reciever(f"Tokens after tokenise: {tokens}")

@@ -132,7 +132,7 @@ detail_data = { #moved this from item_definitions.
 
 "scroll_details": {"is_tested": True, "failure": "Unrolling the scroll, pieces of it fall to dust in your hands.", "crit": "You carefully unroll the scroll, and see a complex drawing on the surface - you've seen something like it in a book somewhere..."},
 
-"puzzle_magazine_details": {"is_tested":False, "print_str": "A puzzle magazine. Looks like someone had a bit of a go at one of the Sudoku pages but gave up. Could be a nice way to wait out a couple of hours if you ever wanted to."},
+"puzzle_magazine_details": {"is_tested":False, "print_str": "You work your way through word puzzles, sudoku, and some of those 'lateral thinking' challenges. (There's no actual point to this, it does nothing yet.)"},
 
 "fashion_magazine_details": {"is_tested":False, "print_str": "A glamourous fashion magazine, looks like it's a couple of years old. Not much immediate value to it, but if you wanted to kill some time it'd probably be servicable enough."},
 

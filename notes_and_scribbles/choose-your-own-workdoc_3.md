@@ -4739,3 +4739,25 @@ Hm.
 # As the padlock falls to the ground and the chain unravells, the graveyard gate creaks open.
 
 I need a newline between the unlocking and the padlock.
+
+7.33pm 28/2/26
+Added numerals as 'num/number' to verbRegistry, and the accompanying verb formats for read and wait. So 'wait 3 days/wait for 3 days' will actually wait 3 day periods, and advance game.time accordingly.
+The only tricky thing is that it's my nature to use 'hours', but timeblocks are 2 hours long. Might have to make it 24 hrs just so I can use 'hours' and have it make sense. Otherwise 'read for 1 hour' won't do anything, or will act as if it's 2 hours, neither of which are desired outcomes. Might just have to think of some more time-of-day words.
+
+12.26pm 1/3/26
+Just realised I don't have to change the name of each block of time. The names can repeat, as long as time still progresses. I'll just add 'later in the {timeblock}' or smth.
+
+12.50pm
+Have waittime to read, so time passes and it prints the time change accordingly. The detailed_description text doesn't work anymore though.
+
+"A glamourous fashion magazine, looks like it's a couple of years old. Not much immediate value to it, but if you wanted to kill some time it'd probably be servicable enough."
+
+is now a good description for def look(magazine), but not if you sit down to read it for a few hours.
+
+Ah. Having the description in the json instead of itemReg means this:
+
+      "generic": "A gardening magazine, featuring the latest popular varieties of {random.choice(plannt_type)} and a particularly opinionated think-piece on the Organic vs Not debate. Could be a decent way to wait out a couple of hours if you ever wanted to.",
+doesn't work.
+Changing it to
+      "generic": "A gardening magazine, featuring the latest popular varieties of [[choose.plant]] and a particularly opinionated think-piece on the Organic vs Not debate. Could be a decent way to wait out a couple of hours if you ever wanted to.",
+and will add a catch to def read() to swap it out.
