@@ -132,15 +132,15 @@ detail_data = { #moved this from item_definitions.
 
 "scroll_details": {"is_tested": True, "failure": "Unrolling the scroll, pieces of it fall to dust in your hands.", "crit": "You carefully unroll the scroll, and see a complex drawing on the surface - you've seen something like it in a book somewhere..."},
 
-"puzzle_magazine_details": {"is_tested":False, "print_str": "You work your way through word puzzles, sudoku, and some of those 'lateral thinking' challenges. (There's no actual point to this, it does nothing yet.)"},
+"puzzle_magazine_details": {"is_tested":False, "print_str": "You work your way through word puzzles, sudoku, and some of those 'lateral thinking' challenges. You feel a little smarter, you think."},
 
-"fashion_magazine_details": {"is_tested":False, "print_str": "A glamourous fashion magazine, looks like it's a couple of years old. Not much immediate value to it, but if you wanted to kill some time it'd probably be servicable enough."},
+"fashion_magazine_details": {"is_tested":False, "print_str": "You read through the articles and photoshoots of the fashion magazine. You've learned of a few more insecurities you never knew people could have, and you now know what was in fashion whenever this magazine was printed."},
 
-"gardening_magazine_details": {"is_tested":False, "print_str": f"A gardening magazine, featuring the latest popular varieties of {random.choice(plant_type)} and a particularly opinionated think-piece on the Organic vs Not debate. Could be a decent way to wait out a couple of hours if you ever wanted to."},
+"gardening_magazine_details": {"is_tested":False, "print_str": f"You spend a while reading about [[choose.plant]]s and some other topical articles, and realise that the real debate about 'whether organics are good or not' is whether organics should be determined by corporate ownership or intention. Food for thought, so to speak."}, # the s here is to make plural, only works doing it this way because the shortlist of plant_type is so short and I know the s won't conflict. Isn't a real way of doing it though, should be a check.
 
-"mail_order_catalogue_details": {"is_tested":False, "print_str": "A mail order catalogue, with the reciever's address sticker ripped off. Clothes, homegoods, toys, gadgets - could be a nice way to wait out a couple of hours if you ever wanted to."},
+"mail_order_catalogue_details": {"is_tested":False, "print_str": "Spending some time reading through the mail order catalogue, you find a handful of things you quite like, and far more things you're not sure anyone would actually buy."},
 
-"local_map_details": {"is_tested":False, "print_str": "A dated but pretty detailed map of the local area. Could be good for finding new places to go..."},
+"local_map_details": {"is_tested":False, "print_str": "A dated but pretty detailed map of the local area. Spending some time looking at it closely, you think you've figured out some 'area highlights' the map draws attention to."},
 
 "damp_newspaper": {"is_tested":True, 1: "Despite your best efforts, the newspaper is practically disintegrating in your hands. You make out something about an event in ballroom, but nothing beyond that..", 3: "After carefully dabbing off as much of the mucky water and debris as you can, you find the front page is a story about the swearing in of a new regional governor, apparenly fraught with controversy.", 4: "Something about a named official and a contraversy from years ago where a young man went missing in suspicious circumstances."} ## no idea where this would go, but I need some placeholder text so here it is.
 }
@@ -266,6 +266,13 @@ class itemInstance:
             details = details.replace(" ", "_")
 
             self.description_detailed = detail_data.get(details)
+            for entry in self.description_detailed:
+                if self.description_detailed[entry] and isinstance(self.description_detailed[entry], str):
+                    string = self.description_detailed[entry]
+                    if "[[choose." in string:
+                        from misc_utilities import choose_option
+                        string = choose_option(string, self)
+                        self.description_detailed[entry] = string
 
         if "container" in self.item_type:
             self.verb_actions.add("is_container")
@@ -1222,22 +1229,25 @@ class itemRegistry:
                 if not has_and_true(inst, "children") and get_if_open(inst, "no_children"):
                     description = get_if_open(inst, "no_children")
         #print(f"{inst.name}: Description after child check etc: {description}")
-        if not description and hasattr(inst, "descriptions"):
+        if not description and hasattr(inst, "descriptions"): # nothing should have 'description' on init anymore, shouldn't need this.
             if not inst.descriptions:
                 inst.descriptions = {}
                 inst.descriptions["generic"] = f"It's a {inst.name}"
                 inst.description = inst.descriptions["generic"]
-                return
-            if has_and_true(inst, "is_broken") and inst.descriptions.get("is_broken"):
+
+            elif has_and_true(inst, "is_broken") and inst.descriptions.get("is_broken"):
                 description = inst.descriptions["is_broken"]
+
+            elif has_and_true(inst, "is_burned") and inst.descriptions.get("is_burned"):
+                description = inst.descriptions["is_burned"]
 
             elif has_and_true(inst, "is_open") and inst.descriptions.get("is_open"):
                 description = inst.descriptions["is_open"]
 
             elif inst.descriptions.get("is_singular") and inst.has_multiple_instances == 1:
-                    description = inst.descriptions["is_singular"]
+                description = inst.descriptions["is_singular"]
             elif inst.descriptions.get("is_plural") and inst.has_multiple_instances > 1:
-                    description = inst.descriptions["is_plural"]
+                description = inst.descriptions["is_plural"]
 
             elif inst.descriptions.get("generic"):
                 description = inst.descriptions["generic"]
@@ -1245,11 +1255,15 @@ class itemRegistry:
 
         ## Update nicenames ##
         if inst.nicenames.get("is_singular") and inst.has_multiple_instances == 1:
-                inst.nicename = inst.nicenames["is_singular"]
+            inst.nicename = inst.nicenames["is_singular"]
         if inst.nicenames.get("is_plural") and inst.has_multiple_instances > 1:
-                inst.nicename = inst.nicenames["is_plural"]
+            inst.nicename = inst.nicenames["is_plural"]
 
         if description:
+            if "[[choose" in description:
+                from misc_utilities import choose_option
+                description = choose_option(description, inst)
+
             inst.description = description
             return
         if orig_description:

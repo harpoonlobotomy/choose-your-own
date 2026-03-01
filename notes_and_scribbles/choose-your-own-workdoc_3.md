@@ -4761,3 +4761,19 @@ doesn't work.
 Changing it to
       "generic": "A gardening magazine, featuring the latest popular varieties of [[choose.plant]] and a particularly opinionated think-piece on the Organic vs Not debate. Could be a decent way to wait out a couple of hours if you ever wanted to.",
 and will add a catch to def read() to swap it out.
+
+I want to be able to reference that same thing again. So if the description says 'It has an article about arctic carrots', I want to be able to then say 'you spend some time reading about actic carrots.
+
+So, 'choose.plant' should check for an item attr first. self.chosen or something, so if an item already has that detail filled, it doesn't get it again. Otherwise the 'choice' changes each reading.
+
+13.43
+
+Okay. Seems to be working now. If it finds the right regex match, it assigns the choice to instance.choose_text if it wasn't there, and uses it immediately if it was. So whatever it gets the first time is that it's choose_text from then on. Much better.
+Also, descriptions and description_detailed use the same attr, so it'll be the same whenever it's referenced.
+
+detail_data from itemReg should just be in item defs. I think the only reason it wasn't is because of the random.choice, but I'm working around that already now. Will move them later.
+
+2.08pm
+I need to add the random loot back in again. And maybe an explicit 'search' verb, that produces a list of all available local items as well as has a chance of adding a piece of random loot to the location, separate from 'look'. idk.
+
+Anyway. Descriptions have been swapped around, though the descriptions_detailed are still in itemReg. Will move those.

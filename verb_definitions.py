@@ -1,11 +1,4 @@
 
-
-#null = "[null]"
-#verb = "[verb]"
-#location = "[location]"
-#noun = "[noun]"
-
-
 meta_verbs = {
     "inventory": {"alt_words": ["i"]},
     "help": {"alt_words": ""},
@@ -24,23 +17,15 @@ null = "null"
 verb = "verb"
 location = "location"
 noun = "noun"
-sem = "sem" # semantic operator (with, to, from etc)
+sem = "semantic" # everything else is its full form. 'sem' should become 'semantic', otherwise loc and dir should also come their shortened forms.
 direction = "direction"
 car = "cardinal"
 meta = "meta"
 num = "number"
 
-# o[type] == 'optional {type}'
-
-#formats = {
-#    "verb_only": f"{verb}",
-#    "verb_noun": f"{verb} o{null} {noun}",
-#    "verb_loc": f"{verb} o{null} {location}",
-#    "verb_noun_noun": f"{verb} o{null} {noun} {null} o{null} {noun}"
-#}
 cardinals = ["north", "east", "south", "west"]
-directions = ["down", "up", "left", "right", "away", "toward", "towards", "closer", "further", "to", "into", "against", "across", "at", "in", "on", "from", "inside", "outside", "away", "into", "elsewhere", "here", "through"]
-## "in front of"?? Need to be able to cope with that.
+directions = ["down", "up", "left", "right", "away", "toward", "towards", "closer", "further", "to", "into", "against", "across", "at", "in", "on", "from", "inside", "outside", "away", "into", "elsewhere", "here", "through", "area"] # area as in 'search th area
+## "in front of"?? Need to be able to cope with that. TODO this.
 
 nulls = ["the", "a", "an"]
 semantics = ["with", "and", "around", "for", "while", "set", "on", "hour", "hours", "day", "days"] # adding 'hour' and 'day' here because it'll work with 'read'/'wait' for explicit time skipping without going into meta.

@@ -269,7 +269,7 @@ class Parser:
                         canonical = word
                     if word in verbs.semantics:
                         #print(f"word in verbs.semantics: {word}")
-                        kinds.add("sem")
+                        kinds.add("semantic")
                         canonical = word
                     elif word in verbs.list_null_words:
                         #print(f"word in verbs.null_words: {word}")
@@ -531,7 +531,7 @@ class Parser:
             #print(f"VERB INSTANCES[0]: {verb_instances[0]} \nSequences: {sequences}\n") # have to add newlines so it doesn't get overlapped by the input text.
             if list(('verb', 'noun', 'direction', 'verb', 'noun')) in sequences:
                 #print("       That pattern exists.\n")
-                new_seq = ["verb", "noun", "sem", "noun"] # new_verb, noun with noun2 == use noun2 to verb noun
+                new_seq = ["verb", "noun", "semantic", "noun"] # new_verb, noun with noun2 == use noun2 to verb noun
                 sequences.append(new_seq)
                 ## So I need to fix the instances before it goes forward, because it needs to output a sequence viable with unlock, not use.
         #print(f"verb instances: {verb_instances}")
@@ -747,7 +747,7 @@ class Parser:
                     token.str_name = "with"
                     token.canonical = "with"
                     token.kind.remove("direction")
-                    token.kind.add("sem")
+                    token.kind.add("semantic")
                 #print(f"Token is not verb1 and counter == counter: {token} // counter == {counter} ")
                 counter += 1
                 #print(f"token in tokens at end: {token}")

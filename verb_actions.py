@@ -380,7 +380,7 @@ def get_entries_from_dict(input_dict):
                     print(f"More than one `location`: {direction_entry} already exists, {entry} will be ignored.")
                     continue
                 location_entry = entry
-            if kind == "sem":
+            if kind == "semantic":
                 if semantic_entry != None:
                     print(f"More than one `sem`: {direction_entry} already exists, {entry} will be ignored.")
                     continue
@@ -479,7 +479,7 @@ def get_dir_or_sem(input_dict:dict, x_val=None) -> str:
     sem_counter = 0
     for data in input_dict.values():
         for kind, entry in data.items():
-            if "direction" in kind or "sem" in kind:
+            if "direction" in kind or "semantic" in kind:
                 if not x_val:
                     return entry["text"] # was str_name; shoul be text, no? For dirs/sems, should always be the same. Need to check.
 
@@ -638,7 +638,7 @@ def meta(format_tuple, input_dict):
         print_yellow("Type words to progress, 'i' for 'inventory', 'd' to describe the environment, 'settings' for settings, 'show visited' to see where you've been this run: - that's about it.")
         return
     elif meta_verb == "describe":
-        look(("verb", "sem"), None)
+        look(("verb", "semantic"), None)
         return
     elif meta_verb == "inventory":
         generate_clean_inventory(will_print=True, coloured=True)
@@ -892,7 +892,7 @@ def go(format_tuple, input_dict, no_noun=None): ## move to a location/cardinal/i
 def look(format_tuple=None, input_dict=None):
     logging_fn()
 
-    if not format_tuple or (format_tuple == tuple(("verb", "sem")) and not input_dict):
+    if not format_tuple or (format_tuple == tuple(("verb", "semantic")) and not input_dict):
         from misc_utilities import look_around
         look_around()
         return
@@ -906,7 +906,7 @@ def look(format_tuple=None, input_dict=None):
     #noun = get_noun(input_dict)
     noun, noun_text, _, _ = get_nouns(input_dict)
 
-    if len(format_tuple) == 1 or (len(format_tuple) == 2 and semantic_entry != None and input_dict[1]["sem"]["str_name"] == "around"):
+    if len(format_tuple) == 1 or (len(format_tuple) == 2 and semantic_entry != None and input_dict[1]["semantic"]["str_name"] == "around"):
         from misc_utilities import look_around
         look_around()
 
@@ -952,7 +952,7 @@ def look(format_tuple=None, input_dict=None):
         if format_tuple[2] == "cardinal" and format_tuple[1] == "direction":
             return turn_cardinal(inst_from_idx(input_dict[2], "cardinal"), turning = False)
 
-        if format_tuple[1] == "sem" and semantic_entry["text"] == "for":
+        if format_tuple[1] == "semantic" and semantic_entry["text"] == "for":
             return find(format_tuple, input_dict)
 
         if format_tuple[2] == "location" and format_tuple[1] == "direction":
@@ -1162,15 +1162,8 @@ def read(format_tuple, input_dict):
                 else:
                     nountext = f"a nearby {assign_colour(noun)}"
 
-                print(f"You settle down to read {nountext} in the {loc.current.ern_name}.\n")
-    # ignore the next bit, it's not implemented yet.
-                to_print = "A gardening magazine, featuring the latest popular varieties of [[choose.plant]] and a particularly opinionated think-piece on the Organic vs Not debate. Could be a decent way to wait out a couple of hours if you ever wanted to."
-                if "[[choose." in to_print: ## TODO: This must be done in item init, not at runtime.
-                    from misc_utilities import choose_option
-                    to_print = choose_option(to_print)
+                print(f"You settle down to read {nountext} in the {loc.current.ern_name}.\n\n   {assign_colour(to_print, "yellow")}\n\nIt was {beforetime}, now it's {text}.{extra2}")
 
-                print(assign_colour(to_print, "b_yellow"))
-                print(f"\nIt was {beforetime}, now it's {text}.{extra2}")
                 return
 
             if hasattr(noun, "is_map"):

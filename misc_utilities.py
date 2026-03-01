@@ -106,22 +106,29 @@ def switch_the(text:str|itemInstance|list, replace_with:str="the")->str:
 
     return text
 
-def choose_option(input_text):
+def choose_option(input_text, instance=None):
     ## for '[[choose.{something}]]' in strings.
     import re
     choose_text = re.search(r"\[.choose.\w+\].", input_text)
     if choose_text:
         choose_text = choose_text.group(0)
 
-    if "plant" in choose_text:
-        from choices import plant_type
-        from random import choice
-        replacement_str = choice(plant_type)
-    else:
-        print("Have only added plant so far. Oops.")
+        if instance and hasattr(instance, "choose_text"):
+            return input_text.replace(choose_text, instance.choose_text)
 
-    input_text = input_text.replace(choose_text, replacement_str)
-    return input_text
+        replacement_str = None
+        if "plant" in choose_text:
+            from choices import plant_type
+            from random import choice
+            replacement_str = choice(plant_type)
+        else:
+            print("Have only added plant so far. Oops.")
+        if replacement_str:
+            if instance:
+                setattr(instance, "choose_text", replacement_str)
+
+    return input_text.replace(choose_text, replacement_str)
+
 
 def clean_separation_result(result:list, to_print=False):
     logging_fn()
