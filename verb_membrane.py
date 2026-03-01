@@ -14,14 +14,6 @@ from printing import print_blue, print_yellow
 from verbRegistry import VerbInstance
 
 MOVE_UP = "\033[A"
-movable_objects = ["put", "take", "combine", "separate", "throw", "push", "drop", "set", "move"]
-
-null_words = set(("a", "plus", "the", "at"))
-
-combine_sems = ["into", "with", "to", "and"]
-
-combine_parts = {("put", "into"), ("add", "to"), ("a", "while")# thinking about this for more specific matching. Not sure. Idea is 'put x into y' == explicitly y is a container.
-}
 
 
 def get_noun_instances(dict_from_parser, viable_formats):
@@ -39,12 +31,12 @@ def get_noun_instances(dict_from_parser, viable_formats):
                         #print(f"V: {v}")
                         loc_name = v.get("str_name")
                         #print(f"loc_name canonical: {loc_name}")
-                        loc_inst = locRegistry.by_name[loc_name]
+                        loc_inst = locRegistry.by_name.get(loc_name)
 
         if loc_inst == None:
             loc_inst = locRegistry.current.place
+
         card = entry['str_name']
-        #print(f"locRegistry.cardinals[loc_inst]: {locRegistry.cardinals[loc_inst]}")
 
         card_inst = locRegistry.cardinals[loc_inst][card]
         dictionary[idx][kind] = ({"instance": card_inst, "str_name": entry["str_name"], "text": entry["text"]})

@@ -4777,3 +4777,13 @@ detail_data from itemReg should just be in item defs. I think the only reason it
 I need to add the random loot back in again. And maybe an explicit 'search' verb, that produces a list of all available local items as well as has a chance of adding a piece of random loot to the location, separate from 'look'. idk.
 
 Anyway. Descriptions have been swapped around, though the descriptions_detailed are still in itemReg. Will move those.
+
+2.25pm
+Adding "details": as an entry in descriptions for the mags.
+
+Apparently missed something:
+
+#   You spend a while reading about [[choose.plant]]s and some other topical articles, and realise that the real debate about 'whether organics are good or not' is whether organics should be determined by corporate ownership or intention. Food for thought, so to speak.
+
+printed for def read.
+

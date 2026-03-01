@@ -441,7 +441,7 @@ class Parser:
 
         #sequence = sequences[0]
         full_matches = {}
-        for i, sequence in enumerate(sequences):
+        for sequence in sequences:
             #print(f"Sequence: {sequence}")
             matched = 0
             for token in tokens:
@@ -642,8 +642,8 @@ class Parser:
     def resolve_verb(tokens, verb_name, format_key) -> tuple[VerbInstance|str]:
 
         #print(f"Format key: {format_key}")
-        items = verbs.by_format.get(format_key) # gets verb names that match the format key
-
+        items = (i for i in verbs.by_format.get(format_key) if verb_name in i) # gets verb names that match the format key
+        #print(f"ITEMS in resolve verb: {items}")
         #print(f"Items: {items}")
         #print("by alt words: ", verbs.by_alt_words.get(verb_name))
         if items and verb_name in items:
@@ -663,13 +663,15 @@ class Parser:
                 print(f"Could not find verb obj for {verb_name}")
 
         else:
-            verb_obj = verbs.by_alt_words.get(verb_name)[0]
-            #print(f"verb_obj: {verb_obj}")
-            if verb_obj and verb_obj.name in items:
-                #print("verb obj and verb_obj.name in items == true")
-                return verb_obj, format_key
-            else:
-                print(f"verb obj is {verb_obj} with name `{verb_obj.name}` but not in items: {items}")
+            if verbs.by_alt_words.get(verb_name):
+                verb_obj = verbs.by_alt_words[verb_name][0]
+                #print(f"verb_obj: {verb_obj}")
+                if verb_obj and verb_obj.name in items:
+                    #print("verb obj and verb_obj.name in items == true")
+                    return verb_obj, format_key
+                else:
+                    print(f"verb obj is {verb_obj} with name `{verb_obj.name}` but not in items: {items}")
+
         return None, format_key
 
     def build_dict(confirmed_verb, tokens, initial_dict, format_key):
@@ -691,11 +693,12 @@ class Parser:
                     #print(f"Verb::: {verb}, verb_name: {verb.name}")
                     #dict_for_output[i]={item: verb}
                     dict_for_output[i]={item: {"instance":verb, "str_name":item_name, "text": initial_dict[i][item].get("text")}}
+                else:
+                    dict_for_output[i]={item: {"instance":None, "str_name":item_name, "text": initial_dict[i][item].get("text")}}
 
             else:
                 #print(f"{initial_dict[i]}")
                 dict_for_output[i]={item:{"instance":None, "str_name":item_name, "text": initial_dict[i][item].get("text")}}
-
         return dict_for_output, tokens # including tokens for any minor input detail that might matter later.
 
     def reorder_tokens_to_sequence(tokens, sequence):
@@ -796,6 +799,9 @@ class Parser:
                     if not membrane.plural_words_dict.get(item.name):
                         parts = item.name.split(" ")
                         membrane.plural_words_dict[item.name] = tuple(parts)
+                if hasattr(item, "alt_names") and item.alt_names:
+                    for alt in item.alt_names: ## hadn't added alt_names in. Goddamn.
+                        clean_nouns[alt] = item
 
         membrane.local_nouns = clean_nouns
 
@@ -816,9 +822,9 @@ class Parser:
         verbReg_Reciever(f"sequences after sequencer: {sequences}")
         #print(f"SEQUENCES: {sequences}/tokens: {tokens}")
         if not sequences:
-            #print(f"FAILURE IN SEQUENCES: {tokens}")
+            tokenlist = list([list(i.kind)[0] for i in tokens if i.kind != {"null"} and i.kind != set()])
             from misc_utilities import print_failure_message
-            print_failure_message(input_str=input_str)
+            print_failure_message(input_str=input_str, format=tuple(tokenlist),tokens=tokens)
             return None, None
 
             #TODO:  If no functional sequences, need to pick out parts that might be applicable to make reasonable guesses. Like if we have 'go'  and 'location', 'did you mean 'go to location', etc. Need a way to pause mid-parse, get confirmation then come back and run the sequencer again. Not today, but soon.
@@ -829,6 +835,7 @@ class Parser:
         for sequence in sequences:
             if len(sequence) == token_count:
                 length_checked_sequences.append(sequence)
+
         if not length_checked_sequences and len(sequences) == 1:
             length_checked_sequences = sequences # may make things fail unexpectedly, but allows for 'failed' words to be attributed as nouns if the sequence would be correct without them (eg 'burned book' if there's a book but not a burned one. Not sure if I want this or not but that's what it is for now.)
 

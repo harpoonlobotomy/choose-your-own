@@ -128,21 +128,6 @@ plant_type = ["tuber", "legume", "arctic carrot"]
 detail_data = { #moved this from item_definitions.
 
 # failure = <10, success = 10-19, crit = 20.
-"paper_scrap_details": {"is_tested": True, "failure": "The last three digits are 487, but the rest are illegible.", "success": "It takes you a moment, but the number on the paper is `07148 718 487'. No name, though.", "crit": "The number is `07148 718 487. Looking closely, you can see a watermark on the paper, barely visible - `Vista Continental West`. Do you know that name?"},
-
-"scroll_details": {"is_tested": True, "failure": "Unrolling the scroll, pieces of it fall to dust in your hands.", "crit": "You carefully unroll the scroll, and see a complex drawing on the surface - you've seen something like it in a book somewhere..."},
-
-"puzzle_magazine_details": {"is_tested":False, "print_str": "You work your way through word puzzles, sudoku, and some of those 'lateral thinking' challenges. You feel a little smarter, you think."},
-
-"fashion_magazine_details": {"is_tested":False, "print_str": "You read through the articles and photoshoots of the fashion magazine. You've learned of a few more insecurities you never knew people could have, and you now know what was in fashion whenever this magazine was printed."},
-
-"gardening_magazine_details": {"is_tested":False, "print_str": f"You spend a while reading about [[choose.plant]]s and some other topical articles, and realise that the real debate about 'whether organics are good or not' is whether organics should be determined by corporate ownership or intention. Food for thought, so to speak."}, # the s here is to make plural, only works doing it this way because the shortlist of plant_type is so short and I know the s won't conflict. Isn't a real way of doing it though, should be a check.
-
-"mail_order_catalogue_details": {"is_tested":False, "print_str": "Spending some time reading through the mail order catalogue, you find a handful of things you quite like, and far more things you're not sure anyone would actually buy."},
-
-"local_map_details": {"is_tested":False, "print_str": "A dated but pretty detailed map of the local area. Spending some time looking at it closely, you think you've figured out some 'area highlights' the map draws attention to."},
-
-"damp_newspaper": {"is_tested":True, 1: "Despite your best efforts, the newspaper is practically disintegrating in your hands. You make out something about an event in ballroom, but nothing beyond that..", 3: "After carefully dabbing off as much of the mucky water and debris as you can, you find the front page is a story about the swearing in of a new regional governor, apparenly fraught with controversy.", 4: "Something about a named official and a contraversy from years ago where a young man went missing in suspicious circumstances."} ## no idea where this would go, but I need some placeholder text so here it is.
 }
 
 class itemInstance:
@@ -261,18 +246,6 @@ class itemInstance:
 
         if "print_on_investigate" in attr:
             self.verb_actions.add("print_on_investigate")
-
-            details = self.name + "_details"
-            details = details.replace(" ", "_")
-
-            self.description_detailed = detail_data.get(details)
-            for entry in self.description_detailed:
-                if self.description_detailed[entry] and isinstance(self.description_detailed[entry], str):
-                    string = self.description_detailed[entry]
-                    if "[[choose." in string:
-                        from misc_utilities import choose_option
-                        string = choose_option(string, self)
-                        self.description_detailed[entry] = string
 
         if "container" in self.item_type:
             self.verb_actions.add("is_container")
@@ -1180,6 +1153,20 @@ class itemRegistry:
         if not inst.descriptions and inst.description:
             print(f"Not inst.descriptions. inst.description: {inst.description}")
             return
+
+        if inst.descriptions:
+            for entry in inst.descriptions:
+                val = inst.descriptions[entry]
+                if val and isinstance(val, str) and "[[choose" in val:
+                    from misc_utilities import choose_option
+                    inst.descriptions[entry] = choose_option(val, inst)
+
+                if entry == "details":
+                    for detail in inst.descriptions[entry]:
+                        val = inst.descriptions[entry][detail]
+                        if val and isinstance(val, str) and "[[choose" in val:
+                            from misc_utilities import choose_option
+                            inst.descriptions[entry][detail] = choose_option(val, inst)
 
         def get_if_open(inst:itemInstance, label:str):
 

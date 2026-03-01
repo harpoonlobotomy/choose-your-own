@@ -201,7 +201,7 @@ def look_around():
                 print(f"   {is_items}")
 
 
-def print_failure_message(input_str=None, message=None, noun=None, verb=None, idx_kind=None, init_dict=None, format = None):
+def print_failure_message(input_str=None, message=None, noun=None, verb=None, idx_kind=None, init_dict=None, format = None, tokens=None):
     """prints a failure message using `input_str`, `noun`, `verb`, `inx_kind`, `init_dict` and `format`, depending on which elements are given. If nothing else, just prints a generic message using `input_str`."""
     logging_fn()
     if input_str:
@@ -210,6 +210,8 @@ def print_failure_message(input_str=None, message=None, noun=None, verb=None, id
     from verb_actions import get_verb
     if not init_dict and not (noun and verb):
         print(f"Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
+        if tokens:
+            print(f"Tokens: {tokens}")
         return
 
     if not verb and init_dict:

@@ -286,7 +286,7 @@
     "can_read": true,
     "descriptions": {
       "generic": "An old parchment scroll, seemingly abandoned at a hidden shrine.",
-      "is_open": ""
+      "details": {"is_tested": true, "failure": "Unrolling the scroll, pieces of it fall to dust in your hands.", "crit": "You carefully unroll the scroll, and see a complex drawing on the surface - you've seen something like it in a book somewhere..."}
     },
     "can_burn": true,
     "is_burned": false,
@@ -589,7 +589,8 @@
     "can_read": true,
     "descriptions": {
       "generic": "A puzzle magazine. Looks like someone had a bit of a go at one of the Sudoku pages but gave up. Could be a nice way to wait out a couple of hours if you ever wanted to.",
-      "is_burned": "It's a burned puzzle magazine, barely legible with half the paged burned away"
+      "is_burned": "It's a burned puzzle magazine, barely legible with half the paged burned away",
+      "details": {"is_tested":false, "print_str": "You work your way through word puzzles, sudoku, and some of those 'lateral thinking' challenges. You feel a little smarter, you think."}
     },
     "can_burn": true,
     "is_burned": false,
@@ -616,7 +617,8 @@
     "can_read": true,
     "descriptions": {
       "generic": "A glamourous fashion magazine, looks like it's a couple of years old. Not much immediate value to it, but if you wanted to kill some time it'd probably be servicable enough.",
-      "is_burned": "It's a burned fashion magazine, barely legible with half the paged burned away"
+      "is_burned": "It's a burned fashion magazine, barely legible with half the paged burned away",
+      "details": {"is_tested":false, "print_str": "You read through the articles and photoshoots of the fashion magazine. You've learned of a few more insecurities you never knew people could have, and you now know what was in fashion whenever this magazine was printed."}
     },
     "can_burn": true,
     "is_burned": false,
@@ -643,7 +645,8 @@
     "can_read": true,
     "descriptions": {
       "generic": "A gardening magazine, featuring the latest popular varieties of [[choose.plant]] and a particularly opinionated think-piece on the Organic vs Not debate. Could be a decent way to wait out a couple of hours if you ever wanted to.",
-      "is_burned": "It's a burned gardening magazine, barely legible with half the paged burned away"
+      "is_burned": "It's a burned gardening magazine, barely legible with half the paged burned away",
+      "details": {"is_tested":false, "print_str": "You spend a while reading about [[choose.plant]]s and some other topical articles, and realise that the real debate about 'whether organics are good or not' is whether organics should be determined by corporate ownership or intention. Food for thought, so to speak."}
     },
     "can_burn": true,
     "is_burned": false,
@@ -668,7 +671,8 @@
     "can_pick_up": true,
     "can_read": true,
     "descriptions": {
-      "generic": "It's a mail order catalogue"
+      "generic": "A mail order catalogue, with the reciever's address sticker ripped off. Clothes, homegoods, toys, gadgets - could be a nice way to wait out a couple of hours if you ever wanted to.",
+      "details": {"is_tested":false, "print_str": "Spending some time reading through the mail order catalogue, you find a handful of things you quite like, and far more things you're not sure anyone would actually buy."}
     },
     "can_burn": true,
     "is_burned": false,
@@ -911,7 +915,7 @@
     "can_read": true,
     "descriptions": {
       "generic": "A damp newspaper from about a week ago.",
-      "is_broken": ""
+      "details": {"is_tested":true, "failure": "Despite your best efforts, the newspaper is practically disintegrating in your hands. You make out something about an event in ballroom, but nothing beyond that..", "success": "After carefully dabbing off as much of the mucky water and debris as you can, you find the front page is a story about the swearing in of a new regional governor, apparenly fraught with controversy.", "crit": "Something about a named official and a contraversy from years ago where a young man went missing in suspicious circumstances."}
     },
     "can_burn": true,
     "is_broken": false,
@@ -970,7 +974,7 @@
     "can_read": true,
     "descriptions": {
       "generic": "A small scrap of torn, off-white paper with a hand-scrawled phone number written on it.",
-      "is_broken": ""
+      "details": {"is_tested": true, "failure": "The last three digits are 487, but the rest are illegible.", "success": "It takes you a moment, but the number on the paper is `07148 718 487'. No name, though.", "crit": "The number is `07148 718 487. Looking closely, you can see a watermark on the paper, barely visible - `Vista Continental West`. Do you know that name?"}
     },
     "can_burn": true,
     "is_broken": false,
@@ -1484,7 +1488,7 @@
     "can_read": true,
     "descriptions": {
       "generic": "a yellowed [[]] showing the region surrounding the graveyard.",
-      "is_broken": ""
+      "details": {"is_tested":false, "print_str": "A dated but pretty detailed map of the local area. Spending some time looking at it closely, you think you've figured out some 'area highlights' the map draws attention to."}
     },
     "can_burn": false,
     "is_broken": false,

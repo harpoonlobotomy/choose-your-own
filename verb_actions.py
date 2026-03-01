@@ -361,28 +361,23 @@ def get_entries_from_dict(input_dict):
                 noun_entry = entry
             if kind == "verb":
                 if verb_entry != None:
-                    print(f"More than one `verb`: {verb_entry} already exists, {entry} will be ignored.")
                     continue
                 verb_entry = entry
             if kind == "direction":
                 if direction_entry != None:
-                    print(f"More than one `direction`: {direction_entry} already exists, {entry} will be ignored.")
                     continue
                 direction_entry = entry
 
             if kind == "cardinal":
                 if cardinal_entry != None:
-                    print(f"More than one `cardinal`: {direction_entry} already exists, {entry} will be ignored.")
                     continue
                 cardinal_entry = entry
             if kind == "location":
                 if location_entry != None:
-                    print(f"More than one `location`: {direction_entry} already exists, {entry} will be ignored.")
                     continue
                 location_entry = entry
             if kind == "semantic":
                 if semantic_entry != None:
-                    print(f"More than one `sem`: {direction_entry} already exists, {entry} will be ignored.")
                     continue
                 semantic_entry = entry
 
@@ -903,8 +898,37 @@ def look(format_tuple=None, input_dict=None):
 
     verb_entry, noun_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
 
-    #noun = get_noun(input_dict)
-    noun, noun_text, _, _ = get_nouns(input_dict)
+    noun, noun_text, noun2, noun2_text = get_nouns(input_dict)
+
+    if noun2:
+        outcome = item_interactions.find_local_item_by_name(noun2, noun2_text)
+        if isinstance(outcome, itemInstance):
+            noun2 = outcome
+        else:
+            print(f"Sorry, there's no `{noun2_text}` around here.")
+            return
+        if direction_entry:
+            dir1 = direction_entry["text"]
+            dir2 = get_dir_or_sem(input_dict, x_val=2)
+        if dir2 and dir2 == "in":
+            if "container" in noun2.item_type:
+                if noun.contained_in and noun.contained_in == noun2:
+                    pass
+                else:
+                    print(f"The {assign_colour(noun)} isn't in the {assign_colour(noun2.name)}.")
+                    return
+            print(f"The {assign_colour(noun)} isn't in the {assign_colour(noun2.name)}.")
+            #print(f"`{assign_colour(noun2, caps=True)}` isn't a container.")
+            return
+
+        else:
+            if "container" in noun2.item_type:
+                print(f"Idk what to do with this input, honestly {noun2} is a container but I'm confused. {format_tuple} // {input_dict}")
+                return
+            outcome = item_interactions.find_local_item_by_name(noun, noun_text)
+            if isinstance(outcome, itemInstance):
+                print(f"You have both the {assign_colour(noun)} and the {assign_colour(noun2)} to hand, but I'm not sure what you want to do with them.")
+                return
 
     if len(format_tuple) == 1 or (len(format_tuple) == 2 and semantic_entry != None and input_dict[1]["semantic"]["str_name"] == "around"):
         from misc_utilities import look_around
@@ -926,10 +950,7 @@ def look(format_tuple=None, input_dict=None):
                 noun = outcome
             else:
                 print(f"No noun outcome from find_local_item_by_name in def look. Instead: {outcome}")
-            #if hasattr(noun, "description_detailed"):
-            #    read(format_tuple, input_dict)
-            #else:
-            print(f"NOUN: {noun}, vars: {vars(noun)}")
+
             if hasattr(noun, "ext_location"):
                 if noun.ext_location.place == loc.current.place:
                     return turn_cardinal(noun.ext_location, turning = True)
@@ -983,7 +1004,7 @@ def look(format_tuple=None, input_dict=None):
             print("`Watch x with y` not yet implemented.")
 
     else:
-        print(f"Cannot process {input_dict} in def look(): \n{format_tuple} \n{input_dict}")
+        print(f"Cannot process input in def look(): \n{format_tuple} \n{input_dict}")
 
 def find(format_tuple, input_dict):
     """
@@ -1087,101 +1108,106 @@ def read(format_tuple, input_dict):
     """Reads `description_details` for the noun in `input_dict` if found, otherwise directs to `def look`."""
     logging_fn()
     #verb_inst = get_verb(input_dict)
-    noun, noun_str, _, _ = get_nouns(input_dict)
+    noun, noun_str, noun2, noun2_str = get_nouns(input_dict)
     if noun:
         outcome = item_interactions.find_local_item_by_name(noun, noun_str, verb="look")
         if outcome:
             noun = outcome
 
     if not noun:
-        ### access_str options for this part: "inventory_only" initially, then run again with "not_in_inv"
-        # Using 'inv_then_local lets it run these optins internally, checking local if no results from inv, instead of calling it twice here.
-        ## Amendment: Using 'look' to get both inv and local, will prioritise non-maps then prioritise inv.
         options = item_interactions.find_local_items_by_itemtype("books_paper", "all_local")
         if not options:
             print("What do yo want to read?")
             return
-        nouns = list(i for i in options if hasattr(i, "description_detailed") and i.description_detailed and not hasattr(i, "is_map"))
-        if not nouns: # allow map if nothing else to read.
-            # Hm. Maybe we get inv and local and then determine. Because if there's a magazine locally and a map in inv, we should read the magazine first.
-            nouns = list(i for i in options if hasattr(i, "description_detailed") and i.description_detailed)
+        nouns = list(i for i in options if i.descriptions.get("details") and not hasattr(i, "is_map"))
+        if not nouns:
+            nouns = list(i for i in options if i.descriptions.get("details"))
         if not nouns:
             print("There's nothing here to read.")
             return
 
+        if len(nouns) == 1:
+            noun = nouns[0]
         else:
-            if len(nouns) == 1:
-                noun = nouns[0]
+            noun = list(i for i in nouns if i.location == loc.inv_place)
+            if noun:
+                noun = noun[0]
             else:
-                noun = list(i for i in nouns if i.location == loc.inv_place)
-                if noun:
-                    noun = noun[0]
-                else:
-                    noun = nouns[0] # if no option in inventory, just take what you find.
+                noun = nouns[0] # if no option in inventory, just take what you can find.
 
     if not noun:
         print("There's nothing here to read. (We should never hit this point. If this prints, fix whatever's wrong in def read(). Exiting.)")
         exit()
 
-    if hasattr(noun, "location") and (noun.location == loc.inv_place or noun.location == loc.current): # shouldn't need this, it should be selected by outcome already.
-        if hasattr(noun, "description_detailed") and noun.description_detailed:
-            to_print = None
-            if noun.description_detailed.get("is_tested"):
-                from rolling import roll_risk
-                outcome = roll_risk()
-                print(f"Outcome: {outcome}")
-                if outcome > 1:
-                    test = noun.description_detailed.get("crit")
-                    if not test:
-                        test = noun.description_detailed.get(1)
-                    if test:
-                        to_print = test
-                        #NOTE: have not accounted for various degrees of success here. Need to.
-                else:
-                    test = noun.description_detailed.get("failure")
-                    if not test:
-                        test = noun.description_detailed.get(4)
-                    if test:
-                        to_print = test
-            else:
-                to_print = noun.description_detailed.get("print_str")
-
-            if to_print:
-
-                timeblock, num = get_timeblocks(input_dict, verb="read")
-
-                from interactions.player_movement import update_loc_data
-                from set_up_game import game
-                beforetime = game.time
-                _ = update_loc_data(loc.current, loc.current, timeblocks = timeblock)
-                aftertime = game.time
-                text = aftertime
-                extra2 = ""
-                if noun.location == loc.inv_place:
-                    nountext = f"your {assign_colour(noun)}"
-                else:
-                    nountext = f"a nearby {assign_colour(noun)}"
-
-                print(f"You settle down to read {nountext} in the {loc.current.ern_name}.\n\n   {assign_colour(to_print, "yellow")}\n\nIt was {beforetime}, now it's {text}.{extra2}")
-
-                return
-
-            if hasattr(noun, "is_map"):
-                item_interactions.show_map(noun)
-
-            if hasattr(noun, "event"):
-                from eventRegistry import events
-                outcome, moved_children = events.is_event_trigger(noun, "item_is_read")
-                if moved_children:
-                    print_moved_children(moved_children, noun, outcome)
-
-            return
-
+    if noun2:
+        outcome = item_interactions.find_local_item_by_name(noun2, noun2_str, verb="look")
+        if outcome:
+            noun2 = outcome
+        dir_or_sem = get_dir_or_sem(input_dict)
+        if dir_or_sem and dir_or_sem in ("in", "with"):
+            if dir_or_sem == "in":
+                if "container" in noun2.item_type and noun.contained_in == noun2:
+                    pass
+                elif "container" in noun2.item_type:
+                    print(f"{assign_colour(noun, caps=True)} isn't in the {noun2}.")
+                    return
+            print(f"I don't know how {assign_colour(noun2, nicename=True)} will help with the reading...\n")# (Add something here for testing. Magnifying glass or something. on_use_for_reading attr, something like that.)")
         else:
-            look(format_tuple, input_dict)
-            return
+            print(f"{assign_colour(noun, caps=True)} and the {assign_colour(noun2)} are both present, but {assign_colour(noun2)} doesn't seem like it'll help with reading much.")
 
-    print(f"You can't see a {assign_colour(noun)} to read.")
+
+    if noun.descriptions and noun.descriptions.get("details"):
+        to_print = None
+        if noun.descriptions["details"].get("is_tested"):
+            from rolling import roll_risk
+            outcome = roll_risk()
+            print(f"Outcome: {outcome}")
+            if outcome > 1:
+                test = noun.descriptions["details"].get("crit")
+                if not test:
+                    test = noun.descriptions["details"].get(1)
+                if test:
+                    to_print = test
+                    #NOTE: have not accounted for various degrees of success here. Need to.
+            else:
+                test = noun.descriptions["details"].get("failure")
+                if not test:
+                    test = noun.descriptions["details"].get(4)
+                if test:
+                    to_print = test
+        else:
+            to_print = noun.descriptions["details"].get("print_str")
+
+        if to_print:
+            timeblock, num = get_timeblocks(input_dict, verb="read")
+
+            from interactions.player_movement import update_loc_data
+            from set_up_game import game
+            beforetime = game.time
+            _ = update_loc_data(loc.current, loc.current, timeblocks = timeblock)
+            aftertime = game.time
+            text = aftertime
+            extra2 = ""
+            if noun.location == loc.inv_place:
+                nountext = f"your {assign_colour(noun)}"
+            else:
+                nountext = f"a nearby {assign_colour(noun)}"
+
+            print(f"You settle down to read {nountext} in the {loc.current.ern_name}.\n\n   {assign_colour(to_print, "yellow")}\n\nIt was {beforetime}, now it's {text}.{extra2}")
+
+        if hasattr(noun, "is_map"):
+            item_interactions.show_map(noun)
+
+        if hasattr(noun, "event"):
+            from eventRegistry import events
+            outcome, moved_children = events.is_event_trigger(noun, "item_is_read")
+            if moved_children:
+                print_moved_children(moved_children, noun, outcome)
+        return
+
+    else:
+        look(format_tuple, input_dict)
+        return
 
 
 def eat(format_tuple, input_dict):
@@ -2089,7 +2115,7 @@ def make_foreline(new_str, input_str):
 def router(viable_format, inst_dict, input_str=None):
     logging_fn()
 
-    verb_inst = None
+    verb_inst = verb_str = None
     quick_list = []
     input_strings = []
     for v in inst_dict.values():
@@ -2122,6 +2148,7 @@ def router(viable_format, inst_dict, input_str=None):
         for kind, entry in data.items():
             if kind == "verb":
                 verb_inst = entry["instance"]
+                verb_str = entry["str_name"] ## Fpr error messages where the verb found no instance, ie the format was not found so no instance arrived at. eg 'read south'.
             if kind == "meta" and verb_inst == None:
                 verb_inst = entry["str_name"]
 
@@ -2173,6 +2200,12 @@ def router(viable_format, inst_dict, input_str=None):
         elif len(viable_format) in (1, 2) and list(inst_dict[0].keys())[0] in ("location", "direction", "cardinal"):
             func = function_dict["go"]
         else:
+            if verb_inst == None and verb_str:
+                if len(viable_format) in (1, 2) and list(inst_dict[1].keys())[0] in ("location", "cardinal"):
+                    print(f"Sorry, you can't {assign_colour("read", colour='green')} a place.")
+                else:
+                    print(f"Sorry, you can't {verb_str} that.")
+                return
             func = function_dict[verb_inst.name]
 
         if func != function_dict["go"] and get_location(inst_dict):

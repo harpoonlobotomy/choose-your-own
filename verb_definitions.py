@@ -76,7 +76,7 @@ formats = {
     "verb_noun_sem": (verb, noun, sem), # 'read book a while
     "verb_noun_dir": (verb, noun, direction), # throw ball up
     "verb_noun_dir_loc": (verb, noun, direction, location), # drop paperclip at graveyard
-
+    "verb_dir_noun_dir_noun": (verb, direction, noun, direction, noun),
     ### TWO NOUNS ###
     "verb_noun_noun": (verb, noun, noun), # can't think of any examples.
     "verb_noun_dir_noun": (verb, noun, direction, noun), # push chest towards door, put paperclip in jar
@@ -154,12 +154,14 @@ verb_noun_noun = formats["verb_noun_noun"]
 verb_noun_dir_noun = formats["verb_noun_dir_noun"]
 verb_noun_dir_dir_noun = formats["verb_noun_dir_dir_noun"]
 verb_noun_dir_noun_dir_loc = formats["verb_noun_dir_noun_dir_loc"]
+
 verb_noun_dir_loc = formats["verb_noun_dir_loc"]
 #verb_noun_dir_sem = formats["verb_noun_dir_sem"]
 verb_noun_sem_sem = formats["verb_noun_sem_sem"]
 verb_noun_sem_num_sem = formats["verb_noun_sem_num_sem"] # read book for 3 hours ## Note, it's not actually hours though. A timeblock == ~2hrs.
 verb_noun_sem_noun = formats["verb_noun_sem_noun"]
 verb_dir_noun_sem_noun = formats["verb_dir_noun_sem_noun"]
+verb_dir_noun_dir_noun = formats["verb_dir_noun_dir_noun"] # look at thing in container
 
 sem_noun_verb = formats["sem_noun_verb"]
 sem_noun_dir_verb = formats["sem_noun_dir_verb"]
@@ -204,7 +206,7 @@ verb_defs_dict = {
     "throw": {"alt_words": ["chuck", "lob"], "allowed_null": ["at"], "formats": [verb_noun, verb_noun_dir, verb_noun_sem_noun, verb_noun_dir_noun, verb_noun_dir_loc]}, # throw ball down, throw ball at tree
     "push": {"alt_words": ["shove", "pull"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun, verb_noun_noun]},
     "drop": {"alt_words": ["discard", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun, verb_noun_dir_loc, verb_noun_dir_noun_dir_loc, verb_noun_dir_meta]},
-    "read": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_loc, verb_noun_sem_sem, verb_noun_sem, verb_sem_sem, verb_num_sem, verb_sem_num_sem, verb_noun_sem_num_sem]},
+    "read": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_loc, verb_noun_sem_sem, verb_noun_sem, verb_sem_sem, verb_num_sem, verb_sem_num_sem, verb_noun_sem_num_sem, verb_noun_sem_noun]},
     "use": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_dir_loc, verb_noun_dir_noun, verb_noun_noun]},
     "burn": {"alt_words": ["fire", "alight", "light"], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_dir_loc, sem_noun_dir_verb, sem_noun_verb], "inventory_check": "fire_source"},
     "lock": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_noun], "inventory_check": "key"},
@@ -216,7 +218,7 @@ verb_defs_dict = {
     "take": {"alt_words": ["pick up", "get", "pick"], "allowed_null": None, "formats": [verb_noun, verb_dir_noun, verb_noun_sem_noun, verb_noun_dir_noun, verb_noun_dir_noun_dir_loc, verb_noun_dir_loc]}, # take ball, take ball from bag
     "put": {"alt_words": ["place"], "allowed_null": ["in", "inside"], "formats": [verb_noun_dir, verb_noun_dir_meta, verb_noun_sem_noun, verb_noun_dir_noun, verb_noun_dir_noun_dir_loc, verb_noun_dir_loc]}, # put paper down, put paper on table ## using 'leave' here might be tricky. But I want to allow for 'leave church' and 'leave pamphlet on table' both.
     "eat": {"alt_words": ["consume", "drink"], "allowed_null": None, "formats": [verb_noun]},
-    "look": {"alt_words": ["watch", "observe", "investigate", "examine"], "allowed_null": ["at", "to"],  "formats": [verb_only, verb_noun, verb_dir, verb_sem, verb_loc, verb_dir_meta, verb_noun_sem_noun, verb_noun_dir_noun, verb_dir_noun, verb_dir_noun_sem_noun, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car, verb_dir_loc, verb_sem_noun]}, # look, look at book, look at book with magnifying glass
+    "look": {"alt_words": ["watch", "observe", "investigate", "examine"], "allowed_null": ["at", "to"],  "formats": [verb_only, verb_noun, verb_dir, verb_sem, verb_loc, verb_dir_meta, verb_noun_sem_noun, verb_noun_dir_noun, verb_dir_noun, verb_dir_noun_sem_noun, verb_dir_noun_dir_noun, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car, verb_dir_loc, verb_sem_noun]}, # look, look at book, look at book with magnifying glass
     "set": {"alt_words": [""], "allowed_null": None, "formats": [verb_noun_dir, verb_noun_sem_noun, verb_noun], "distinction": {"second_noun":"fire", "new_verb":"burn", "else_verb":"put"}}, ## not implemented, just an idea. 'if fire is the second noun, the correct verb to use is 'burn', else the verb is 'put'. So 'set' is not its own thing, just a membrane/signpost.
     "clean": {"alt_words": ["wipe"], "allowed_null": None, "formats": [verb_noun, verb_loc, verb_noun_sem_noun]},
     "enter": {"alt_words": [], "allowed_null": None, "formats": [verb_loc, verb_dir_loc, verb_noun, verb_dir_noun, verb_noun_noun]},
