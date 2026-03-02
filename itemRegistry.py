@@ -387,25 +387,26 @@ class itemRegistry:
         if not location and not hasattr(inst, "contained_in") and item_entry.get("exceptions"):
             location = item_entry.get("exceptions").get("starting_location")
 
-        if location:
-            if isinstance(location, cardinalInstance):
-                inst.location = location
-                self.by_location.setdefault(location, set()).add(inst)
+        if not hasattr(inst, "is_scenery"): # exclude floors/walls
+            if location:
+                if isinstance(location, cardinalInstance):
+                    inst.location = location
+                    self.by_location.setdefault(location, set()).add(inst)
 
-            elif not hasattr(inst, "contained_in") or inst.contained_in == None:
-                cardinal_inst = loc.by_cardinal_str(location)
-                self.by_location.setdefault(cardinal_inst, set()).add(inst)
-                inst.location = cardinal_inst
+                elif not hasattr(inst, "contained_in") or inst.contained_in == None:
+                    cardinal_inst = loc.by_cardinal_str(location)
+                    self.by_location.setdefault(cardinal_inst, set()).add(inst)
+                    inst.location = cardinal_inst
 
-        if apply_location:
-            if not isinstance(apply_location, cardinalInstance):
-                apply_location = loc.by_cardinal_str(apply_location)
-            self.by_location.setdefault(apply_location, set()).add(inst)
-            inst.location = apply_location
+            if apply_location:
+                if not isinstance(apply_location, cardinalInstance):
+                    apply_location = loc.by_cardinal_str(apply_location)
+                self.by_location.setdefault(apply_location, set()).add(inst)
+                inst.location = apply_location
 
-        if item_entry.get("alt_names"):
-            for altname in item_entry.get("alt_names"):
-                self.by_alt_names[altname] = item_name
+            if item_entry.get("alt_names"):
+                for altname in item_entry.get("alt_names"):
+                    self.by_alt_names[altname] = item_name
 
         if hasattr(inst, "starting_children") and getattr(inst, "starting_children"):
             self.new_parents.add(inst.id)
@@ -1241,6 +1242,9 @@ class itemRegistry:
                 inst.description = description
 
         ## Update nicenames ##
+        if not hasattr(inst, "nicenames"):
+            inst.nicenames = {}
+
         if inst.nicenames.get("is_singular") and inst.has_multiple_instances == 1:
             inst.nicename = inst.nicenames["is_singular"]
         if inst.nicenames.get("is_plural") and inst.has_multiple_instances > 1:
@@ -1552,6 +1556,46 @@ def init_loc_items(place=None, cardinal=None):
         everything_entry["north"]["items"] = list(registry.item_defs)
         north_everything = loc.by_cardinal_str("north everything")
 
+    def add_floors_walls():
+
+        flooring = "floor"
+        wall = "wall"
+        from interactions.player_movement import get_viable_cardinal
+        for place in loc.places:
+            place:placeInstance
+            for card in place.cardinals:
+                if card == loc.no_place or card == loc.inv_place:
+                    continue
+                print(f"CARD: {card}")
+                test_cardinal, success = get_viable_cardinal(card, place=place)
+                if success:
+                    if registry.get_item_by_location(test_cardinal):
+                        for item in registry.get_item_by_location(test_cardinal):
+                            if "flooring" in item.item_type: # in case I've added an actual piece of scenery, like the wall on the outside of the shed.
+                                test_cardinal.surfaces["flooring"] = item
+                                continue
+                    test_cardinal.surfaces = loc_dict[place.name][card].get("surfaces") if loc_dict[place.name][card].get("surfaces") else {"flooring": set(), "walls": set()}
+                    if test_cardinal.surfaces.get("flooring"):
+                        print(f'test_cardinal.surfaces.get("flooring"): {test_cardinal.surfaces.get("flooring")}')
+                        if isinstance(test_cardinal.surfaces["flooring"], str):
+                            flooring = test_cardinal.surfaces["flooring"]
+                        elif test_cardinal.surfaces["flooring"] == False:
+                            flooring = None
+                        else:
+                            flooring = "floor"
+                    else:
+                        flooring = None
+
+                    if flooring:
+                        inst = registry.init_single(flooring)
+                        if hasattr(inst, "location") and inst.location != loc.no_place:
+                            registry.by_location.get(inst.location).pop(inst) # These scenery items shouldn't show up as local objects. We don't find the wall when looking around, it's just /there/. Not sure if this is how I want to keep doing it but it'll do for now. Maybe not even no_place but just 'None', will see.
+                        inst.location = test_cardinal
+                        print(f"INST: {inst}")
+                        setattr(inst, "is_scenery", True) # not implemented anywhere yet.
+                        test_cardinal.surfaces["flooring"] = inst
+# TODO do the same for walls.
+
     def get_cardinal_items(place, cardinal):
         name_to_inst_tmp = {}
 
@@ -1633,9 +1677,13 @@ def init_loc_items(place=None, cardinal=None):
             for place in loc_dict:
                 loc_items_dict[place] = {}
                 get_cardinal_items(place, cardinal)
+
+
         else:
             loc_items_dict[place] = {}
             get_cardinal_items(place, cardinal)
+
+    add_floors_walls()
 
     registry.clean_relationships()
 
@@ -1654,7 +1702,7 @@ def initialise_itemRegistry():
 
     registry.item_defs = init_item_dict()
 
-    init_loc_items() 
+    init_loc_items()
 
     plural_word_dict = {}
 

@@ -240,7 +240,7 @@
     "smash_attack": 5,
     "smash_defence": 5
   },
-  "stone ground": {
+  "stony ground": {
     "can_break": false,
     "can_examine": false,
     "descriptions": {
@@ -253,7 +253,7 @@
       "static"
     ],
     "nicenames": {
-      "generic": "a stone ground"
+      "generic": "stony ground"
     },
     "slice_attack": 5,
     "slice_defence": 5,
@@ -1749,5 +1749,8 @@
     "item_type": ["can_pick_up"],
     "descriptions": {"generic": "a small pile of grey ash"},
     "nicenames": {"generic": "an ash pile"}
+  },
+  "floor": {
+    "item_type": ["static", "flooring"]
   }
 }

@@ -46,6 +46,7 @@ class cardinalInstance:
         self.missing_cardinal:str = loc_dict[self.place.name].get("missing_cardinal")
         setattr(self, cardinal, self.cardinal_data)
 
+        self.surfaces = {}
         self.by_placename = {}
         all_cardinals.add(self)
 
@@ -131,6 +132,7 @@ class placeRegistry:
         self.inv_place:cardinalInstance = None
         self.no_place:cardinalInstance = None
 
+        self.location_nouns = ["floor", "wall", "ground"]
 
     def add_cardinals(self, locationInstance) -> dict:
         """ Propagates the place.cardinals dict"""

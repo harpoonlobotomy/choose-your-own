@@ -963,6 +963,7 @@ def look(format_tuple=None, input_dict=None):
     elif len(format_tuple) == 3:
 
         if noun and format_tuple[1] == "direction":
+            print(f"NOUN: {noun}")
             outcome = item_interactions.find_local_item_by_name(noun, noun_text)
             if isinstance(outcome, itemInstance):
                 noun = outcome
@@ -1806,7 +1807,21 @@ def put(format_tuple, input_dict, location=None):
     noun, _, noun2, _ = get_nouns(input_dict)
     sem_or_dir = get_dir_or_sem(input_dict)
 
-    if noun2:
+    if noun and noun2:
+
+        if hasattr(noun2, "is_scenery") or "flooring" in noun2.item_type:
+            if "flooring" in noun2.item_type:
+                if noun.location != noun2.location:
+                    noun = item_interactions.find_local_item_by_name(noun, verb="drop", current_loc=loc.current)
+                    if noun:
+                        registry.move_item(noun, loc.current)
+                        text = smart_capitalise(f"{action_word} the {assign_colour(noun)} {sem_or_dir} the {noun2.name}.\n")
+                        print(text)
+                        return
+                else:
+                    print(f"The {assign_colour(noun)} is already on the {noun2.name}.\n")
+                    return
+##TODO: This all needs redoing, it doesn't take noun's current state/location into account at all beside parentage.
         if hasattr(noun2, "contained_in") and noun == noun2.contained_in:
             print(f"Cannot put {assign_colour(noun)} in {assign_colour(noun2)}, as {assign_colour(noun2)} is already inside {assign_colour(noun)}. You'll need to remove it first.")
             return
@@ -1837,7 +1852,7 @@ def put(format_tuple, input_dict, location=None):
                 move_a_to_b(a=a, b=b, action=action_word, direction=sem_or_dir, current_loc=location)
                 return
 
-    print(f"You can't put {assign_colour(noun)} on {assign_colour(noun2)}; I just haven't programmed it yet.")
+    print(f"You can't put the {assign_colour(noun)} on the {assign_colour(noun2)}; I just haven't programmed it yet.")
 
 def throw(format_tuple, input_dict):
     logging_fn()
@@ -1860,15 +1875,29 @@ def throw(format_tuple, input_dict):
         move_a_to_b(noun, loc.current, "You drop the", "to leave it at the")
 
     if dir_or_sem in to_words and noun2:
-        print(f"You throw the {assign_colour(noun)} at the {assign_colour(noun2)}")
+        if hasattr(noun2, "is_scenery"):
+            noun2_text = noun2.name
+        else:
+            noun2_text = f"{assign_colour(noun2)}"
+
+        text = f"You throw the {assign_colour(noun)} at the {noun2_text}"
         if hasattr(noun2, "smash_defence") and hasattr(noun, "smash_attack"):
             if noun2.smash_defence < noun.smash_attack:
-                print(f"The {assign_colour(noun2)} breaks as the {assign_colour(noun)} hits it.") # TODO: custom breaking messages for obviously breakable things with [[]] or smth for the breaker obj name.
-                set_noun_attr(("is_broken", True), noun=noun2)
+                if hasattr(noun2, "is_scenery"):
+                    action = "cracks"
+                else:
+                    action = "breaks"
+                print(f"{text}; the {noun2_text} {action} as the {assign_colour(noun)} hits it.") # TODO: custom breaking messages for obviously breakable things with [[]] or smth for the breaker obj name.
+                if action != "cracks": # so we can't break floors. I might do it later but for that's just not an option.
+                    set_noun_attr(("is_broken", True), noun=noun2)
                 return
             elif noun2.smash_defence >= noun.smash_attack:
-                print(f"The {assign_colour(noun)} hits the {assign_colour(noun2)}, but doesn't seem to damage it.")
+                print(f"{text}; the {assign_colour(noun)} hits the {noun2_text}, but doesn't seem to damage it.")
                 return
+        if noun2.location != noun.location:
+            print(f"{text}, and now there it sits.")
+            registry.move_item(noun, location=noun2.location)
+        return
 
     # verb_noun == where do you want to throw it (unless context),
     # verb_noun_dir == throw ball up (check if 'dir' makes sense)
@@ -1975,6 +2004,9 @@ def drop(format_tuple, input_dict):
                 if noun2 and "container" in noun2.item_type:
                     registry.move_item(noun, new_container=noun2)
                     #move_a_to_b(a=item_to_place, b=container_or_location, action=action_word, direction=direction)
+                elif hasattr(noun2, "is_scenery") and "flooring" in noun2.item_type:
+                    registry.move_item(noun, location=loc.current)
+
             else:
                 print(f"Couldn't move {noun.name} because {meaning}")
         else:
@@ -1990,7 +2022,11 @@ def drop(format_tuple, input_dict):
                 print_moved_children(moved_children, noun, triggered)
             #print(f"Triggered: {triggered}")
         if not triggered:
-            print(f"Dropped the {assign_colour(noun)} onto the ground here at the {assign_colour(loc.current, card_type='ern_name')}")
+            if loc.current.surfaces.get("flooring"):
+                flooring = loc.current.surfaces['flooring'].name
+            else:
+                flooring = "ground"
+            print(f"Dropped the {assign_colour(noun)} onto the {flooring} here at the {assign_colour(loc.current, card_type='ern_name')}")
         return
 
     print(f"Cannot process {input_dict} in def drop() End of function, unresolved.")

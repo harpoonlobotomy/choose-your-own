@@ -103,6 +103,28 @@ class VerbRegistry:
 @dataclass
 class Parser:
 
+    def quick_compounds(compound_words, idx, word, parts):
+
+        for compound_word in compound_words:
+            #print(f"Compound word: {compound_word}")
+            word_parts = compound_words[compound_word]
+            #print(f"len(parts) - idx: {len(parts) - idx}")
+            if len(parts) - idx < 2:
+                continue
+            #print(f"len(parts): {len(parts)} // len(word_parts): {len(word_parts)}")
+            if len(parts) < len(word_parts):
+                continue
+            if parts[idx] == word_parts[0]:
+                #print("Matching first word.")
+                if parts[idx+1] == word_parts[1]:
+                    #print("Matching second word.")
+                    return compound_word
+
+            #if parts[idx] in compound_word and parts[idx+1] in compound_word and len(compound_word.split()) == 2: # breaks because 'on' is in 'fashion' :/
+            #if word in parts[idx+1] and idx < len(parts)-1:
+                #print(f"IDX: {idx}, len(parts): {len(parts)}")
+                #if parts[idx+1] in compound_word and len(compound_word.split()) == 2:
+
     def check_compound_words(parts_dict, word, parts, idx, kinds, word_type, omit_next, local_nouns = None):
         logging_fn()
 
@@ -211,7 +233,7 @@ class Parser:
 
         return idx, word, kinds, canonical, potential_match, omit_next, perfect_match
 
-    def tokenise(input_str, membrane):
+    def tokenise(self, input_str, membrane):
 
         current_location = get_current_loc()
 
@@ -222,11 +244,8 @@ class Parser:
         word_phrases = membrane.combined_wordphrases
         parts = input_str.split()
         loc_options = locations
-        compound_locs = membrane.compound_locations
-        compound_nouns = membrane.plural_words_dict
         numbers = membrane.numbers
         semantics = membrane.semantics
-        compound_semantics = membrane.plural_semantics
 
         items = membrane.local_nouns
 
@@ -236,6 +255,7 @@ class Parser:
         initial = verbs.list_null_words | set(directions) | set(loc_options) | set(semantics) | cardinals
 
         for idx, word in enumerate(parts):
+            #print(f"IDX: {idx} / word: {word}\n")
             word = word.lower()
             kinds = set()
             potential_match=False
@@ -260,7 +280,7 @@ class Parser:
                         kinds.add("meta")
                         canonical = word
                 if word in numbers:
-                        #print(f"word in verbs.semantics: {word}")
+                        #print(f"word in numbers: {word}")
                         kinds.add("number")
                         canonical = word
                 if word in initial or f"a {word}" in initial:
@@ -338,21 +358,31 @@ class Parser:
                     potential_match = True
                 else:
 
-                    for compound_word in membrane.plural_semantics:
-                        if word in compound_word and idx < len(parts):
-                            if parts[idx+1] in compound_word and len(compound_word.split()) == 2:
-                                kinds = (("semantic",))
-                                canonical = compound_word
-                                tokens.append(Token(idx, word, kinds, canonical))
-                                omit_next = len(compound_word.split()) - 1
-                                potential_match = True
+                    kind = "semantic"
+                    canonical = self.quick_compounds(membrane.plural_semantics, idx, word, parts)
 
                     if not canonical:
-                        idx, word, kinds, canonical, potential_match, omit_next, perfect = Parser.check_compound_words(parts_dict = compound_nouns, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "noun", omit_next=omit_next, local_nouns = items)
+                        kind = "location"
+                        canonical = self.quick_compounds(membrane.compound_locations, idx, word, parts)
+
+                    if not canonical:
+                        kind = "noun"
+                        canonical = self.quick_compounds(membrane.plural_words_dict, idx, word, parts)
+                        #print(f"Quick compound: {canonical}")
+
+                    if canonical:
+                        #print(f"\nCanonical found with quick_compounds: {canonical}\n")
+                        kinds = ((kind,))
+                        tokens.append(Token(idx, word, kinds, canonical))
+                        omit_next = len(canonical.split()) - 1
+                        potential_match = True
+
+                    else:
+                        idx, word, kinds, canonical, potential_match, omit_next, perfect = Parser.check_compound_words(parts_dict = membrane.plural_words_dict, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "noun", omit_next=omit_next, local_nouns = items)
                         second_perfect = None
 
                         try:
-                            second_idx, second_word, second_kinds, second_canonical, second_potential_match, second_omit_next, second_perfect = Parser.check_compound_words(parts_dict = compound_locs, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "location", omit_next=omit_next)
+                            second_idx, second_word, second_kinds, second_canonical, second_potential_match, second_omit_next, second_perfect = Parser.check_compound_words(parts_dict = membrane.compound_locations, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "location", omit_next=omit_next)
                         except Exception as e:
                             print(f"Could not get location: {e}")
 
@@ -597,7 +627,7 @@ class Parser:
                 if canonical_nouns:
                     #print(f"Canonical_nouns: {canonical_nouns}")
                     if len(canonical_nouns) == 2:
-                        bad_noun = good_noun = None
+                        bad_noun = good_noun = good_token = bad_token = None
                         for word in canonical_nouns:
                             #print(f"val: {canonical_nouns[word]}, type: {type(canonical_nouns[word])}")
                             if word == "assumed_noun":
@@ -783,10 +813,10 @@ class Parser:
 
         from interactions.item_interactions import find_local_item_by_name
         local_nouns = find_local_item_by_name()
-        clean_nouns  = {}
         if not local_nouns:
-            clean_nouns = dict()
+            membrane.local_nouns = None
         else:
+            clean_nouns  = {}
             for item in local_nouns: # make this a fn to reuse for all plural gets.
                 clean_nouns[item.name] = item
                 if " " in item.name:
@@ -797,9 +827,9 @@ class Parser:
                     for alt in item.alt_names: ## hadn't added alt_names in. Goddamn.
                         clean_nouns[alt] = item
 
-        membrane.local_nouns = clean_nouns
+            membrane.local_nouns = clean_nouns
 
-        tokens = self.tokenise(input_str, membrane)
+        tokens = self.tokenise(self, input_str, membrane)
         from config import print_tokens
         if print_tokens:
             print_yellow(f"\nTokens: {tokens}\n")

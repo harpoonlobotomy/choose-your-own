@@ -4845,3 +4845,92 @@ Oh, I bet it's because semantic uses the text, not the canonical, so it's only g
 Okay, fixed.
 
 Oh. I can add plural directions in the same way. Oh man. That's big. Why did I not consider that before...?
+
+5.45pm
+I need some kind of space-representation. I linguistically can say 'move box away from window', but there's no physical proximity/relativity anywhere so it's meaningless.
+
+I'm not even sure how I'd do that.
+
+But for now.
+Why does 'put magazine on desk' fail to get an init_dict made?
+
+# [Not init_dict and not (noun and verb)] Sorry, I don't know what to do with `put magazine on desk`.
+# Tokens: [Token(idx=0, text='put', kind={'verb'}, canonical='put'), Token(idx=1, text='magazine', kind=('noun',), canonical='fashion magazine'), Token(idx=3, text='desk', kind={'noun'}, canonical='assumed_noun')]
+
+Oh, it's omitted the 'on'?
+
+Okay so 'on' is a semantic and probably shouldn't be.
+
+[Not init_dict and not (noun and verb)] Sorry, I don't know what to do with `put on`.
+Tokens: [Token(idx=0, text='put', kind={'verb'}, canonical='put'), Token(idx=1, text='on', kind={'semantic'}, canonical='on')]
+
+That doesn't explain why it's just omitted entirely though.
+Either option is acceptable for `put`:
+# verb_noun_sem_noun, verb_noun_dir_noun
+
+OOOOh. the issue was with 'magazine'. It added the omit_next even though the given word was the second. Okay. That needs fixing.
+
+So yes. It's because I changed it to be
+#   omit_next = len(perfect.split(" "))
+
+lmao wait what?
+
+#   IDX: 1 / word: magazine
+#
+#   Canonical found with quick_compounds: early afternoon
+
+4.32pm
+Okay, fixed now. The logic was bad.
+
+Now that's working, I need to implement floors. I kind of started this with the 'static' type_default, but never did much of anything with it.
+Currently:
+
+#   [[  put magazine on floor  ]]
+#   There's no floor around here to put the fashion magazine with.
+
+
+5.46pm
+Okay. basic implementation is done:
+
+ .-                -.
+[<  drop paperclip  >]
+ '-                -'
+
+Dropped the paperclip onto the stony ground here at the western graveyard
+
+It now incorporates the ground in the drop prints, and also allows 'put x on ground'
+
+Hm. 'throw' is similarly broken; it allows pickup (or technically throwing) of items in other cardinals.
+Well kind of:
+
+#    .-                            -.
+#   [<  throw god hammer at ground  >]
+#    '-                            -'
+#
+#   You throw the god hammer at the stony ground; the stony ground cracks as the god hammer hits it.
+
+
+it prints that, but the god hammer is not actually moved to loc.current. Which tbh is worse, because it's not just grabbing something it shouldn't, but it's lying. Will fix.
+
+Man this is weird.
+-----------------
+[[  drop godhammer on ground  ]]
+
+[Not init_dict and not (noun and verb)] Sorry, I don't know what to do with `drop godhammer on ground`.
+Tokens: [Token(idx=0, text='drop', kind={'verb'}, canonical='drop'), Token(idx=1, text='godhammer', kind={'noun'}, canonical='assumed_noun'), Token(idx=2, text='on', kind={'semantic'}, canonical='on'), Token(idx=3, text='ground', kind={'noun'}, canonical='stony
+ground')]
+
+[[  drop god hammer on ground  ]]
+
+[Not init_dict and not (noun and verb)] Sorry, I don't know what to do with `drop god hammer on ground`.
+Tokens: [Token(idx=0, text='drop', kind={'verb'}, canonical='drop'), Token(idx=1, text='god', kind=('noun',), canonical='god hammer'), Token(idx=3, text='on', kind={'semantic'}, canonical='on'), Token(idx=4, text='ground', kind={'noun'}, canonical='stony ground')]
+
+ .-                             -.
+[<  drop god hammer onto ground  >]
+ '-                             -'
+
+You can't drop a god; you aren't holding one.
+---------------------
+So first one it just assigns assumed noun, good. Second one, it recognises the god hammer as a single token but for some reason produced no dict, because it's not 'assumed' even though the godhammer /isn't/ local, so it should be.
+
+Third one, it fails to get the compound noun, which is waht it should be doing but failed to in attempt 2. Will have to think about it. Brain is dead today.

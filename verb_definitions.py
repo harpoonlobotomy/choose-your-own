@@ -5,7 +5,6 @@ meta_verbs = {
     "settings": {"alt_words": ""},
     "stats": {"alt_words": ""},
     "describe": {"alt_words": ["d"]},
-    "godmode": {"alt_words": ["god"]}, # remove this if there's ever a god...?
     "quit": {"alt_words": ["q"]},
     "show visted": {"alt_words": ""},
     "update_json": {"alt_words": ["update"]},
@@ -24,7 +23,7 @@ meta = "meta"
 num = "number"
 
 cardinals = ["north", "east", "south", "west"]
-directions = ["down", "up", "left", "right", "away", "toward", "towards", "closer", "further", "to", "into", "against", "across", "at", "in", "on", "from", "inside", "outside", "away", "into", "elsewhere", "here", "through", "area"] # area as in 'search th area
+directions = ["down", "up", "left", "right", "away", "toward", "towards", "closer", "further", "to", "into", "against", "across", "at", "in", "on", "from", "inside", "outside", "away", "into", "elsewhere", "here", "through", "area", "down on", "down in", "onto", "on to"] # area as in 'search th area
 ## "in front of"?? Need to be able to cope with that. TODO this.
 
 nulls = ["the", "a", "an"]
@@ -223,7 +222,7 @@ verb_defs_dict = {
     "close": {"alt_words": [""], "allowed_null": None, "formats": [verb_noun, verb_meta, verb_dir_meta, verb_noun_sem_noun, verb_noun_noun, verb_noun_dir_loc]},
     "break": {"alt_words": ["smash", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun]},
     "take": {"alt_words": ["pick up", "get", "pick"], "allowed_null": None, "formats": [verb_noun, verb_dir_noun, verb_noun_sem_noun, verb_noun_dir_noun, verb_noun_dir_noun_dir_loc, verb_noun_dir_loc]}, # take ball, take ball from bag
-    "put": {"alt_words": ["place"], "allowed_null": ["in", "inside"], "formats": [verb_noun_dir, verb_noun_dir_meta, verb_noun_sem_noun, verb_noun_dir_noun, verb_noun_dir_noun_dir_loc, verb_noun_dir_loc]}, # put paper down, put paper on table ## using 'leave' here might be tricky. But I want to allow for 'leave church' and 'leave pamphlet on table' both.
+    "put": {"alt_words": ["place"], "allowed_null": ["in", "inside"], "formats": [verb_noun_dir, verb_dir_noun, verb_noun_dir_meta, verb_noun_sem_noun, verb_noun_dir_noun, verb_noun_dir_noun_dir_loc, verb_noun_dir_loc]}, # put paper down, put paper on table ## using 'leave' here might be tricky. But I want to allow for 'leave church' and 'leave pamphlet on table' both.
     "eat": {"alt_words": ["consume", "drink"], "allowed_null": None, "formats": [verb_noun]},
     "look": {"alt_words": ["watch", "observe", "investigate", "examine"], "allowed_null": ["at", "to"],  "formats": [verb_only, verb_noun, verb_dir, verb_sem, verb_loc, verb_dir_meta, verb_noun_sem_noun, verb_noun_dir_noun, verb_dir_noun, verb_dir_noun_sem_noun, verb_dir_noun_dir_noun, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car, verb_dir_loc, verb_sem_noun]}, # look, look at book, look at book with magnifying glass
     "set": {"alt_words": [""], "allowed_null": None, "formats": [verb_noun_dir, verb_noun_sem_noun, verb_noun], "distinction": {"second_noun":"fire", "new_verb":"burn", "else_verb":"put"}}, ## not implemented, just an idea. 'if fire is the second noun, the correct verb to use is 'burn', else the verb is 'put'. So 'set' is not its own thing, just a membrane/signpost.

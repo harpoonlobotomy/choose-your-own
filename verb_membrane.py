@@ -56,8 +56,13 @@ def get_noun_instances(dict_from_parser, viable_formats):
                 if kind == "noun":
                     name = entry["str_name"]
                     if name == "assumed_noun":
-                        dict_from_parser[idx][kind] = ({"instance": "assumed_noun", "str_name": entry["str_name"], "text": entry["text"]})
-                        error = ("assumed_noun", (idx, kind))
+                        if entry["text"] in ("floor", "ground") and locRegistry.current.surfaces.get("flooring"):
+                            flooring = locRegistry.current.surfaces.get("flooring")
+                            dict_from_parser[idx][kind] = ({"instance": flooring, "str_name": "flooring", "text": entry["text"]})
+
+                        else:
+                            dict_from_parser[idx][kind] = ({"instance": "assumed_noun", "str_name": entry["str_name"], "text": entry["text"]})
+                            error = ("assumed_noun", (idx, kind))
                     else:
                         noun_inst = registry.instances_by_name(name) ## NOTE: This won't hold for long. Different instances may have different attr.
                         if not noun_inst:
@@ -104,7 +109,8 @@ class Membrane:
 
         compound_locs = {}
         for word in self.locations:
-            compound_locs[word] = tuple(word.split())
+            if " " in word:
+                compound_locs[word] = tuple(word.split())
         self.compound_locations = compound_locs
 
         self.semantics = semantics

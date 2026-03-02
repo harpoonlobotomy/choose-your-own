@@ -8,7 +8,8 @@
         "generic": "The bed looks nice enough - nothing fancy, but not a disaster either. Two pillows, a spare blanket at the foot of the bed. There's a small bedside drawer to each side, and a painting above the bed."
       },
       "short_desc": "There's a queen-size bed, simple but clean looking,",
-      "items": {}
+      "items": {},
+      "surfaces": {"wall": true, "flooring": true}
     },
     "east": {
       "item_desc": {
@@ -23,21 +24,24 @@
         "tv set": {
           "not_in_loc_desc": true
         }
-      }
+      },
+      "surfaces": {"wall": true, "flooring": true}
     },
     "south": {
       "item_desc": {
         "generic": "There's a door, lightly sun-yellowed. Nondescript; fair to assume it's a bathroom door."
       },
       "short_desc": "a door, likely to a bathroom",
-      "items": {}
+      "items": {},
+      "surfaces": {"wall": true, "flooring": true}
     },
     "west": {
       "item_desc": {
         "generic": "There's a standard hotel room door, with the fire escape route poster on the back and an empty coat hook."
       },
       "short_desc": "the door out of the room, likely to the hallway",
-      "items": {}
+      "items": {},
+      "surfaces": {"wall": true, "flooring": true}
     },
     "descrip": "You're in a 'budget' PPPhotel roomEEE; small but pleasant enough, at least to sleep in. The sound of traffic tells you you're a couple of floors up at least, and the carpet is well-trod",
     "inside": true,
@@ -52,7 +56,8 @@
         "no_items": "There doesn't seem to be anything here."
       },
       "short_desc": "The northern tree parts are",
-      "items": {"carved stick": {}, "wallet": {}}
+      "items": {"carved stick": {}, "wallet": {}},
+      "surfaces": {"wall": false, "flooring": false}
     },
     "east": {
       "item_desc": {
@@ -60,6 +65,8 @@
       },
       "short_desc": "an eastern tree part",
       "items": {}
+      ,
+      "surfaces": {"wall": false, "flooring": false}
     },
     "south": {
       "item_desc": {
@@ -67,6 +74,8 @@
       },
       "short_desc": "a southern tree part",
       "items": {}
+      ,
+      "surfaces": {"wall": false, "flooring": false}
     },
     "west": {
       "item_desc": {
@@ -74,6 +83,8 @@
       },
       "short_desc": "what looks like a a western tree part",
       "items": {}
+      ,
+      "surfaces": {"wall": false, "flooring": false}
     },
     "descrip": "You've climbed up a gnarled old tree to a PPPforked tree branchEEE, and found a relatively safe place to sit in its broad branches.",
     "inside": false,
@@ -95,7 +106,8 @@
           "key_is_placed_elsewhere": true
         }
       },
-      "short_desc": "The entrance gates are"
+      "short_desc": "The entrance gates are",
+      "surfaces": {"wall": true, "flooring": true}
     },
     "east": {
       "item_desc": {
@@ -107,7 +119,8 @@
       "short_desc": "sit a variety of headstones",
       "items": {
         "desiccated skeleton": {}
-      }
+      },
+      "surfaces": {"wall": true, "flooring": true}
     },
     "south": {
       "item_desc": {
@@ -118,7 +131,8 @@
       "items": {
         "god hammer": {},
         "ivory pot": {}
-      }
+      },
+      "surfaces": {"wall": true, "flooring": true}
     },
     "west": {
       "item_desc": {
@@ -146,7 +160,8 @@
           ],
           "not_in_loc_desc": true
         }
-      }
+      },
+      "surfaces": {"wall": "work shed", "flooring": "stony ground"}
     },
     "descrip": "You're in a rather poorly kept PPPgraveyardEEE - smaller than you might have expected given the scale of the gate and fences",
     "inside": false,
@@ -163,21 +178,24 @@
       "short_desc": "A wooden shrine, with aged fabric flags and various trinkets",
       "items": {
         "scroll": {}
-      }
+      },
+      "surfaces": {"wall": true, "flooring": true}
     },
     "east": {
       "item_desc": {
         "generic": "The underhang's east wall is damp with spray from the waterfall outside, but otherwise unremarkable"
       },
       "short_desc": "a small 'interior' wall of the underhang",
-      "items": {}
+      "items": {},
+      "surfaces": {"wall": true, "flooring": true}
     },
     "south": {
       "item_desc": {
         "generic": "The sky and fields beyond; nothing much to do here except leave."
       },
       "short_desc": "open air, the ground wet from the overspray of the waterfall that conceals this place",
-      "items": {}
+      "items": {},
+      "surfaces": {"wall": false, "flooring": true}
     },
     "descrip": "Sheltered from the rain you see a small PPPshrineEEE, built into the underhang of a cliff face, mostly hidden behind a waterfall.",
     "inside": true,

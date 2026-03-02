@@ -29,14 +29,17 @@ def look_at_item(item_inst, entry): ## this is just using everything from regist
     """Checks an item is viable to be seen, then looks at the item. If the item is a loc_exterior that is nearby to the player, instead turns to face that cardinal and prints the description. If the item has children, they will be printed in a list. If the item is a map-item and show_map==True, it will open the map image externally."""
     logging_fn()
     if isinstance(item_inst, itemInstance):
-        #print(f"item_inst.location: {item_inst.location}")
+        print(f"item_inst.location: {item_inst.location}")
         container, reason_val, meaning = registry.run_check(item_inst)
         logging_fn(f"reason_val: {reason_val}")
         #print(f"Look at item MEANING: {meaning}")
         if reason_val not in (0, 5, 8):
-            text = entry["text"]
-            print(f"You can't see the {assign_colour(text)} right now.")
-            return
+            if hasattr(item_inst, "is_scenery") and item_inst.location == loc.current:
+                reason_val = 0
+            else:
+                text = entry["text"]
+                print(f"You can't see the {assign_colour(text)} right now.")
+                return
         else:
             if reason_val == 8:
                 relocate(new_cardinal=item_inst.location)
@@ -228,7 +231,7 @@ scope_to_verb = {
     "local_and_inv_containers_only": ["take"],
     "not_in_inv": ["pick_up"], # includes local containers, just nothing I'm already carrying.
     "only_loc_no_containers": [""], # No idea what would call for this tbh. It's just 'stuff you can see around you'.
-    "loc_w_inv_no_containers": [""], # this one either. This'll take some development.
+    "loc_w_inv_no_containers": ["put"], # this one either. This'll take some development.
     }
 
 def build_relevant_items_set(verb=None, noun=None, access_str=None, current_loc=None) -> set: # moved this to be its own thing so I can use it elsewhere.
@@ -314,6 +317,16 @@ def find_local_item_by_name(noun:itemInstance=None, noun_text = None, verb=None,
         from verbRegistry import VerbInstance
         if isinstance(verb, VerbInstance):
             verb = verb.name
+
+    if noun and isinstance(noun, itemInstance) and hasattr(noun, "is_scenery"):
+        if "flooring" in noun.item_type:
+            if noun.location != loc.current:
+                test = loc.current.surfaces["flooring"]
+                if test and isinstance(test, itemInstance):
+                    return test # if flooring, ignore the local etc.
+            return noun
+
+
 
     if isinstance(noun, str):
         if noun_text and noun != noun_text:

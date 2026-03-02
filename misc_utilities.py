@@ -210,7 +210,7 @@ def print_failure_message(input_str=None, message=None, noun=None, verb=None, id
 
     from verb_actions import get_verb
     if not init_dict and not (noun and verb):
-        print(f"Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
+        print(f"[Not init_dict and not (noun and verb)] Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
         if tokens:
             print(f"Tokens: {tokens}")
         return
@@ -219,7 +219,7 @@ def print_failure_message(input_str=None, message=None, noun=None, verb=None, id
         verb = get_verb(init_dict)
 
     if not verb:
-        print(f"Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
+        print(f"[not verb] Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
         return
 
     from verb_actions import get_noun
@@ -234,7 +234,7 @@ def print_failure_message(input_str=None, message=None, noun=None, verb=None, id
                     return
 
     if not idx_kind and not (noun and verb):
-        print(f"Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
+        print(f"[not idx_kind and not (noun and verb)]Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
         return
 
     noun_name = None
