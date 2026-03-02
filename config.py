@@ -41,3 +41,5 @@ godmode = False
 coloured_repr = True
 
 record_event_starts_ends = True
+
+print_tokens = False

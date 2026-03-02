@@ -1,8 +1,17 @@
 #meta_commands.py Place to centralise all meta commands except the baseline logger/args. Item data visibility, editing item/env data, etc, all comes through here.
 
+from eventRegistry import eventInstance
 from itemRegistry import itemInstance, cardinalInstance
 from item_dict_gen import CARDINALS
 from printing import print_green, print_blue, print_yellow, print_col
+
+
+card_completion = {
+    "n": "north",
+    "s": "south",
+    "e": "east",
+    "w": "west"
+}
 
 nulls = ("", None)
 def yes_test(string=""):
@@ -14,44 +23,89 @@ def select_event():
 
     event = None
     from eventRegistry import events
-    print("All events: ")
-    print_yellow(list(events.by_name), invert=True)
-    while not event:
-        test = input("\nType name of the event you want to edit: ")
-        if test == "":
-            print("Returning to menu.")
-            return
-        for event_name, inst in events.by_name.items():
-            if test == event_name:
-                event = inst
+    test = input("Do you want to pick event [by name], or look at [current] events only?")
+    if test:
+        if "name" in test or test == "1":
+            print("Events by name events: ")
+            print_yellow(list(events.by_name), invert=True)
 
-    print(f"What do you want to view for `{event_name}`?")
+            test = input("\nType name of the event you want to edit: ")
+            if test == "":
+                print("Returning to menu.")
+                return
+            if events.by_name.get(test):
+                event = events.by_name[test]
+            else:
+                print(f"No event found for {test}. Returning.")
+                return
+        elif "curr" in test or test == "2":
+            print("Current events: ")
+            print_yellow(list(events.by_state[1]), invert=True)
+
+            test = input("\nType name/id of the event you want to edit: \n")
+            if test == "":
+                print("Returning to menu.")
+                return
+
+            event = events.by_name.get(test)
+            if not event:
+                event = events.by_id.get(test)
+    if not event:
+        print("No event found. Returning.")
+        return
+    event = list(event)[0]
+    event:eventInstance
+    print(f"\nEvent found: {event}\n")
+    print(f"What do you want to view for `{event.name}`?\n")
     options = {
-        1: "Event triggers",
-        2: "Event items",
-        3: "Hidden/held/event-locked items",
-        4: "Time data (if event is Timed)",
-        5: "Other"
+        "1": "Event triggers",
+        "2": "Event items",
+        "3": "Hidden/held/event-locked etc items",
+        "4": "Time data (if event is Timed)",
+        "5": "Other"
     }
     event_options = []
     for key, value in options.items():
-        event_options.append(f"{str(key)}: {value}\n)")
-    #print(event_options)
-    test = input(event_options)
+        event_options.append(f"* {str(key)}: {value}\n")
+
+    event_options = "".join(event_options)
+    print(event_options)
+
+    test = input()
     if test == "":
         print("Returning to menu.")
         return
     if len(test) == 1:
-        try:
-            val = int(test)
-            if val:
-                result = options.get(val)
-                if not result:
-                    print(f"Could not find option for {val}.")
-                    return
-                print(f"Getting `{result}`")
-        except Exception as e:
-            print(f"Failed to get result: {e}")
+        result = options.get(test)
+        if not result:
+            print(f"Could not find option for {test}.")
+            return
+        print(f"Getting `{result}`")
+
+    outcome = []
+    if test == "1":
+        for thing in event.triggers:
+            outcome.append(f"* {thing}\n")
+
+    elif test == "2":
+        for thing in event.items:
+            outcome.append(f"* {thing}\n")
+
+    elif test == "3":
+        for cat in (event.held_items, event.hidden_items, event.locked_items):
+            for thing in cat:
+                outcome.append(f"* {thing}\n")
+    elif test == "4":
+        if event.timed_triggers:
+            for trigger in event.timed_triggers:
+                outcome.append(f"Timed trigger: {trigger} // time unit: {trigger.time_unit} full duration: {trigger.full_duration} // current duration: {trigger.current_duration} // \n")
+
+    else:
+        print("No other options present. Returning.")
+        return
+    if outcome:
+        outcome = "".join(outcome)
+    print(outcome)
 
 
 
@@ -236,16 +290,19 @@ def edit_noun(noun):
 def select_location():
 
     from env_data import locRegistry
+    loc_items = list(locRegistry.by_name)
+    print(f"All locations: \n{loc_items}\nEnter the name or number of the location you wish to edit:  ")
 
-    location = input("Enter the name of the location you wish to edit:  ")
+    location = input()
     place = None
 
     while not place:
-
         if location == "":
-            location = input(f"Please enter a location name. Options: {locRegistry.by_name}. Enter nothing again to exit location editing.")
-            if location == "":
-                return
+            print("Nothing entered. Returning.")
+            return
+
+        if len(location) == 1:
+            location = loc_items[int(location)-1]
 
         place = locRegistry.place_by_name(location)
         if place:
@@ -469,8 +526,9 @@ def edit_card_items(cardinal:cardinalInstance):
 
 def edit_cardinal(cardinal:cardinalInstance):
 
-    print(f"\nEditing {cardinal.place_name}.\n")
-    edit_card_desc(cardinal)
+    print("Nothing happens here yet. Not even sure what I'd want this for, really.\nReturning.")
+    #print(f"\nEditing {cardinal.place_name}.\n")
+    #edit_card_desc(cardinal)
 
     #task = input("Do you want to: \n1: Edit cardinal descriptions/items\n2: Cancel\n")
     #if task in ("1", "2"):
@@ -492,25 +550,25 @@ def edit_location(location):
     card = None
 
     while not card:
-
         card = input(f"Enter the cardinal direction you want to edit. Cardinals for {location.name}:\n{list(cardinals)}\n")
         if card == "":
             card = input(f"Enter nothing again to exit editing. Otherwise, please enter a cardinal name.\n")
             if card == "":
                 print(f"Ending editing of {location.name}.")
                 return
+        if len(card) == 1 and card_completion.get(card):
+            card = card_completion[card]
+
         if card in list(cardinals):
             cardinal:cardinalInstance = cardinals.get(card)
-            card = edit_cardinal(cardinal) # card == 0 if failed/return to choose cardinal again.
-            if card:
-                return
+            return edit_cardinal(cardinal) #This does nothing and goes nowhere. Not sure why I'd ever want this.
+
 def do_other():
 
     print("Do you want to print all cardinals?")
     if yes_test():
 
         card_dict = {}
-
         from env_data import all_cardinals
         print(f"All cardinals: {all_cardinals}")
         for item in all_cardinals:
@@ -543,7 +601,17 @@ def do_other():
     if yes_test():
         from eventRegistry import events
         for state in events.by_state:
-            print(f"State: {state}")
+            if state == 0:
+                text = "Past events"
+            elif state == 1:
+                text = "Current events"
+            elif state == 2:
+                text = "Future events"
+            else:
+                print(f"State is not 0, 1 or 2: {state} // type: {type(state)}")
+            print(f"State: {state} [{text.upper()}]")
+            if not events.by_state.get(state):
+                print(f"NO EVENTS IN STATE.")
             for event in events.by_state[state]:
                 print(f"EVENT: {event}")
 
@@ -579,7 +647,6 @@ def meta_control(input_format, noun=None, location=None, cardinal=None):
                 edit_location(select_location())
             elif test == "3":
                 select_event()
-                print("Not implemented yet.")
             elif test == "4":
                 add_temp_to_loc_data()
             elif test == "5":

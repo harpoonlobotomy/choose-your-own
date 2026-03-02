@@ -9,7 +9,7 @@ from typing import Optional
 
 #import generate_locations
 from logger import logging_fn
-from printing import print_green, print_red
+from printing import print_green, print_red, print_yellow
 from verb_actions import get_current_loc
 
 from config import show_reciever
@@ -225,13 +225,15 @@ class Parser:
         compound_locs = membrane.compound_locations
         compound_nouns = membrane.plural_words_dict
         numbers = membrane.numbers
+        semantics = membrane.semantics
+        compound_semantics = membrane.plural_semantics
 
         items = membrane.local_nouns
 
         tokens = []
         omit_next = 0
 
-        initial = verbs.list_null_words | set(directions) | set(loc_options) | verbs.semantics | cardinals
+        initial = verbs.list_null_words | set(directions) | set(loc_options) | set(semantics) | cardinals
 
         for idx, word in enumerate(parts):
             word = word.lower()
@@ -335,51 +337,61 @@ class Parser:
                     tokens.append(Token(idx, word, kinds, canonical))
                     potential_match = True
                 else:
-                    second_perfect = None
-                    idx, word, kinds, canonical, potential_match, omit_next, perfect = Parser.check_compound_words(parts_dict = compound_nouns, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "noun", omit_next=omit_next, local_nouns = items)
-                    second_perfect = None
 
-                    try:
-                        second_idx, second_word, second_kinds, second_canonical, second_potential_match, second_omit_next, second_perfect = Parser.check_compound_words(parts_dict = compound_locs, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "location", omit_next=omit_next)
-                    except Exception as e:
-                        print(f"Could not get location: {e}")
+                    for compound_word in membrane.plural_semantics:
+                        if word in compound_word and idx < len(parts):
+                            if parts[idx+1] in compound_word and len(compound_word.split()) == 2:
+                                kinds = (("semantic",))
+                                canonical = compound_word
+                                tokens.append(Token(idx, word, kinds, canonical))
+                                omit_next = len(compound_word.split()) - 1
+                                potential_match = True
 
-                    if perfect and not second_perfect:
-                        omit_next = len(perfect.split(" "))
-                        kinds = (("noun",))
-                        word = perfect
-                        tokens.append(Token(idx, word, kinds, canonical))
-                        continue
+                    if not canonical:
+                        idx, word, kinds, canonical, potential_match, omit_next, perfect = Parser.check_compound_words(parts_dict = compound_nouns, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "noun", omit_next=omit_next, local_nouns = items)
+                        second_perfect = None
 
-                    elif second_perfect:
-                        omit_next = len(second_perfect.split(" "))
-                        kinds = (("location",))
-                        second_word = second_canonical
-                        tokens.append(Token(second_idx, second_word, kinds, second_canonical))
-                        continue
+                        try:
+                            second_idx, second_word, second_kinds, second_canonical, second_potential_match, second_omit_next, second_perfect = Parser.check_compound_words(parts_dict = compound_locs, word=word, parts=parts, idx=idx, kinds=kinds, word_type = "location", omit_next=omit_next)
+                        except Exception as e:
+                            print(f"Could not get location: {e}")
 
-                    if canonical and canonical != "assumed_noun":
-                        tokens.append(Token(idx, word, kinds, canonical))
-                        continue
+                        if perfect and not second_perfect:
+                            omit_next = len(perfect.split(" "))
+                            kinds = (("noun",))
+                            word = perfect
+                            tokens.append(Token(idx, word, kinds, canonical))
+                            continue
 
-                    if ((not canonical or canonical == "assumed_noun") and (second_canonical and not second_canonical == "assumed_noun")) or (perfect and second_perfect):
-                        idx = second_idx
-                        word = second_word
-                        kinds = (("location",))
-                        #kinds = second_kinds
-                        canonical = second_canonical
-                        potential_match = second_potential_match
-                        omit_next = second_omit_next
-                        tokens.append(Token(idx, word, kinds, canonical))
-                        continue
+                        elif second_perfect:
+                            omit_next = len(second_perfect.split(" "))
+                            kinds = (("location",))
+                            second_word = second_canonical
+                            tokens.append(Token(second_idx, second_word, kinds, second_canonical))
+                            continue
 
-                    if not canonical or second_canonical:
-                        verbReg_Reciever(f"Tokenise: idx: {idx}, word: {word}, not canonical")
-                        kinds = set()
-                        kinds.add("noun")
-                        canonical = "assumed_noun"
-                        tokens.append(Token(idx, word, kinds, canonical))
-                        continue
+                        if canonical and canonical != "assumed_noun":
+                            tokens.append(Token(idx, word, kinds, canonical))
+                            continue
+
+                        if ((not canonical or canonical == "assumed_noun") and (second_canonical and not second_canonical == "assumed_noun")) or (perfect and second_perfect):
+                            idx = second_idx
+                            word = second_word
+                            kinds = (("location",))
+                            #kinds = second_kinds
+                            canonical = second_canonical
+                            potential_match = second_potential_match
+                            omit_next = second_omit_next
+                            tokens.append(Token(idx, word, kinds, canonical))
+                            continue
+
+                        if not canonical or second_canonical:
+                            verbReg_Reciever(f"Tokenise: idx: {idx}, word: {word}, not canonical")
+                            kinds = set()
+                            kinds.add("noun")
+                            canonical = "assumed_noun"
+                            tokens.append(Token(idx, word, kinds, canonical))
+                            continue
 
             if not potential_match:
                 test_print(f"No full match found for parts in `{input_str}`.")
@@ -641,37 +653,19 @@ class Parser:
 
     def resolve_verb(tokens, verb_name, format_key) -> tuple[VerbInstance|str]:
 
-        #print(f"Format key: {format_key}")
-        items = (i for i in verbs.by_format.get(format_key) if verb_name in i) # gets verb names that match the format key
-        #print(f"ITEMS in resolve verb: {items}")
+        if not verbs.verbs.get(verb_name) and verbs.by_alt_words.get(verb_name):
+            verb_name = verbs.by_alt_words.get(verb_name)[0].name
+
+        items = (i for i in verbs.by_format.get(format_key) if verb_name in i)
+
         #print(f"Items: {items}")
         #print("by alt words: ", verbs.by_alt_words.get(verb_name))
         if items and verb_name in items:
             verb_obj = verbs.verbs.get(verb_name)
-            if not verb_obj:
-                verb_obj = verbs.by_alt_words.get(verb_name)[0] ## Currently just takes the first. I think this is fine for now, later would like to set some minor refinement rules (such as the 'if 'fire' in noun token, then 'burn' instead of 'place' if 'burn' in by_alt_words options. But for now this is fine.)
-            #print(f"verb_obj: {verb_obj}")
-            #print("verb_obj.name: ", verb_obj.name)
             if verb_obj:
-                #print(f"verb obj name: {verb_obj.name}")
-                #verb_token = [i for i in tokens if i.text == verb_name]
-                #print(f"Verb token: {verb_token}")
-                #test_print(f"Winning format: {format_key}", print_true=True)
                 return verb_obj, format_key ## currently returns once it has a single success. Again, works as long as there's only one verb. For now, is fine.
-
-            else:
-                print(f"Could not find verb obj for {verb_name}")
-
         else:
-            if verbs.by_alt_words.get(verb_name):
-                verb_obj = verbs.by_alt_words[verb_name][0]
-                #print(f"verb_obj: {verb_obj}")
-                if verb_obj and verb_obj.name in items:
-                    #print("verb obj and verb_obj.name in items == true")
-                    return verb_obj, format_key
-                else:
-                    print(f"verb obj is {verb_obj} with name `{verb_obj.name}` but not in items: {items}")
-
+            print(f"Could not find verb obj for {verb_name}")
         return None, format_key
 
     def build_dict(confirmed_verb, tokens, initial_dict, format_key):
@@ -806,7 +800,9 @@ class Parser:
         membrane.local_nouns = clean_nouns
 
         tokens = self.tokenise(input_str, membrane)
-
+        from config import print_tokens
+        if print_tokens:
+            print_yellow(f"\nTokens: {tokens}\n")
         if not tokens:
             return None, None
         verbReg_Reciever(f"Tokens after tokenise: {tokens}")
@@ -883,9 +879,9 @@ def initialise_verbRegistry():
     verbs.cardinals = set(("north", "south", "east", "west"))
     verbs.null_sem_combinations = null_sem_combinations
 
-    from itemRegistry import registry
+    #from itemRegistry import registry
 
-    verbs.compound_words = registry.plural_words
+    #verbs.compound_words = registry.plural_words # not used anywhere
 
     for item_name, attr in verb_defs_dict.items():
         verbs.create_verb_instance(item_name, attr)

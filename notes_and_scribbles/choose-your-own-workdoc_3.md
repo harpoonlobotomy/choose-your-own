@@ -4787,3 +4787,61 @@ Apparently missed something:
 
 printed for def read.
 
+11.26am 2/3/26
+Still not sure what the point of the generator is. It was initially to keep the item defs separate to the instances, but then I add the full item_defs to Registry anyway. And I redo half the work I do in generator (by_location, alt_names etc are made in both). So either I build the /full/ item defs in generator and pass it and populate itemReg, or just do it in itemReg. Really feels like it should just be a fn in itemReg.
+
+For now I think I'm going to move what I can to generator, and try to keep itemReg for more of the instances.
+
+For alt_names: I want this to include all alt_names, not just instanced? Or do I want to keep the full data sets in generator, and have itemReg only include alt_names for instanced items. That might have some value.
+
+Also I really need to improve meta_commands. The events section doesn't actually do shit.
+
+12.21pm
+Have made it a bit better, at least you can access event data which could be useful. It's just about having a straightforward way to get in-game data without having to stop, add print statements, etc.
+
+Adding something to config to make it print tokens on run, so I can see how it's interpreting specific elements without having to turn logging on fully.
+
+Yeah that's really handy actually. Obvs can't see the tokens for the previous entry, but it's very useful to just have that specific output viewable if I want it, without needing to add all the other logging lines if I just want to know what it thinks I meant.
+
+1.34pm
+Going to change timeblocks from 12 to 24, and just double up on the names for now.
+
+Oh, what about 'wait until night'? That could be good. I do have timeblocks named morning/day/night/evening. Although it might get tricky. Will try.
+
+
+1.54pm
+Hahaha I'm partway through and
+`It was early morningmorningmid-morning, now it's daymidday.`
+Not quite exactly what I'd been intending~
+
+Okay, fixed. 'wait until morning/night/day' etc all work. But, not the inbetween times - 'wait until early afternoon' breaks because it thinks 'early' and 'afternoon' are assumed nouns.
+
+Might have to add semantics to compound word checks.
+
+It gives a little print when it becomes night though, which is nice, if the prev. time of day wasn't in the 'night' category but the new one is. (Also am determining the night category by time_of_day idx, not by a list of strings anymore.)
+
+Need to add compound_words for semantics too, so I can do 'early morning'. And just a good idea in general.
+
+Current thought: Rejig check_compound_words to check for perfects in all categories. Then, if no perfects in any, we take the best bet from whichever is best.
+
+Should really check locations then semantics first, as those are shortest lists, then check nouns. If none are perfect, we take whichever has the best option and revert to assumed_noun if nothing else. Although semantics should probably only apply if they're perfect. So 'early x' should only trigger if x is also part of that compound word, otherwise semantics are going to explode and ruin everything.
+
+I think I just need to do the inner part of the compound_word check in a loop, so I can loop internally to find perfect matches and give the kind accordingly, instead of the kind being an imported feature. Maybe. Checking all compound options for perfects just makes sense, no? It does increase the checks but only if it doesn't find anything. And we only check the compound word if the word is part of it.
+
+3.08pm
+Nice. I added a hacky little check for perfects and it actually worked. Well, for the parser. Didn't work in the actual time passage.
+
+#  .-                         -.
+# [<  wait until late evening  >]
+#  '-                         -'
+# Tokens: [Token(idx=0, text='wait', kind={'verb'}, canonical='wait'), Token(idx=1, text='until', kind={'semantic'}, canonical='until'), Token(idx=2, text='late', kind=('semantic',), canonical='late evening')]
+#
+# You stand around for a while, just letting time pass.
+#
+# It was pre-dawn, now it's daybreak.
+
+Oh, I bet it's because semantic uses the text, not the canonical, so it's only getting "late", not "late evening". Would make sense.
+
+Okay, fixed.
+
+Oh. I can add plural directions in the same way. Oh man. That's big. Why did I not consider that before...?

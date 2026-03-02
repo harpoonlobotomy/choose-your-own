@@ -6,8 +6,6 @@
 * Then sends the format and dict onward to verb_actions."""
 
 from env_data import cardinalInstance, placeInstance
-from eventRegistry import eventInstance
-import eventRegistry
 from itemRegistry import itemInstance, registry
 from logger import logging_fn
 from printing import print_blue, print_yellow
@@ -88,7 +86,7 @@ class Membrane:
 
     def __init__(self):
 
-        from verb_definitions import get_verb_defs, directions, formats, combined_wordphrases, cardinals
+        from verb_definitions import get_verb_defs, directions, formats, combined_wordphrases, cardinals, semantics
         verb_defs_dict, verbs_set = get_verb_defs()
 
         self.key_verb_names = set(verb_defs_dict.keys())
@@ -108,6 +106,12 @@ class Membrane:
         for word in self.locations:
             compound_locs[word] = tuple(word.split())
         self.compound_locations = compound_locs
+
+        self.semantics = semantics
+        self.plural_semantics = {}
+        for word in self.semantics:
+            if " " in word:
+                self.plural_semantics[word] = tuple(word.split())
         self.directions = directions
         self.cardinals = set(cardinals) ## does membrane need these or not?
 
@@ -167,32 +171,32 @@ def add_item(input_str):
     print(f"Generated item ``{created_item}``.")
 
 
-def immediate_commands(input_str):
+def immediate_commands(input_str, print_tokens):
     from env_data import locRegistry
+    import eventRegistry
     print_yellow(f"IMMEDIATE COMMAND: {input_str}")
-    if input_str.startswith("godmode") and input_str != "godmode":
-        if " add " in input_str:
-            add_item(input_str)
 
-    from env_data import locRegistry
-    if input_str == "print local items":
+    if " add " in input_str:
+        add_item(input_str)
+
+    elif "local" in input_str:
         local_items = registry.by_location.get(locRegistry.current)
         print(f"LOCAL ITEMS:\n{local_items}\n")
 
-    if input_str == "print inventory items":
+    elif "inventory" in input_str:
         inv_items = locRegistry.inv_place.items
         print(f"INV_PLACE.ITEMS:\n{inv_items}\n")
         inv_items_2 = registry.by_location.get(locRegistry.inv_place)
         print(f"\nBY_LOCATION[LOC.INV_PLACE]:\n{inv_items_2}\n")
 
-    if input_str == "print named items":
+    elif "named" in input_str:
         item_name = input("Entry name here:  ")
         initial_names = registry.by_name.get(item_name)
         print(f"BY_ALT_NAME[NAME]:\n{initial_names}\n")
         alt_names = registry.by_alt_names.get(item_name)
         print(f"BY_ALT_NAME[NAME]:\n{alt_names}\n")
 
-    if input_str == "print current events":
+    elif "current events" in input_str:
         current_by_inst_state = []
         for event in eventRegistry.events.events:
             if event.state == 1:
@@ -200,34 +204,37 @@ def immediate_commands(input_str):
         current_by_event_by_state = []
         for event in eventRegistry.events.event_by_state(1):
             current_by_event_by_state.append(event)
-        print(f"\nevent_by_state(1):\n{current_by_event_by_state}\n\nevent.state == 1:\n{current_by_inst_state}\n")
+        print(f"[These two lists should not differ]\nevent_by_state(1):\n{current_by_event_by_state}\n\nevent.state == 1:\n{current_by_inst_state}\n")
 
-    if input_str == "print all events":
-        all_events = []
-        for event in eventRegistry.events.events:
-            all_events.append(event)
-        print(f"\nALL EVENTS: {all_events}")
+    elif "all events" in input_str:
+        print(f"\nALL EVENTS: {eventRegistry.events.events}")
 
-    if "god" in input_str:
-        where = input('"add" or "add item" to add an item. "move" to force move an item to a location.')
-        if where in ("add", "add item", "add_item"):
-            input_str = input("Enter <item_name> to spawn an item at your location. This is the only option at present.\n")
+    elif "print tokens" in input_str:
+        print(f"Printing tokens: {print_tokens}\n")
+        config.print_tokens = print_tokens = not print_tokens
+        print(f"Printing tokens: {config.print_tokens}\n")
 
-            if input_str == "":
+    elif "god" in input_str:
+        where = input('["add" to add an item. "move" to force move an item to a location] .. ')
+        itemname = None
+        if ("add" in where or "move" in where) and len(where.split()) > 1:
+            itemname = where.split()[1]
+        if "add" in where:
+            if not itemname:
+                itemname = input("Enter <item_name> to spawn an item at your location.\n")
+            if itemname == "":
                 print("Nothing entered; returning")
-                return input()
-            if input_str in registry.item_defs:
-                print(f"registry.item_defs[test]: {registry.item_defs[input_str]}")
-                created_item = registry.init_single(input_str, registry.item_defs[input_str])
+                return # we get input immediately after the return, don't add it here too.
+            if itemname in registry.item_defs:
+                created_item = registry.init_single(itemname, registry.item_defs[itemname], apply_location=locRegistry.current)
             else:
-                print(f"No item named `{input_str}`. Do you want to create a new item?")
+                print(f"No item named `{itemname}`. Do you want to create a new item?")
                 new_test = input("y/yes for yes, anything else to return.")
                 if new_test not in ("y", "yes"):
                     print("Returning.")
-                    return input()
+                    return  # we get input immediately after the return, don't add it here too.
                 from itemRegistry import new_item_from_str
-                created_item = new_item_from_str(input_str, input_str=None, loc_cardinal=locRegistry.current.place_name)
-            registry.move_item(created_item, location=locRegistry.current)
+                created_item = new_item_from_str(itemname, input_str=None, loc_cardinal=locRegistry.current.place_name)
             print(f"Generated item ``{created_item}``.")
 
         elif "move" in where:
@@ -235,7 +242,7 @@ def immediate_commands(input_str):
             item = registry.by_name.get(itemname)
             if not item:
                 print(f"No item by the name {itemname}, returning.")
-                return input()
+                return
             if isinstance(item, list):
                 for inst in item:
                     input_str = input(f"Do you want to move item {inst}?")
@@ -255,10 +262,9 @@ def immediate_commands(input_str):
                 print(f"No location found from `{new_loc_str}`, returning.")
             else:
                 registry.move_item(item, location=location)
-                print(f"Moved item: {item}")
-                print(f"New location: {item.location}")
+                print(f"Moved item: {item} // New location: {item.location}")
 
-    print_yellow("Exiting immediate_commands.\n")
+    print_yellow("Exiting immediate_commands.")
     return
 
 import json
@@ -271,6 +277,7 @@ class UserEncoder(json.JSONEncoder):
         else:
             return str(iterable)
 
+        from eventRegistry import eventInstance
         if isinstance(o, itemInstance|placeInstance|cardinalInstance|eventInstance|VerbInstance):
             return str(o)
         elif isinstance(o, set):
@@ -288,7 +295,7 @@ def run_membrane(input_str=None, run_tests=False):
     logging_fn()
 
     def loop(input_str):
-
+        print_tokens = config.print_tokens
         logging_fn()
 
         def log(): # leaving it here but disabled, just useful to test obj counts as things expand. # Add log_objects to config at some point.
@@ -298,12 +305,12 @@ def run_membrane(input_str=None, run_tests=False):
             log_objects(objs, input_str, run_tag="full_mem_test")
         #log()
 
-        immediate_command = ["print local items", "print inventory items", "print named items", "print current events", "print all events", "godmode", "god mode"]
+        immediate_command = ["print local items", "print inventory items", "print named items", "print current events", "print all events", "godmode", "god mode", "print tokens"]
         while input_str == None or input_str == "":
-            input_str = input("\n\n")
+            input_str = input("\n")
             if input_str in immediate_command or input_str.startswith("godmode"):
-                immediate_commands(input_str)
-                input_str = input()
+                immediate_commands(input_str, print_tokens)
+                input_str = input("\n")
 
         response = (None, None)
 

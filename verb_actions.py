@@ -81,7 +81,7 @@ def set_noun_attr(*values, noun:itemInstance):
     from eventRegistry import trigger_acts, events
     if hasattr(noun, "event") and getattr(noun, "event") and hasattr(noun, "is_event_key") and noun.is_event_key:
         print()
-        outcome, moved_children = events.is_event_trigger(noun, values)
+        outcome, moved_children = events.is_event_trigger(noun_inst = noun, reason = values)
         if moved_children:
             print_moved_children(moved_children, noun, values)
         if not outcome:
@@ -101,7 +101,7 @@ def set_noun_attr(*values, noun:itemInstance):
             if item in triggers:
                 #print(f"item in triggers: {item}")
                 if val == triggers[item]:
-                    outcome, moved_children = events.is_event_trigger(noun, reason = item_val)#values)
+                    outcome, moved_children = events.is_event_trigger(noun_inst = noun, reason = item_val)#values)
                     if moved_children:
                         print_moved_children(moved_children, noun, item)
 
@@ -476,11 +476,11 @@ def get_dir_or_sem(input_dict:dict, x_val=None) -> str:
         for kind, entry in data.items():
             if "direction" in kind or "semantic" in kind:
                 if not x_val:
-                    return entry["text"] # was str_name; shoul be text, no? For dirs/sems, should always be the same. Need to check.
+                    return entry["str_name"] # Changed to str_name so that compound_semantics are read correctly.
 
                 sem_counter += 1
                 if sem_counter == x_val:
-                    return entry["text"]
+                    return entry["str_name"]
 
 def get_meta(input_dict:dict) -> str:
     """Returns `text` for the first `meta` entry in `input_dict`."""
@@ -1068,6 +1068,21 @@ def find(format_tuple, input_dict):
     #        print(f"There's a {assign_colour(noun)} at {assign_colour(card.place_name, "loc")}, is that what you were looking for?")
     #        return card
 
+def get_hours_until(time_str):
+    import choices
+    from set_up_game import game
+
+    new_idx = choices.time_of_day.index(time_str)
+    current_idx = choices.time_of_day.index(game.time)
+
+    if new_idx > current_idx:
+        new = new_idx - current_idx
+    else:
+        remainder = 24 - current_idx
+        new = remainder + new_idx
+    return new
+
+
 def get_timeblocks(input_dict, verb:str):
 
     timeblock = 1
@@ -1080,13 +1095,20 @@ def get_timeblocks(input_dict, verb:str):
         return
     if sem and sem2 and sem == "for":
         sem = sem2
+
+    if sem2 and sem == "until":
+        import choices
+        if sem2 in choices.time_of_day:
+            num = get_hours_until(sem2)
+            sem = sem2 = "hours"
+
  # ^  make this bit a reusable fn.  v
-    if (sem and sem2 and sem == sem2) or not sem2:
+    if ((sem and sem2 and sem == sem2) or not sem2):
         if sem in ["while", "hour", "hours"]:
             if not num:
                 timeblock = 1
             else:
-                timeblock = int(int(num)/2)
+                timeblock = int(num)
                 if timeblock == 0:
                     timeblock == 1
             if verb == "read" and timeblock > 5:
@@ -1094,9 +1116,9 @@ def get_timeblocks(input_dict, verb:str):
                 timeblock = 4
         elif sem in ("day", "days"):
             if not num:
-                timeblock = 12
+                timeblock = 24
             else:
-                timeblock = int(num) * 12
+                timeblock = int(num) * 24
             if verb == "read":
                 print("You can't read for days at a time, but maybe for a few hours...")
                 timeblock = 4
@@ -1179,7 +1201,7 @@ def read(format_tuple, input_dict):
             to_print = noun.descriptions["details"].get("print_str")
 
         if to_print:
-            timeblock, num = get_timeblocks(input_dict, verb="read")
+            timeblock, _ = get_timeblocks(input_dict, verb="read")
 
             from interactions.player_movement import update_loc_data
             from set_up_game import game
@@ -1200,7 +1222,7 @@ def read(format_tuple, input_dict):
 
         if hasattr(noun, "event"):
             from eventRegistry import events
-            outcome, moved_children = events.is_event_trigger(noun, "item_is_read")
+            outcome, moved_children = events.is_event_trigger(noun_inst = noun, reason = "item_is_read")
             if moved_children:
                 print_moved_children(moved_children, noun, outcome)
         return
@@ -1354,6 +1376,7 @@ def break_item(format_tuple, input_dict):
                 registry.move_item(inst=child, location=loc.current, old_container=broken, no_print=True)
 
             turn_cardinal(prospective_cardinal=loc.current, turning = False)
+        return
     print()
     print(f"Cannot process {input_dict} in def break_item() End of function, unresolved. (Function not yet written)")
     return
@@ -1771,7 +1794,7 @@ def take(format_tuple, input_dict):
         if isinstance(added_to_inv, itemInstance):
             if added_to_inv != noun:
                 noun = added_to_inv
-        outcome, moved_children = events.is_event_trigger(noun, reason = "item_in_inv")
+        outcome, moved_children = events.is_event_trigger(noun_inst = noun, reason = "item_in_inv")
         if not outcome:
             print(f"The {assign_colour(noun)} {is_plural_noun(noun)} now in your inventory.")
         return
@@ -1962,7 +1985,7 @@ def drop(format_tuple, input_dict):
         triggered = None
         if hasattr(noun, "event") and noun.event:
             from eventRegistry import events
-            triggered, moved_children = events.is_event_trigger(noun, reason = "item_not_in_inv")
+            triggered, moved_children = events.is_event_trigger(noun_inst = noun, reason = "item_not_in_inv")
             if moved_children:
                 print_moved_children(moved_children, noun, triggered)
             #print(f"Triggered: {triggered}")
@@ -2042,6 +2065,14 @@ def wait(format_tuple, input_dict):
 
     timeblock, num = get_timeblocks(input_dict, verb="wait")
 
+    sem = get_dir_or_sem(input_dict)
+    sem2 = get_dir_or_sem(input_dict, 2)
+    if sem2 == "until":
+        import choices
+        if sem2 in choices.time_of_day:
+            num = get_hours_until(sem2)
+            sem = sem2 = "hours"
+
     if not get_noun(input_dict):
         from interactions.player_movement import update_loc_data
         from set_up_game import game
@@ -2050,7 +2081,11 @@ def wait(format_tuple, input_dict):
         aftertime = game.time
         if export:
             if num:
-                text = f"{num} {aftertime}s later"
+                if sem == "days" or sem2 == "days":
+                    text = f"{num} {aftertime}s later"
+                else:
+                    text = f"{num} hours later; {aftertime}"
+
             else:
                 extra = "the next "
                 text = f"{extra}{aftertime}"

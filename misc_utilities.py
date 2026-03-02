@@ -1,6 +1,7 @@
 from env_data import cardinalInstance, placeInstance
 from itemRegistry import itemInstance
 from logger import logging_fn
+from printing import print_blue
 
 ## utilities to be used by any script at any point
 
@@ -290,6 +291,24 @@ def print_failure_message(input_str=None, message=None, noun=None, verb=None, id
                 noun2 = temp
 
         print(f"There's no {assign_colour(noun_name, colour="yellow") if isinstance(noun_name, str) else assign_colour(noun_name)} around here to {assign_colour(verb, colour="green")} {a_or_the}{assign_colour(noun2) if isinstance(noun2, itemInstance) else assign_colour(noun2, colour="yellow")} with.")
+
+def check_nighttime(current_time, printme=True):
+
+    from set_up_game import game
+    already_night = bool(game.is_night)
+
+    from choices import time_of_day
+    idx = time_of_day.index(current_time)
+    if idx in (0, 1) or idx > 17:
+        game.is_night = True
+    else:
+        game.is_night = False
+
+    if game.is_night and not already_night:
+        print_blue("\nNight falls, and the darkness encroaches.\n", bg=False)
+    elif not game.is_night and already_night:
+        print_blue("\nThe veil of night has lifted.\n", bg=False)
+
 
 
 ### INVENTORY LIST MANAGEMENT (possible all should be in item_management instead, but keeping here for now.)

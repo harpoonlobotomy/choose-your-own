@@ -1646,14 +1646,15 @@ def init_loc_items(place=None, cardinal=None):
 
 def initialise_itemRegistry():
     """Initialises itemRegistry, generates all registry.by_location places and cardinals, initialises the item_dict from item_dict_gen (template item defs without instance/location data). Then generates all loc_data items in `init_loc_items`, and creates the plural words dict and assigns transitional objects."""
-    for placeInstance in loc.places:
-        for cardinal in loc.cardinals[placeInstance]:
-            registry.by_location.setdefault(cardinal, set())
+    from item_dict_gen import init_item_dict, generator
+    registry.by_location = generator.by_location
+    #for placeInstance in loc.places:
+    #    for cardinal in loc.cardinals[placeInstance]:
+    #        registry.by_location.setdefault(cardinal, set())
 
-    from item_dict_gen import init_item_dict
     registry.item_defs = init_item_dict()
 
-    init_loc_items()
+    init_loc_items() 
 
     plural_word_dict = {}
 

@@ -133,7 +133,7 @@ class timedTrigger:
 
     def convert_to_timeblocks(self): # putting it here for now so it's more obvious for later alteration.
         if self.time_unit == "day":
-            self.full_duration = self.full_duration * 12
+            self.full_duration = self.full_duration * 24
 
         return self
 
@@ -1445,7 +1445,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                     print(f"No event found with this attr trigger reason: {reason}. Cannot generate event. (Not a problem if it wasn't expected. Tailor this later.)")
                     return None, None
                 event = register_generated_event(event_name, noun_inst)
-                outcome, moved_children = self.is_event_trigger(noun=noun_inst, reason=reason) # Should this not be reason=reason_str? I just do the loop again here... #TODO
+                outcome, moved_children = self.is_event_trigger(noun_inst, reason=reason) # Should this not be reason=reason_str? I just do the loop again here... #TODO
                 return outcome, moved_children
             else:
                 return None, None

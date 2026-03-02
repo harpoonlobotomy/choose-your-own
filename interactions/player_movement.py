@@ -56,7 +56,7 @@ def check_loc_card(to_loc:placeInstance, to_card:cardinalInstance=None):
 
 def update_loc_data(prev_loc:placeInstance, new_cardinal:cardinalInstance, print_txt = False, timeblocks = None):
 
-    from misc_utilities import assign_colour
+    from misc_utilities import assign_colour, check_nighttime
     from set_up_game import game
     from choices import time_of_day
     from env_data import weatherdict
@@ -89,14 +89,15 @@ def update_loc_data(prev_loc:placeInstance, new_cardinal:cardinalInstance, print
             new_time_index=0
         game.time=time_of_day[new_time_index]
         if game.time == time_of_day[0] or time_index + timeblocks > len(time_of_day):
-            #print(f"timeblocks: {timeblocks} / 12: {timeblocks/12}")
-            if int(timeblocks/12) > 1:
-                game.day_number += int(timeblocks/12)
+            if int(timeblocks/24) > 1: # changed to 24 from 12
+                game.day_number += int(timeblocks/24)
             else:
                 game.day_number += 1
             export = f"{game.time.upper()} OF DAY {game.day_number}"
         else:
             export = None
+        check_nighttime(game.time)
+
     else:
         export = None
 

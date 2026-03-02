@@ -138,6 +138,7 @@ def init_game():
     #initialise_itemRegistry()
     loadout() ## move loadout after load_world to allow for time_management to run first. Testing...
     #print("Initial inventory:: ", game.inventory)
+    misc_utilities.check_nighttime(game.time, printme=True)
 
 def set_up(weirdness, bad_language, player_name): # skip straight to init_game to skip print
     game.weirdness = weirdness
@@ -182,6 +183,7 @@ class game:
     import config
     place = config.starting_location_str
     time = "mid-morning"
+    is_night = False
     #pops = "few"
     weather = "fine"
     bad_weather = False
