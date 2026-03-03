@@ -4934,3 +4934,55 @@ You can't drop a god; you aren't holding one.
 So first one it just assigns assumed noun, good. Second one, it recognises the god hammer as a single token but for some reason produced no dict, because it's not 'assumed' even though the godhammer /isn't/ local, so it should be.
 
 Third one, it fails to get the compound noun, which is waht it should be doing but failed to in attempt 2. Will have to think about it. Brain is dead today.
+
+10.24am 3/3/26
+Fixed the 'drop godhammer on floor' issue, it was because 'on' was given as semantic. 'drop god hammer on ground ' was also the same issue and resolved in the same way.
+
+Next:
+
+#    .-                          -.
+#   [<  drop god hammer on floor  >]
+#    '-                          -'
+
+#   You can't drop a god; you aren't holding one.
+
+I kind of want it to combine assumed nouns when it's like this. If I have idx[i] == assumed_noun and idx[i]+1 == assumed_noun, I want the print to be "You can't drop a {assumed_noun1} {assumed_noun2}, you aren't holding one'. It won't always work, but in general I think that's better than just omitting the next word. Only if the second assumed is the immediate next word, not just joining any assumed nouns together.
+
+Hm.
+So, it's not that simple:
+# print failure message: input_str=None, message=None, noun=None, verb=None, idx_kind=None, init_dict=None, format = None, tokens=None  == (None, None, 'god', 'drop', None, None, None, None)
+
+It just gives us the noun and verb, so we lose the second word part.
+
+Oh, this is interesting:
+Tokens: [Token(idx=0, text='drop', kind={'verb'}, canonical='drop'), Token(idx=1, text='god', kind=('noun',), canonical='god hammer'), Token(idx=3, text='on', kind={'direction'}, canonical='on'), Token(idx=4, text='floor', kind={'noun'}, canonical='assumed_noun')]
+
+With [print tokens] it gives us the raw tokens. That didn't get sent through to the error message but it probably should. Along with the input str. Okay.
+
+Oh - it's because the message is sent from def drop. Without the input str we have no way of knowing whether the str_name was in the input_str or not, so we always just use 'text' as it's the part that was definitively matched. Okay.
+
+Maybe I add the input_str as an attr in membrane. It just holds it for one turn, then I can pull it out whenever I need to instead of having to send it through router.
+
+Oh, router does get it, though. Hm.
+
+Well I guess I could just pull it from membrane directly? Though it feels like membrane should just store it in the class.
+
+10.55am
+Uuuuuugh. def drop sends the entry['text'] so even with the input_str I can't compare.
+Well I can send the input_dict to failure printing.
+
+Okay. So now if the noun is a str, it checks to see if it's an instance, and if instance.name is in input_str, and uses that as noun_name if so. Will still break because it doesn't check if the other part of the noun_name is elsewhere being used etc, but it's probably closer to what it should be.
+
+Okay. So now it does that. And I have the error messages a little more functional; when it fails to get a format match (and so no dict is even made), it now tries to find a verb from the tokens to give a 'sorry, what do you want to {verb}?' message, instead of just 'sorry, I don't know what to do with 'input_str'. So it's a little closer.
+
+11.21am
+Why is the spacing wrong?
+
+ .-                      -.
+ [<  drop god with hammer  >]
+ '-                      -'
+
+ It's cutting the leading spaces T_T
+
+2.25pm
+Never really figured out why, but added a workaround.

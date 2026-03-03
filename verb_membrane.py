@@ -150,6 +150,7 @@ class Membrane:
         logging_fn(note = "end of get_local_nouns")
 
         self.numbers = list(str(i) for i in list(range(0, 102)))
+        self.input_string = "" # store input_str here each turn so other scripts can access it directly if needed instead of having to pass it through.
 
 membrane = Membrane()
 
@@ -343,6 +344,7 @@ def run_membrane(input_str=None, run_tests=False):
         try:
             from verbRegistry import Parser
             try:
+                membrane.input_string = input_str
                 viable_format, dict_from_parser = Parser.input_parser(Parser, input_str)
                 if not viable_format:
                     return None
@@ -433,6 +435,7 @@ def run_membrane(input_str=None, run_tests=False):
                 print()
 
     else:
+        print()
         test = loop(input_str)
         if test == "exit":
             print_blue(f"{MOVE_UP}Exiting now.\n")#Loop test at end == exit, returning `exit`.")

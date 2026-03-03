@@ -1256,12 +1256,6 @@ class itemRegistry:
                 description = choose_option(description, inst)
 
             inst.description = description
-            return
-        if orig_description:
-            return
-
-        print(f"At the end of init_descriptions, no description found for {inst}: {description}")
-
 
     def get_duplicate_details(self, inst, inventory_list):
         logging_fn()
@@ -1566,7 +1560,6 @@ def init_loc_items(place=None, cardinal=None):
             for card in place.cardinals:
                 if card == loc.no_place or card == loc.inv_place:
                     continue
-                print(f"CARD: {card}")
                 test_cardinal, success = get_viable_cardinal(card, place=place)
                 if success:
                     if registry.get_item_by_location(test_cardinal):
@@ -1576,7 +1569,6 @@ def init_loc_items(place=None, cardinal=None):
                                 continue
                     test_cardinal.surfaces = loc_dict[place.name][card].get("surfaces") if loc_dict[place.name][card].get("surfaces") else {"flooring": set(), "walls": set()}
                     if test_cardinal.surfaces.get("flooring"):
-                        print(f'test_cardinal.surfaces.get("flooring"): {test_cardinal.surfaces.get("flooring")}')
                         if isinstance(test_cardinal.surfaces["flooring"], str):
                             flooring = test_cardinal.surfaces["flooring"]
                         elif test_cardinal.surfaces["flooring"] == False:
@@ -1591,7 +1583,7 @@ def init_loc_items(place=None, cardinal=None):
                         if hasattr(inst, "location") and inst.location != loc.no_place:
                             registry.by_location.get(inst.location).pop(inst) # These scenery items shouldn't show up as local objects. We don't find the wall when looking around, it's just /there/. Not sure if this is how I want to keep doing it but it'll do for now. Maybe not even no_place but just 'None', will see.
                         inst.location = test_cardinal
-                        print(f"INST: {inst}")
+                        #TODO: Set this up for walls too.
                         setattr(inst, "is_scenery", True) # not implemented anywhere yet.
                         test_cardinal.surfaces["flooring"] = inst
 # TODO do the same for walls.

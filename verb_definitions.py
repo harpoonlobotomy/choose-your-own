@@ -27,9 +27,7 @@ directions = ["down", "up", "left", "right", "away", "toward", "towards", "close
 ## "in front of"?? Need to be able to cope with that. TODO this.
 
 nulls = ["the", "a", "an"]
-semantics = ["with", "and", "around", "for", "while", "set", "on", "hour", "hours", "day", "days", "until"] # adding 'hour' and 'day' here because it'll work with 'read'/'wait' for explicit time skipping without going into meta.
-# doing this separately for testing, add above once proven.
-#for item in ("morning", "evening", "night"):
+semantics = ["with", "and", "around", "for", "while", "set", "hour", "hours", "day", "days", "until"] #removed 'on' from semantics.
 
 from choices import time_of_day
 for item in time_of_day:

@@ -609,7 +609,7 @@ def turn_cardinal(prospective_cardinal, turning = True):
         relocate(new_cardinal = prospective_cardinal)
     else:
         if turning:
-            print(f"You're already facing the {assign_colour(loc.current, card_type="ern_name")}.\n")
+            print(f"You're already facing the {assign_colour(loc.current, card_type="ern_name")}.")
         else:
             from env_data import get_loc_descriptions
             print(f"You're facing the {assign_colour(loc.current, card_type="place_name")}.")
@@ -1216,7 +1216,7 @@ def read(format_tuple, input_dict):
             else:
                 nountext = f"a nearby {assign_colour(noun)}"
 
-            print(f"You settle down to read {nountext} in the {loc.current.ern_name}.\n\n   {assign_colour(to_print, "yellow")}\n\nIt was {beforetime}, now it's {text}.{extra2}")
+            print(f"You settle down to read {nountext} in the {loc.current.ern_name}.\n\n{assign_colour(to_print, "enter_door")}\n\nIt was {beforetime}, now it's {text}.{extra2}")
 
         if hasattr(noun, "is_map"):
             item_interactions.show_map(noun)
@@ -1401,7 +1401,7 @@ def lock_unlock(format_tuple, input_dict, do_open=False, noun=None, noun2=None):
     #print("lock_unlock: noun, noun_str, noun2, noun2_str: ", noun, noun_str, noun2, noun2_str)
 
     if len(format_tuple) == 2:
-        print(f"{assign_colour(noun.name)} requires a key, no?")
+        print(f"The {assign_colour(noun.name)} requires a key, no?")
         return
 
     if len(format_tuple) == 4:
@@ -1964,7 +1964,7 @@ def drop(format_tuple, input_dict):
         #print_yellow(f"Found noun from find_local_item_by_name: {outcome}. Original: {noun}")
         noun = outcome
     else:
-        outcome = print_failure_message(noun=noun_str, verb="drop")
+        outcome = print_failure_message(noun=noun_str, verb="drop", init_dict=input_dict)
         return
 
     if len(input_dict) == 3:
@@ -2171,17 +2171,24 @@ def enter(format_tuple, input_dict, noun=None):
 MOVE_UP = "\033[A"
 print_extra_decorations = True
 
-def make_foreline(new_str, input_str):
+def make_foreline(new_str, input_str, add_space=False):
     diff = len(new_str) - len(input_str)
     new_str = f"\033[0;32m[\033[1;32m<  {input_str}  >\033[0;32m]"
     half = int(diff/2)
     leftovers = diff - (half + half) - 1 -2
     foreline = f"\033[0;32m" + " .-" + (f" " * (half-3)) + (" " * (len(input_str))) + (f" " * (half + leftovers)) + "-."
     #print(MOVE_UP, end='')
-    print(MOVE_UP, end='')
-    print(foreline) # Needs this little dance to print correctly whether it's user input or test. If I wasn't running the text commands I could just hardcode it directly at input.
+    if add_space:
+        print(MOVE_UP, end='')
+        #foreline = " " + foreline
+        print(foreline)
+         # Needs this little dance to print correctly whether it's user input or test. If I wasn't running the text commands I could just hardcode it directly at input.
+    else:
+        print(MOVE_UP, end='')
+        print(foreline) # Needs this little dance to print correctly whether it's user input or test. If I wasn't running the text commands I could just hardcode it directly at input.
     print()
-    return f"\033[0;32m" + " '-" + (f" " * (half-2)) + (" " * (len(input_str))) + (f" " * (half + leftovers-1)) + "-'", new_str
+    foreline = foreline.replace(".", "'")
+    return foreline, new_str#f"\033[0;32m" + " '-" + (f" " * (half-2)) + (" " * (len(input_str))) + (f" " * (half + leftovers-1)) + "-'", new_str
 
 def router(viable_format, inst_dict, input_str=None):
     logging_fn()
@@ -2196,7 +2203,7 @@ def router(viable_format, inst_dict, input_str=None):
 
     from config import print_input_str # This will probably be the default. Definitely don't need three options.
     if print_input_str:
-        print(f"{MOVE_UP}", len(input_str) * " ")
+        print(f"{MOVE_UP}", len(input_str) * " ")# + "\n")
         new_str = f"[<  {input_str}  >]"
         #print(f"{MOVE_UP}", end="")
         if print_extra_decorations:

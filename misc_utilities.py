@@ -130,7 +130,6 @@ def choose_option(input_text, instance=None):
 
     return input_text.replace(choose_text, replacement_str)
 
-
 def clean_separation_result(result:list, to_print=False):
     logging_fn()
     if not result:
@@ -139,7 +138,6 @@ def clean_separation_result(result:list, to_print=False):
     if not isinstance(result, list):
         print(f"Expecting a list of 'result'. Result is type {type(result)}. Contents: {result}")
         return
-
 
     for result_set in result:
         string = result_set[0]
@@ -201,15 +199,35 @@ def look_around():
                 is_items = ", ".join(col_list(applicable_items))
                 print(f"   {is_items}")
 
+def print_input_str(input_str):
+    from verb_actions import make_foreline
+    print(f"{MOVE_UP}" + len(input_str) * " ")#+"\033[0m")
+    new_str = f"[<  {input_str}  >]"
+    foreline, new_str = make_foreline(new_str, input_str)#, add_space=True)
+    print(f'{MOVE_UP}\033[1;32m{new_str}\033[0m')
+    print(foreline+"\033[0m\n")
 
 def print_failure_message(input_str=None, message=None, noun=None, verb=None, idx_kind=None, init_dict=None, format = None, tokens=None):
     """prints a failure message using `input_str`, `noun`, `verb`, `inx_kind`, `init_dict` and `format`, depending on which elements are given. If nothing else, just prints a generic message using `input_str`."""
+    #print(f"print failure message: input_str=None, message=None, noun=None, verb=None, idx_kind=None, init_dict=None, format = None, tokens=None {input_str, message, noun, verb, idx_kind, init_dict, format, tokens}")
     logging_fn()
-    if input_str:
-        print(f'{MOVE_UP}\033[1;32m[[  {input_str}  ]]\033[0m\n')
+    from verb_actions import get_verb, get_noun, get_dir_or_sem
 
-    from verb_actions import get_verb
+    if input_str and input_str != "":
+        print_input_str(input_str)
+
+    if not input_str and (not noun and not verb): # if not input_str, was sent from a verb_action so we don't reprint the input_str. But need it for error printing, so import it here.
+        from verb_membrane import membrane
+        input_str = membrane.input_string
+        if input_str:
+            print_input_str(input_str)
+
     if not init_dict and not (noun and verb):
+        if tokens:
+            for token in tokens:
+                if "verb" in token.kind:
+                    print(f"\nSorry, what do you want to {assign_colour(token.text, colour="green")}?")
+                    return
         print(f"[Not init_dict and not (noun and verb)] Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
         if tokens:
             print(f"Tokens: {tokens}")
@@ -222,7 +240,6 @@ def print_failure_message(input_str=None, message=None, noun=None, verb=None, id
         print(f"[not verb] Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
         return
 
-    from verb_actions import get_noun
     from verbRegistry import VerbInstance
     if isinstance(verb, VerbInstance):
         verb = verb.name
@@ -242,7 +259,12 @@ def print_failure_message(input_str=None, message=None, noun=None, verb=None, id
         if isinstance(noun, itemInstance):
             noun_name = noun.name
         elif isinstance(noun, str):
-            noun_name = noun
+            if init_dict:
+                noun_inst = get_noun(init_dict)
+                if isinstance(noun_inst, itemInstance) and input_str and noun_inst.name in input_str:
+                    noun_name = noun_inst.name
+            if not noun_name:
+                noun_name = noun
 
     entry2 = noun2 = None
     if idx_kind:
@@ -252,7 +274,10 @@ def print_failure_message(input_str=None, message=None, noun=None, verb=None, id
             if entry["instance"] != "assumed_noun":
                 noun_name = entry["instance"]
             else:
-                noun_name = entry["text"]
+                if entry["str_name"] in input_str:
+                    noun_name = entry["str_name"]
+                else:
+                    noun_name = entry["text"]
         for i, kind in init_dict.items():
             kind = list(kind)[0]
             if "noun" in kind and init_dict[i][kind].get("text") != entry['text']:
@@ -264,10 +289,15 @@ def print_failure_message(input_str=None, message=None, noun=None, verb=None, id
                     else:
                         noun2 = entry2["text"]
                         a_or_the = "a "
+                    break
 
     if noun_name:# and entry["instance"] == 'assumed_noun':
         if verb == "drop":
-            print(f"You can't drop a {assign_colour(noun_name, colour="yellow")}; you aren't holding one.")
+            test = get_noun(init_dict)
+            if test and isinstance(test, itemInstance) and test.name != noun_name and format == tuple(('verb', 'noun', 'direction', 'noun')):
+                print(f"You can't drop the {assign_colour(test)} {get_dir_or_sem(init_dict)} a {assign_colour(noun_name, colour='yellow')}; you can't see one.")
+            else:
+                print(f"You can't drop a {assign_colour(noun_name, colour="yellow")}; you aren't holding one.")
             return
         if not entry2:
             if verb == "look":
@@ -390,8 +420,7 @@ def generate_clean_inventory(inventory_inst_list=None, will_print = False, colou
         if coloured_and_spaced:
             if isinstance(coloured_and_spaced, list):
                 for item in coloured_and_spaced:
-                    if item != None:
-                        print(assign_colour(item))
+                    print(assign_colour(item))
             elif isinstance(coloured_and_spaced, str):
                 print(coloured_and_spaced)
 
