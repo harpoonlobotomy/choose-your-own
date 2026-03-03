@@ -160,7 +160,7 @@ json_to_edit = "ref_files/generated_items.json"
 gen_items = {} # not currently using the actual file, just for temp storage.
 
 def get_item_data(item_name, incoming_data=None): # note: no locations here. This is pure item-def building using available item details from loc_data + item+gen_defs. Use these as bases for instancing the items in itemReg.
-
+    #print(f"item_name in get_item_data: {item_name}")
     if not incoming_data:
         incoming_data = {}
 
@@ -218,6 +218,8 @@ def find_children(item, item_dict):
         generator.has_children[item] = item_dict
 
         for child in item_dict["starting_children"]:
+            if "[[" in child:
+                child = child.split("[[")[0].strip()
             if not child in generator.item_defs:
                 get_item_data(child)
 

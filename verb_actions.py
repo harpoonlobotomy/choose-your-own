@@ -201,7 +201,7 @@ def get_transition_noun(noun, format_tuple, input_dict, take_first=False, return
 
     return noun
 
-def get_correct_nouns(input_dict, verb=None, access_str=None, access_str2=None):
+def get_correct_nouns(input_dict, verb=None, access_str=None, access_str2=None, hold_error_messages=False):
     """
     Just a function to compile the getting of noun data so each one doesn't have to do it individually.
     Takes input_dict and optionally, verb, and returns noun, noun_str, noun2, noun2_str.
@@ -218,24 +218,26 @@ def get_correct_nouns(input_dict, verb=None, access_str=None, access_str2=None):
         verb = get_verb(input_dict).name
 
     if noun:
-        outcome = item_interactions.find_local_item_by_name(noun, verb=verb, access_str=access_str)
-    if isinstance(outcome, itemInstance):
-        noun = outcome
-    else:
-        if outcome == None:
-            logging_fn(f"Going to print error from def {verb} `{input_dict}`")
-            print_failure_message(noun=noun_str, verb=verb)
-            return
+        outcome = item_interactions.find_local_item_by_name(noun, verb=verb, access_str=access_str, current_loc=loc.current)
+        if isinstance(outcome, itemInstance):
+            noun = outcome
+        else:
+            if outcome == None and not hold_error_messages:
+                logging_fn(f"Going to print error from def {verb} `{input_dict}`")
+                print_failure_message(noun=noun_str, verb=verb, init_dict=input_dict)
+                return
+            noun = None
 
     if noun2:
-        outcome = item_interactions.find_local_item_by_name(noun2, verb=verb, access_str=access_str2)
-    if isinstance(outcome, itemInstance):
-        noun2 = outcome
-    else:
-        if outcome == None:
-            logging_fn(f"Going to print error from def {verb} `{input_dict}`")
-            print_failure_message(noun=noun_str, verb=verb)
-            return
+        outcome = item_interactions.find_local_item_by_name(noun2, verb=verb, access_str=access_str2, current_loc=loc.current)
+        if isinstance(outcome, itemInstance):
+            noun2 = outcome
+        else:
+            if outcome == None and not hold_error_messages:
+                logging_fn(f"Going to print error from def {verb} `{input_dict}`")
+                print_failure_message(noun=noun_str, verb=verb, init_dict=input_dict)
+                return
+            noun2 = None
 
     return noun, noun_str, noun2, noun2_str
 
@@ -251,6 +253,8 @@ def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
             direction = "at"
         else:
             direction = "to"
+    if direction == "down":
+        direction = "down here at the"
     if not action:
         action = "moving"
 
@@ -963,7 +967,7 @@ def look(format_tuple=None, input_dict=None):
     elif len(format_tuple) == 3:
 
         if noun and format_tuple[1] == "direction":
-            print(f"NOUN: {noun}")
+            #print(f"NOUN: {noun}")
             outcome = item_interactions.find_local_item_by_name(noun, noun_text)
             if isinstance(outcome, itemInstance):
                 noun = outcome
@@ -1477,7 +1481,9 @@ def print_children_in_container(noun_inst:itemInstance):
                     print(f"ITEM NICENAMES IN PRINT CHILDREN: {item.nicenames}")
 
         print(f"\nThe {assign_colour(noun_inst)} contains:")
-        children = ", ".join(col_list(children, nicename=True))
+        to_print_children, _ = generate_clean_inventory(children, for_children=False)#True)
+        #children = ", ".join(children)
+        children = ", ".join(col_list(to_print_children, nicename=True, not_inv=children))
         if noun_inst.name == "matchbox":
             for child in noun_inst.children:
                 print(f"Child: {child}, type: {type(child)}")
@@ -1804,7 +1810,32 @@ def put(format_tuple, input_dict, location=None):
     logging_fn()
     action_word = "You put"
 
-    noun, _, noun2, _ = get_nouns(input_dict)
+    test_noun, noun_str, test_noun2, noun2_str = get_nouns(input_dict)
+    noun, _, noun2, _ = get_correct_nouns(input_dict, verb="look", access_str=None, access_str2=None, hold_error_messages=True)
+
+    if test_noun and test_noun2:
+        if test_noun and not noun and noun2:
+            if "container" in noun2.item_type:
+                print(f"You don't have a {assign_colour(noun_str, colour='yellow')} to put in the {assign_colour(noun2)}.")
+            else:
+                print(f"You don't have a {assign_colour(noun_str, colour='yellow')}, and the {assign_colour(noun2)} couldn't hold it anyway.")
+            return
+        if test_noun2 and not noun2 and noun:
+            print(f"You can't see a {assign_colour(noun2_str, colour="yellow")} to put the {assign_colour(noun)} in.")
+            return
+
+    #if noun2:
+    #    outcome = item_interactions.find_local_item_by_name(noun2, verb="look", current_loc=loc.current, hidden_cluster=True)
+    #    if outcome:
+    #        print(f"Outcome: {outcome}")
+    #        container, reason_val, meaning = registry.run_check(outcome)
+    #        if reason_val in (0, 3, 4, 5):
+    #            noun2 = outcome
+    #    if noun2 != outcome:
+    #        print(f"Noun2: {noun2} // outcome: {outcome}")
+    #        print(f"You can't see a {assign_colour(noun2_str, colour="yellow")} to put the {assign_colour(noun)} in.")
+    #        return
+#
     sem_or_dir = get_dir_or_sem(input_dict)
 
     if noun and noun2:
@@ -1821,6 +1852,7 @@ def put(format_tuple, input_dict, location=None):
                 else:
                     print(f"The {assign_colour(noun)} is already on the {noun2.name}.\n")
                     return
+
 ##TODO: This all needs redoing, it doesn't take noun's current state/location into account at all beside parentage.
         if hasattr(noun2, "contained_in") and noun == noun2.contained_in:
             print(f"Cannot put {assign_colour(noun)} in {assign_colour(noun2)}, as {assign_colour(noun2)} is already inside {assign_colour(noun)}. You'll need to remove it first.")
@@ -1843,7 +1875,7 @@ def put(format_tuple, input_dict, location=None):
 
     else:
         if sem_or_dir in down_words:
-            move_a_to_b(a=noun, b=location, action=action_word, current_loc=location)
+            move_a_to_b(a=noun, b=location, action=action_word, direction = sem_or_dir, current_loc=location)
             return
 
         if len(format_tuple) == 5:

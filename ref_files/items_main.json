@@ -156,6 +156,7 @@
     "smash_defence": 5
   },
   "glass jar": {
+    "print_children_as_list": false,
     "can_be_added_to": true,
     "can_be_closed": false,
     "can_be_locked": false,
@@ -165,12 +166,12 @@
     "children_type_limited": false,
     "container_limits": "smaller_than_apple",
     "descriptions": {
-      "starting_children_only": "a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers",
-      "any_children": "a glass jar, holding ",
-      "no_children": "a glass jar, now empty aside from some bits of debris.",
-      "open_starting_children_only": "",
-      "open_any_children": "",
-      "open_no_children": "",
+      "starting_children_only": "",
+      "any_children": "",
+      "no_children": "",
+      "open_starting_children_only": "a glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.",
+      "open_any_children": "a glass jar, holding ",
+      "open_no_children": "a glass jar, now empty aside from some bits of debris.",
       "is_broken": ""
     },
     "is_broken": false,
@@ -940,12 +941,12 @@
     "smash_defence": 5,
     "smash_threshold": 5
   },
-  "5 pound note": {
-    "can_break": true,
+  "5 dollar note": {
+    "alt_names": ["money", "5 dollars", "dollars", "notes"],
+    "can_break": false,
     "can_pick_up": true,
     "descriptions": {
-      "generic": "A small amount of legal tender. Could be useful if you find a shop.",
-      "is_broken": ""
+      "generic": "A small amount of legal tender. Could be useful if you find a shop."
     },
     "is_broken": false,
     "is_burned": false,
@@ -959,7 +960,7 @@
     ],
     "loot_type": "medium_loot",
     "nicenames": {
-      "generic": "a 5 pound note"
+      "generic": "a 5 dollar note"
     },
     "slice_attack": 5,
     "slice_defence": 5,
@@ -1018,10 +1019,12 @@
       "no_children": "",
       "open_starting_children_only": "",
       "open_any_children": "",
-      "open_no_children": ""
+      "open_no_children": "",
+      "is_charged": "A mobile phone. You don't think it's yours, but it does turn on...",
+      "is_locked": "A mobile phone. You don't think it's yours, but it's turned on and unlocked."
     },
     "has_batteries": false,
-    "is_charged": true,
+    "is_charged": false,
     "is_locked": true,
     "is_open": false,
     "item_size": "palm_sized",
@@ -1047,22 +1050,22 @@
   "wallet": {
     "can_be_added_to": true,
     "can_be_closed": true,
-    "can_be_locked": true,
+    "can_be_locked": false,
     "can_be_opened": true,
     "can_pick_up": true,
     "children": null,
     "children_type_limited": false,
     "container_limits": "small_flat_things",
     "descriptions": {
-      "generic": "A worn leather wallet with around 30 pound inside. No identification or cards.",
+      "generic": "A worn leather wallet.",
       "starting_children_only": "",
       "any_children": "",
       "no_children": "",
-      "open_starting_children_only": "",
-      "open_any_children": "",
-      "open_no_children": ""
+      "open_starting_children_only": "A worn leather wallet with around 30 dollars inside. No identification or cards.",
+      "open_any_children": "A worn leather wallet. No sign of identification or cards.",
+      "open_no_children": "A worn leather wallet. No identification or cards."
     },
-    "is_locked": true,
+    "is_locked": false,
     "is_open": false,
     "item_size": "palm_sized",
     "item_type": [
@@ -1073,14 +1076,16 @@
     ],
     "loot_type": "great_loot",
     "nicenames": {
-      "generic": "a wallet, with cash"
+      "generic": "a wallet with cash",
+      "no_children": "an empty wallet",
+      "any_children": "a wallet"
     },
     "requires_key": false,
-    "slice_attack": 5,
-    "slice_defence": 5,
-    "smash_attack": 5,
-    "smash_defence": 5,
-    "starting_children": null
+    "slice_attack": 0,
+    "slice_defence": 6,
+    "smash_attack": 3,
+    "smash_defence": 8,
+    "starting_children": ["5 dollar note [[6]]"]
   },
   "the exact thing": {
     "can_pick_up": true,

@@ -512,7 +512,12 @@ class itemRegistry:
             if parent.starting_children == None:
                 return
             if parent.starting_children != None and isinstance(parent.starting_children, list|set|tuple):
+                multiples = 1
                 for child in parent.starting_children:
+                    if "[[" in child:
+                        multiples = child.split("[[")[1]
+                        multiples = int(multiples.replace("]]", ""))
+                        child = child.split("[[")[0].strip()
 
                     def find_or_make_children(child, parent, instance_count, instance_children):
                         target_child = None
@@ -543,11 +548,16 @@ class itemRegistry:
 
                         return instance_count, instance_children
 
-                    instance_count, instance_children = find_or_make_children(child, parent, instance_count, instance_children)
+                    for _ in range(0,multiples):
+                        instance_count, instance_children = find_or_make_children(child, parent, instance_count, instance_children)
 
                 if len(instance_children) == len(parent.starting_children):
                     parent.starting_children = instance_children
                     registry.new_parents.remove(parent.id)
+                elif multiples > 1 and len(instance_children) == (len(parent.starting_children) + multiples - 1):
+                    parent.starting_children = instance_children
+                    registry.new_parents.remove(parent.id)
+
                 else:
                     if (len(instance_children) + len(registry.child_parent) == len(parent.starting_children)) or (len(parent.starting_children) == instance_count):
                         registry.new_parents.remove(parent.id)
@@ -653,13 +663,14 @@ class itemRegistry:
                 return None, 9, accessible_dict[9]
 
         container = is_item_in_container(inst)
-
+        print(f"inst: {inst}")
         if inst.location == loc.inv_place and not container:
             reason = 5
             meaning = accessible_dict[reason]
             return None, reason, meaning
 
         if container:
+            print(f"container: {container}")
             if container.location == loc.inv_place:
                 confirmed_container = container
                 if hasattr(confirmed_container, "is_open") and confirmed_container.is_open == False:
@@ -669,18 +680,19 @@ class itemRegistry:
                     reason = 2
                 else:
                     reason = 3
-            else:
-                if confirmed_container.location == loc.current:
-                    if hasattr(confirmed_container, "is_open") and confirmed_container.is_open == False:
-                        print(f"Container {confirmed_container.name} is closed by is_open flag.")
-                        reason = 1
-                    elif hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked"):
-                        print(f"Container {confirmed_container} is locked.")
-                        reason = 2
-                    else:
-                        reason = 4
+            elif container.location == loc.current:
+                confirmed_container = container
+                print("container is current")
+                if hasattr(confirmed_container, "is_open") and confirmed_container.is_open == False:
+                    print(f"Container {confirmed_container.name} is closed by is_open flag.")
+                    reason = 1
+                elif hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked"):
+                    print(f"Container {confirmed_container} is locked.")
+                    reason = 2
                 else:
-                    reason = 6
+                    reason = 4
+            else:
+                reason = 6
 
         else:
             if inst.location == loc.current:
@@ -1121,12 +1133,14 @@ class itemRegistry:
 
     def describe(self, inst: itemInstance, caps=False)->str:
         logging_fn()
-
         if not hasattr(inst, "description"):
             return "You see nothing special."
 
+        if isinstance(inst.description, dict):
+            inst.description = registry.init_descriptions(inst)
         description = inst.description
 
+        print(f"inst: {inst} // description: {description}")
         if caps:
             from misc_utilities import smart_capitalise
             description = smart_capitalise(description)
@@ -1134,6 +1148,7 @@ class itemRegistry:
         if "[[]]" in description:
             description = description.replace("[[]]", f"{inst.print_name}")
         if description:
+            print(f"description in describe: {description}")
             return description
 
 
@@ -1142,7 +1157,6 @@ class itemRegistry:
         logging_fn()
         from misc_utilities import has_and_true
         orig_description = inst.description
-
         description = None
         starting_children_only = False
 
@@ -1169,33 +1183,33 @@ class itemRegistry:
                             from misc_utilities import choose_option
                             inst.descriptions[entry][detail] = choose_option(val, inst)
 
-        def get_if_open(inst:itemInstance, label:str):
+        def get_if_open(inst:itemInstance, label:str) ->str:
 
-            if has_and_true(inst, label):
-                #getattr(inst.descriptions, f"open_{label}")
+            description = None
+            if has_and_true(inst, "is_open"):
                 description = inst.descriptions.get(f"open_{label}")
-                #description = getattr(inst.descriptions, f"open_{label}")
             else:
                 description = inst.descriptions.get(label)
-                #description = getattr(inst.descriptions, label)
+            if description and description != "":
+                return description
+            #if has_and_true(inst, label): # how would this work? Containers don't have 'item.starting_children_only' attr...
+                #getattr(inst.descriptions, f"open_{label}")
+                    #description = getattr(inst.descriptions, f"open_{label}")
+                #else:
+                    #description = getattr(inst.descriptions, label)
 
-            if not description:
-                return None
-
-            return description
-
-        if "container" in inst.item_type:
-
+        if "container" in inst.item_type and not "electronics" in inst.item_type:
             if has_and_true(inst, "children") and has_and_true(inst, "starting_children"):
                 starting_children_only = True
                 if inst.children:
                     for child in inst.children:
                         if not child in inst.starting_children or has_and_true(child, "hidden"):
                             starting_children_only = False
+                    if len(inst.starting_children) > len(inst.children):
+                        starting_children_only = False
 
             if starting_children_only:
                 test = get_if_open(inst, "starting_children_only")
-                #print(f"TEST: {test}")
                 if test:
                     description = test
 
@@ -1206,17 +1220,31 @@ class itemRegistry:
                 if_open = get_if_open(inst, "any_children")
                 if if_open:
                     long_desc.append(get_if_open(inst, "any_children"))
-
-                    for child in inst.children:
-                        long_desc.append(assign_colour(child, nicename=True))
-                        #print(f"long_desc with child: {long_desc}")
-
+                    if not ((hasattr(inst, "print_children_as_list") and inst.print_children_as_list) or not hasattr(inst, "print_children_as_list")):
+                        for child in inst.children:
+                            long_desc.append(assign_colour(child, nicename=True))
+                            #print(f"long_desc with child: {long_desc}")
                     description = compile_long_desc(long_desc)
+                if inst.nicenames.get("any_children"):
+                    inst.nicename = inst.nicenames["any_children"]
 
             else:
                 if not has_and_true(inst, "children") and get_if_open(inst, "no_children"):
                     description = get_if_open(inst, "no_children")
+                if inst.nicenames.get("no_children"):
+                    inst.nicename = inst.nicenames["no_children"]
         #print(f"{inst.name}: Description after child check etc: {description}")
+
+        if "electronics" in inst.item_type:
+            if inst.is_charged:
+                if inst.is_locked:
+                    if inst.descriptions.get("is_locked") and inst.descriptions["is_locked"] != "":
+                            description = inst.descriptions["is_locked"]
+                else:
+                    if inst.descriptions.get("is_charged") and inst.descriptions["is_charged"] != "":
+                        description = inst.descriptions["is_charged"]
+
+
         if not description and hasattr(inst, "descriptions"): # nothing should have 'description' on init anymore, shouldn't need this.
             if not inst.descriptions:
                 inst.descriptions = {}
@@ -1409,7 +1437,7 @@ def use_generated_items(input_=None):
     return gen_items
 
 
-def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, partial_dict=None)->str|itemInstance:
+def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, partial_dict=None, in_container=None)->str|itemInstance:
     """Generates an item def entry from item_name and, if given, input_str an a partial dict. Input_str should be a list of item_type categories to be assigned to the item. If loc_cardinal is None, items will be generated in a default location.\n\n`init_single` will be run with this new item def."""
 
     if partial_dict:
@@ -1483,6 +1511,10 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, part
     all_item_names_generated.append((inst, "new_item_from_str"))
     registry.temp_items.add(inst)
 
+    if in_container:
+        setattr(inst, "in_container", in_container)
+        inst.location = loc.no_place
+        in_container.children.add(inst)
     #if registry.temp_items:
     #    from edit_item_defs import add_new_item
     #    add_new_item(item_name, new_item_dict)

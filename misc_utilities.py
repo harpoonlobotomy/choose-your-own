@@ -378,7 +378,7 @@ def is_item_in_container(item):
         return container
     return None
 
-def generate_clean_inventory(inventory_inst_list=None, will_print = False, coloured = False):
+def generate_clean_inventory(inventory_inst_list=None, will_print = False, coloured = False, for_children=False):
     """Generates a nice looking inventory list, applying '` (x)` for plural entries' and adds colour and formatting."""
     from env_data import locRegistry as loc
 
@@ -404,14 +404,20 @@ def generate_clean_inventory(inventory_inst_list=None, will_print = False, colou
 
     second_checked = set()
     for inst_name in checked:
-        dupe_items = len(list(i for i in loc.inv_place.items if i.name == inst_name))#registry.get_duplicate_details(inst_name, inventory_inst_list))
+        dupe_items = len(list(i for i in inventory_inst_list if i.name == inst_name))#registry.get_duplicate_details(inst_name, inventory_inst_list))
         if inst_name in second_checked:
             continue
+
         name_index = inventory_names.index(inst_name)
-        inventory_names[name_index] = f"{inst_name} x{str(dupe_items)}"
+        if for_children:
+            coloured_name = assign_colour(inst_name)
+            print(f"Coloured name: {coloured_name}")
+            inventory_names[name_index] = f"{coloured_name} x{str(dupe_items)}"
+        else:
+            inventory_names[name_index] = f"{inst_name} x{str(dupe_items)}"
         second_checked.add(inst_name)
 
-    if coloured:
+    if coloured and will_print:
         coloured_and_spaced = []
         for item_name in inventory_names:
             coloured_and_spaced.append(f"  - {item_name}")
@@ -486,7 +492,7 @@ def get_itemname_from_sqrbrkt(string, noun, colour):
     return compiled_str
 
 
-def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=False, not_bold=False, caps=False, card_type = None, noun=None):
+def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=False, not_bold=False, caps=False, card_type = None, noun=None, not_inventory=False):
     """Take an item and apply its colour. If the item has .colour, that will be applied (either 'colour' if colour provided, otherwise a selection from the colour list on a rotating basis). If item is an instance or instance.name without associated colour, will assign that colour to item.colour and apply the colour.\n\ncard_type specifies the variation of cardinalInstance name to print, the options are\n
         * "name"
         * "ern_name"
@@ -623,7 +629,13 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
 
             plain_name, val = check_name(item)
             if val > 0:
-                item_instance = from_inventory_name(plain_name)
+                if not_inventory:
+                    for inst in not_inventory:
+                        if inst.name == plain_name:
+                            item_instance = inst
+                            break
+                else:
+                    item_instance = from_inventory_name(plain_name)
                 colour, _, bld = check_instance_col(item_instance)
             else:
                 item_instances=registry.instances_by_name(item)
@@ -680,7 +692,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
     coloured_text=Colours.c(item, colour, bg, bold=bld, italics=ita, underline=u_line, invert=invt, no_reset=no_reset)
     return coloured_text
 
-def col_list(print_list:list=[], colour:str=None, nicename=False)->list:
+def col_list(print_list:list=[], colour:str=None, nicename=False, not_inv=False)->list:
     """Takes a list and assigns colour to each list entry. If `colour` and/or `nicename` is supplied, those will be applied to each item."""
     coloured_list=[]
 
@@ -689,11 +701,11 @@ def col_list(print_list:list=[], colour:str=None, nicename=False)->list:
             continue
         if not colour:
             if isinstance(item, itemInstance):
-                coloured_text = assign_colour(item, nicename=nicename)
+                coloured_text = assign_colour(item, nicename=nicename, not_inventory=not_inv)
             else:
-                coloured_text = assign_colour(item, i, nicename=nicename)
+                coloured_text = assign_colour(item, i, nicename=nicename, not_inventory=not_inv)
         else:
-            coloured_text = assign_colour(item, colour, nicename=nicename)
+            coloured_text = assign_colour(item, colour, nicename=nicename, not_inventory=not_inv)
         coloured_list.append(coloured_text)
     return coloured_list
 

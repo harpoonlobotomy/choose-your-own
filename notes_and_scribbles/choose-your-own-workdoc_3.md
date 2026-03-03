@@ -4986,3 +4986,119 @@ Why is the spacing wrong?
 
 2.25pm
 Never really figured out why, but added a workaround.
+
+3.58pm
+Hm.
+`5 dollar note` is in generator.item_defs:
+Item in item_defs: 5 dollar note
+item_name in get_item_data: 5 dollar note
+generator.item_defs[item_name]: {'alt_names': ['money', '5 dollars', 'dollars', 'notes'], 'can_break': False, 'can_pick_up': True, 'descriptions': {'generic': 'A small amount of legal tender. Could be useful if you find
+a shop.'}, 'is_broken': False, 'is_burned': False, 'item_size': 'small_flat_things', 'item_type': ['can_pick_up', 'flammable', 'fragile', 'random_loot', 'standard'], 'loot_type': 'medium_loot', 'nicenames': {'generic': 'a 5 dollar note'}, 'slice_attack': 5, 'slice_defence': 5, 'slice_threshold': 5, 'smash_attack': 5, 'smash_defence': 5, 'smash_threshold': 5, 'can_burn': True, 'description': {'is_burned': None}, 'material_type': 'generic', 'on_break': 'broken [[item_name]]'}
+
+4.15pm
+Fixed that.
+
+Next:
+
+The wallet contains:
+  a 5 dollar note, a 5 dollar note, a 5 dollar note, a 5 dollar note, a 5 dollar note, a 5 dollar note
+
+
+containers don't do the 'item x 6' thing like inventory does.
+
+Also I think money should be clusters, no? idk. For now will just make it do the `thing x4` thing.
+
+4.26pm
+Hm. This is annoying.
+
+I can't combine them, because where it gets the noun instance in assign_colour, it explicitly expects the 'x6' variants to be in inventory, and errors if it doesn't find it. I'm holding the wallet, but the notes are not in the inv.
+
+Okay. Partway fixed. Adding another item breaks it though.
+
+![wallet with just starting items](image-2.png)
+
+But then, you add a paperclip:
+![with paperclip added](image-3.png)
+
+It's reverting to the location description style. But the thing is I do use that for some items(?). Shite.
+
+Well for a test, look at the jar:
+
+  A glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers
+
+  The glass jar contains:
+  dried flowers
+
+So it uses the starting item only description, but doesn't list the items. idk why the second one does. Or why it breaks the colour when the colour was fine when it was single.
+
+Oh, well this isn't an answer but is a problem:
+It's reporting the wallet is reason_val 2 -- 'in locked/local accessible container.
+
+Okay. So putting something in the glass jar that isn't its starting item gives you
+
+A glass jar, holding some dried flowers, and a paperclip.
+
+Alright. Mostly sorted. Now it checks and if the description ends in a full-stop, it doesn't list the items.
+
+Added 'add_children_to_desc' to item_defs so I can decide whether an item has a list printed afterwards, or if the held items should be printed as part of the object. Not sure if that's worth it or better in any way. So glass jar says:
+
+# A glass jar, looks like it had jam in it once by the label. Holds a small bunch of dried flowers.
+
+but the wallet says:
+
+#   A worn leather wallet with around 30 dollars inside. No identification or cards.
+#
+#The wallet contains:
+#  5 dollar note x6
+
+Both printing their 'starting_children_only' descriptions, but only the wallet prints the contents.
+
+Okay. Well next I need to fix the parenting again apparently. Trying to take the flowers from the jar no longer works, so I broke that at some point...
+
+Ah, fixed it now. All good.
+
+#    A worn leather wallet. No sign of identification or cards.
+#
+# The wallet contains:
+#   5 dollar note x6, paperclip
+
+#   A glass jar, holding some dried flowers, and a paperclip.
+
+![fixed](image-4.png)
+
+So they both print how they're expected to, though I'm not sure I actually prefer it this way. Also the descriptions shouldn't be yellow when they contain things. Need to think about it.
+
+I like that the glass jar feels more interactive with the evolving description, but I don't want to write it for each thing. Maybe I just give it one line and it can play with that, or give them default descriptions based on attr. The latter was probably the intention.
+
+But before that:
+
+Need to fix 2nd nouns. A lot of functions don't care about their availability, I guess I never updated them to the new system.
+
+# [<  put paperclip in jar  >]
+# You put the paperclip in the glass jar
+
+# [<  look at jar  >]
+# You can't see the jar right now.
+
+That's a problem. Will fix. Will leave descriptions as is for now and think on it while I fix the verb_actions.
+
+I keep forgetting about
+#   get_correct_nouns
+and rewriting it again. Goddamn.
+
+Hm. I'd love to be able to do 'take all money from wallet' and similar. Hm.
+I kinda need another word type that doesn't change the format key at all but can be retrieved at fn time in verb_actions.
+
+I want to add an event for the scrap of paper.
+
+  "paper scrap with number": {
+    "can_break": true,
+    "can_pick_up": true,
+    "can_read": true,
+    "descriptions": {
+      "generic": "A small scrap of torn, off-white paper with a hand-scrawled phone number written on it.",
+      "details": {"is_tested": true, "failure": "The last three digits are 487, but the rest are illegible.", "success": "It takes you a moment, but the number on the paper is `07148 718 487'. No name, though.", "crit": "The number is `07148 718 487. Looking closely, you can see a watermark on the paper, barely visible - `Vista Continental West`. Do you know that name?"}
+
+If you roll high enough to get the phone number (or get it some other way), it triggers the event to allow you to enter the number into the mobile phone if you have it.
+
+So - a high roll (success or crit) triggers an event. Once the event is triggers, it waits until you have the mobile phone. If/when you have it, it prompts that you could call the number. (No clue what happens after that, but it'd be an interesting challenge because I don't think I have events that work this way yet.)

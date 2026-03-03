@@ -29,7 +29,6 @@ def look_at_item(item_inst, entry): ## this is just using everything from regist
     """Checks an item is viable to be seen, then looks at the item. If the item is a loc_exterior that is nearby to the player, instead turns to face that cardinal and prints the description. If the item has children, they will be printed in a list. If the item is a map-item and show_map==True, it will open the map image externally."""
     logging_fn()
     if isinstance(item_inst, itemInstance):
-        print(f"item_inst.location: {item_inst.location}")
         container, reason_val, meaning = registry.run_check(item_inst)
         logging_fn(f"reason_val: {reason_val}")
         #print(f"Look at item MEANING: {meaning}")
@@ -45,7 +44,7 @@ def look_at_item(item_inst, entry): ## this is just using everything from regist
                 relocate(new_cardinal=item_inst.location)
                 return
 
-            if reason_val == 2:
+            if reason_val == 5:
                 extra = " in your inventory:"
             else:
                 extra = ":"
@@ -53,7 +52,7 @@ def look_at_item(item_inst, entry): ## this is just using everything from regist
             print(f"You look at the {assign_colour(item_inst)}{extra}")
 
             print(f"\n   {assign_colour(registry.describe(item_inst, caps=True), colour="description")}")
-            if hasattr(item_inst, "is_open") and item_inst.is_open:
+            if hasattr(item_inst, "is_open") and item_inst.is_open and hasattr(item_inst, "description") and ((hasattr(item_inst, "print_children_as_list") and item_inst.print_children_as_list) or not hasattr(item_inst, "print_children_as_list")):
                 verb_actions.print_children_in_container(item_inst)
 
             if hasattr(item_inst, "is_map"):
@@ -325,8 +324,6 @@ def find_local_item_by_name(noun:itemInstance=None, noun_text = None, verb=None,
                 if test and isinstance(test, itemInstance):
                     return test # if flooring, ignore the local etc.
             return noun
-
-
 
     if isinstance(noun, str):
         if noun_text and noun != noun_text:
