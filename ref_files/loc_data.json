@@ -9,7 +9,7 @@
       },
       "short_desc": "There's a queen-size bed, simple but clean looking,",
       "items": {},
-      "surfaces": {"wall": true, "flooring": true}
+      "surfaces": {"wall": true, "flooring": "wood floor"}
     },
     "east": {
       "item_desc": {
@@ -25,7 +25,7 @@
           "not_in_loc_desc": true
         }
       },
-      "surfaces": {"wall": true, "flooring": true}
+      "surfaces": {"wall": true, "flooring": "wood floor"}
     },
     "south": {
       "item_desc": {
@@ -33,7 +33,7 @@
       },
       "short_desc": "a door, likely to a bathroom",
       "items": {},
-      "surfaces": {"wall": true, "flooring": true}
+      "surfaces": {"wall": true, "flooring": "wood floor"}
     },
     "west": {
       "item_desc": {
@@ -41,7 +41,7 @@
       },
       "short_desc": "the door out of the room, likely to the hallway",
       "items": {},
-      "surfaces": {"wall": true, "flooring": true}
+      "surfaces": {"wall": true, "flooring": "wood floor"}
     },
     "descrip": "You're in a 'budget' PPPhotel roomEEE; small but pleasant enough, at least to sleep in. The sound of traffic tells you you're a couple of floors up at least, and the carpet is well-trod",
     "inside": true,
@@ -260,7 +260,8 @@
           "is_hidden": true,
           "event": "graveyard_gate_opens"
         }
-      }
+      },
+      "surfaces": {"wall": true, "flooring": "wood floor"}
     },
     "descrip": "Around you, you see the interior of a rather run-down looking PPPwork shedEEE, previously boarded up but seemingly, not anymore.",
     "inside": true,
@@ -314,7 +315,8 @@
     "north": {
         "item_desc": {"generic": "A place to test things. Nothing here by default."},
         "short_desc": "It's a place for testing, with nothing",
-        "items": {}
+        "items": {"mobile phone": {}, "paper scrap with number":{}, "phone charger": {}},
+      "surfaces": {"wall": true, "flooring": true}
     },
     "descrip": "~~TESTING GROUNDS~~.",
     "inside": true,

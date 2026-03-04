@@ -211,7 +211,7 @@ verb_defs_dict = {
     "push": {"alt_words": ["shove", "pull"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun, verb_noun_noun]},
     "drop": {"alt_words": ["discard", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun, verb_noun_dir_loc, verb_noun_dir_noun_dir_loc, verb_noun_dir_meta]},
     "read": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_loc, verb_noun_sem_sem, verb_noun_sem, verb_sem_sem, verb_num_sem, verb_sem_num_sem, verb_noun_sem_num_sem, verb_noun_sem_noun]},
-    "use": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_dir_loc, verb_noun_dir_noun, verb_noun_noun]},
+    "use": {"alt_words": ["charge", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_dir_loc, verb_noun_dir_noun, verb_noun_noun]},
     "burn": {"alt_words": ["fire", "alight", "light"], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_dir_loc, sem_noun_dir_verb, sem_noun_verb], "inventory_check": "fire_source"},
     "lock": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_noun], "inventory_check": "key"},
     "unlock": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun_sem_noun, verb_noun, verb_noun_noun], "inventory_check": "key"},

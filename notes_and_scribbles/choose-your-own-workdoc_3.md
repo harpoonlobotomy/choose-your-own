@@ -5102,3 +5102,48 @@ I want to add an event for the scrap of paper.
 If you roll high enough to get the phone number (or get it some other way), it triggers the event to allow you to enter the number into the mobile phone if you have it.
 
 So - a high roll (success or crit) triggers an event. Once the event is triggers, it waits until you have the mobile phone. If/when you have it, it prompts that you could call the number. (No clue what happens after that, but it'd be an interesting challenge because I don't think I have events that work this way yet.)
+
+1.53pm 4/3/26
+Today I want to work on the mobile phone event(s) described above.
+
+   Stage 1: Need to be able to charge a phone.
+------------------
+step 1: find a charger.
+    -- add 'phone charger' item to item defs
+step 2: charge phone with charger
+    -- how will this be done? Add 'charge' to verb list? Add 'charge' to list as alt_name of 'use'? Probably the latter.
+    - Note: 'plug phone in to charge' won't work.
+step 3: After 1 timeblock, phone is_charged:True.
+
+#   Stage 2: Turn the phone on
+------------------
+step 1: turn on phone.
+    -- 'turn on phone' - could direct from def turn() to use the same verb formats.
+    -- 'use mobile phone' will automatically turn the phone on if possible.
+-----------------
+
+Hm.
+# "You're facing north. A place to test things. Nothing here by default.a mobile phone, and a scrap of paper with a number written on it."
+
+-It's supposed to default to a list /after/ the description if nothing else is given. Dammit.
+Oh, wait. That's a location. It's always meant to print the list like that. Ignore this.-
+
+Hm.
+'use phone charger with phone' fails because it finds 'phone' and assumes that's correct, not checking for 'the full 'phone charger'. I'd have thought the perfect check would have found 'phone charger'. Oh, it doesn't prioritise original_names over alt_names. Right.
+
+4.53pm
+I want to make 'use charger to charge phone' work. It should be the same switcharound I used for 'use x to verb y'.
+
+Currently, 'use phone charger with phone' and 'charge phone with phone charger' both work.
+
+`Note: Have to add a check to pick_up, if something is charging and is picked up it stops charging.`
+
+7.03pm
+Okay. Plugging in the phone now starts a timed event for 1hr. When that timed event ends, it triggered a 'electronic_charged' event. That event checks for item location, same as the moss, and ends whenever in current loc or in inv, setting the device to is_charged.
+
+Notes:
+* Charger should only be able to charge one thing at a time. Add an in_use flag to charger items.
+* If charger is picked up, end the charging event - charger is not currently added to item_events.
+* If charging item is picked up, end the charging event. Assume that picking the item up means disconnecting from charger. Looking at item does not disconnect.
+* plug/unplug are not known nouns and will not work. Add 'plug' to 'combine' and 'unplug' to 'separate' those verbs' alt_words and add to the fns. Easier than amending use, I think.
+* Related to above - get a fn just for checking 'is this an electronic item and a charger that are being used together currently', will be handy in a few places. No onward action, just a return bool.

@@ -261,6 +261,26 @@
     "smash_attack": 5,
     "smash_defence": 5
   },
+  "wood floor": {
+    "can_break": false,
+    "can_examine": false,
+    "descriptions": {
+      "generic": "simple stone flooring, lightly stained but solid enough."
+    },
+    "is_horizontal_surface": true,
+    "item_type": [
+      "flooring",
+      "standard",
+      "static"
+    ],
+    "nicenames": {
+      "generic": "wooden flooring"
+    },
+    "slice_attack": 5,
+    "slice_defence": 5,
+    "smash_attack": 5,
+    "smash_defence": 5
+  },
   "earring": {
     "can_pick_up": true,
     "descriptions": {
@@ -1001,6 +1021,7 @@
     "smash_threshold": 5
   },
   "mobile phone": {
+    "alt_names": ["cell phone"],
     "can_be_added_to": true,
     "can_be_charged": true,
     "can_be_closed": true,
@@ -1757,5 +1778,12 @@
   },
   "floor": {
     "item_type": ["static", "flooring"]
+  },
+  "phone charger": {
+    "item_type": ["can_pick_up", "electronics", "charger"],
+    "item_size": "smaller_than_basketball",
+    "descriptions": {
+        "generic": "a phone charger; it seems to be in pretty good condition."
+    }
   }
 }

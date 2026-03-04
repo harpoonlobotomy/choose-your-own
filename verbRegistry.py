@@ -753,7 +753,7 @@ class Parser:
         if direction.text == "to" and verb1.text == "use":
             #print("use + to  confirmed")
             if noun1 and noun2:
-                #print("Two nouns confirmed.")
+                #print(f"Two nouns confirmed. Sequence: {sequence}")
                 sequences.append(sequence)
 
         if not (direction.text == "to" and verb1.text == "use" and noun1 and noun2):
@@ -834,6 +834,7 @@ class Parser:
         if print_tokens:
             print_yellow(f"\nTokens: {tokens}\n")
         if not tokens:
+            print(f"No tokens for input `{input_str}`")
             return None, None
         verbReg_Reciever(f"Tokens after tokenise: {tokens}")
         #print(f"Tokens: {tokens}")
@@ -866,7 +867,8 @@ class Parser:
             length_checked_sequences = sequences # may make things fail unexpectedly, but allows for 'failed' words to be attributed as nouns if the sequence would be correct without them (eg 'burned book' if there's a book but not a burned one. Not sure if I want this or not but that's what it is for now.)
 
         for seq in length_checked_sequences:
-            if seq == tuple(('verb', 'noun', 'sem', 'noun')) and len(tokens) == 5 and len(verb_instances) == 2:
+            if seq == tuple(('verb', 'noun', 'semantic', 'noun')) and len(tokens) == 5 and len(verb_instances) == 2:
+                #print("switcharoo sequence found.")
                 # use x to verb y switcharoo time.
                 #print("Going to reorder_tokens_to_sequence")
                 test_tokens, test_length_checked_sequences, success = self.reorder_tokens_to_sequence(tokens, seq)
@@ -876,7 +878,7 @@ class Parser:
                     break
 
         initial_dict, sequence = Parser.generate_initial_dict(tokens, length_checked_sequences) # culls to just the first sequence. Doesn't deal with 'picking the best version' if there's more than one yet. Needs to in the future.
-        #print(f"About to go to build_dict: {initial_dict}\n")
+        #print(f"``{input_str}``  About to go to build_dict: {initial_dict}\n")
         dict_for_output, tokens = self.build_dict(verb_instances, tokens, initial_dict, sequence)
         #print(f"dict for output; {dict_for_output}\n")
         return sequence, dict_for_output

@@ -97,7 +97,8 @@ type_defaults = {
     "is_cluster": {
         "has_multiple_instances": 2, "single_identifier": None, "plural_identifier": None},
     "firesource": {"firesource": True},
-    "data_noun": {"is_not_physical": True}
+    "data_noun": {"is_not_physical": True},
+    "charger": {"requires_powersource": True}
 }
 
     #{"special_traits: set("dirty", "wet", "panacea", "dupe", "weird", "can_combine")}, # aka random attr storage I'm not using yet

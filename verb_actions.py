@@ -94,13 +94,14 @@ def set_noun_attr(*values, noun:itemInstance):
                 triggers[k] = v
 
         for item_val in values:
-            #print(f"Values: {values}")
-            #print(f"item_val in values: {item_val}")
+            print(f"Values: {values}")
+            print(f"item_val in values: {item_val}")
             item, val = item_val
             #print(f"TRIGGERs: {triggers}")
             if item in triggers:
                 #print(f"item in triggers: {item}")
                 if val == triggers[item]:
+                    print("Checking is_event_trigger")
                     outcome, moved_children = events.is_event_trigger(noun_inst = noun, reason = item_val)#values)
                     if moved_children:
                         print_moved_children(moved_children, noun, item)
@@ -2082,6 +2083,34 @@ def set_action(format_tuple, input_dict):
     # verb_dir_noun_sem_noun set on fire with item
     print(f"Cannot process {input_dict} in def set() End of function, unresolved. (Function not yet written)")
 
+def charge_electronics(format_tuple, actor_noun:itemInstance, target_noun:itemInstance):
+    logging_fn()
+    if "charger" in actor_noun.item_type:
+        charger = actor_noun
+        phone = target_noun
+    elif "charger" in target_noun.item_type:
+        charger = target_noun
+        phone = actor_noun
+    else:
+        print(f"No charger amongst {actor_noun} or {target_noun}. Are you sure that's a charger?")
+        return
+    if not hasattr(phone, "can_be_charged") or (hasattr(phone, "can_be_charged") and not phone.can_be_charged):
+        print(f"You can't charge the {assign_colour(phone)}.")
+        return
+    if phone.is_charged:
+        print(f"The {assign_colour(phone)} is already charged.")
+        return
+
+    if charger.requires_powersource:
+        if loc.current.place.electricity:
+            print(f"You plug in the {assign_colour(charger)} and connect the phone. Now to wait a little while for it to charge.")
+            registry.move_item(phone, location = loc.current)
+            set_noun_attr(("is_charging", True), noun=phone)
+            return
+        else:
+            print("There's nowhere here to plug the charger in; you need somewhere with power.")
+            return
+    #print(f"Charger: {charger} // phone: {phone} // phone.is_charged: {phone.is_charged} // charger.requires_powersource: {charger.requires_powersource}")
 
 def use_item_w_item(format_tuple, input_dict):
     logging_fn()
@@ -2093,15 +2122,18 @@ def use_item_w_item(format_tuple, input_dict):
     dir_or_sem = get_dir_or_sem(input_dict)
 
     verb = get_verb(input_dict)
+    verb_str = get_verb(input_dict, get_str=True)
 
     if not target_noun:
         print(f"No second noun: {format_tuple} should not be in use_item_w_item function. Check routing.")
         return
 
-    if format_tuple == (('verb', 'noun', 'direction', 'noun')) or format_tuple == (('verb', 'noun', 'sem', 'noun')):
-        if verb.name in ("use", "unlock", "lock", "open") and dir_or_sem and dir_or_sem in  ("on", "using", "with"):
+    if format_tuple == (('verb', 'noun', 'direction', 'noun')) or format_tuple == (('verb', 'noun', 'semantic', 'noun')):
+        if verb.name in ("use", "unlock", "lock", "open", "charge") and dir_or_sem and dir_or_sem in  ("on", "using", "with"):
             #print(f"use_item_w_item: verb name: `{verb.name}`, dir_or_sem is `{dir_or_sem}`, actor_noun: {actor_noun}, target_noun: {target_noun}")
             for noun in (actor_noun, target_noun):
+                if verb_str == "charge" and has_and_true(noun, "can_be_charged") or "charger" in noun.item_type:
+                    return charge_electronics(format_tuple, actor_noun, target_noun)
                 if hasattr(noun, "is_key") or hasattr(noun, "requires_key"):
                     lock_unlock(format_tuple, input_dict)
                     return
