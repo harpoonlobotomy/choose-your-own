@@ -1087,9 +1087,12 @@ def get_hours_until(time_str):
     return new
 
 
-def get_timeblocks(input_dict, verb:str):
+def get_timeblocks(input_dict, verb:str, noun:itemInstance=None):
 
-    timeblock = 1
+    if noun and hasattr(noun, "reading_time"): # so you can set custom reading times for when time may not have been given explicitly. 'read x for 3 hours' will overrule the reading_time, but means that if you just 'read note' it won't automatically take an hour. reading time of 0 is instant, no time passes.
+        timeblock = noun.reading_time
+    else:
+        timeblock = 1
     sem = get_dir_or_sem(input_dict)
     sem2 = get_dir_or_sem(input_dict, 2)
     num = get_number(input_dict)
@@ -1184,9 +1187,12 @@ def read(format_tuple, input_dict):
 
     if noun.descriptions and noun.descriptions.get("details"):
         to_print = None
+        from set_up_game import game
         if noun.descriptions["details"].get("is_tested"):
             from rolling import roll_risk
             outcome = roll_risk()
+            if hasattr(noun, "has_been_tested"):
+                noun.has_been_tested = "failed"
             print(f"Outcome: {outcome}")
             if outcome > 1:
                 test = noun.descriptions["details"].get("crit")
@@ -1194,10 +1200,11 @@ def read(format_tuple, input_dict):
                     test = noun.descriptions["details"].get(1)
                 if test:
                     to_print = test
-                if hasattr(noun, "has_datapoint") and noun.has_datapoint.get("on_success"):
-                    from set_up_game import game
-                    game.datapoints.update(noun.has_datapoint["on_success"])
+                    noun.descriptions["details"] = ({"print_str": test})
 
+                if hasattr(noun, "has_datapoint") and noun.has_datapoint.get("on_success"):
+                    game.datapoints.update(noun.has_datapoint["on_success"])
+                    print(f"GAME DATAPOINTS: {game.datapoints}")
                     #NOTE: have not accounted for various degrees of success here. Need to.
             else:
                 test = noun.descriptions["details"].get("failure")
@@ -1205,25 +1212,34 @@ def read(format_tuple, input_dict):
                     test = noun.descriptions["details"].get(4)
                 if test:
                     to_print = test
+                    if not hasattr(noun, "has_been_tested"):
+                        noun.has_been_tested = True
         else:
+            noun.has_been_tested = False
             to_print = noun.descriptions["details"].get("print_str")
+            if hasattr(noun, "has_datapoint") and noun.has_datapoint.get("on_read"):
+                game.datapoints.update(noun.has_datapoint["on_read"])
 
         if to_print:
-            timeblock, _ = get_timeblocks(input_dict, verb="read")
+            timeblock, _ = get_timeblocks(input_dict, verb="read", noun=noun)
 
             from interactions.player_movement import update_loc_data
-            from set_up_game import game
+
             beforetime = game.time
             _ = update_loc_data(loc.current, loc.current, timeblocks = timeblock)
             aftertime = game.time
-            text = aftertime
-            extra2 = ""
+
             if noun.location == loc.inv_place:
                 nountext = f"your {assign_colour(noun)}"
             else:
                 nountext = f"a nearby {assign_colour(noun)}"
 
-            print(f"You settle down to read {nountext} in the {loc.current.ern_name}.\n\n{assign_colour(to_print, "enter_door")}\n\nIt was {beforetime}, now it's {text}.{extra2}")
+            settle_text = "You settle down to read"
+            if hasattr(noun, "has_been_tested") and noun.has_been_tested == "failed":
+                settle_text = "You decide to give it another try, settling down to read"
+            print(f"{settle_text} {nountext} in the {loc.current.ern_name}.\n\n{assign_colour(to_print, "enter_door")}")
+            if beforetime != aftertime:
+                print(f"\nIt was {beforetime}, now it's {aftertime}.")
 
         if hasattr(noun, "is_map"):
             item_interactions.show_map(noun)
@@ -2228,7 +2244,8 @@ def use_item(format_tuple, input_dict):
         use_item_w_item(format_tuple, input_dict)
         return
 
-    noun = verb_requires_noun(input_dict, "use", local=True)
+    noun, _, _, _ = get_correct_nouns(input_dict, verb="use")
+
     if "map" in noun.name:
         item_interactions.show_map(noun)
         return

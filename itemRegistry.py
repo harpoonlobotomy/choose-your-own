@@ -1141,7 +1141,7 @@ class itemRegistry:
             inst.description = registry.init_descriptions(inst)
         description = inst.description
 
-        #print(f"inst: {inst} // description: {description}")
+        print(f"inst: {inst} // description: {description}")
         if caps:
             from misc_utilities import smart_capitalise
             description = smart_capitalise(description)
@@ -1169,7 +1169,7 @@ class itemRegistry:
         if not inst.descriptions and inst.description:
             print(f"Not inst.descriptions. inst.description: {inst.description}")
             return
-
+        print(f"inst.description: {inst.description} // inst.descriptions: {inst.descriptions}")
         if inst.descriptions:
             for entry in inst.descriptions:
                 val = inst.descriptions[entry]
@@ -1270,6 +1270,8 @@ class itemRegistry:
                 description = inst.descriptions["generic"]
                 inst.description = description
 
+        if inst.descriptions.get("from_inside") and hasattr(inst, "int_location") and loc.by_cardinal_str(inst.int_location) == loc.current:
+            description = inst.descriptions["from_inside"]
         ## Update nicenames ##
         if not hasattr(inst, "nicenames"):
             inst.nicenames = {}
@@ -1530,11 +1532,13 @@ def apply_loc_data_to_item(item, item_data, loc_data):
         for field in loc_data:
             if field == item:
                 for attr in loc_data[field]:
+                    if attr == "descriptions":
+                        continue
                     if attr == item:
                         continue
                     else:
                         item_data[attr] = loc_data[field][attr]
-            else:
+
                 item_data[field] = loc_data[field]
 
     else:
@@ -1653,7 +1657,7 @@ def init_loc_items(place=None, cardinal=None):
                             if not item_data.get("description"): ## only overwrite the item description if there isn't one written. Use location-descrip in location name, but item descrip in item descriptions. This works for now, might need to change it later. Not sure.
                                 if item_data.get("descriptions"):
                                     for entry in item_data["descriptions"]:
-                                        #print(f"Entry: {entry} / {item_data["descriptions"][entry]}")
+                                        print(f"Entry: {entry} / {item_data["descriptions"][entry]}")
                                         item_data["description"] = item_data["descriptions"][entry]
                                         break
                                 else:
@@ -1677,6 +1681,7 @@ def init_loc_items(place=None, cardinal=None):
                         item_data = generator.item_defs.get(item)
                         item_data["starting_location"] = card_inst
                         apply_loc_data_to_item(item, item_data, loc_data["items"])
+                        # turning this off, because I already do that in item_dict_gen. I shouldn't be doing it again, surely.
 
             if loc_dict[place.lower()].get(cardinal):
                 if loc_dict[place.lower()][cardinal].get("item_desc") or loc_dict[place.lower()][cardinal].get("items"):

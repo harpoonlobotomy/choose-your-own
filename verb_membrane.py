@@ -183,6 +183,9 @@ def immediate_commands(input_str, print_tokens):
     import eventRegistry
     print_yellow(f"IMMEDIATE COMMAND: {input_str}")
 
+    if "datapoints" in input_str:
+        from set_up_game import game
+        print(f"Datapoints: {game.datapoints}")
     if " add " in input_str:
         add_item(input_str)
 
@@ -312,7 +315,7 @@ def run_membrane(input_str=None, run_tests=False):
             log_objects(objs, input_str, run_tag="full_mem_test")
         #log()
 
-        immediate_command = ["print local items", "print inventory items", "print named items", "print current events", "print all events", "godmode", "god mode", "print tokens"]
+        immediate_command = ["print local items", "print inventory items", "print named items", "print current events", "print all events", "godmode", "god mode", "print tokens", "datapoints"]
         while input_str == None or input_str == "":
             input_str = input("\n")
             if input_str in immediate_command or input_str.startswith("godmode"):

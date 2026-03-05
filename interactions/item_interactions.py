@@ -50,7 +50,8 @@ def look_at_item(item_inst, entry): ## this is just using everything from regist
                 extra = ":"
 
             print(f"You look at the {assign_colour(item_inst)}{extra}")
-
+            if item_inst.descriptions.get("from_inside") and hasattr(item_inst, "int_location") and loc.by_cardinal_str(item_inst.int_location) == loc.current: # this is hyper specific for now, but need to check for things that change when I'm not paying attention, so to speak. I don't want to redo the descriptions for every item in an area, but in cases like writing on the door that only appears from the inside, I need a way to set that.
+                registry.init_descriptions(item_inst)
             print(f"\n   {assign_colour(registry.describe(item_inst, caps=True), colour="description")}")
             if hasattr(item_inst, "is_open") and item_inst.is_open and hasattr(item_inst, "description") and ((hasattr(item_inst, "print_children_as_list") and item_inst.print_children_as_list) or not hasattr(item_inst, "print_children_as_list")):
                 verb_actions.print_children_in_container(item_inst)

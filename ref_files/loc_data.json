@@ -158,6 +158,8 @@
             "transition",
             "door_window"
           ],
+          "descriptions": {"from_inside": "It seems like there's something scrawled on the inside of the door, here. It's hard to make out but if you squint, maybe...?", "details": {"print_str": "There is something written here on the back of the shed door - it's a number. `0288`. I wonder what it means."}},
+          "has_datapoint": {"on_read": {"mobile_passcode": "0288"}},
           "not_in_loc_desc": true
         }
       },

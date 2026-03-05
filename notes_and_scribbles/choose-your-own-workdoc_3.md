@@ -5247,3 +5247,18 @@ Though, if I type 'go to work shed door', would I be expecting interior or exter
 -----
 12.31am 5/2/26
 Currently I have the mobile phone code as an item, but that was only ever because I had nothing else. Really it should be a datapoint. Instead of a key, it needs a datapoint. Have to set that up. Should commit the phone charging first though.
+
+For the items that have tested reading outcomes, once you've succeeded it shouldn't test again. And if you've failed and are testing a second time, it should comment that you're giving it another go and then whether you succeed/fail at this second attempt.
+
+Well i didn't need a bool to stop it checking again, I just set the winning string to print_str so it doesn't have the opportunity to test again after succeeding once. The retests will be slightly more effort, but not much. Though it's late so I should stop soon anyway.
+
+Okay, done now. If you the first time, when you try again it comments about it. Then once you've succeeded, it goes back to the regular 'you read the x' message.
+
+Perhaps once it's been successfully read, the regular 'look at' description updates too. That'd make sense. Will add a 'has_been_read' description line and update the description accordingly.
+
+I'd kinda like it if the messages for failed reading attempts got increasingly but still politely frustrated.
+
+Added custom reading_time for readable items, eg the paper scrap has a reading time of 0 so it doesn't cost an hour to read a phone number.
+
+2.08am
+Well datapoints are properly implemented. stored in game because it makes the most sense for now. Reading a specific thing provides a certain piece of information on success (if rolled for) or on reading (if not). Right now they just sit there, but they're there. Will work on it tomorrow, using the passcode to unlock the phone. For now, try to sleep.

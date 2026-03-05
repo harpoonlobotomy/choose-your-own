@@ -259,6 +259,8 @@ class placeRegistry:
     def by_cardinal_str(self, cardinal_str:str|dict, loc=None) -> cardinalInstance:
         """Used to get the cardinalInstance from a string, with or without separate 'loc'. cardinal_str can be a dict (but this is not regularly used anymore) or more often, a string in the form 'graveyard east'. 'east graveyard' will also be found. If no location is found, it will take the cardinal str and apply it to the current location (eg `east` will return the cardinalInstance for '{currentPlace} east')."""
         #logging_fn()
+        if isinstance(cardinal_str, cardinalInstance):
+            return cardinal_str
         str_loc = None
         if isinstance(cardinal_str, dict):
             loc, cardinal_str = next(iter(cardinal_str.items()))

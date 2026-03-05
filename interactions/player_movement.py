@@ -56,6 +56,8 @@ def update_loc_data(prev_loc:placeInstance, new_cardinal:cardinalInstance, print
     from env_data import weatherdict
     import random
 
+    if isinstance(prev_loc, cardinalInstance):
+        prev_loc = prev_loc.place
     new_location = new_cardinal.place
     if prev_loc == new_cardinal.place and not timeblocks:
         if not new_cardinal.visited:
