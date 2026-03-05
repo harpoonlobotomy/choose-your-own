@@ -11,29 +11,24 @@ print_test_descriptions = False
 def format_descrip(d_type="area_descrip", description="", location = None, cardinal = None):
 
     long_desc = []
-
-    import json, config
-    with open(config.loc_data, 'r') as loc_items_file:
-        loc_dict = json.load(loc_items_file)
-
+    from env_data import locRegistry as loc
     if d_type == "area_descrip":
         logging_fn("area_descrip")
-        if not loc_dict.get(location):
-            for loc in loc_dict:
-                if loc_dict[loc].get("alt_names"):
-                    for name in loc_dict[loc]["alt_names"]:
+        if not loc.loc_data.get(location):
+            for place in loc.loc_data:
+                if loc.loc_data[place].get("alt_names"):
+                    for name in loc.loc_data[place]["alt_names"]:
                         if name == location:
                             location = name
         #if location == "hotel room":
         #    location = "city hotel room" ## just for the moment, working on other things.
-        description = loc_dict[location]["descrip"]
+        description = loc.loc_data[location]["descrip"]
         if "PPP" in description:
             first_part, second_part = description.split("PPP")
             placename, last_part = second_part.split("EEE")
             if placename == "hotel room":
                 placename = "city hotel room"
-            from env_data import locRegistry
-            new_descrip = first_part + assign_colour(locRegistry.place_by_name(placename)) + last_part
+            new_descrip = first_part + assign_colour(loc.place_by_name(placename)) + last_part
             if new_descrip[-1] != ".":
                 new_descrip = new_descrip + "."
             return new_descrip
@@ -45,8 +40,8 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
         no_items_text = None
         if location == "hotel room":
             location = "city hotel room"
-        if loc_dict[location].get(cardinal) and loc_dict[location][cardinal].get("item_desc"):
-            long_dict = loc_dict[location][cardinal]["item_desc"]
+        if loc.loc_data[location].get(cardinal) and loc.loc_data[location][cardinal].get("item_desc"):
+            long_dict = loc.loc_data[location][cardinal]["item_desc"]
             no_starting_items = long_dict.get("no_starting_items")
             local_items = itemRegistry.registry.get_item_by_location(f"{location} {cardinal}")
             if local_items:
@@ -87,6 +82,18 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                                                 if "fff" in long_parts[0]:
                                                     long_parts[0] = long_parts[0].replace("fff","")
 
+                                        if "<" in long_parts[1]:
+                                            passed = False
+                                            if hasattr(inst, "children") and inst.starting_children:
+                                                if len(inst.children) == len(inst.starting_children):
+                                                    passed=True
+                                                for item in inst.children:
+                                                    if item not in inst.starting_children:
+                                                        passed=False
+                                            if passed:
+                                                long_parts[1] = long_parts[1].replace("<", "")
+                                            else:
+                                                long_parts[1] = long_parts[1].split("<")[0]
                                         #print(f"Long parts: {long_parts}")
                                         test = long_parts[0] + assign_colour(inst) + long_parts[1]
                                         long_desc.append(test)
@@ -139,31 +146,27 @@ def init_loc_descriptions(place=None, card=None):
     desc_dict = {}
     location_description = {}
     compiled_cardinals = {}
-
-    import json, config
-    with open(config.loc_data, 'r') as loc_items_file:
-        loc_dict = json.load(loc_items_file)
-
-    for location in loc_dict:
+    from env_data import locRegistry as loc
+    for location in loc.loc_data:
         if place != None:
             if isinstance(place, placeInstance):
                 place = place.name
             if location != place:
                 continue
 
-        area_descrip = (format_descrip(d_type="area_descrip", description=loc_dict[location]["descrip"], location=location))
+        area_descrip = (format_descrip(d_type="area_descrip", description=loc.loc_data[location]["descrip"], location=location))
         output = []
         desc_dict[location] = {}
         compiled_cardinals[location] = {}
         active_cardinals = set()
         for cardinal in ("north", "east", "south", "west"):
-            if loc_dict[location].get(cardinal) != None:
+            if loc.loc_data[location].get(cardinal) != None:
                 active_cardinals.add(cardinal)
 
         for i, cardinal in enumerate(("north", "east", "south", "west")):
             if cardinal in active_cardinals:
                 desc_dict[location][cardinal] = {}
-                short_desc = (loc_dict[location][cardinal].get("short_desc") if loc_dict[location].get(cardinal) else None)
+                short_desc = (loc.loc_data[location][cardinal].get("short_desc") if loc.loc_data[location].get(cardinal) else None)
 
                 desc_print_dict ={
                     "len_1": {

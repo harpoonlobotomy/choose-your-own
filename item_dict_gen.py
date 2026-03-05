@@ -193,13 +193,9 @@ def get_item_data(item_name, incoming_data=None): # note: no locations here. Thi
         print(f"{item_name} not in item_defs or gen_items")
 
     for field in item_data:
-        if item_name == "wooden door":
-            print(f"field in item_data: {field} // item_data[field]: {item_data[field]}")
         cleaned_dict[field] = item_data[field]
 
     for field in incoming_data:
-        if item_name == "wooden door":
-            print(f"field in incoming_data: {field} // incoming_data[field]: {incoming_data[field]}")
         if not cleaned_dict.get(field):
             cleaned_dict[field] = incoming_data[field]
         elif isinstance(incoming_data[field], dict):
@@ -216,8 +212,7 @@ def get_item_data(item_name, incoming_data=None): # note: no locations here. Thi
 
     cleaned_dict = set_material_types(item_name, cleaned_dict)
     generator.item_defs[item_name] = cleaned_dict
-    if item_name == "wooden door":
-        print(f"Cleaned dict: {cleaned_dict}")
+
     return cleaned_dict
 
 

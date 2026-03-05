@@ -209,13 +209,13 @@ def print_input_str(input_str):
 
 def print_failure_message(input_str=None, message=None, noun=None, verb=None, idx_kind=None, init_dict=None, format = None, tokens=None):
     """prints a failure message using `input_str`, `noun`, `verb`, `inx_kind`, `init_dict` and `format`, depending on which elements are given. If nothing else, just prints a generic message using `input_str`."""
-    #print(f"print failure message: input_str=None, message=None, noun=None, verb=None, idx_kind=None, init_dict=None, format = None, tokens=None {input_str, message, noun, verb, idx_kind, init_dict, format, tokens}")
+    print(f"print failure message: input_str=None, message=None, noun=None, verb=None, idx_kind=None, init_dict=None, format = None, tokens=None {input_str, message, noun, verb, idx_kind, init_dict, format, tokens}")
     logging_fn()
-    from verb_actions import get_verb, get_noun, get_dir_or_sem
+    from verb_actions import get_verb, get_noun, get_dir_or_sem, get_nouns
 
     if input_str and input_str != "":
         print_input_str(input_str)
-
+    print(f"NOUN: {noun} // verb: {verb}")
     if not input_str and (not noun and not verb): # if not input_str, was sent from a verb_action so we don't reprint the input_str. But need it for error printing, so import it here.
         from verb_membrane import membrane
         input_str = membrane.input_string
@@ -240,12 +240,14 @@ def print_failure_message(input_str=None, message=None, noun=None, verb=None, id
         print(f"[not verb] Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
         return
 
+    first_noun = second_noun = None
+    print("first noun and second set to none.")
     from verbRegistry import VerbInstance
     if isinstance(verb, VerbInstance):
         verb = verb.name
         if verb == "find":
-            noun = get_noun(init_dict)
-            if noun and isinstance(noun, str) and get_noun(init_dict, get_str=True) != noun: # == assumed noun
+            first_noun = get_noun(init_dict)
+            if first_noun and isinstance(first_noun, str) and get_noun(init_dict, get_str=True) != first_noun: # == assumed noun
                 from verb_actions import find
                 if find(format_tuple=format, input_dict=init_dict):
                     return
@@ -254,73 +256,140 @@ def print_failure_message(input_str=None, message=None, noun=None, verb=None, id
         print(f"[not idx_kind and not (noun and verb)]Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
         return
 
-    noun_name = None
     if noun:
-        if isinstance(noun, itemInstance):
-            noun_name = noun.name
-        elif isinstance(noun, str):
-            if init_dict:
-                noun_inst = get_noun(init_dict)
-                if isinstance(noun_inst, itemInstance) and input_str and noun_inst.name in input_str:
-                    noun_name = noun_inst.name
-            if not noun_name:
-                noun_name = noun
+        first_noun = noun
 
-    entry2 = noun2 = None
+    if first_noun and not init_dict:
+        if isinstance(first_noun, itemInstance):
+            first_noun = first_noun.name
+        elif isinstance(first_noun, str):
+            if not first_noun:
+                first_noun = first_noun
+
+    if init_dict:
+        noun_check, noun_test , noun2_check, noun2_test = get_nouns(init_dict)
+
+        if isinstance(noun_check, itemInstance) and input_str and (noun_check.name in input_str or noun_test in input_str) and (not hasattr(noun_check, "is_hidden") or not noun_check.is_hidden):
+            first_noun = noun_check
+        elif isinstance(noun_check, str) and noun_check in input_str or isinstance(noun_check, itemInstance) and noun_check.name in input_str:
+            first_noun = noun_check
+        else:
+            first_noun = noun_test
+        print(f"AFTER GETTING FIRST: {first_noun}")
+        if noun2_check and isinstance(noun2_check, itemInstance) and input_str and (noun2_check.name in input_str or noun2_test in input_str) and (not hasattr(noun2_check, "is_hidden") or not noun2_check.is_hidden):
+            second_noun = noun2_check
+        else:
+            if (isinstance(noun2_check, str) and input_str and noun2_check in input_str) or (isinstance(noun2_check, itemInstance) and noun2_check.name in input_str):
+                second_noun = noun2_check
+            else:
+                second_noun = noun2_test
+        print(f"First noun {first_noun} / second noun: {second_noun}")
+    """
     if idx_kind:
+        print(f"idx_kind: {idx_kind}")
         idx, kind = idx_kind
         entry = init_dict[idx][kind]
-        if isinstance (entry["instance"], str):
-            if entry["instance"] != "assumed_noun":
-                noun_name = entry["instance"]
-            else:
-                if entry["str_name"] in input_str:
-                    noun_name = entry["str_name"]
-                else:
-                    noun_name = entry["text"]
         for i, kind in init_dict.items():
             kind = list(kind)[0]
             if "noun" in kind and init_dict[i][kind].get("text") != entry['text']:
-                entry2 = init_dict[i][kind]
-                if entry2.get("instance") and not isinstance(entry2["instance"], str):
-                    if (not hasattr(entry2["instance"], "is_hidden") or entry2["instance"].is_hidden == False):
-                        noun2 = entry2["instance"]
-                        a_or_the = "the "
-                    else:
-                        noun2 = entry2["text"]
-                        a_or_the = "a "
-                    break
+                if i < idx:
+                    second_noun = init_dict[idx][kind]
+                else:
+                    first_noun = init_dict[idx][kind]
+                break
 
-    if noun_name:# and entry["instance"] == 'assumed_noun':
+            for noun in (first_noun, second_noun):
+
+                inst = None
+                if not first_noun:
+                    second_noun = None
+                    continue
+                if isinstance(noun, itemInstance):
+                    inst = noun
+                    a_or_the = "the "
+
+                elif isinstance(noun, dict):
+                    if isinstance(noun.get("instance"), itemInstance):
+                        if (not hasattr(noun.get("instance"), "is_hidden") or noun["instance"].is_hidden == False):
+                            inst = noun["instance"]
+                            a_or_the = "the "
+                    elif noun.get("str_name") in input_str:
+                        inst = noun["text"]
+
+                    else:
+                        inst = noun["text"]
+                        a_or_the = "a "
+                else:
+                    if isinstance(noun, str):
+                        inst = noun
+                    else:
+                        if noun["str_name"] in input_str:
+                            inst = noun["str_name"]
+                        else:
+                            inst = noun["text"]
+                if noun == first_noun:
+                    first_noun = inst
+                    print(f"First_noun: {first_noun}")
+                else:
+                    second_noun = inst
+                    print(f"second_noun: {second_noun}")"""
+
+    if second_noun and isinstance(second_noun, itemInstance):
+        a_or_the = "the "
+    else:
+        a_or_the = "a "
+
+    if not first_noun and noun:
+        first_noun = noun
+
+    if init_dict:
+        dir_or_sem = get_dir_or_sem(init_dict)
+    else:
+        dir_or_sem = ""
+    print(f"(failure printing) sem or dir: {dir_or_sem}")
+    if first_noun:# and entry["instance"] == 'assumed_noun':
         if verb == "drop":
             test = get_noun(init_dict)
-            if test and isinstance(test, itemInstance) and test.name != noun_name and format == tuple(('verb', 'noun', 'direction', 'noun')):
-                print(f"You can't drop the {assign_colour(test)} {get_dir_or_sem(init_dict)} a {assign_colour(noun_name, colour='yellow')}; you can't see one.")
+            if test and isinstance(test, itemInstance) and test.name != first_noun and format == tuple(('verb', 'noun', 'direction', 'noun')):
+                print(f"You can't drop the {assign_colour(test)} {dir_or_sem} a {assign_colour(first_noun, colour='yellow')}; you can't see one.")
             else:
-                print(f"You can't drop a {assign_colour(noun_name, colour="yellow")}; you aren't holding one.")
+                print(f"You can't drop a {assign_colour(first_noun, colour="yellow")}; you aren't holding one.")
             return
-        if not entry2:
+        if not second_noun:
             if verb == "look":
-                print(f"There's no {assign_colour(noun_name, colour="yellow")} around here to {assign_colour(verb, colour="green")} at.")
+                print(f"There's no {assign_colour(first_noun, colour="yellow")} around here to {assign_colour(verb, colour="green")} at.")
                 return
             if verb in ("go", "move"):
-                print(f"There's no {assign_colour(noun_name, colour="yellow")} around here to {assign_colour(verb, colour="green")} to.")
+                print(f"There's no {assign_colour(first_noun, colour="yellow")} around here to {assign_colour(verb, colour="green")} to.")
                 return
-            print(f"There's no {assign_colour(noun_name, colour="yellow")} around here to {assign_colour(verb, colour="green")}.")
+            print(f"There's no {assign_colour(first_noun, colour="yellow")} around here to {assign_colour(verb, colour="green")}.")
             return
-        if not noun2:
-            print(f"There's no {assign_colour(noun_name, colour="yellow")} around here to {assign_colour(verb, colour="green")} {assign_colour(entry2['text'], colour="yellow")} with.")
+        if not isinstance(second_noun, itemInstance):
+            if isinstance(first_noun, itemInstance):
+                a_or_the = "the "
+            if dir_or_sem:
+                print(f"There's no {assign_colour(second_noun, colour="yellow")} around here to {assign_colour(verb, colour="green")} {a_or_the}{assign_colour(first_noun, colour="yellow")} {dir_or_sem}.")
+            else:
+                print(f"There's no {assign_colour(second_noun, colour="yellow")} around here to {assign_colour(verb, colour="green")} {a_or_the}{assign_colour(first_noun, colour="yellow")} with.")
             return
-        #print(f"There's no {assign_colour(noun2)} around here to {assign_colour(verb, colour="green")} the {assign_colour(entry['text'], colour="yellow")} with.")
-        from verb_actions import get_dir_or_sem
-        dir_or_sem = get_dir_or_sem(init_dict)
-        if dir_or_sem:
-            if dir_or_sem == "with":
-                temp = noun_name
-                noun_name = noun2
-                noun2 = temp
+        if not isinstance(first_noun, itemInstance):
+            if dir_or_sem:
+                if verb == "put":
+                    print(f"There's no {assign_colour(first_noun, colour="yellow")} around here to {assign_colour(verb, colour="green")} {dir_or_sem} {a_or_the}{assign_colour(second_noun)}.")
+                else:
+                    print(f"There's no {assign_colour(first_noun, colour="yellow")} around here to {assign_colour(verb, colour="green")} {a_or_the}{assign_colour(second_noun)} {dir_or_sem}.")
+            else:
+                print(f"There's no {assign_colour(second_noun, colour="yellow")} around here to {assign_colour(verb, colour="green")} {assign_colour(first_noun, colour="yellow")} with.")
+            return
 
-        print(f"There's no {assign_colour(noun_name, colour="yellow") if isinstance(noun_name, str) else assign_colour(noun_name)} around here to {assign_colour(verb, colour="green")} {a_or_the}{assign_colour(noun2) if isinstance(noun2, itemInstance) else assign_colour(noun2, colour="yellow")} with.")
+        #print(f"There's no {assign_colour(noun2)} around here to {assign_colour(verb, colour="green")} the {assign_colour(entry['text'], colour="yellow")} with.")
+        if dir_or_sem and dir_or_sem == "with":
+            temp = first_noun
+            first_noun = second_noun
+            second_noun = temp
+
+            print(f"There's no {assign_colour(first_noun, colour="yellow") if isinstance(first_noun, str) else assign_colour(first_noun)} around here to {assign_colour(verb, colour="green")} {a_or_the}{assign_colour(second_noun) if isinstance(second_noun, itemInstance) else assign_colour(second_noun, colour="yellow")} with.")
+
 
 def check_nighttime(current_time, printme=True):
 

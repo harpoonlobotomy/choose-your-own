@@ -5262,3 +5262,94 @@ Added custom reading_time for readable items, eg the paper scrap has a reading t
 
 2.08am
 Well datapoints are properly implemented. stored in game because it makes the most sense for now. Reading a specific thing provides a certain piece of information on success (if rolled for) or on reading (if not). Right now they just sit there, but they're there. Will work on it tomorrow, using the passcode to unlock the phone. For now, try to sleep.
+
+11.39am 5/3/26
+2 notes:
+1: You can read the back of the shed door from the outside. Need to set it to be descriptions{details:""} only when inside. Have renamed it for now but haven't implemented (so now it can't be read at all.)
+
+Having changed it so you can't read it at all: Attempting to "read door" from the outside now says 'You're already facing the western graveyard':
+
+# Tokens: [Token(idx=0, text='read', kind={'verb'}, canonical='read'), Token(idx=1, text='door', kind={'noun'}, canonical='wooden door')]
+
+# [<  read door  >]
+
+# You're already facing the western graveyard.
+
+That's not expected behaviour at all :/
+
+2.55pm
+Fixed the above. Added a force_look to def look that stops it going through to turn_cardinal for nouns if True.
+
+3.08 Fixed the door so it can be read from the inside only. Need to make it clearer because currently it's nested deep inside look details, but it'll do for the moment.
+
+3.38pm
+Hm. this :
+You're facing east. You see a variety of headstones, most quite worn, and decorated by clumps of moss, and a glass jar being used as a vase in front of one of the headstones, with some dried flowers left long ago.
+
+isn't updating when the flowers are removed. Damn.
+
+Hm. Okay. So that's the expected behaviour. I need to change the loc description when I update the item desc in some cases. Damn.
+
+Have added loc_dict as 'self.loc_data' to placeRegistry in its entirety so descriptions doesn't read it again. This way I can update changes directly.
+
+Okay, fixed. loc descriptions now updates the item description based on parentage (as long as the loc_desc includes a '<' marker; it chops off the end at that point if the children are not == starting children.)
+
+4.12pm
+Okay. So writing on the back of the door works, getting the various datapoints work. Now how the hell to use them.
+
+First:
+Use the passcode datapoint to unlock the phone.
+# Note: Really need some way for the player to "store" the details in world. Maybe in the phone itself? idk.
+Maybe there should be an editable notes file, with datapoints at the top and player notes added underneath.
+
+so to unlock phone. Either we require explicitly 'unlock phone with passcode/use passcode on phone', or we just say 'unlock phone' and automatically use the datapoint. The former is more akin to usual usage, the latter is distinct from existing lock/keys as it doesn't require you specify the key. Idk how I feel about that.
+
+to do it the existing way, I need to add datapoints to local_items for them to be picked up. Can do that.
+
+I think it needs to be allowed, even if it's not mandatory. Otherwise if you say 'unlock phone with passcode', it'll error.
+
+Also: How is the error message still wrong?
+
+# [<  unlock phone with passcode  >]
+
+# There's no mobile phone around here to unlock the passcode with.
+
+Ah, it's because it always assumes the first noun is the incorrect one, so the order gets switched.
+
+No, correction:
+It's because of idx_kind:
+idx_kind: (3, 'noun')
+
+5.51pm
+
+
+[<  put jar in moss  >]
+
+# There's no moss around here to put the glass jar in.
+
+
+[<  put moss in jar  >]
+
+# There's no moss around here to put in the glass jar.
+
+I quite like this. I imagine it'll be fragile as hell, but it changes the word order depending on which item is missing (subject or object).
+
+I need to redo the function that generates this as it's messy as heeeeell now, but I like it.
+
+Hm.
+Now this is a little ridiculous.
+the phone starts out locked. But if you say 'open phone' (which is a nonsense command), it prints
+ .-            -.
+[<  open phone  >]
+ '-            -'
+
+You can't open a locked mobile phone.
+Which true, but not what you'd expect for a digital device.
+
+Well maybe I don't need the phone to be a container. It should only hold digital items anyway, so maybe it just "stores" data via the datapoints. That would make sense I think.
+
+Hm.
+do I want to /enforce/ word order?
+As in, if I say 'unlock key with padlock', should it fail even if 'unlock padlock with key' would work?
+
+Oh, idea: area specific wait messages. So if you're in the hotel room, it prints 'You sit on the bed to wait for a while.', etc. That'd be nice.

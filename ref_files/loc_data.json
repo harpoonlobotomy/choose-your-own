@@ -113,7 +113,7 @@
       "item_desc": {
         "generic": "You see a variety of headstones, most quite worn, and ",
         "moss": "decorated by clumps of [[]]",
-        "glass jar": "a [[]] being used as a vase in front of one of the headstones, with some dried flowers left long ago",
+        "glass jar": "a [[]] being used as a vase in front of one of the headstones<, with some dried flowers left long ago",
         "no_items": "not much else. It's quite empty here..."
       },
       "short_desc": "sit a variety of headstones",
@@ -158,7 +158,7 @@
             "transition",
             "door_window"
           ],
-          "descriptions": {"from_inside": "It seems like there's something scrawled on the inside of the door, here. It's hard to make out but if you squint, maybe...?", "details": {"print_str": "There is something written here on the back of the shed door - it's a number. `0288`. I wonder what it means."}},
+          "descriptions": {"from_inside": "It seems like there's something scrawled on the inside of the door, here. It's hard to make out but if you squint, maybe...?", "details": {"from_inside": "There is something written here on the back of the shed door - it's a number. `0288`. I wonder what it means."}},
           "has_datapoint": {"on_read": {"mobile_passcode": "0288"}},
           "not_in_loc_desc": true
         }

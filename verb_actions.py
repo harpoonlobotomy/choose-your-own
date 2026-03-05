@@ -887,7 +887,7 @@ def go(format_tuple, input_dict, no_noun=None): ## move to a location/cardinal/i
         traceback_fn()
 
 
-def look(format_tuple=None, input_dict=None):
+def look(format_tuple=None, input_dict=None, force_look=False): # force_look - stops 'read door' from turning into 'go to shed'.
     logging_fn()
 
     if not format_tuple or (format_tuple == tuple(("verb", "semantic")) and not input_dict):
@@ -954,7 +954,7 @@ def look(format_tuple=None, input_dict=None):
             else:
                 print(f"No noun outcome from find_local_item_by_name in def look. Instead: {outcome}")
 
-            if hasattr(noun, "ext_location"):
+            if hasattr(noun, "ext_location") and not force_look:
                 if noun.ext_location.place == loc.current.place:
                     return turn_cardinal(noun.ext_location, turning = True)
             item_interactions.look_at_item(noun, noun_entry)
@@ -1216,7 +1216,10 @@ def read(format_tuple, input_dict):
                         noun.has_been_tested = True
         else:
             noun.has_been_tested = False
-            to_print = noun.descriptions["details"].get("print_str")
+            if noun.descriptions['details'].get("from_inside") and hasattr(noun, "int_location") and noun.int_location == loc.current: # don't do it this way, make it programattic.
+                to_print = noun.descriptions['details']["from_inside"]
+            else:
+                to_print = noun.descriptions["details"].get("print_str")
             if hasattr(noun, "has_datapoint") and noun.has_datapoint.get("on_read"):
                 game.datapoints.update(noun.has_datapoint["on_read"])
 
@@ -1240,6 +1243,7 @@ def read(format_tuple, input_dict):
             print(f"{settle_text} {nountext} in the {loc.current.ern_name}.\n\n{assign_colour(to_print, "enter_door")}")
             if beforetime != aftertime:
                 print(f"\nIt was {beforetime}, now it's {aftertime}.")
+            return
 
         if hasattr(noun, "is_map"):
             item_interactions.show_map(noun)
@@ -1249,11 +1253,11 @@ def read(format_tuple, input_dict):
             outcome, moved_children = events.is_event_trigger(noun_inst = noun, reason = "item_is_read")
             if moved_children:
                 print_moved_children(moved_children, noun, outcome)
-        return
-
-    else:
-        look(format_tuple, input_dict)
-        return
+        if to_print:
+            return
+    print("[[def read():   Going to look from end of def read() ]]")
+    look(format_tuple, input_dict, force_look=True)
+    return
 
 
 def eat(format_tuple, input_dict):

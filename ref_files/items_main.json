@@ -1027,23 +1027,13 @@
     "alt_names": ["cell phone"],
     "can_be_added_to": true,
     "can_be_charged": true,
-    "can_be_closed": true,
     "can_be_locked": true,
-    "can_be_opened": true,
     "can_pick_up": true,
-    "children": null,
-    "children_type_limited": [
+    "datapoint_type_limited": [
       "digital"
     ],
-    "container_limits": 4,
     "descriptions": {
       "generic": "A mobile phone. You don't think it's yours. Doesn't seem to have a charge.",
-      "starting_children_only": "",
-      "any_children": "",
-      "no_children": "",
-      "open_starting_children_only": "",
-      "open_any_children": "",
-      "open_no_children": "",
       "is_charged": "A mobile phone. You don't think it's yours, but it does turn on...",
       "is_locked": "A mobile phone. You don't think it's yours, but it's turned on and unlocked."
     },
@@ -1054,11 +1044,9 @@
     "has_batteries": false,
     "is_charged": false,
     "is_locked": true,
-    "is_open": false,
     "item_size": "palm_sized",
     "item_type": [
       "can_pick_up",
-      "container",
       "electronics",
       "random_loot",
       "standard"
@@ -1072,7 +1060,6 @@
     "slice_defence": 5,
     "smash_attack": 5,
     "smash_defence": 5,
-    "starting_children": null,
     "takes_batteries": false
   },
   "wallet": {

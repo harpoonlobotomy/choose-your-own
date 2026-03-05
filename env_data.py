@@ -134,6 +134,13 @@ class placeRegistry:
 
         self.location_nouns = ["floor", "wall", "ground"]
 
+        import json, config
+        with open(config.loc_data, 'r') as loc_items_file:
+            loc_dict = json.load(loc_items_file)
+
+        self.loc_data = loc_dict
+
+
     def add_cardinals(self, locationInstance) -> dict:
         """ Propagates the place.cardinals dict"""
         cardinals_dict = dict()

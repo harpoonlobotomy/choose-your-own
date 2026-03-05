@@ -683,12 +683,11 @@ class itemRegistry:
                     reason = 3
             elif container.location == loc.current:
                 confirmed_container = container
-                print("container is current")
                 if hasattr(confirmed_container, "is_open") and confirmed_container.is_open == False:
-                    print(f"Container {confirmed_container.name} is closed by is_open flag.")
+                    print(f"[run_check] Container {confirmed_container.name} is closed by is_open flag.")
                     reason = 1
                 elif hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked"):
-                    print(f"Container {confirmed_container} is locked.")
+                    print(f"[run_check] Container {confirmed_container} is locked.")
                     reason = 2
                 else:
                     reason = 4
@@ -1042,9 +1041,8 @@ class itemRegistry:
         if location == loc.inv_place:
             location.items.add(inst)
 
-        else:
-            from testing_coloured_descriptions import init_loc_descriptions
-            init_loc_descriptions(loc.current.place, loc.current)
+        from testing_coloured_descriptions import init_loc_descriptions
+        init_loc_descriptions(loc.current.place, loc.current) # update even if moving to inv, so it can update the removal. Though it seemed to already...?
         return inst
 
     def move_from_container_to_inv(self, inst:itemInstance, parent:itemInstance=None) -> itemInstance:
@@ -1169,7 +1167,6 @@ class itemRegistry:
         if not inst.descriptions and inst.description:
             print(f"Not inst.descriptions. inst.description: {inst.description}")
             return
-        print(f"inst.description: {inst.description} // inst.descriptions: {inst.descriptions}")
         if inst.descriptions:
             for entry in inst.descriptions:
                 val = inst.descriptions[entry]
@@ -1537,38 +1534,27 @@ def apply_loc_data_to_item(item, item_data, loc_data):
                     if attr == item:
                         continue
                     else:
-                        item_data[attr] = loc_data[field][attr]
-
-                item_data[field] = loc_data[field]
-
+                        item_data[attr] = loc_data[field][attr] #Turning this off breaks int_location. not sure how it makes it stay a string whhen it's a string in loc_dict too... I don't understand.
     else:
         if isinstance(loc_data, list): # will only ever be Everything.
             item_data["starting_location"] = "north everything"
-
 
     if item_data.get("description"):
         #print(f"item_data description: {item_data["description"]}")
         if "[[]]" in item_data["description"]:
             item_data["description"] = item_data["description"].replace("[[]]", item)
 
-
     if loc_data and isinstance(loc_data, dict) and loc_data.get("starting_location"):
-
         item_data["starting_location"] = loc_data["starting_location"]
 
     item = registry.init_single(item, item_data)
 
     all_item_names_generated.append((item, "apply_loc_data_to_item"))
-    if hasattr(item, "starting_children") and getattr(item, "starting_children"):
-        if not hasattr(registry, "check_for_children"):
-            registry.check_for_children = []
-        registry.check_for_children.append(item)
 
     if hasattr(item, "requires_key") and getattr(item, "requires_key"):
         if not hasattr(registry, "requires_key"):
             registry.requires_key = []
         registry.requires_key.append(item)
-
     return item
 
 
@@ -1657,7 +1643,7 @@ def init_loc_items(place=None, cardinal=None):
                             if not item_data.get("description"): ## only overwrite the item description if there isn't one written. Use location-descrip in location name, but item descrip in item descriptions. This works for now, might need to change it later. Not sure.
                                 if item_data.get("descriptions"):
                                     for entry in item_data["descriptions"]:
-                                        print(f"Entry: {entry} / {item_data["descriptions"][entry]}")
+                                        #print(f"Entry: {entry} / {item_data["descriptions"][entry]}")
                                         item_data["description"] = item_data["descriptions"][entry]
                                         break
                                 else:
