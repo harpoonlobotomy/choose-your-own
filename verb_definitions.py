@@ -77,6 +77,8 @@ formats = {
     "verb_sem_noun": (verb, sem, noun), # 'look at watch'
     "verb_sem_sem": (verb, sem, sem),
     "verb_dir_noun": (verb, direction, noun), # 'look at watch'
+    "verb_loc_noun": (verb, location, noun),
+    "verb_dir_loc_noun": (verb, direction, location, noun), # 'look at work shed door'
     "verb_noun_sem": (verb, noun, sem), # 'read book a while
     "verb_noun_dir": (verb, noun, direction), # throw ball up
     "verb_noun_dir_loc": (verb, noun, direction, location), # drop paperclip at graveyard
@@ -145,6 +147,8 @@ verb_loc_car = formats["verb_loc_car"]
 verb_dir_car = formats["verb_dir_car"]
 verb_dir_car_loc = formats["verb_dir_car_loc"]
 verb_dir_loc_car = formats["verb_dir_loc_car"]
+verb_dir_loc_noun = formats["verb_dir_loc_noun"]
+verb_loc_noun = formats["verb_loc_noun"] # [enter] [work shed] [door]
 verb_dir_loc = formats["verb_dir_loc"]
 verb_dir_noun = formats["verb_dir_noun"]
 verb_sem_noun = formats["verb_sem_noun"] # wait with book
@@ -152,7 +156,7 @@ verb_sem_sem = formats["verb_sem_sem"] # wait for an hour
 verb_num_sem = formats["verb_num_sem"] # wait 3 days
 verb_sem_num_sem = formats["verb_sem_num_sem"] # wait for 3 days
 verb_noun_sem = formats["verb_noun_sem"] # read book a while
-verb_noun_dir = formats["verb_noun_dir"] # [enter] [work shed] [door]
+verb_noun_dir = formats["verb_noun_dir"] # [enter] [work shed] [door] # wtf was I thinking. Door isn't a 'dir'... ????
 
 verb_noun_noun = formats["verb_noun_noun"]
 verb_noun_dir_noun = formats["verb_noun_dir_noun"]
@@ -200,32 +204,32 @@ verb_defs_dict = {
     f"attributes": {"alt_words": ["att"], "allowed_null": None, "formats": [verb_noun]},
     ## NOTE: Allowed_null is not used at present. All nulls are treated as equal, and all sem/loc/dirs are treated as viable in all cases. Will need to change this later but for now it works alright.
     "meta": {"alt_words": [], "allowed_null": None, "formats": [meta, meta_noun, meta_loc, meta_car]},
-    "go": {"alt_words":["go to", "approach", "head", "travel"], "allowed_null": None, "formats": [loc_only, loc_car, car_loc, verb_car_loc, verb_loc_car, dir_only, car_only, verb_only, verb_loc, verb_dir, verb_dir_loc, verb_dir_noun, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car, verb_noun_noun]},
+    "go": {"alt_words":["go to", "approach", "head", "travel"], "allowed_null": None, "formats": [loc_only, loc_car, car_loc, verb_car_loc, verb_loc_car, dir_only, car_only, verb_only, verb_loc, verb_dir, verb_dir_loc, verb_dir_noun, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car, verb_noun_noun, verb_dir_loc_noun]},
 #   ,making 'move' its own verb because it needs to route to both 'push' and 'go'. # Turns out I already had one but used it terribly and still had alt_words directing actions away. So now it's here.
     "move": {"alt_words": ["shift"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun, loc_only, loc_car, car_loc, verb_car_loc, verb_loc_car, dir_only, car_only, verb_only, verb_loc, verb_dir, verb_dir_loc, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car]},
-    "turn": {"alt_words": [""], "allowed_null": None, "formats": [verb_car, verb_sem, verb_dir, verb_dir_car, verb_dir_car_loc]},
-    "leave": {"alt_words": ["depart", ""], "allowed_null": None, "formats": [verb_only, verb_loc, verb_noun, verb_dir_loc, verb_noun_dir, verb_noun_dir_noun, verb_dir_noun, verb_noun_noun]},
+    "turn": {"alt_words": [""], "allowed_null": None, "formats": [verb_car, verb_sem, verb_dir, verb_dir_car, verb_dir_car_loc, verb_dir_noun, verb_noun_dir]},
+    "leave": {"alt_words": ["depart", ""], "allowed_null": None, "formats": [verb_only, verb_loc, verb_noun, verb_dir_loc, verb_noun_dir, verb_noun_dir_noun, verb_dir_noun, verb_noun_noun, verb_dir_loc_noun, verb_loc_noun]},
     "combine": {"alt_words": ["mix", "add"], "allowed_null": ["with", "and"], "formats": [verb_noun_sem_noun, verb_noun_dir_noun, verb_noun]},
     "separate": {"alt_words": ["remove", ""], "allowed_null": ["from", "and"], "formats": [verb_noun_sem_noun, verb_noun_dir_noun, verb_noun]},
     "throw": {"alt_words": ["chuck", "lob"], "allowed_null": ["at"], "formats": [verb_noun, verb_noun_dir, verb_noun_sem_noun, verb_noun_dir_noun, verb_noun_dir_loc]}, # throw ball down, throw ball at tree
     "push": {"alt_words": ["shove", "pull"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun, verb_noun_noun]},
     "drop": {"alt_words": ["discard", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir, verb_noun_dir_noun, verb_noun_dir_loc, verb_noun_dir_noun_dir_loc, verb_noun_dir_meta]},
     "read": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_loc, verb_noun_sem_sem, verb_noun_sem, verb_sem_sem, verb_num_sem, verb_sem_num_sem, verb_noun_sem_num_sem, verb_noun_sem_noun]},
-    "use": {"alt_words": ["charge", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_dir_loc, verb_noun_dir_noun, verb_noun_noun]},
+    "use": {"alt_words": ["charge", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_dir_loc, verb_noun_dir_noun, verb_noun_noun, verb_loc_noun]},
     "burn": {"alt_words": ["fire", "alight", "light"], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_dir_loc, sem_noun_dir_verb, sem_noun_verb], "inventory_check": "fire_source"},
-    "lock": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_noun], "inventory_check": "key"},
-    "unlock": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun_sem_noun, verb_noun, verb_noun_noun], "inventory_check": "key"},
-    "open": {"alt_words": ["pry", ""], "allowed_null": None, "formats": [verb_noun, verb_meta, verb_dir_meta, verb_noun_sem_noun, verb_dir_meta, verb_noun_noun, verb_noun_dir_loc]},
-    "barricade": {"alt_words": [""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_noun, verb_noun_dir_loc]},
-    "close": {"alt_words": [""], "allowed_null": None, "formats": [verb_noun, verb_meta, verb_dir_meta, verb_noun_sem_noun, verb_noun_noun, verb_noun_dir_loc]},
-    "break": {"alt_words": ["smash", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun]},
+    "lock": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_noun, verb_loc_noun], "inventory_check": "key"},
+    "unlock": {"alt_words": ["", ""], "allowed_null": None, "formats": [verb_noun_sem_noun, verb_noun, verb_noun_noun, verb_loc_noun], "inventory_check": "key"},
+    "open": {"alt_words": ["pry", ""], "allowed_null": None, "formats": [verb_noun, verb_meta, verb_dir_meta, verb_noun_sem_noun, verb_dir_meta, verb_noun_noun, verb_noun_dir_loc, verb_loc_noun]},
+    "barricade": {"alt_words": [""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_noun_noun, verb_noun_dir_loc, verb_loc_noun]},
+    "close": {"alt_words": [""], "allowed_null": None, "formats": [verb_noun, verb_meta, verb_dir_meta, verb_noun_sem_noun, verb_noun_noun, verb_noun_dir_loc, verb_loc_noun]},
+    "break": {"alt_words": ["smash", ""], "allowed_null": None, "formats": [verb_noun, verb_noun_sem_noun, verb_loc_noun]},
     "take": {"alt_words": ["pick up", "get", "pick"], "allowed_null": None, "formats": [verb_noun, verb_dir_noun, verb_noun_sem_noun, verb_noun_dir_noun, verb_noun_dir_noun_dir_loc, verb_noun_dir_loc]}, # take ball, take ball from bag
     "put": {"alt_words": ["place"], "allowed_null": ["in", "inside"], "formats": [verb_noun_dir, verb_dir_noun, verb_noun_dir_meta, verb_noun_sem_noun, verb_noun_dir_noun, verb_noun_dir_noun_dir_loc, verb_noun_dir_loc]}, # put paper down, put paper on table ## using 'leave' here might be tricky. But I want to allow for 'leave church' and 'leave pamphlet on table' both.
     "eat": {"alt_words": ["consume", "drink"], "allowed_null": None, "formats": [verb_noun]},
-    "look": {"alt_words": ["watch", "observe", "investigate", "examine"], "allowed_null": ["at", "to"],  "formats": [verb_only, verb_noun, verb_dir, verb_sem, verb_loc, verb_dir_meta, verb_noun_sem_noun, verb_noun_dir_noun, verb_dir_noun, verb_dir_noun_sem_noun, verb_dir_noun_dir_noun, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car, verb_dir_loc, verb_sem_noun]}, # look, look at book, look at book with magnifying glass
+    "look": {"alt_words": ["watch", "observe", "investigate", "examine"], "allowed_null": ["at", "to"],  "formats": [verb_only, verb_noun, verb_dir, verb_sem, verb_loc, verb_dir_meta, verb_noun_sem_noun, verb_noun_dir_noun, verb_dir_noun, verb_dir_noun_sem_noun, verb_dir_noun_dir_noun, verb_car, verb_dir_car, verb_dir_car_loc, verb_dir_loc_car, verb_dir_loc, verb_sem_noun, verb_loc_noun, verb_dir_loc_noun]}, # look, look at book, look at book with magnifying glass
     "set": {"alt_words": [""], "allowed_null": None, "formats": [verb_noun_dir, verb_noun_sem_noun, verb_noun], "distinction": {"second_noun":"fire", "new_verb":"burn", "else_verb":"put"}}, ## not implemented, just an idea. 'if fire is the second noun, the correct verb to use is 'burn', else the verb is 'put'. So 'set' is not its own thing, just a membrane/signpost.
     "clean": {"alt_words": ["wipe"], "allowed_null": None, "formats": [verb_noun, verb_loc, verb_noun_sem_noun]},
-    "enter": {"alt_words": [], "allowed_null": None, "formats": [verb_loc, verb_dir_loc, verb_noun, verb_dir_noun, verb_noun_noun]},
+    "enter": {"alt_words": [], "allowed_null": None, "formats": [verb_loc, verb_dir_loc, verb_noun, verb_dir_noun, verb_noun_noun, verb_loc_noun]},
     "time": {"alt_words": ["wait", "waste time", "spend time"], "allowed_null": None, "formats": [verb_only, verb_dir, verb_sem, verb_sem_noun, verb_sem_sem, verb_num_sem, verb_sem_num_sem, verb_noun_sem_sem, verb_noun_sem_num_sem]},
     "find": {"alt_words": ["search"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_loc, verb_loc, verb_sem_noun]}
     }

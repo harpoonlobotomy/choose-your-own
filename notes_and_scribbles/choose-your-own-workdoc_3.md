@@ -5142,8 +5142,108 @@ Currently, 'use phone charger with phone' and 'charge phone with phone charger' 
 Okay. Plugging in the phone now starts a timed event for 1hr. When that timed event ends, it triggered a 'electronic_charged' event. That event checks for item location, same as the moss, and ends whenever in current loc or in inv, setting the device to is_charged.
 
 Notes:
-* Charger should only be able to charge one thing at a time. Add an in_use flag to charger items.
+* Charger should only be able to charge one thing at a time. Add an in_use flag to charger items. [1941 done]
 * If charger is picked up, end the charging event - charger is not currently added to item_events.
 * If charging item is picked up, end the charging event. Assume that picking the item up means disconnecting from charger. Looking at item does not disconnect.
 * plug/unplug are not known nouns and will not work. Add 'plug' to 'combine' and 'unplug' to 'separate' those verbs' alt_words and add to the fns. Easier than amending use, I think.
 * Related to above - get a fn just for checking 'is this an electronic item and a charger that are being used together currently', will be handy in a few places. No onward action, just a return bool.
+
+I want a standard event for 'electronic device turns on', with the printable data coming from item defs (or technically loc_data if it has item data there, but that'll be built into the item data by the time this is relevant). So when the phone turns on, you get a little description of what happens, what you see, etc.
+
+I really should have discrete event_types that I can direct the trigger checks to. When setting noun_attr to 'is_on', I only need to check events that are 'electronics' related, not all events. So far I'm getting that kind of data from 'is it a generated event' etc, but I'd like it to be more... directed, I guess. Right now it feels very haphazard. Works, but feels messier than it needs to be. Not everything needs an event type, I'm not sure how I'd categories the 'moss dries/moss has dried' events for example, but if one is given, we should limit the scope.
+
+8.30pm
+Well I added event types but now I've no idea how to implement them or even if they have any value. Immediate issue: I can't limit trigger checks to matching event_type, because what if I pick up the phone - moving the phone can end the charging event, but the move_item set_noun_attr won't give the 'electronics' event_type flag. Yeah I'm going to ignore that for now and maybe just remove it again later. For now it gets sent, but doesn't get acted on at all.
+
+8.52pm
+Need to find the regex for '{whatever is here}', so I can autoreplace print("This is a thing {thing}") with 'print(This is a thing: `{thing}`"). Because I always forget and have to go back and add them it, and it's just a little annoying.
+
+9.12pm:
+REGEX for matching "{thing}" if it's not "`thing`":
+#    (?<!`)\{[^{}]*\}
+
+
+10.4pm
+Oh, interesting error I've made here.
+
+When the charging event ends, it prints the correct ending message (as in, from the end of the 'is charged' event). But, the 'effect on completion' it's looking at is from the previous event:
+#   EFFECT ON COMPLETION: {'trigger_event': 'electronic_is_charged'}
+#   The mobile phone seems to be charged now.
+
+Took me far too long to figure out that 'electronic_is_charged' was the is_charged event name, I thought it was taking the (expected) "is_charged" effect on completion and amending the str somewhere, I do that in other places with triggers. But no, it's just looking at the wrong event. That event should be over by now, as in directly before:
+
+#   You plug in the phone charger and connect the phone. Now to wait a little while for it to charge.
+#   SELF.EFFECT_ON_COMPLETION: {'trigger_event': 'electronic_is_charged'}
+
+^ This time, it's the expected effect_on_completion. Must be looking at the old event, not the new one. Okay.
+
+So self.effect above was from the timedTrigger init.
+
+The erroneous one is if trigger.current_duration >= trigger.full_duration. So it's not actually wrong, as that /is/ when the event should trigger. But, the second event should be triggering immediately as I'm still in the current location.
+
+Okay - so the issue is that it's checking the is_charged flag only if the event hasn't just been started. It doesn't check internal trigger flags for new events. That's broken...
+
+Okay. So for the various specific trigger types that have their own check, I need a fn that looks at all of those so I can run it for new and existing events.
+
+trigger_event, init_items, item_in_inv, inv_in_current_loc,
+
+* damn, inv_in_current_loc should really be 'item_in_current_loc'. Oops.
+
+Yeah, that's what it was.
+The upper triggers is the initiating event (charge event):
+# (UPPER)  list(trigger.triggers): {<class 'str'>, 'is_charging'}
+the lower triggers are the newly created event's triggers:
+# (lower)  list(trigger.triggers): {'item_in_inv', 'item_interacted_with', 'inv_in_current_loc'}
+
+So it ends the event and prints the text, but hasn't actually checked for the relevant triggers. If I left the room then came back on a separate 'turn', it would trigger the attr set and then end. Okie.
+
+Ahh. Right. I set the hidden items etc in end_event, which is where it should be. But I had the effects_on_completion check being done in update.
+
+Ah. Only immediate events recognise effect on completion, non-timed events don't carry that data.
+
+Okay. So, mostly done, but the 'electronic is charged' event isn't ending when it should, despite being sent to end_events. Each timeblock thereafter tries to end it again.
+
+11.27pm
+Okay-- so the issue was that charge_electronic didn't end, so it re-triggered 'electronic charge' on every move because it thinks it finished again.
+
+I'd missed a flag in item_defs so it was never told to end. Oops. Maybe I should make that one automatic unless it says otherwise.
+
+11.39pm
+I'm back on thinking 'investigate' should divert to 'read' unless I add some other investigation outcome. Otherwise you can look at a paper scrap with a number on it as much as y ou like but unless you type 'read' you never find out what the numbers are.
+
+Or maybe I need a check for 'has already looked at', so if you've already looked at it once it reads it the second time? idk feels like unexpected behaviour. But it does make sense.
+
+Hm.
+Amusingly 'look at paper scrap again' does work through the parser, but only because it ignores too many words. If you type the full noun name (paper scrap with number) then it errors becaues it things 'again' is another noun.
+
+I really do need those optional words that don't affect the format but are still included in the dict somehow. God that'll break things...
+
+I have the nulls, but they're excluded from the dicts so that won't actually /add/ anything. Unless I add the nulls back in and just keep the formatting working the same way. I could do the idx * 10 trick again?
+
+I don't even know if the whole 'good noun/bad noun' thing I wrote used used anymore, it might already be outdated.
+
+Oh, with the 'perfects first' thing I could do 'work shed door' as an alt name and it should fix the reason that whole setup was put in anyway. (it only worked half the time because if it finds the location 'work shed' then it gets format 'verb dir loc noun' which apparently it doesn't like.)
+
+" .-                      -.
+[<  go to work shed door  >]
+ '-                      -'
+
+OBJ: <ItemInst wooden door / (8778dd0e67ea) / west graveyard / None / >
+You're now in the work shed, facing north."
+
+using the new formatting of verb_loc_noun -- it ignores the door. Goddamn it.
+Okay so I kind of have to make the door check inside relocate, don't I.
+
+Reminder: taking the phone should stop it being on charge. That's not done yet. Also, the event ending should stop it being on charge, and stop the charger from being in_use. Check that too.
+
+Huh. Why is it claiming I already visited the work shed...?
+
+Oh shit. Because I did. Duh. Okay. Ignore that route of enquiry entirely.
+
+Okay yeah. When I actually remove that, we end up outside the work shed as expected.
+
+Though, if I type 'go to work shed door', would I be expecting interior or exterior? It currently defaults to interior but I'm not sure it should.
+
+-----
+12.31am 5/2/26
+Currently I have the mobile phone code as an item, but that was only ever because I had nothing else. Really it should be a datapoint. Instead of a key, it needs a datapoint. Have to set that up. Should commit the phone charging first though.

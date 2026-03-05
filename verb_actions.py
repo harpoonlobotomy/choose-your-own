@@ -72,7 +72,7 @@ def print_moved_children(moved_children, noun, reason):
     reason_str = reason_str.replace("[[noun]]", assign_colour(noun))
     print(reason_str)
 
-def set_noun_attr(*values, noun:itemInstance):
+def set_noun_attr(*values, noun:itemInstance, event_type = None):
     """Sets the attr/val for each set in `values` to `noun`, while also checking `noun` and `values` in `is_event_trigger`."""
     logging_fn()
     """
@@ -81,7 +81,7 @@ def set_noun_attr(*values, noun:itemInstance):
     from eventRegistry import trigger_acts, events
     if hasattr(noun, "event") and getattr(noun, "event") and hasattr(noun, "is_event_key") and noun.is_event_key:
         print()
-        outcome, moved_children = events.is_event_trigger(noun_inst = noun, reason = values)
+        outcome, moved_children = events.is_event_trigger(noun_inst = noun, reason = values, event_type = event_type)
         if moved_children:
             print_moved_children(moved_children, noun, values)
         if not outcome:
@@ -93,16 +93,16 @@ def set_noun_attr(*values, noun:itemInstance):
             for k, v in trigger_acts[item].items():
                 triggers[k] = v
 
+        events.event_print(f"Values: {values}")
         for item_val in values:
-            print(f"Values: {values}")
-            print(f"item_val in values: {item_val}")
+            events.event_print(f"item_val in values: {item_val}")
             item, val = item_val
             #print(f"TRIGGERs: {triggers}")
             if item in triggers:
                 #print(f"item in triggers: {item}")
                 if val == triggers[item]:
-                    print("Checking is_event_trigger")
-                    outcome, moved_children = events.is_event_trigger(noun_inst = noun, reason = item_val)#values)
+                    events.event_print("Checking is_event_trigger")
+                    outcome, moved_children = events.is_event_trigger(noun_inst = noun, reason = item_val, event_type = event_type)#values)
                     if moved_children:
                         print_moved_children(moved_children, noun, item)
 
@@ -816,12 +816,11 @@ def go(format_tuple, input_dict, no_noun=None): ## move to a location/cardinal/i
 
     if (len(format_tuple) == 2 and (noun_entry or location_entry)) or (len(format_tuple) == 3 and (direction_entry and direction_entry["text"] in to_words)):
         #print(f"def go len2 or len3. Format tuple: {format_tuple}, dict: {input_dict}")
-        if noun_entry:
-            noun = noun_entry["instance"]
-        elif location_entry and registry.by_name.get(location_entry.get("str_name")):
+        noun = noun_entry["instance"] if noun_entry else None
+
+        if not noun and location_entry and registry.by_name.get(location_entry.get("str_name")):
             noun = registry.instances_by_name(location_entry.get("str_name"))
-            if noun:
-                noun = noun[0] # arbitrary, while we check for transition items we don't want to pick locations etc yet.
+            noun = noun[0] if noun else None
 
         if noun and ("transition" in noun.item_type or "loc_exterior" in noun.item_type):
             #if location_entry and location_entry["instance"] == loc.current.place:
@@ -834,7 +833,7 @@ def go(format_tuple, input_dict, no_noun=None): ## move to a location/cardinal/i
             if location == loc.current.place:
                 #print("location instance == loc.current.place")
                 if input_dict[0].get("verb") and input_dict[0]["verb"]["str_name"] == "leave":
-                    if enter(format_tuple, input_dict, noun=(list(loc.current.transition_objs)[0]) if noun else None):
+                    if enter(format_tuple, input_dict, noun=(noun if noun else None)):
                         return
 
                     print("You can't leave without a new destination in mind. Where do you want to go?")
@@ -843,11 +842,10 @@ def go(format_tuple, input_dict, no_noun=None): ## move to a location/cardinal/i
             if hasattr(location, "transition_objs") and location not in ({}, None) and location.transition_objs and not no_noun:
                 #print(f"hasattr location_entry[instance], transition_objs: {location.transition_objs}")
                 for obj in location.transition_objs:
-                    print(f"OBJ: {obj}")
+                    #print(f"OBJ: {obj}")
                     if obj.int_location.place in (loc.current, location):
-                        return enter(format_tuple, input_dict, noun=obj)#: # this only goes to enter if we're aiming for or leaving the interior location.
+                        return enter(format_tuple, input_dict, noun=obj)
 
-            print("Going to new_relocate")
             relocate(new_location=location)
             return
 
@@ -1196,6 +1194,10 @@ def read(format_tuple, input_dict):
                     test = noun.descriptions["details"].get(1)
                 if test:
                     to_print = test
+                if hasattr(noun, "has_datapoint") and noun.has_datapoint.get("on_success"):
+                    from set_up_game import game
+                    game.datapoints.update(noun.has_datapoint["on_success"])
+
                     #NOTE: have not accounted for various degrees of success here. Need to.
             else:
                 test = noun.descriptions["details"].get("failure")
@@ -1318,7 +1320,7 @@ def burn(format_tuple, input_dict):
 
     if not require_firesource or (require_firesource and firesource_found):
         print(f"You set fire to the {assign_colour(noun)}, using the {assign_colour(firesource_found)}." if require_firesource else f"You set fire to the {assign_colour(noun)}.")
-        set_noun_attr(("is_burned", True), noun=noun)
+        set_noun_attr(("is_burned", True), noun=noun, event_type = "state_change")
         return
 
     elif require_firesource:
@@ -1369,7 +1371,7 @@ def break_item(format_tuple, input_dict):
                         print(f"You {attack} the {assign_colour(noun)} with the {assign_colour(noun2)}, but the {assign_colour(noun)} and the {assign_colour(noun2)} are evenly matched; nothing happens.")
                         return
     if broken:
-        set_noun_attr(("is_broken", True), noun=broken)
+        set_noun_attr(("is_broken", True), noun=broken, event_type = "state_change")
         if hasattr(broken, "children") and broken.children:
             noun_children = set()
             for child in broken.children:
@@ -1667,6 +1669,22 @@ def turn(format_tuple, input_dict):
 
     verb_entry, noun_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
 
+    if noun_entry and direction_entry["text"] == "on":
+        charger, phone, outcome = check_item_charger_match(actor_noun=noun_entry["instance"])
+        if phone:
+            if phone.is_charged:
+                if phone.is_on:
+                    print(f"The {assign_colour(phone)} is already on.")
+                print(f"You turn on the {assign_colour(phone)}.")
+                set_noun_attr(("is_on", True), noun=phone, event_type = "electronics")
+                return
+            else:
+                print(f"You can't turn on the {assign_colour(phone)}, it's not charged.")
+                return
+        else:
+            print("This isn't an object you can turn on...")
+            return
+
     if location_entry:
         current_location, current_turning = current_location()
         if location_entry["instance"] != current_location and cardinal_entry:
@@ -1922,7 +1940,7 @@ def throw(format_tuple, input_dict):
                     action = "breaks"
                 print(f"{text}; the {noun2_text} {action} as the {assign_colour(noun)} hits it.") # TODO: custom breaking messages for obviously breakable things with [[]] or smth for the breaker obj name.
                 if action != "cracks": # so we can't break floors. I might do it later but for that's just not an option.
-                    set_noun_attr(("is_broken", True), noun=noun2)
+                    set_noun_attr(("is_broken", True), noun=noun2, event_type = "state_change")
                 return
             elif noun2.smash_defence >= noun.smash_attack:
                 print(f"{text}; the {assign_colour(noun)} hits the {noun2_text}, but doesn't seem to damage it.")
@@ -2083,29 +2101,85 @@ def set_action(format_tuple, input_dict):
     # verb_dir_noun_sem_noun set on fire with item
     print(f"Cannot process {input_dict} in def set() End of function, unresolved. (Function not yet written)")
 
-def charge_electronics(format_tuple, actor_noun:itemInstance, target_noun:itemInstance):
+def check_item_charger_match(actor_noun:itemInstance, target_noun:itemInstance=None) -> tuple[itemInstance|None, itemInstance|None, str|None]:
+    """
+    Checks whether a phone and charger object exist. Returns (`phone`, `object`, `outcome`), with `outcome` coming from this table:
+    0 = phone and charger, neither in use.
+    1 = phone and charger, being used together.
+    2 = phone and charger, charger being used with something else
+    3 = phone and charger, phone being charged with something else.
+    4 = phone but no charger
+    5 = charger but no phone
+    6 = no charger and no phone
+    """
     logging_fn()
+
     if "charger" in actor_noun.item_type:
         charger = actor_noun
-        phone = target_noun
-    elif "charger" in target_noun.item_type:
+    elif target_noun and "charger" in target_noun.item_type:
         charger = target_noun
+    else:
+        charger = None
+
+    if target_noun and hasattr(target_noun, "can_be_charged") and target_noun != charger:
+        phone = target_noun
+    elif hasattr(actor_noun, "can_be_charged") and actor_noun != charger:
         phone = actor_noun
     else:
+        phone = None # Note: May not always be a phone, but it's clear enough for now as to the intent and we shold use inst name for printing anyway.
+
+    if not charger:
+        if not phone:
+            return None, None, 6
+        return None, phone, 4
+    if not phone:
+        return charger, None, 5
+
+    if charger.in_use:
+        if charger.in_use == phone:
+            return charger, phone, 1
+        return charger, phone, 2
+
+    if phone.is_charging:
+        return charger, phone, 3
+
+    return phone, charger, 0
+
+def charge_electronics(format_tuple, actor_noun:itemInstance, target_noun:itemInstance):
+    logging_fn()
+
+    phone, charger, usage = check_item_charger_match(actor_noun, target_noun)
+
+    if not charger:
         print(f"No charger amongst {actor_noun} or {target_noun}. Are you sure that's a charger?")
         return
-    if not hasattr(phone, "can_be_charged") or (hasattr(phone, "can_be_charged") and not phone.can_be_charged):
+    if not phone:
+        print(f"No phone amongst {actor_noun} or {target_noun}. Are you sure that's a rechargeable item?")
+        return
+
+    if not phone.can_be_charged:
         print(f"You can't charge the {assign_colour(phone)}.")
         return
     if phone.is_charged:
         print(f"The {assign_colour(phone)} is already charged.")
         return
 
+    if usage in (1, 2, 3):
+        if usage == 1:
+            print(f"The {assign_colour(charger)} is already charging the {assign_colour(phone)}")
+        elif usage == 2:
+            print(f"The {assign_colour(charger)} is already being used.")
+        else:
+            print(f"The {assign_colour(phone)} is already being charged.")
+        return
+
     if charger.requires_powersource:
         if loc.current.place.electricity:
             print(f"You plug in the {assign_colour(charger)} and connect the phone. Now to wait a little while for it to charge.")
-            registry.move_item(phone, location = loc.current)
-            set_noun_attr(("is_charging", True), noun=phone)
+            if not phone.location == loc.current:
+                registry.move_item(phone, location = loc.current)
+            set_noun_attr(("is_charging", True), noun=phone, event_type = "electronics")
+            setattr(charger, "in_use", phone)
             return
         else:
             print("There's nowhere here to plug the charger in; you need somewhere with power.")

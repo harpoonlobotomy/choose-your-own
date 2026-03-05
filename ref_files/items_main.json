@@ -426,12 +426,12 @@
     "smash_defence": 5
   },
   "watch": {
-    "can_be_charged": true,
+    "can_be_charged": false,
     "can_pick_up": true,
     "descriptions": {
       "generic": "A scratched gold watch."
     },
-    "has_batteries": false,
+    "has_batteries": true,
     "is_charged": false,
     "item_size": "smaller_than_apple",
     "item_type": [
@@ -715,13 +715,13 @@
     "smash_defence": 5
   },
   "car keys": {
-    "can_be_charged": true,
+    "can_be_charged": false,
     "can_pick_up": true,
     "descriptions": {
-      "generic": "It's a car keys"
+      "generic": "It's a set of car keys"
     },
-    "has_batteries": false,
-    "is_charged": false,
+    "has_batteries": true,
+    "is_charged": true,
     "is_key": true,
     "is_key_to": "blue car",
     "item_size": "a_few_marbles",
@@ -997,6 +997,7 @@
       "generic": "A small scrap of torn, off-white paper with a hand-scrawled phone number written on it.",
       "details": {"is_tested": true, "failure": "The last three digits are 487, but the rest are illegible.", "success": "It takes you a moment, but the number on the paper is `07148 718 487'. No name, though.", "crit": "The number is `07148 718 487. Looking closely, you can see a watermark on the paper, barely visible - `Vista Continental West`. Do you know that name?"}
     },
+    "has_datapoint": {"on_success": {"hotel_phone_number": "07148 718 487"}},
     "can_burn": true,
     "is_broken": false,
     "is_burned": false,
@@ -1043,6 +1044,9 @@
       "open_no_children": "",
       "is_charged": "A mobile phone. You don't think it's yours, but it does turn on...",
       "is_locked": "A mobile phone. You don't think it's yours, but it's turned on and unlocked."
+    },
+    "display_text": {
+        "paper_scrap_number": "You call the number you found on the scrap of paper. It rings a few times before an automated message plays:\n   `You have called the Vista Continental West Hotel. Your phone number is associated with an existing reservation; your room number is... /16/. The booking is for... /today/. Please enjoy your stay at the Vista Continental West."
     },
     "has_batteries": false,
     "is_charged": false,
@@ -1767,7 +1771,7 @@
       "generic": "The passcode to a mobile phone."
     },
     "item_size": "0",
-    "item_type": ["data_noun"],
+    "item_type": ["digital"],
     "nicenames": {}
   },
   "ash pile": {

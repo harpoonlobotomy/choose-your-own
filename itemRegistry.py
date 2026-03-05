@@ -80,7 +80,7 @@ type_defaults = {
     "books_paper":
         {'print_on_investigate': True, 'flammable': True, 'is_burned': False, 'can_read': True, 'material_type': 'paper'},
     "electronics":
-        {"requires_powered_location": False, "can_be_charged": True, "is_charged": False, "takes_batteries": True, "has_batteries": False},
+        {"requires_powered_location": False, "can_be_charged": True, "is_charging":False, "is_charged": False, "takes_batteries": True, "has_batteries": False, "is_on": False},
     "battery": {"can_be_charged": True, "is_charged": True},
     "can_speak" :
         {'can_speak': True, 'speaks_common': True},
@@ -97,8 +97,8 @@ type_defaults = {
     "is_cluster": {
         "has_multiple_instances": 2, "single_identifier": None, "plural_identifier": None},
     "firesource": {"firesource": True},
-    "data_noun": {"is_not_physical": True},
-    "charger": {"requires_powersource": True}
+    "digital": {"is_not_physical": True},
+    "charger": {"requires_powersource": True, "in_use": False}
 }
 
     #{"special_traits: set("dirty", "wet", "panacea", "dupe", "weird", "can_combine")}, # aka random attr storage I'm not using yet
@@ -664,7 +664,7 @@ class itemRegistry:
                 return None, 9, accessible_dict[9]
 
         container = is_item_in_container(inst)
-        print(f"inst: {inst}")
+        #print(f"inst: {inst}")
         if inst.location == loc.inv_place and not container:
             reason = 5
             meaning = accessible_dict[reason]
@@ -1141,7 +1141,7 @@ class itemRegistry:
             inst.description = registry.init_descriptions(inst)
         description = inst.description
 
-        print(f"inst: {inst} // description: {description}")
+        #print(f"inst: {inst} // description: {description}")
         if caps:
             from misc_utilities import smart_capitalise
             description = smart_capitalise(description)
@@ -1149,7 +1149,7 @@ class itemRegistry:
         if "[[]]" in description:
             description = description.replace("[[]]", f"{inst.print_name}")
         if description:
-            print(f"description in describe: {description}")
+            #print(f"description in describe: {description}")
             return description
 
 

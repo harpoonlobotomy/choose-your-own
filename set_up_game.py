@@ -203,6 +203,7 @@ class game:
     day_number=1
 
     last_loc = config.starting_location_str # just here to keep the persistence if things get distracted during a scene change
+    datapoints = {} # 'storage' for specific facts learned, starting with the hotel phone number from the scrap of paper. Specific details about the world or items that would be retained even if the item was lost, and/or that will be checked against (ie checking if you have the phone number when you use the phone)
 
 #set_up(weirdness, bad_language, player_name)
 

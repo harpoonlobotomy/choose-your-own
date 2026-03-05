@@ -121,6 +121,7 @@
         }
     },
 "item_is_broken": {
+    "event_type": "state_change",
     "is_generated_event": true,
     "repeats": "forever",
     "immediate_action": {
@@ -139,6 +140,7 @@
         }
     },
 "item_is_burned": {
+    "event_type": "state_change",
     "is_generated_event": true,
     "repeats": "forever",
     "immediate_action": {
@@ -156,8 +158,11 @@
         }
     },
 "charge_electronic":{
+    "event_type": "electronics",
     "is_generated_event": true,
     "is_timed_event": true,
+    "remove_event_on_completion": true,
+    "remove_event_on_failure": true,
     "repeats": "forever",
     "starts_current": true,
     "start_trigger": {
@@ -177,14 +182,16 @@
         }
     },
 "electronic_is_charged": {
+    "event_type": "electronics",
     "remove_event_on_run": true,
+    "remove_event_on_completion": true,
     "is_generated_event": true,
     "triggered_by_event": "charge_electronic",
     "end_trigger": {
         "item_trigger": {
             "trigger_item": "trigger_item",
             "triggered_by": ["item_interacted_with", "item_in_inv", "inv_in_current_loc"],
-            "effect_on_completion": {"is_charged": {"item_name": "trigger_item", "item_is_trigger_inst": true}}}
+            "on_event_end": {"item_is_trigger_inst": {"is_charged": true}}}
         },
     "messages": {
         "end_msg": "The [[]] seems to be charged now."
