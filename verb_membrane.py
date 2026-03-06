@@ -6,6 +6,7 @@
 * Then sends the format and dict onward to verb_actions."""
 
 from env_data import cardinalInstance, placeInstance
+from interactions.meta_commands import yes_test
 from itemRegistry import itemInstance, registry
 from logger import logging_fn
 from printing import print_blue, print_yellow
@@ -200,11 +201,17 @@ def immediate_commands(input_str, print_tokens):
         print(f"\nBY_LOCATION[LOC.INV_PLACE]:\n{inv_items_2}\n")
 
     elif "named" in input_str:
-        item_name = input("Entry name here:  ")
+        item_name = input("Enter name here:  ")
         initial_names = registry.by_name.get(item_name)
-        print(f"BY_ALT_NAME[NAME]:\n{initial_names}\n")
+        print(f"Named items:\n{initial_names}\n")
         alt_names = registry.by_alt_names.get(item_name)
         print(f"BY_ALT_NAME[NAME]:\n{alt_names}\n")
+        if initial_names or (not initial_names and alt_names):
+            print("Do you want to print details?")
+            if yes_test():
+                print("Arbitrarily printing the first.")
+                print(vars(initial_names[0] if initial_names else alt_names[0]))
+
 
     elif "current events" in input_str:
         current_by_inst_state = []

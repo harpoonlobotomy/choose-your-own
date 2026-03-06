@@ -253,6 +253,11 @@ class placeRegistry:
         if not loc_inst:
             loc_inst = self.by_alt_name.get(loc_name)
 
+        if not loc_inst:
+            card_inst = self.by_cardinal_str(loc_name)
+            if card_inst:
+                loc_inst = card_inst.place
+
         if isinstance(loc_inst, placeInstance):
             return loc_inst
 

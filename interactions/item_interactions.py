@@ -32,7 +32,7 @@ def look_at_item(item_inst, entry): ## this is just using everything from regist
         container, reason_val, meaning = registry.run_check(item_inst)
         logging_fn(f"reason_val: {reason_val}")
         #print(f"Look at item MEANING: {meaning}")
-        if reason_val not in (0, 5, 8):
+        if reason_val not in (0, 3, 4, 5, 8):
             if hasattr(item_inst, "is_scenery") and item_inst.location == loc.current:
                 reason_val = 0
             else:
@@ -40,6 +40,8 @@ def look_at_item(item_inst, entry): ## this is just using everything from regist
                 print(f"You can't see the {assign_colour(text)} right now.")
                 return
         else:
+            if reason_val in (3, 4):
+                print("Inside of a container. Really, need the 'discovered' thing for this to show you the thing.")
             if reason_val == 8:
                 relocate(new_cardinal=item_inst.location)
                 return
@@ -303,6 +305,11 @@ def build_relevant_items_set(verb=None, noun=None, access_str=None, current_loc=
         final_items = loc_items
     else:
         final_items = ((inv_items | (set(loc_items))) if inv_items else set(loc_items))
+    no_place_items = registry.get_item_by_location("north no_place")
+    if no_place_items:
+        for item in no_place_items:
+            if "battery" in item.item_type and hasattr(item, "in_use") and item.in_use:
+                final_items.add(item)
 
     if hasattr(location, "transition_objs") and location.transition_objs:
         for item in location.transition_objs:

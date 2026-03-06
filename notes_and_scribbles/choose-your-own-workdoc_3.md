@@ -5413,4 +5413,6 @@ The battery check didn't allow this failure earlier, so I broke something someti
 
 I desperately need the two monitor setup again. I'm looking at a 4x4" space right now. I have the other monitor, I just need to organise the space to make it work.
 
-Rewound to a slightly earlier version of check_battery and it correctly ended the second 'put battery in watch' with 'the watch already has batteries'. 
+Rewound to a slightly earlier version of check_battery and it correctly ended the second 'put battery in watch' with 'the watch already has batteries'.
+
+Starting a new workdoc, this one's getting too long again.

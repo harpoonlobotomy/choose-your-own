@@ -1,7 +1,8 @@
+from mimetypes import init
 from env_data import cardinalInstance, placeInstance
 from itemRegistry import itemInstance
 from logger import logging_fn
-from printing import print_blue
+from printing import print_blue, print_green, print_yellow
 
 ## utilities to be used by any script at any point
 
@@ -208,15 +209,15 @@ def print_input_str(input_str):
     print(f'{MOVE_UP}\033[1;32m{new_str}\033[0m')
     print(foreline+"\033[0m\n")
 
-def print_failure_message(input_str=None, message=None, noun=None, verb=None, idx_kind=None, init_dict=None, format = None, tokens=None):
+def print_failure_message(input_str=None, message=None, noun=None, noun2=None, verb=None, idx_kind=None, init_dict=None, format = None, tokens=None):
     """prints a failure message using `input_str`, `noun`, `verb`, `inx_kind`, `init_dict` and `format`, depending on which elements are given. If nothing else, just prints a generic message using `input_str`."""
-    print(f"print failure message: input_str=None, message=None, noun=None, verb=None, idx_kind=None, init_dict=None, format = None, tokens=None {input_str, message, noun, verb, idx_kind, init_dict, format, tokens}")
+    #print(f"print failure message: input_str=None, message=None, noun=None, noun2=None verb=None, idx_kind=None, init_dict=None, format = None, tokens=None {input_str, message, noun, noun2, verb, idx_kind, init_dict, format, tokens}")
     logging_fn()
     from verb_actions import get_verb, get_noun, get_dir_or_sem, get_nouns
 
     if input_str and input_str != "":
         print_input_str(input_str)
-    print(f"NOUN: {noun} // verb: {verb}")
+    #print(f"NOUN: {noun} // verb: {verb}")
     if not input_str and (not noun and not verb): # if not input_str, was sent from a verb_action so we don't reprint the input_str. But need it for error printing, so import it here.
         from verb_membrane import membrane
         input_str = membrane.input_string
@@ -227,9 +228,13 @@ def print_failure_message(input_str=None, message=None, noun=None, verb=None, id
         if tokens:
             for token in tokens:
                 if "verb" in token.kind:
-                    print(f"\nSorry, what do you want to {assign_colour(token.text, colour="green")}?")
+                    if token.text in ("go", "leave", "enter"):
+                        w_word = "where"
+                    else:
+                        w_word = "what"
+                    print(f"\nSorry, {w_word} do you want to {assign_colour(token.text, colour="green")}?")
                     return
-        print(f"[Not init_dict and not (noun and verb)] Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
+        print(f"Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
         if tokens:
             print(f"Tokens: {tokens}")
         return
@@ -242,7 +247,7 @@ def print_failure_message(input_str=None, message=None, noun=None, verb=None, id
         return
 
     first_noun = second_noun = None
-    print("first noun and second set to none.")
+
     from verbRegistry import VerbInstance
     if isinstance(verb, VerbInstance):
         verb = verb.name
@@ -263,28 +268,32 @@ def print_failure_message(input_str=None, message=None, noun=None, verb=None, id
     if first_noun and not init_dict:
         if isinstance(first_noun, itemInstance):
             first_noun = first_noun.name
-        elif isinstance(first_noun, str):
-            if not first_noun:
-                first_noun = first_noun
 
-    if init_dict:
-        noun_check, noun_test , noun2_check, noun2_test = get_nouns(init_dict)
+    if init_dict or (noun and noun2):
+        if not noun and not noun2:
+            #from verb_actions import get_correct_nouns
+            #bladdddd = get_correct_nouns(init_dict)
+            noun_check, noun_test, noun2_check, noun2_test = get_nouns(init_dict)
+        else:
+            noun_check = noun
+            noun_test = noun
+            noun2_check = noun2
+            noun2_test = noun2
 
         if isinstance(noun_check, itemInstance) and input_str and (noun_check.name in input_str or noun_test in input_str) and (not hasattr(noun_check, "is_hidden") or not noun_check.is_hidden):
             first_noun = noun_check
-        elif isinstance(noun_check, str) and noun_check in input_str or isinstance(noun_check, itemInstance) and noun_check.name in input_str:
+        elif isinstance(noun_check, str) and input_str and noun_check in input_str or (isinstance(noun_check, itemInstance) and noun_check.name in input_str):
             first_noun = noun_check
         else:
             first_noun = noun_test
-        print(f"AFTER GETTING FIRST: {first_noun}")
         if noun2_check and isinstance(noun2_check, itemInstance) and input_str and (noun2_check.name in input_str or noun2_test in input_str) and (not hasattr(noun2_check, "is_hidden") or not noun2_check.is_hidden):
             second_noun = noun2_check
         else:
-            if (isinstance(noun2_check, str) and input_str and noun2_check in input_str) or (isinstance(noun2_check, itemInstance) and noun2_check.name in input_str):
+            if (isinstance(noun2_check, str) and input_str and noun2_check in input_str) or (input_str and isinstance(noun2_check, itemInstance) and noun2_check.name in input_str):
                 second_noun = noun2_check
             else:
                 second_noun = noun2_test
-        print(f"First noun {first_noun} / second noun: {second_noun}")
+        #print(f"First noun {first_noun} / second noun: {second_noun}")
     """
     if idx_kind:
         print(f"idx_kind: {idx_kind}")
@@ -347,7 +356,7 @@ def print_failure_message(input_str=None, message=None, noun=None, verb=None, id
         dir_or_sem = get_dir_or_sem(init_dict)
     else:
         dir_or_sem = ""
-    print(f"(failure printing) sem or dir: {dir_or_sem}")
+    #print(f"(failure printing) sem or dir: {dir_or_sem}")
     if first_noun:# and entry["instance"] == 'assumed_noun':
         if verb == "drop":
             test = get_noun(init_dict)
@@ -378,7 +387,10 @@ def print_failure_message(input_str=None, message=None, noun=None, verb=None, id
                 if verb == "put":
                     print(f"There's no {assign_colour(first_noun, colour="yellow")} around here to {assign_colour(verb, colour="green")} {dir_or_sem} {a_or_the}{assign_colour(second_noun)}.")
                 else:
-                    print(f"There's no {assign_colour(first_noun, colour="yellow")} around here to {assign_colour(verb, colour="green")} {a_or_the}{assign_colour(second_noun)} {dir_or_sem}.")
+                    if verb == "use" and (dir_or_sem == "with" or dir_or_sem == "on"):
+                        print(f"There's no {assign_colour(first_noun, colour="yellow")} around here to {assign_colour(verb, colour="green")} {dir_or_sem} {a_or_the}{assign_colour(second_noun)}.")
+                    else:
+                        print(f"There's no {assign_colour(first_noun, colour="yellow")} around here to {assign_colour(verb, colour="green")} {a_or_the}{assign_colour(second_noun)} {dir_or_sem}.")
             else:
                 print(f"There's no {assign_colour(second_noun, colour="yellow")} around here to {assign_colour(verb, colour="green")} {assign_colour(first_noun, colour="yellow")} with.")
             return
@@ -791,7 +803,6 @@ def in_loc_facing_card(cardinal:cardinalInstance):
 
 def has_and_true(item, attr):
     """Returns True or False based on the results of `if hasattr(item, attr) and getattr(item, attr)` for the provided `item` and `attr`."""
-
     if hasattr(item, attr) and getattr(item, attr):
         return True
     return False

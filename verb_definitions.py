@@ -23,7 +23,7 @@ meta = "meta"
 num = "number"
 
 cardinals = ["north", "east", "south", "west"]
-directions = ["down", "up", "left", "right", "away", "toward", "towards", "closer", "further", "to", "into", "against", "across", "at", "in", "on", "from", "inside", "outside", "away", "into", "elsewhere", "here", "through", "area", "down on", "down in", "onto", "on to"] # area as in 'search th area
+directions = ["down", "up", "left", "right", "away", "toward", "towards", "closer", "further", "to", "into", "against", "across", "at", "in", "on", "from", "inside", "out", "outside", "away", "into", "elsewhere", "here", "through", "area", "down on", "down in", "onto", "on to"] # area as in 'search th area
 ## "in front of"?? Need to be able to cope with that. TODO this.
 
 nulls = ["the", "a", "an"]
@@ -176,7 +176,7 @@ sem_noun_dir_verb = formats["sem_noun_dir_verb"]
 
 ## Note: Need to figure out how I'm getting noun-objects in here. Like, 'magnifying glass' is 1 noun, but two words. Need to figure that out.
 
-allowed_null = set(('the', 'a', 'an', 'out', 'of')) ## removed strictly directional words from null, as null is used differently now.
+allowed_null = set(('the', 'a', 'an', 'of')) ## removed strictly directional words from null, as null is used differently now.
 #allowed_null = set(('and', 'with', 'to', 'the', 'at', 'plus', 'a', 'an', 'from', 'out', 'of', 'on')) ### Note: There may be more than one viable semantic when only one is required. That's fine.
 
 combined_wordphrases = { # maybe something like this, instead of the hardcoded exceptions.

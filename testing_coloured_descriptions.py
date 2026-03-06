@@ -49,6 +49,7 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                 local_items = list(i for i in local_items if not (hasattr(i, "not_in_loc_desc") and getattr(i, "not_in_loc_desc")))
                 #for thing in local_items:
                 #    print(f"{thing}: {(thing.is_hidden if hasattr(thing, "is_hidden") else "No is_hidden attr.")} ")
+            multiples = None
             for item in long_dict:
                 if item == "generic":
                     start = long_dict[item]
@@ -104,7 +105,7 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                                 else:
                                     print(f"No [[]] in this description so it's excluded: {long_dict[item]}.")
 
-                    if multiples and len(multiples.get(item)) > 1:
+                    if multiples and multiples.get(item) and len(multiples.get(item)) > 1:
                         for key, val in multiples[item].items():
                             long_desc.remove(val)
                             if key == count:
@@ -112,7 +113,7 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                                 val = val.strip("a ")
                                 long_desc.append(val + f" x{count}\x1b[0m")
 
-            if len(long_desc) == 1 and no_items_text:
+            if long_desc and len(long_desc) == 1 and no_items_text:
                 if local_items:
                     for loc_item in local_items:
                         if not long_dict.get(loc_item):

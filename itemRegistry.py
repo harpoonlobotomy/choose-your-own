@@ -667,6 +667,11 @@ class itemRegistry:
                 print("INST is_hidden in run_check; not a singleton multiple_instances.")
                 return None, 9, accessible_dict[9]
 
+        if "battery" in inst.item_type and hasattr(inst, "in_use"):
+            device_using_battery = inst.in_use
+            if device_using_battery and isinstance(device_using_battery, itemInstance):
+                return None, 9, accessible_dict[9] # Originally returned the device inst, but it breaks things later. So we treat as invisible, then check 'if this thing is invisible, is it a battery' afterwards.
+
         container = is_item_in_container(inst)
         #print(f"inst: {inst}")
         if inst.location == loc.inv_place and not container:
@@ -675,11 +680,11 @@ class itemRegistry:
             return None, reason, meaning
 
         if container:
-            print(f"container: {container}")
+            #print(f"container: {container}")
             if container.location == loc.inv_place:
                 confirmed_container = container
                 if hasattr(confirmed_container, "is_open") and confirmed_container.is_open == False:
-                    print(f"confirmed_container {confirmed_container} is_closed, apparently.")
+                    #print(f"confirmed_container {confirmed_container} is_closed, apparently.")
                     reason = 1
                 elif (hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked")):
                     reason = 2
@@ -688,10 +693,10 @@ class itemRegistry:
             elif container.location == loc.current:
                 confirmed_container = container
                 if hasattr(confirmed_container, "is_open") and confirmed_container.is_open == False:
-                    print(f"[run_check] Container {confirmed_container.name} is closed by is_open flag.")
+                    #print(f"[run_check] Container {confirmed_container.name} is closed by is_open flag.")
                     reason = 1
                 elif hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked"):
-                    print(f"[run_check] Container {confirmed_container} is locked.")
+                    #print(f"[run_check] Container {confirmed_container} is locked.")
                     reason = 2
                 else:
                     reason = 4
@@ -1084,7 +1089,8 @@ class itemRegistry:
         if isinstance(loc_cardinal, cardinalInstance):
             items_at_cardinal = self.by_location.get(loc_cardinal)
             if items_at_cardinal:
-                return items_at_cardinal
+                items = set(i for i in items_at_cardinal) # so adding to it in local_items doesn't add to the actual by_location entry
+                return items
 
 
     def instances_by_name(self, definition_key:str)->list:
@@ -1099,7 +1105,6 @@ class itemRegistry:
         elif self.by_alt_names.get(definition_key):
             return self.by_name.get(self.by_alt_names.get(definition_key))
 
-        #print(f"self.by_alt_names: {self.by_alt_names}")
 
     def instances_by_container(self, container:itemInstance)->list:
         logging_fn()
@@ -1143,7 +1148,7 @@ class itemRegistry:
             inst.description = registry.init_descriptions(inst)
         description = inst.description
 
-        print(f"inst: {inst} // description: {description}")
+        #print(f"inst: {inst} // description: {description}")
         if caps:
             from misc_utilities import smart_capitalise
             description = smart_capitalise(description)

@@ -204,12 +204,12 @@ def get_transition_noun(noun, format_tuple, input_dict, take_first=False, return
 def get_correct_nouns(input_dict, verb=None, access_str=None, access_str2=None, hold_error_messages=False):
     """
     Just a function to compile the getting of noun data so each one doesn't have to do it individually.
-    Takes input_dict and optionally, verb, and returns noun, noun_str, noun2, noun2_str.
+    Takes input_dict and optionally, verb, and returns {`noun`, `noun_str`, `noun_reason`, `noun2`, `noun2_str`, `noun2_reason`}.
     Uses default settings for the verb, so not all suitable for all usecases, but the vast majority.
     """
+    logging_fn
     # Have added but not tested `access_str=None, access_str2=None`, to be able to specify access strings from the outside. This would expand it to basically all usecases.
     noun, noun_str, noun2, noun2_str = get_nouns(input_dict)
-
     from verbRegistry import VerbInstance
     if verb:
         if isinstance(verb, VerbInstance):
@@ -223,21 +223,26 @@ def get_correct_nouns(input_dict, verb=None, access_str=None, access_str2=None, 
             noun = outcome
         else:
             if outcome == None and not hold_error_messages:
-                logging_fn(f"Going to print error from def {verb} `{input_dict}`")
-                print_failure_message(noun=noun_str, verb=verb, init_dict=input_dict)
-                return
-            noun = None
+                noun=noun_str
+                if not noun2:
+                    logging_fn(f"Going to print error from def {verb} `{input_dict}`")
+                    print_failure_message(noun=noun_str, verb=verb, init_dict=input_dict)
+                    return
+            #noun = None
 
     if noun2:
         outcome = item_interactions.find_local_item_by_name(noun2, verb=verb, access_str=access_str2, current_loc=loc.current)
-        if isinstance(outcome, itemInstance):
+        if outcome and isinstance(outcome, itemInstance):
             noun2 = outcome
         else:
             if outcome == None and not hold_error_messages:
-                logging_fn(f"Going to print error from def {verb} `{input_dict}`")
-                print_failure_message(noun=noun_str, verb=verb, init_dict=input_dict)
+                noun2 = noun2_str
                 return
-            noun2 = None
+            #noun2 = None
+    if not isinstance(noun, itemInstance) or (noun2 and not isinstance(noun2, itemInstance)):
+        logging_fn(f"Going to print error from def {verb} `{input_dict}`")
+        print_failure_message(noun=noun, noun2=noun2, verb=verb, init_dict=input_dict)
+        return None, None, None, None, None, None
 
     _, noun_reason, _ = registry.run_check(noun)
     _, noun2_reason, _ = registry.run_check(noun2)
@@ -902,13 +907,10 @@ def look(format_tuple=None, input_dict=None, force_look=False): # force_look - s
 
     verb_entry, noun_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
 
-    noun, noun_text, noun2, noun2_text = get_nouns(input_dict)
+    noun, noun_text, noun_reason, noun2, noun2_text, noun2_reason= get_correct_nouns(input_dict, verb="look")
 
     if noun2:
-        outcome = item_interactions.find_local_item_by_name(noun2, noun2_text)
-        if isinstance(outcome, itemInstance):
-            noun2 = outcome
-        else:
+        if not isinstance(noun2, itemInstance):
             print(f"Sorry, there's no `{noun2_text}` around here.")
             return
         if direction_entry:
@@ -948,12 +950,9 @@ def look(format_tuple=None, input_dict=None, force_look=False): # force_look - s
                 turn_cardinal(intended_direction, turning=False)
 
         elif noun:
-            outcome = item_interactions.find_local_item_by_name(noun, noun_text)
-            if isinstance(outcome, itemInstance):
-
-                noun = outcome
-            else:
+            if not isinstance(noun, itemInstance):
                 print(f"No noun outcome from find_local_item_by_name in def look. Instead: {outcome}")
+                return
 
             if hasattr(noun, "ext_location") and not force_look:
                 if noun.ext_location.place == loc.current.place:
@@ -965,14 +964,9 @@ def look(format_tuple=None, input_dict=None, force_look=False): # force_look - s
             return
 
     elif len(format_tuple) == 3:
-
+        #print("len(format_tuple) == 3")
         if noun and format_tuple[1] == "direction":
-            #print(f"NOUN: {noun}")
-            outcome = item_interactions.find_local_item_by_name(noun, noun_text)
-            if isinstance(outcome, itemInstance):
-                noun = outcome
-            else:
-                print(f"No noun outcome from find_local_item_by_name in def look. Instead: {outcome}")
+            #print(f"NOUN before look_at_item: {noun}")
             return item_interactions.look_at_item(noun, noun_entry)
 
         if format_tuple[2] == "cardinal" and format_tuple[1] == "direction":
@@ -985,7 +979,6 @@ def look(format_tuple=None, input_dict=None, force_look=False): # force_look - s
             noun = registry.by_name.get(location_entry["str_name"])
             if noun:
                 noun = noun[0]
-                print(f"Is noun: {noun}")
                 if noun.location.place == loc.current.place:
                     if loc.current != noun.location:
                         turn_cardinal(prospective_cardinal=noun.location, turning = False)
@@ -1485,8 +1478,6 @@ def lock_unlock(format_tuple, input_dict, do_open=False, noun=None, noun2=None):
                         print(f"You don't have a {assign_colour(noun2_str, colour="yellow")} to unlock the {assign_colour(noun)} with.")
                         return
                 print(f"{noun} and/or {noun2} are not accessible: 1: {accessible_1}, 2: {accessible_2}")
-        else:
-            print(f"Not two nouns in {format_tuple}")
 
     else:
         print(f"Don't know what to do with {input_dict} in lock_unlock.")
@@ -1731,24 +1722,25 @@ def turn(format_tuple, input_dict):
     #return "new_cardinal", new_cardinal
 
 def battery_check(verb="", battery=None, device=None):
+    """Returns a tuple, first for battery (True if is a battery item_type), second for device (device.takes_batteries if takes_batteries, so the calling fn can directly see the expected battery if present.)"""
     #'verb' is usually just the verb, but like access_str, will use it for specific checks, eg 'uses_battery' to check if an item takes batteries but isn't otherwise a container.
     from verbRegistry import VerbInstance
     if isinstance(verb, VerbInstance):
         verb = verb.name
+    takes_battery = batt_is_batt = False
+    #print(f"Verb: {verb} / battery: {battery}, device: {device}")
+    if device:
+        if has_and_true(device, "takes_batteries"):
+            takes_battery = device.takes_batteries
 
-    print(f"Verb: {verb} / battery: {battery}, device: {device}")
-    if device and not hasattr(device, "takes_batteries"):
-        print(f'if device and not hasattr(device, "takes_batteries"):: {device}')
-        return None # verb is 'takes_battery' here but really this should fail everything that doesn't take batteries immediately.
-    print("device and does take batteries")
-    if verb == "takes_batteries":
-        return True
-    print("checking battery")
+    if verb == "takes_batteries": #return None # verb is 'takes_battery' here but really this should fail everything that doesn't take batteries immediately.
+        return None, takes_battery
+
     if battery:
-        if not "battery" in battery.item_type:
-            print(f"battery and not 'battery' in battery.item_type:: {battery}")
-            return None
-
+        if "battery" in battery.item_type:
+            batt_is_batt = battery.name
+    #print(f"batt is batt: {batt_is_batt}, takes battery: {takes_battery}")
+    return batt_is_batt, takes_battery
     print("checking if takes_batteries == str")
     if isinstance(device.takes_batteries, str):
         print(f"device.takes_batteries; {device.takes_batteries}")
@@ -1838,17 +1830,80 @@ def battery_check(verb="", battery=None, device=None):
 
     print(f"End of battery check: {battery} // device {device}")
     """
+def act_on_battery_device(verb, noun, noun2):
+    """Returns `success`, `battery`, `device`. Makes sure the battery has the right name and isn't in use, that the device doesn't already have batteries, and makes reasonable simple substitutions. """
+
+    from verbRegistry import VerbInstance
+    if isinstance(verb, VerbInstance):
+        verb = verb.name
+    battery, device_takes_batteries = battery_check(verb, noun, noun2)
+    if battery and device_takes_batteries: # some kind of match, accurate or not
+        #print(f"BATTERY: {battery} // device_takes_batteries: {device_takes_batteries}")
+        if hasattr(noun2, "has_batteries") and noun2.has_batteries:
+            if verb == "put":
+                print(f"The {assign_colour(noun2)} already has a {assign_colour(noun2.has_batteries)}.")
+                return "already_has_batteries", noun2.has_batteries, noun2
+            if verb == "take":
+                if noun2.has_batteries == noun:
+                    device = noun2
+                    battery = noun
+                elif noun2.has_batteries.name == noun.name:
+                    device = noun2
+                    battery = noun2.has_batteries # current batteries should always have correct location, so don't need to check.
+                else:
+                    outcome = item_interactions.find_local_item_by_name(noun2.has_batteries, verb="look", current_loc=loc.current)
+                    if outcome and (outcome.name == battery or outcome.name in battery or battery in outcome.name):# and outcome.name == device_uses_battery:
+                        battery = outcome
+                        device = noun2
+                    else:
+                        print(f"No match found. Need to figure out what's wrong. noun: {noun} / battery: {battery} / noun2: {noun2} / device: {device}")
+                        return None, None, None
+                if isinstance(device, itemInstance) and isinstance(battery, itemInstance):
+                    print(f"You take the {assign_colour(battery)} from the {assign_colour(device)}.")
+                    device.has_batteries = None
+                    battery.in_use = False
+                    return "success", battery, device
+
+        else:
+            if verb == "take":
+                return "none to take", noun, noun2
+
+            if verb == "put":
+                if noun2.takes_batteries == battery and noun.name == battery:
+                    if not hasattr(noun, "in_use") or (hasattr(noun, "in_use") and not noun.in_use):
+                        battery = noun
+                        device = noun2
+
+                elif battery in noun2.takes_batteries:
+                    outcome = item_interactions.find_local_item_by_name(noun2.takes_batteries, verb="look", current_loc=loc.current)
+                    if outcome and outcome.name == battery:# and outcome.name == device_uses_battery:
+                        device = noun2
+                        battery = outcome
+
+                if isinstance(device, itemInstance) and isinstance(battery, itemInstance):
+                    print(f"You fit the {assign_colour(battery)} into a compartment in the {assign_colour(device)} and click it into place.")
+                    device.has_batteries = battery
+                    battery.in_use = device
+                    return "success", battery, device
+    else:
+        print(f"Not battery and device: {battery} // {device}")
+        return None, None, None
 
 def take(format_tuple, input_dict):
     from eventRegistry import events
     logging_fn()
-
-    noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict=input_dict, verb="take", hold_error_messages=True)
+    noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict=input_dict, verb="take", access_str2="all_local", hold_error_messages=True)
+    #print("noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason: ", noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason)
     if not isinstance(noun, itemInstance):
         if noun == None:
-            logging_fn(f"Going to print error from def take `{input_dict}`")
-            print_failure_message(noun=noun_str, verb="take")
-            return
+            if noun_reason == 9 and hasattr(get_noun(input_dict), "in_use"):
+                noun = get_noun(input_dict)
+                noun_reason = 0
+                print(f"noun_reason: {noun_reason}")
+            else:
+                logging_fn(f"Going to print error from def take `{input_dict}`")
+                print_failure_message(noun=noun_str, verb="take")
+                return
     #get_nouns(input_dict)
 
     added_to_inv = False
@@ -1903,62 +1958,73 @@ def take(format_tuple, input_dict):
             print(f"\nDid you mean to consume the {assign_colour(noun)}? ")
             return
 
-    elif dir_or_sem in ("in", "at") and location:
+    elif dir_or_sem in ("in", "at", "from") and location:
         if location == loc.current or location == loc.current.place:
             cannot_take, added_to_inv = can_take(noun)
 
     elif format_tuple == (("verb", "noun", "direction", "noun")): ## will later include scenery. Don't know how that's going to work yet.
         verb_str = input_dict[0]["verb"]["str_name"]
         if verb_str in ("take", "remove", "separate", "get"):
-            if dir_or_sem not in ("and", "from"):
+            if dir_or_sem not in ("and", "from", "out"): # `out` ie 'take x out of y'.
                 print(f"dir_inst is {dir_or_sem}; was expecting 'from' or 'and'. May need to adjust take function.")
-            if noun2_reason == 10 and noun_reason in interactable_codes:
+            if noun2_reason == 10 and noun_reason in interactable_codes: # <-- Should be checking it's the right one before this point. Though I guess I do get all the nouns from the proper check now, so it's likely enough.
                 print(f"There's no {assign_colour(noun2_str, colour="yellow")} to take the {assign_colour(noun)} from.")
                 return
-            if noun_reason not in can_pickup_codes or not has_and_true(noun, "can_pick_up"):
-                print(f"The {assign_colour(noun)} isn't something you can pick up.")
-                return
 
-            container_inst = noun2
-            container = noun.contained_in if hasattr(noun, "contained_in") else None
-
-            if noun_reason not in can_pickup_codes:
+            if noun_reason not in can_pickup_codes and not hasattr(noun, "in_use"):
                 if noun_reason == 5:
                     print(f"{assign_colour(noun)} is already in your inventory.")
                     return
-                print(f"Sorry, you can't take the {assign_colour(noun)} right now.")
-                return
-            else:
-                print(f"Container: {container} // container_inst: {container_inst}")
-                if noun2 and not container:
-                    if hasattr(noun2, "has_batteries") and not isinstance(noun2.has_batteries, bool):
-                        noun = noun2.has_batteries
-                        container = noun2
-                        _, noun_reason, _ = registry.run_check(noun)
+                if not has_and_true(noun, "can_pick_up"):
+                    print(f"The {assign_colour(noun)} isn't something you can pick up.")
+                    return
 
-
-                print(f" after Container: {container} // container_inst: {container_inst}")
-                if container and container != container_inst:
-                    print(f"Container and container != container_inst: {container} // {container_inst}")
-                    if container.name == container_inst.name:
-                        _, container_reason, _ = registry.run_check(container)
-                        if container_reason in interactable_codes:
-                            container_inst = container
-                print(f"container: {container} // noun: {noun} // noun2: {noun2} / container_inst: {container_inst}")
-                print(f"Noun reason: {noun_reason} // container.has_batteries: {container.has_batteries}")
-                if container and container == container_inst and (noun_reason in in_container_codes or hasattr(noun2, "has_batteries") and not isinstance(noun2.has_batteries, bool)) and noun2_reason in interactable_codes:
-                    print("About to do battery check")
-                    success = battery_check(verb, noun, container)
-                    if success and success == "none_to_take":
+            battery_name, device_takes_batteries = battery_check(verb, noun, noun2)
+            if battery_name and device_takes_batteries:
+                success, battery, device = act_on_battery_device(verb, noun, noun2)
+                if success:
+                    if success == "none to take":
+                        print(f"The {assign_colour(device)} doesn't have any {noun_str} to take.")
                         return
-                    output_noun = registry.move_from_container_to_inv(noun, parent=container, no_print=True if success else False)
-                    if output_noun in loc.inv_place.items:
-                        added_to_inv = output_noun
-                    else:
-                        print("Tried to add {assign_colour(noun_inst)} to inventory, but something must have gone wrong.")
-                        traceback_fn()
+                    registry.move_item(battery, location=loc.inv_place)
+                    return
+            else:
+                print(f"Not battery_name {battery_name} or not device_takes_batteries: {device_takes_batteries}")
+
+                #if isinstance(battery, str):
+                #    else: # shouldn't need to get local by name - the device knows what batteries it has.
+                #        outcome = item_interactions.find_local_item_by_name(battery, verb="look", current_loc=loc.current)
+                #        if outcome:# and outcome.name == device_uses_battery:
+                #            battery = outcome
+                #        else:
+                #            print(f"Could not find suitable battery for {device}")
+
+            container = noun.contained_in if hasattr(noun, "contained_in") else None
+            if container and container != noun2:
+                if container.name == noun2.name:
+                    _, container_reason, _ = registry.run_check(container)
+                    if container_reason in interactable_codes:
+                        noun2 = container # if the noun is contained in a same-named container that is also accessable, use that container as noun2. If noun had correct container, noun and noun2 are now correct.
+
+# Get child from parent if original child did not find parent -- assume original noun was similar item not in container, assume intent of item that is in a container when you say 'take it from container'.
+            if not container: ## works for actual containers, irrelevant to batteries.
+                if hasattr(noun2, "children") and noun2.children:
+                    for child in noun2.children:
+                        if child.name == noun.name:
+                            print(f"Set noun to {child}; matching name, is child of {noun2}")
+                            noun = child # if the container doesn't match the
+                            container = noun2
+                            break
+
+            if container and container == noun2 and noun_reason in in_container_codes and noun2_reason in interactable_codes:
+                output_noun = registry.move_from_container_to_inv(noun, parent=container, no_print=False)
+                if output_noun in loc.inv_place.items:
+                    added_to_inv = output_noun
                 else:
-                    print(f"The {assign_colour(noun)} doesn't seem to be in {container_inst.name}.")
+                    print("Tried to add {assign_colour(noun_inst)} to inventory, but something must have gone wrong.")
+                    traceback_fn()
+            else:
+                print(f"The {assign_colour(noun)} doesn't seem to be in {noun2.name}.")
 
     else:
         print(f"Cannot process {input_dict} in def take() End of function, unresolved.")
@@ -1997,6 +2063,12 @@ def put(format_tuple, input_dict, location=None):
 
 
     if noun and noun2:
+        success, battery, device  = act_on_battery_device("put", noun, noun2)
+        if success:
+            if success == "has_batteries_already":
+                return
+            registry.move_item(battery, location=loc.no_place, no_print=True)
+            return
         if not hasattr(noun, "can_pick_up") or not noun.can_pick_up or noun_reason not in interactable_codes:
             print(f"You can't move the {assign_colour(noun)}.")
             return
@@ -2030,8 +2102,11 @@ def put(format_tuple, input_dict, location=None):
                 print(f"The {assign_colour(noun)} is already in {assign_colour(noun2)}")
                 return
             success = battery_check(verb="put", battery=noun, device=noun2)
-            if success == "has_batteries_already":
-                return
+            if success:
+                if success == "has_batteries_already":
+                    return
+                registry.move_item(noun, location=loc.no_place, no_print=True)
+
             registry.move_item(noun, new_container=noun2, no_print=True)
 
             if noun in loc.inv_place.items or noun in registry.by_location[loc.inv_place]:
@@ -2349,7 +2424,7 @@ def use_item_w_item(format_tuple, input_dict):
     verb_str = get_verb(input_dict, get_str=True)
 
     if not target_noun:
-        print(f"No second noun: {format_tuple} should not be in use_item_w_item function. Check routing.")
+        #print(f"No second noun: {format_tuple} should not be in use_item_w_item function. Check routing.")
         return
 
     if format_tuple == (('verb', 'noun', 'direction', 'noun')) or format_tuple == (('verb', 'noun', 'semantic', 'noun')):

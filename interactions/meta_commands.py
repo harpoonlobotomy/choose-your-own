@@ -132,18 +132,18 @@ def select_noun(noun_name=None):
         if not noun_instances:
             print(f"No nouns by the name `{noun_name}` could be found.\nDo you want to try again? Enter a noun name, or 'cancel' to exit meta control.")
             noun_name = input()
-            if noun_name == 'cancel':
+            if noun_name == 'cancel' or noun_name == "":
                 break
         else:
             break
 
-    if isinstance(noun_instances, list) and len(noun_instances)>1:
+    if noun_instances and isinstance(noun_instances, list) and len(noun_instances)>1:
         print(f"There are {len(noun_instances)} instances with this name.\n")
         print(noun_instances)
         print("Do you want a specific instance, or will any do?")
         test = input("Press enter to default to the first option, or enter 'loc' to choose by item location, or 'inv' to choose from inventory items.\n")
         if test == "":
-            noun_instance = test[0]
+            noun_instance = noun_instances[0]
         if "loc" in test:
             location = input("Please enter the location:\n")
             from env_data import locRegistry
@@ -152,6 +152,8 @@ def select_noun(noun_name=None):
                     if noun.location.place == locRegistry.place_by_name(location):
                         print(f"{noun} is in {noun.location}")
                         noun_instance = noun
+            else:
+                print(f"No items in {location}")
                 # for card in CARDINALS:
                 #     cardinal_inst = locRegistry.by_cardinal_str(card, location)
                 #     if cardinal_inst:
@@ -165,10 +167,16 @@ def select_noun(noun_name=None):
             else:
                 print(f"Could not find {noun_name} in the inventory.")
 
+        if len(test) == 1 and test in ("1", "2", "3", "4", "5", "6", "7", "8", "9"):
+            if int(test) <= len(noun_instances):
+                noun_instance = noun_instances[int(test)-1]
+
     elif isinstance(noun_instances, list):
         noun_instance = noun_instances[0]
 
     print_blue(f"Instance found for {noun_name}: {noun_instance}", invert=True)
+    if yes_test("Do you want to print details for this item?"):
+        print(vars(noun_instance))
 
     return noun_instance
 
@@ -526,10 +534,15 @@ def edit_card_items(cardinal:cardinalInstance):
 
 def edit_cardinal(cardinal:cardinalInstance):
 
-    print("Nothing happens here yet. Not even sure what I'd want this for, really.\nReturning.")
     #print(f"\nEditing {cardinal.place_name}.\n")
     #edit_card_desc(cardinal)
-
+    print(f"Printing items at {cardinal}:")
+    from itemRegistry import registry
+    local_items = registry.get_item_by_location(cardinal)
+    if local_items:
+        print(f"Local items: `{local_items}`")
+    else:
+        print(f"No local items at {cardinal}")
     #task = input("Do you want to: \n1: Edit cardinal descriptions/items\n2: Cancel\n")
     #if task in ("1", "2"):
     #    if task == "1":

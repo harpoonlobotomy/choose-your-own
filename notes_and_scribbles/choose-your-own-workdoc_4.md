@@ -1,0 +1,248 @@
+10.28am, 6/3/26
+
+# Working on the 'put battery in device'/'take battery from device' verb_actions sections.
+
+Current issues:
+* If other batteries are present, is functionally random which it picks. So if you say 'take battery from watch' (and watch has a battery in it), it could work, or it could pick another unrelated battery and say 'the battery isn't in the watch'. It does this check for containers, need a similar thing for batteries.
+* Functionally, the battery_check is doing far more than it was ever meant to. It's just meant to be checking if battery == a potential battery and device uses batteries (or either/or depending on verb/inputs). It's not fit for purpose for the rest of it. will set up something proper.
+
+
+"""
+        if noun2 and not container:
+            if hasattr(noun2, "has_batteries") and not isinstance(noun2.has_batteries, bool):
+                noun = noun2.has_batteries
+                container = noun2
+                _, noun_reason, _ = registry.run_check(noun)
+
+
+
+                print(f"Noun reason: {noun_reason} // container.has_batteries: {container.has_batteries}")
+                """
+
+I need to write a proper glossary of expected formats/grammar usage. That sounds like a nightmare but I think I need one.
+
+Thought: It's going to be a nightmare if I have a container that also takes batteries. I guess 'use x with y' would prioritise battery-usage over parentage, so 'put' should prioritise parentage. For 'take' though. Hm.
+
+I guess if we have a perfect-name match for either if both options exist, go with that, otherwise prioritise... well, parentage I suppose. Will think on it.
+
+10.52am
+Eh maybe I should go the other way and make the battery_check more functional instead of less, just with more direction. It can't share most of the container fns anyway. Maybe better to make battery_check a complete 'give me potential battery + device and I'll figure it out for you' type fn instead of just a check.
+
+11:09 Eugh.
+Just found a new issue that isn't actually new, I'd just forgotten.
+if I have 'watch' and 'watch battery', I can pick up the battery by just calling it 'battery'. But, if I have watch, battery and watch battery, 'pick up watch battery' gives me verb dir noun noun, counting 'watch battery' as individuals.
+I thought I'd dealt with that. Oh, only with assumed nouns I think. These are both complete one-part matches, so it doesn't run into any of that.
+
+For now just going to fix the batteries thing.
+
+So, we have two sides:
+* Device knows what battery-name it needs (device.takes_batteries) - is 'battery' if True and not str.
+* device knows what battery it currently has if any, in device.has_batteries (batt instance)
+and
+* battery knows it is a battery with item_type["battery"]
+* knows if it is in a device with battery.in_use (device instance)
+
+So. It is more likely the device is more specifically named. We should use that as the assumed baseline.
+
+---------
+
+11:32.
+Hm.
+It's erroring during the move. Or possibly during format_descrip.
+
+Oh. I'm so stupid. I've been setting up in def take but working in def put. Goddamn. Okay.
+
+I'll probably need to add battery-type items to local nouns, otherwise if the only battery is in a device it'll never let me access it via the parser.
+
+12.02pm
+Oh, I think it's erroring silently because it's still trying to move the batteries to the 'container' of the watch. I just forgot to change it. Okay.
+
+12.39pm
+Mostly working now. Just need to add battery types to local_items if loc==no_place and it should be pretty okay.
+
+1.26pm
+Well this is unexpected. take battery from watch is failing because while it finds the watch inst in parser, it loses it in find_local_item_by_name.
+Oooh. It's because it's in inventory this time, and the verb rules out inventory items for 'take'. Right.
+
+Partially solved; it now searches for noun2 anywhere, including inventory. So you can 'take x from y' when holding y, when previously you couldn't. access_str2 coming in clutch.
+(Still not picking up the batery though. Working on it.)
+
+1.38pm
+Okay. Seems to be holding together now. no_place items with in_use are added to local_items, so you can still type 'battery' and have it recognised if there are active batteries. (Currently it doesn't demand that the battery-holding item is accessible, but could do later if it seems necessary.)
+
+1348
+hm. This is... annoying.
+
+After I take the watch battery from the watch (which does work now), it claims to be in my inventory:
+` <ItemInst watch battery / (41622149de34) / north inventory_place / None / > `
+And yet:
+
+You're facing north. There's a dark fence blocking the horizon, prominently featuring a heavy wrought-iron gate - standing strong but run-down, an old dark-metal padlock on a chain, holding the gate closed, and a watch battery.
+
+And if I print all local items:
+`{<ItemInst padlock / (f1644ccccca8) / north graveyard / graveyard_gate_opens / ..76724141877a / >, <ItemInst watch battery / (41622149de34) / north inventory_place / None / >, <ItemInst gate / (8fb770bc9d9d) / north graveyard / graveyard_gate_opens / ..76724141877a / >}`
+
+there's only the one, in my inventory. So why is it showing up in the loc description.
+
+I'm really not sure. It gets local_items from self.by_location.get(loc_cardinal), and gets this output:
+
+`LOCAL ITEMS IN DESCRIPTIONS: [<ItemInst padlock / (abebf365d133) / north / graveyard_gate_opens / ..fa109b8f43c4 / >, <ItemInst watch battery / (00f19c5eaebd) / north inventory_place / None / >, <ItemInst gate / (59b991508b18) / north graveyard / graveyard_gate_opens / ..fa109b8f43c4 / >]`
+
+It should be doing this:
+# if location != None:
+#     if not self.by_location.get(location):
+#         self.by_location[location] = set()
+#
+#     inst.location = location
+#     self.by_location[location].add(inst)
+
+and location is given as
+# north inventory_place
+
+confirmed:
+`Location provided: <cardinalInstance north inventory_place (12edc1da-77f5-48ed-8398-fbf9ae1e070d)>`
+
+So. The battery starts at testing grounds:
+`<ItemInst watch battery / (369a2dc9e35d) / north testing grounds / None / >,`
+is picked up, and carried to graveyard. On arriving, it is not in the items list:
+`LOCAL ITEMS IN DESCRIPTIONS: [<ItemInst padlock / (a1d51ec824e9) / north graveyard / graveyard_gate_opens / ..954eaa2dea56 / >, <ItemInst gate / (c656a3d76d35) / north graveyard / graveyard_gate_opens / ..954eaa2dea56 / >]`
+
+the battery in north inventory_place is moved with the location provided as
+`<cardinalInstance north no_place (62a9f803-f989-4317-8c17-f2fc1be5662f)>`
+
+Immediately thereafter, graveyard local items remain consistent:
+`LOCAL ITEMS IN DESCRIPTIONS: [<ItemInst padlock / (a1d51ec824e9) / north graveyard / graveyard_gate_opens / ..954eaa2dea56 / >, <ItemInst gate / (c656a3d76d35) / north graveyard / graveyard_gate_opens / ..954eaa2dea56 / >`
+
+... Oh, this is weird.
+
+So, I pick up the battery, take it to graveyard.
+When I put the battery in the watch, it's the same watch battery, still in inv_place.
+
+But: if I get local_items immediately after via logging args, I get this:
+
+`input_list: {<ItemInst fashion magazine / (9a608c938f3c) / north inventory_place / None / >, <ItemInst watch / (fccdc24425da) / north inventory_place / None / >, <ItemInst paperclip / (5869d948f261) / north inventory_place / None / >, <ItemInst battery / (7c0111024be4) / north inventory_place / None / >, <ItemInst severed tentacle / (89bc5577722b) / north inventory_place / None / >}`
+
+<ItemInst watch battery / (369a2dc9e35d) / north inventory_place / None / > is gone (correctly, as it's in no_place once it's "in" the watch), but an unrelated battery is not in my inventory:
+`<ItemInst battery / (7c0111024be4) / north inventory_place / None / >`
+That battery was originally at testing grounds (intentionally, because I like testing the parser), and it only has two mentions: it's initial appearance in testing grounds, and then suddenly appearing in my inventory via recurse_items_from_list.
+
+Okay. So..... When the hell did that happen.
+
+Take battery:
+<ItemInst watch battery / (259fdc330d74) / north testing grounds / None / >
+locals:
+LOCAL ITEMS IN DESCRIPTIONS: [<ItemInst paper scrap with number / (dbc10a013670) / north testing grounds / None / >, <ItemInst mobile phone / (e9a701437f69) / north testing grounds / None / >, <ItemInst watch battery / (52d125737581) / north testing grounds / None / >, <ItemInst phone charger / (f3b66ea47f54) / north testing grounds / None / >, <ItemInst watch battery / (d7bf35416281) / north testing grounds / None / >]
+
+get to graveyard, and print inventory:
+  - watch battery <-- is 52d125737581 by the color
+  - watch
+  - gardening magazine
+  - battery <-- was not present at all previously
+  - paperclip
+
+But then when I go to put the battery in the watch:
+<ItemInst watch battery / (259fdc330d74) / north inventory_place / None / >
+Suddenly the original is back. Though I still have 'battery' in my inv.
+
+Alright. So it's init-ing the battery from somewhere.
+
+And even if I get rid of the 'battery' entry in loc_data, I still have duplicates behaving weirdly:
+without 'battery' and just the plural 'watch battery' instances, when I put the battery in the watch, all good. (Well 95%; it's printing the wrong colour which I need to fix in colours, but that's minor.) Only one battery shown in inv, 0 batteries in graveyard.
+Put the battery in watch, no batteries seen anywhere, can only add one battery to the watch, all good.
+But then, remove the battery, and it shows up in loc_desc and local_items. despite still showing its location as inv_place.
+
+Have I failed to return and it's doing a second move? No, the prints are only running once and the logging shows it never repeats move. What the hell...
+
+
+3.04pm
+Have spent the last while trying to figure this out. Not solved it yet.
+
+Have narrowed it down a little at least.
+
+Immediately after 'take battery from watch', it runs get_item_by_location a few times. And on the second run through for north graveyard, the battery is already there.
+
+[<  take battery from watch  >]
+ '-                         -'
+
+Getting item by location for `<cardinalInstance north graveyard (0bea7be7-4764-40c4-8491-cd54bd974cdc)>`
+Items at cardinal: {<ItemInst padlock / (db430e4866ae) / north graveyard / graveyard_gate_opens / ..11e22029d227 / >, <ItemInst gate / (1b505f541967) / north graveyard / graveyard_gate_opens / ..11e22029d227 / >}
+Getting item by location for `north no_place`
+Items at cardinal: {<ItemInst watch battery / (b44a63347db9) / north no_place / None / >}
+Getting item by location for `<cardinalInstance north graveyard (0bea7be7-4764-40c4-8491-cd54bd974cdc)>`
+Items at cardinal: {<ItemInst padlock / (db430e4866ae) / north graveyard / graveyard_gate_opens / ..11e22029d227 / >, <ItemInst watch battery / (b44a63347db9) / north no_place / None / >, <ItemInst gate / (1b505f541967)
+/ north graveyard / graveyard_gate_opens / ..11e22029d227 / >}
+
+OH.
+It's because I'm including it in local_items for the parser. loc_descriptions is using that same list. oh god that took me /way/ too long to figure out. Okay.
+
+Now to undo a shitload of print statements.
+
+3.07pm
+Wait no it's not.
+It's just a straight get_from_location, it's not touching membrane.local_items.
+
+Fundamentally, the battery is being given the correct inst.location, but the wrong registry.by_location[cardinal].add(inst). I just can't see where. I've gone over it and it all seems right....
+
+Okay. So it's before move_item.
+Before act_on_battery_device.
+
+After the very start of def take.
+
+3.22pm
+Okay. It's get_correct_nouns. No idea how/why, but it is.
+
+find_local_item_by_name.
+Oh. Does it update loc descriptions using the internal noun_list. Probably. So I was close before, I just forgot for a moment that it could be triggered another way.
+
+Oh - I think perhaps it's adding it retrospectively to loc items. Not the list of items, but the location itself.
+
+Yeah, it is.
+
+loc_items = registry.get_item_by_location(location)
+...
+final_items = loc_items
+...
+
+    no_place_items = registry.get_item_by_location("north no_place")
+    if no_place_items:
+        for item in no_place_items:
+            if "battery" in item.item_type and hasattr(item, "in_use") and item.in_use:
+                final_items.add(item)
+
+I wouldn't have  thought that this:
+items_at_cardinal = self.by_location.get(loc_cardinal)
+(which is what is returned from `get_item_by_location`) would feed back that way. I'm not editing a dict, am I? I mean I must be based on the behaviour.
+
+Yeah, that was it.
+Output a set(i for i generator) instead of the immediate result and suddenly it stopped happening.
+
+So, I think generally, when there are containers, etc etc, it ends up running through some kind of iterator/generator to add different datapoints. But the specific criteria and lack of containers/etc in that specific location meant that it was the raw set directly from the dict. So then I was adding to the set, which was exactly the same set as held by the dict. Okay.
+
+I had a feeling that's where it was going I just couldn't track it down.
+
+Need a little break now. Bit late for lunch but I need to blink for a minute or two.
+
+Okay. Cleaned up most of the print statements. Little break.
+
+4.40pm
+new issue: the command 'east' errors with
+`Failed to find the correct function to use for None: object of type 'NoneType' has no len()`
+Well not the comand specifically, but moving to east graveyard from elsewhere. 'go to east graveyard' and 'east' both work after you've arrived there, but error again if you go west then go east again.
+
+4.45pm fixed that one. Had to account for multiples.get(item_name) == None before getting len()
+
+
+Note on the 'discovered' flag:
+an item is discovered if:
+* an item is described in loc_desc
+* an item is in a container that has been through def describe (ie look at x)
+* an item has been read
+* an item has been mentioned directly in some way in output (not just user input)
+
+Should also have a 'discovered locations' dict. Thinking of UI again; a little panel on the side with current_loc and a tree of discovered locations.
+
+Todo:
+'out of' == direction.
+7.05pm Well that wasn't too hard. 'take battery out of watch' works now.
+
+God I'm wiped. Going to stop soon before I break everything.

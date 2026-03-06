@@ -847,7 +847,7 @@
     "smash_defence": 6
   },
   "watch battery": {
-    "alt_names": ["batteries"],
+    "alt_names": ["batteries", "battery"],
     "can_be_charged": false,
     "can_pick_up": true,
     "descriptions": {
