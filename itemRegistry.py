@@ -1,5 +1,6 @@
 
 import random
+from re import I
 import uuid
 
 from env_data import cardinalInstance, placeInstance, locRegistry as loc
@@ -645,13 +646,16 @@ class itemRegistry:
         7: "other error, investigate"\n
         8: "is a location exterior"\n
         9: "item is hidden" (must be discovered somehow, not shown in general 'look around' views.)\n
-        10: "item is transitional, treat as local."
+        10: "not an instance"
         """
         logging_fn()
         from misc_utilities import is_item_in_container, accessible_dict
         confirmed_container = None
         reason = 7
         meaning = "other error, investigate"
+
+        if not inst or not isinstance(inst, itemInstance):
+            return None, 10, accessible_dict[10]
 
         if hasattr(inst, "is_hidden") and inst.is_hidden == True:
             if hasattr(inst, "has_multiple_instances") and inst.has_multiple_instances == 0:
@@ -994,7 +998,7 @@ class itemRegistry:
         if old_loc and old_loc != None:
             if self.by_location.get(old_loc):
                 if inst not in self.by_location[old_loc]:
-                    print("Inst has a location but isn't in by_location. FIX THIS.")
+                    print(f"Inst has a location but isn't in by_location for old_loc. FIX THIS. old_loc: {old_loc}")
                 else:
                     self.by_location[old_loc].discard(inst)
 
@@ -1045,12 +1049,12 @@ class itemRegistry:
         init_loc_descriptions(loc.current.place, loc.current) # update even if moving to inv, so it can update the removal. Though it seemed to already...?
         return inst
 
-    def move_from_container_to_inv(self, inst:itemInstance, parent:itemInstance=None) -> itemInstance:
+    def move_from_container_to_inv(self, inst:itemInstance, parent:itemInstance=None, no_print=False) -> itemInstance:
         """Simply ensures that a suitable parent is available before sending the itemInstance and parent to `move_item`."""
         logging_fn()
         if parent == None:
             parent = inst.contained_in
-        result = self.move_item(inst, location = loc.inv_place, old_container=parent)
+        result = self.move_item(inst, location = loc.inv_place, old_container=parent, no_print=no_print)
         return result
 
 
@@ -1547,15 +1551,21 @@ def apply_loc_data_to_item(item, item_data, loc_data):
     if loc_data and isinstance(loc_data, dict) and loc_data.get("starting_location"):
         item_data["starting_location"] = loc_data["starting_location"]
 
-    item = registry.init_single(item, item_data)
+    inst = registry.init_single(item, item_data)
 
-    all_item_names_generated.append((item, "apply_loc_data_to_item"))
+    if loc_data and loc_data.get("generate_multiples"): # not cluster objects, just multiple instances of the same archetype in one location.
+        print(f"Need to make multiple of this: {item}: {item_data['generate_multiples']}")
+        for number in range(1, item_data['generate_multiples']):
+            print(f"Number in range: {number}")
+            inst = registry.init_single(item, item_data)
 
-    if hasattr(item, "requires_key") and getattr(item, "requires_key"):
+    all_item_names_generated.append((inst, "apply_loc_data_to_item"))
+
+    if hasattr(inst, "requires_key") and getattr(inst, "requires_key"):
         if not hasattr(registry, "requires_key"):
             registry.requires_key = []
-        registry.requires_key.append(item)
-    return item
+        registry.requires_key.append(inst)
+    return inst
 
 
 def init_loc_items(place=None, cardinal=None):

@@ -315,9 +315,9 @@
   "testing grounds": {
     "alt_names": [],
     "north": {
-        "item_desc": {"generic": "A place to test things. Nothing here by default."},
+        "item_desc": {"generic": "A place to test things. Nothing here by default with ", "watch battery": "a [[]]", "no_items": "nothing here now either."},
         "short_desc": "It's a place for testing, with nothing",
-        "items": {"mobile phone": {}, "paper scrap with number":{}, "phone charger": {}},
+        "items": {"mobile phone": {}, "paper scrap with number":{}, "phone charger": {}, "watch battery":{"generate_multiples":3}, "watch":{}},
       "surfaces": {"wall": true, "flooring": true}
     },
     "descrip": "~~TESTING GROUNDS~~.",

@@ -15,7 +15,8 @@ accessible_dict = {
     6: "not at current location",
     7: "other error, investigate",
     8: "is a transitional item (eg a door that can be seen from both sides)",
-    9: "item is hidden"# (must be discovered somehow, not shown in general 'look around' views.)
+    9: "item is hidden",# (must be discovered somehow, not shown in general 'look around' views.)
+    10: "not an instance"
 }
 
 

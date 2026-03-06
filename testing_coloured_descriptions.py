@@ -58,47 +58,59 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                 elif item == "no_starting_items":
                      no_starting_items = long_dict[item]
                 else:
-                    if item:
-                        if itemRegistry.registry.instances_by_name(item) and local_items:
-                            #print(f"Item {item} in registry and local_items")
-                            for inst in itemRegistry.registry.by_name[item]:
-                                if inst in local_items:
-                                    if "[[]]" in long_dict[item]:
-                                        long_parts = long_dict[item].split("[[]]")
-                                        if "fff" in long_parts[1]:
-                                            if hasattr(inst, "event") and inst.event.state in (0, 1):
-                                                long_parts[1] = long_parts[1].replace("fff", "")
-                                            else:
-                                                split_parts = re.split("fff.+fff", long_parts[1])
-                                                long_parts[1] = split_parts[1]
+                    if item and local_items:
+                        multiples = {}
+                        count = 0
+                        for inst in local_items:
+                            if inst.name == item:
+                                if "[[]]" in long_dict[item]:
+                                    long_parts = long_dict[item].split("[[]]")
+                                    if "fff" in long_parts[1]:
+                                        if hasattr(inst, "event") and inst.event.state in (0, 1):
+                                            long_parts[1] = long_parts[1].replace("fff", "")
+                                        else:
+                                            split_parts = re.split("fff.+fff", long_parts[1])
+                                            long_parts[1] = split_parts[1]
 
-                                        if "<<" in long_parts[1]:
-                                            if hasattr(inst, "event") and inst.event.state == 2:
-                                                long_parts[1] = long_parts[1].replace("<<", "")
-                                                long_parts[1] = long_parts[1].replace(">>", "")
-                                            else:
-                                                split_parts = re.split("<<.+>>", long_parts[1])
-                                                long_parts[1] = split_parts[0]
-                                                if "fff" in long_parts[0]:
-                                                    long_parts[0] = long_parts[0].replace("fff","")
+                                    if "<<" in long_parts[1]:
+                                        if hasattr(inst, "event") and inst.event.state == 2:
+                                            long_parts[1] = long_parts[1].replace("<<", "")
+                                            long_parts[1] = long_parts[1].replace(">>", "")
+                                        else:
+                                            split_parts = re.split("<<.+>>", long_parts[1])
+                                            long_parts[1] = split_parts[0]
+                                            if "fff" in long_parts[0]:
+                                                long_parts[0] = long_parts[0].replace("fff","")
 
-                                        if "<" in long_parts[1]:
-                                            passed = False
-                                            if hasattr(inst, "children") and inst.starting_children:
-                                                if len(inst.children) == len(inst.starting_children):
-                                                    passed=True
-                                                for item in inst.children:
-                                                    if item not in inst.starting_children:
-                                                        passed=False
-                                            if passed:
-                                                long_parts[1] = long_parts[1].replace("<", "")
-                                            else:
-                                                long_parts[1] = long_parts[1].split("<")[0]
-                                        #print(f"Long parts: {long_parts}")
-                                        test = long_parts[0] + assign_colour(inst) + long_parts[1]
-                                        long_desc.append(test)
-                                    else:
-                                        print(f"No [[]] in this description so it's excluded: {long_dict[item]}.")
+                                    if "<" in long_parts[1]:
+                                        passed = False
+                                        if hasattr(inst, "children") and inst.starting_children:
+                                            if len(inst.children) == len(inst.starting_children):
+                                                passed=True
+                                            for item in inst.children:
+                                                if item not in inst.starting_children:
+                                                    passed=False
+                                        if passed:
+                                            long_parts[1] = long_parts[1].replace("<", "")
+                                        else:
+                                            long_parts[1] = long_parts[1].split("<")[0]
+                                    #print(f"Long parts: {long_parts}")
+                                    test = long_parts[0] + assign_colour(inst) + long_parts[1]
+                                    if not multiples:
+                                        multiples[inst.name] = {}
+                                    count += 1
+                                    multiples[inst.name].update({count: test})
+                                    long_desc.append(test)
+                                else:
+                                    print(f"No [[]] in this description so it's excluded: {long_dict[item]}.")
+
+                    if multiples and len(multiples.get(item)) > 1:
+                        for key, val in multiples[item].items():
+                            long_desc.remove(val)
+                            if key == count:
+                                val = val.strip("\x1b[0m")
+                                val = val.strip("a ")
+                                long_desc.append(val + f" x{count}\x1b[0m")
 
             if len(long_desc) == 1 and no_items_text:
                 if local_items:

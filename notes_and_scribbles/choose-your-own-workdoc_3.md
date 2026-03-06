@@ -5353,3 +5353,64 @@ do I want to /enforce/ word order?
 As in, if I say 'unlock key with padlock', should it fail even if 'unlock padlock with key' would work?
 
 Oh, idea: area specific wait messages. So if you're in the hotel room, it prints 'You sit on the bed to wait for a while.', etc. That'd be nice.
+
+Question: Do I want to make the verb green or not? I have done so for the failure printing, but not for in-verb failures (eg 'put paperwork in the jar' gets
+`There's no paperwork around here to put in the glass jar.`
+with green verb; 'paperwork' is assumed_noun.
+But,
+"put key in jar" gets
+`You don't have a key to put in the jar`
+has no green verb. I don't mind the difference in phrasing here, I think it works fine, though it does make me think I should not send the error through unless /no/ noun is unassumed. Will think on it.
+I think I might take the green printing off the verbs maybe. #TODO.
+
+I think I need another layer of noun checking. I want to wrap get_correct_nouns in with run_check.  Or I guess I could just add it to get_correct_nouns.
+
+So things with batteries don't need to be containers. I just need specific flags for batteries being in an item, like I have for the phone/charger.
+'takes batteries' can be a bool or a battery type (eg 'watch battery')
+
+Hm. But if I stop them being containers, how do I get it to still recognise 'take battery from watch'? It'll say there's no battery around.
+Would need to add another check to the noun to check if it has a battery attr :/
+Okay. So keep them being containers, but change the output print if they /are/ a battery-user. That makes more sense.
+
+7.42pm
+
+8.22pm
+Forgot what I was writing here.
+Have set up a minimal baseline for adding batteries to devices, and checking if a non-container takes batteries for checks. Works well so far.
+
+Note:
+For the various alt descriptions, I should use specific attr checks. So, for the watch example, I have a different description depending on whether it has batteries or not. Instead of hardcoding a huge list of potential descriptions, I should just tell it to check the attribute name against the descriptions, and if attribute state matches expected then that's the description. Might still have to hardcode the order so I can prioritise, but still, would just make far more sense. So 'has_batteries' is the attr that changes when a device has/doesn't have batteries. So that's also the description name. Will work on that.
+
+8:55pm
+Can now init multiple items of the same name in the same location. It doesn't properly combine them in the loc description though, I've not implemented that outside of inventory + containers. Will do that. But the put battery in watch does seem to work properly; it obeys has_battery etc, have tested just now.
+
+0042, 6/3/26
+it's janky but it now gives the ' x3' version of duplicate entities in the location description. It breaks the style a little because you can't really have 'a watch battery x3', and I don't have a plural item desc description set up yet (though maybe I need to). This works for now though.
+
+It goes back to 'a watch battery' once you pick up two of them though, so it does work as intended. Just need to make directorial decisions about how the specific wording should go with plural loc descriptions.
+
+For tomorrow:
+'take battery from watch' currently doesn't work if you have multiple batteries, because it doesn't correctly select for a battery that is already in the watch. So if it happens to find one outside of the watch, it says 'the watch battery isn't in the watch, even if another watch battery /is/.
+
+Mostly fixed that now.
+All that needs doing on the battery/watch thing:
+* Move battery to no_place when adding to watch, make sure it's properly child-ed (otherwise the parser will break and I don't want to change it more than I have to).
+* fix an issue where the watch_battery.location == testing grounds but watch_battery isn't in by_location.get(testing grounds.) They should always be linked. I'm thinking maybe it only moved one item per name during init? Check tomorrow.
+
+Re the location of the battery, I'm not entirely right. Because the two untouched batteries /are/ in by_location. So i have no clue why the first one apparently wasn't. Nearly 2am so will look into it tomorow.
+
+9.56am 6/3/26
+So, batteries in watches.
+pick up batt
+put batt in watch > battery (cyan (from current loc)) is in watch.
+put batt in watch > battery (blue (from current loc)) is in watch.
+Then it fails because 'multiples' isn't found after the battery check.
+So two issues:
+One: it's not meant to allow multiple batteries to be added, full stop. The issue is that the battery check failed in its purpose: The first battery added has the battery check print line. The second one is a regular 'move', it's treating the watch like a container. But it's not. So that should fail, but apparently it didn't.
+2: the `multiples` error, which should be fixable.
+
+The battery check didn't allow this failure earlier, so I broke something sometime after 1am this morning.
+
+I desperately need the two monitor setup again. I'm looking at a 4x4" space right now. I have the other monitor, I just need to organise the space to make it work.
+
+Rewound to a slightly earlier version of check_battery and it correctly ended the second 'put battery in watch' with 'the watch already has batteries'. 

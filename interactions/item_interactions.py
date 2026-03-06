@@ -235,7 +235,11 @@ scope_to_verb = {
     }
 
 def build_relevant_items_set(verb=None, noun=None, access_str=None, current_loc=None) -> set: # moved this to be its own thing so I can use it elsewhere.
-    """Builds a set of itemInstances based on the verb and access_str provided. Will generate the access_str from the verb if needed.\n\nDoes not pay attention to names, only the categories to allow/ignore."""
+    """Builds a set of itemInstances based on the verb and access_str provided. Will generate the access_str from the verb if needed.\n\nDoes not pay attention to names, only the categories to allow/ignore. Most commonly used access_str strings:
+    * `inv_and_inv_containers`
+    * `all_local`
+    * `local_and_inv_containers_only`
+    * `not_in_inv`"""
     logging_fn()
     location = None
 
@@ -277,7 +281,7 @@ def build_relevant_items_set(verb=None, noun=None, access_str=None, current_loc=
         elif current_loc and isinstance(current_loc, str):
             location = loc.by_cardinal_str(current_loc)
         elif (not current_loc or not location) and noun and isinstance(noun, itemInstance):
-            location = noun.location
+            location = noun.location # not sure this is ever ideal? The noun isn't even confirmed correct yet.
         from env_data import locRegistry
         if not location or location == locRegistry.inv_place: #assume current.
             location = locRegistry.current
@@ -310,7 +314,14 @@ def find_local_item_by_name(noun:itemInstance=None, noun_text = None, verb=None,
     Builds relevant items set using verb scope derived from `access_str` or `verb`'s status in `verb_to_noun_access`. If `noun` provided, returns the relevant `ItemInstance` of that name if found. If no `noun` provided, returns the full set.
 
     priority == ('single' | 'plural')
+
+     Most commonly used access_str strings:
+    * `inv_and_inv_containers`
+    * `all_local`
+    * `local_and_inv_containers_only`
+    * `not_in_inv`
     """
+    ## NOTE: items in containers are in loc.no_place.
     logging_fn()
 
     if verb:

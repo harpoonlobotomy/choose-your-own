@@ -253,13 +253,13 @@ def get_items_from_card(loc, cardinal, loc_data):
             if item == "" or item in excluded_itemnames:
                 continue
             # Assume only one. If multiple, need to figure something else out.
-            desc_items[item] = loc_data["item_desc"]
+            desc_items[item] = loc_data["item_desc"][item]
 
     if loc_data.get("items"):
         for item in loc_data["items"]:
             if item == "" or item in excluded_itemnames:
                 continue
-            other_items[item] = loc_data["items"]
+            other_items[item] = loc_data["items"][item]
 
     for item in other_items:
         #print(f"item: {item}")
@@ -271,15 +271,15 @@ def get_items_from_card(loc, cardinal, loc_data):
             else:
                 added.add(item)
             #print(f"Item in both lists: {item}")
-            item_desc = desc_items[item].get(item)
-            item_attr = other_items[item].get(item)
+            item_desc = desc_items.get(item) # these were all dict[item].get[item]. idk why.
+            item_attr = other_items.get(item)
 
             if item_desc and not item_attr.get("description"):
                 item_attr["description"] = item_desc
 
             loc_items_dict[loc][cardinal][item] = item_attr
         else:
-            loc_items_dict[loc][cardinal][item] = other_items[item].get(item)
+            loc_items_dict[loc][cardinal][item] = other_items.get(item)
 
         #print(f"item in other_items: {loc_items_dict[loc][cardinal][item]}")
         if not loc_items_dict[loc][cardinal][item]:
@@ -289,7 +289,7 @@ def get_items_from_card(loc, cardinal, loc_data):
 
     for item in desc_items:
         if not item in other_items and item != "" and item not in excluded_itemnames:
-            loc_items_dict[loc][cardinal][item] = desc_items[item].get(item)
+            loc_items_dict[loc][cardinal][item] = desc_items.get(item)
             # Should get item data here, maybe. We're just adding what's in generated/item_defs. Only downside is it won't update if an item is made but not added to generated right away. But we're not generating anything here, so that's alright actually.
             #print(f"item in desc_items dict_gen: {loc_items_dict[loc][cardinal][item]}")
         if not loc_items_dict[loc][cardinal][item]:

@@ -429,9 +429,10 @@
     "can_be_charged": false,
     "can_pick_up": true,
     "descriptions": {
-      "generic": "A scratched gold watch."
+      "generic": "A scratched gold watch.",
+      "has_batteries": "a gold watch, quietly ticking. Battery powered."
     },
-    "has_batteries": true,
+    "has_batteries": false,
     "is_charged": false,
     "item_size": "smaller_than_apple",
     "item_type": [
@@ -446,7 +447,7 @@
     "slice_defence": 5,
     "smash_attack": 5,
     "smash_defence": 5,
-    "takes_batteries": true
+    "takes_batteries": "watch battery"
   },
   "dried flowers": {
     "can_break": true,
@@ -818,11 +819,12 @@
     "smash_attack": 5,
     "smash_defence": 5
   },
-  "batteries": {
+  "battery": {
+    "alt_names": ["batteries"],
     "can_be_charged": true,
     "can_pick_up": true,
     "descriptions": {
-      "generic": "It's a batteries"
+      "generic": "It's a generic battery."
     },
     "is_charged": true,
     "item_size": "a_few_marbles",
@@ -837,11 +839,37 @@
       "medium_loot"
     ],
     "nicenames": {
-      "generic": "a set of batteries"
+      "generic": "a battery"
     },
-    "slice_attack": 5,
-    "slice_defence": 5,
-    "smash_attack": 5,
+    "slice_attack": 0,
+    "slice_defence": 2,
+    "smash_attack": 2,
+    "smash_defence": 6
+  },
+  "watch battery": {
+    "alt_names": ["batteries"],
+    "can_be_charged": false,
+    "can_pick_up": true,
+    "descriptions": {
+      "generic": "It's a small watch battery."
+    },
+    "is_charged": true,
+    "item_size": "a_few_marbles",
+    "item_type": [
+      "battery",
+      "can_pick_up",
+      "random_loot",
+      "standard"
+    ],
+    "loot_type": [
+      "medium_loot"
+    ],
+    "nicenames": {
+      "generic": "a watch battery"
+    },
+    "slice_attack": 1,
+    "slice_defence": 4,
+    "smash_attack": 3,
     "smash_defence": 5
   },
   "costume jewellery": {
