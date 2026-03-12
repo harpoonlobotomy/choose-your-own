@@ -766,7 +766,7 @@ class itemRegistry:
         if not new_def:
             print(f"NO NEWDEF in generate_alt_state_item. Itemdef: {item_def}")
         for k, v in new_def.items():
-            print(f"k: {k}, v: {v}, v.type: {type(v)}")
+            #print(f"k: {k}, v: {v}, v.type: {type(v)}")
             if noun.name in k:
                 k = k.replace(noun.name, new_name)
             if isinstance(v, bool|int):
@@ -774,16 +774,17 @@ class itemRegistry:
 
             elif isinstance(v, dict):
                 for val, val2 in v.items():
-                    print(f"val, val2: {val}, {val2} // noun.name: {noun.name} // new_name: {new_name}")
-                    if noun.name in val:
-                        val = val.replace(noun.name, new_name)
-                        v[val] = val2
-                    if noun.name in val2:
-                        val2 = val2.replace(noun.name, new_name)
-                        v[val] = val2
+                    #print(f"val, val2: {val}, {val2} // noun.name: {noun.name} // new_name: {new_name}")
+                    if isinstance(val, str):
+                        if noun.name in val:
+                            val = val.replace(noun.name, new_name)
+                            v[val] = val2
+                        if noun.name in val2:
+                            val2 = val2.replace(noun.name, new_name)
+                            v[val] = val2
 
             else:
-                if noun.name in v:
+                if isinstance(v, str) and noun.name in v:
                     v = v.replace(noun.name, new_name)
                 new_def[k] = v
 
@@ -1247,10 +1248,11 @@ class itemRegistry:
                 if inst.is_locked:
                     if inst.descriptions.get("is_locked") and inst.descriptions["is_locked"] != "":
                             description = inst.descriptions["is_locked"]
-                else:
-                    if inst.descriptions.get("is_charged") and inst.descriptions["is_charged"] != "":
-                        description = inst.descriptions["is_charged"]
+                elif inst.descriptions.get("is_charged") and inst.descriptions["is_charged"] != "":
+                    description = inst.descriptions["is_charged"]
 
+            elif inst.descriptions.get("has_batteries") and hasattr(inst, "has_batteries") and inst.has_batteries:
+                    description = inst.descriptions["has_batteries"]
 
         if not description and hasattr(inst, "descriptions"): # nothing should have 'description' on init anymore, shouldn't need this.
             if not inst.descriptions:
@@ -1559,9 +1561,9 @@ def apply_loc_data_to_item(item, item_data, loc_data):
     inst = registry.init_single(item, item_data)
 
     if loc_data and loc_data.get("generate_multiples"): # not cluster objects, just multiple instances of the same archetype in one location.
-        print(f"Need to make multiple of this: {item}: {item_data['generate_multiples']}")
+        #print(f"Need to make multiple of this: {item}: {item_data['generate_multiples']}")
         for number in range(1, item_data['generate_multiples']):
-            print(f"Number in range: {number}")
+            #print(f"Number in range: {number}")
             inst = registry.init_single(item, item_data)
 
     all_item_names_generated.append((inst, "apply_loc_data_to_item"))

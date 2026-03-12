@@ -262,6 +262,16 @@ def print_failure_message(input_str=None, message=None, noun=None, noun2=None, v
         print(f"[not idx_kind and not (noun and verb)]Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
         return
 
+    def ensure_noun_inst(noun_inst, noun_str, input_str):
+        if noun_inst and isinstance(noun_inst, itemInstance) and input_str and (noun_inst.name in input_str or noun_str in input_str) and (not hasattr(noun_inst, "is_hidden") or not noun_inst.is_hidden):
+            output_noun = noun_inst
+        else:
+            if (isinstance(noun_inst, str) and input_str and noun_inst in input_str) or (input_str and isinstance(noun_inst, itemInstance) and noun_inst.name in input_str):
+                output_noun = noun_inst
+            else:
+                output_noun = noun_str
+        return output_noun
+
     if noun:
         first_noun = noun
 
@@ -280,19 +290,8 @@ def print_failure_message(input_str=None, message=None, noun=None, noun2=None, v
             noun2_check = noun2
             noun2_test = noun2
 
-        if isinstance(noun_check, itemInstance) and input_str and (noun_check.name in input_str or noun_test in input_str) and (not hasattr(noun_check, "is_hidden") or not noun_check.is_hidden):
-            first_noun = noun_check
-        elif isinstance(noun_check, str) and input_str and noun_check in input_str or (isinstance(noun_check, itemInstance) and noun_check.name in input_str):
-            first_noun = noun_check
-        else:
-            first_noun = noun_test
-        if noun2_check and isinstance(noun2_check, itemInstance) and input_str and (noun2_check.name in input_str or noun2_test in input_str) and (not hasattr(noun2_check, "is_hidden") or not noun2_check.is_hidden):
-            second_noun = noun2_check
-        else:
-            if (isinstance(noun2_check, str) and input_str and noun2_check in input_str) or (input_str and isinstance(noun2_check, itemInstance) and noun2_check.name in input_str):
-                second_noun = noun2_check
-            else:
-                second_noun = noun2_test
+        first_noun = ensure_noun_inst(noun_check, noun_test, input_str)
+        second_noun = ensure_noun_inst(noun2_check, noun2_test, input_str)
         #print(f"First noun {first_noun} / second noun: {second_noun}")
     """
     if idx_kind:
@@ -403,6 +402,8 @@ def print_failure_message(input_str=None, message=None, noun=None, noun2=None, v
 
             print(f"There's no {assign_colour(first_noun, colour="yellow") if isinstance(first_noun, str) else assign_colour(first_noun)} around here to {assign_colour(verb, colour="green")} {a_or_the}{assign_colour(second_noun) if isinstance(second_noun, itemInstance) else assign_colour(second_noun, colour="yellow")} with.")
 
+        else: # catchall was missing for straightforward 'you can't verb x dir_or_sem y'. This function is s fucking mess rn.
+            print(f"You can't {verb} the {assign_colour(first_noun)} {dir_or_sem} the {assign_colour(second_noun)}.")
 
 def check_nighttime(current_time, printme=True):
 

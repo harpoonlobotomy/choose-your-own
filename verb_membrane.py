@@ -65,7 +65,10 @@ def get_noun_instances(dict_from_parser, viable_formats):
                             dict_from_parser[idx][kind] = ({"instance": "assumed_noun", "str_name": entry["str_name"], "text": entry["text"]})
                             error = ("assumed_noun", (idx, kind))
                     else:
+
                         noun_inst = registry.instances_by_name(name) ## NOTE: This won't hold for long. Different instances may have different attr.
+                        if not noun_inst:
+                            noun_inst = registry.instances_by_name(entry["text"])
                         if not noun_inst:
                             dict_from_parser[idx][kind] = ({"instance": "assumed_noun", "str_name": entry["str_name"], "text": entry["text"]})
                             error = ("assumed_noun", (idx, kind))

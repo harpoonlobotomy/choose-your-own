@@ -896,7 +896,7 @@ def go(format_tuple, input_dict, no_noun=None): ## move to a location/cardinal/i
 def look(format_tuple=None, input_dict=None, force_look=False): # force_look - stops 'read door' from turning into 'go to shed'.
     logging_fn()
 
-    if not format_tuple or (format_tuple == tuple(("verb", "semantic")) and not input_dict):
+    if not format_tuple or len(format_tuple) == 1 or (format_tuple == tuple(("verb", "semantic")) and (not input_dict or (input_dict and  get_dir_or_sem(input_dict) == "around"))):
         from misc_utilities import look_around
         look_around()
         return
@@ -1140,7 +1140,7 @@ def read(format_tuple, input_dict):
     if not noun:
         options = item_interactions.find_local_items_by_itemtype("books_paper", "all_local")
         if not options:
-            print("What do yo want to read?")
+            print("What do you want to read?")
             return
         nouns = list(i for i in options if i.descriptions.get("details") and not hasattr(i, "is_map"))
         if not nouns:
@@ -1384,6 +1384,7 @@ def break_item(format_tuple, input_dict):
                     elif getattr(noun, f"{attack}_attack") == getattr(noun2, f"{attack}_defence"):
                         print(f"You {attack} the {assign_colour(noun)} with the {assign_colour(noun2)}, but the {assign_colour(noun)} and the {assign_colour(noun2)} are evenly matched; nothing happens.")
                         return
+    print()
     if broken:
         set_noun_attr(("is_broken", True), noun=broken, event_type = "state_change")
         if hasattr(broken, "children") and broken.children:
@@ -1399,7 +1400,6 @@ def break_item(format_tuple, input_dict):
 
             turn_cardinal(prospective_cardinal=loc.current, turning = False)
         return
-    print()
     print(f"Cannot process {input_dict} in def break_item() End of function, unresolved. (Function not yet written)")
     return
 
@@ -1833,6 +1833,7 @@ def battery_check(verb="", battery=None, device=None):
 def act_on_battery_device(verb, noun, noun2):
     """Returns `success`, `battery`, `device`. Makes sure the battery has the right name and isn't in use, that the device doesn't already have batteries, and makes reasonable simple substitutions. """
 
+    device = battery = None
     from verbRegistry import VerbInstance
     if isinstance(verb, VerbInstance):
         verb = verb.name
@@ -1886,7 +1887,6 @@ def act_on_battery_device(verb, noun, noun2):
                     battery.in_use = device
                     return "success", battery, device
     else:
-        print(f"Not battery and device: {battery} // {device}")
         return None, None, None
 
 def take(format_tuple, input_dict):
@@ -2063,12 +2063,16 @@ def put(format_tuple, input_dict, location=None):
 
 
     if noun and noun2:
-        success, battery, device  = act_on_battery_device("put", noun, noun2)
+        success, battery, device = act_on_battery_device("put", noun, noun2)
         if success:
             if success == "has_batteries_already":
                 return
             registry.move_item(battery, location=loc.no_place, no_print=True)
+            if hasattr(device, "has_batteries") and device.has_batteries == battery:
+                #print(f"Device has batteries: {device} // {device.has_batteries}")
+                registry.init_descriptions(device)
             return
+
         if not hasattr(noun, "can_pick_up") or not noun.can_pick_up or noun_reason not in interactable_codes:
             print(f"You can't move the {assign_colour(noun)}.")
             return
@@ -2101,21 +2105,17 @@ def put(format_tuple, input_dict, location=None):
             if hasattr(noun, "contained_in") and noun2 == noun.contained_in:
                 print(f"The {assign_colour(noun)} is already in {assign_colour(noun2)}")
                 return
-            success = battery_check(verb="put", battery=noun, device=noun2)
-            if success:
-                if success == "has_batteries_already":
-                    return
-                registry.move_item(noun, location=loc.no_place, no_print=True)
 
-            registry.move_item(noun, new_container=noun2, no_print=True)
+            if "container" in noun2.item_type:
+                registry.move_item(noun, new_container=noun2, no_print=True)
 
-            if noun in loc.inv_place.items or noun in registry.by_location[loc.inv_place]:
-                exit(f"{assign_colour(noun)} still in inventory, something went wrong. Exiting.")
-            else:
-                text = smart_capitalise(f"{action_word} the {assign_colour(noun)} {sem_or_dir} the {assign_colour(noun2)}")
-                if not success:
-                    print(text)
-            return
+                if noun in loc.inv_place.items or noun in registry.by_location[loc.inv_place]:
+                    exit(f"{assign_colour(noun)} still in inventory, something went wrong. Exiting.")
+                else:
+                    text = smart_capitalise(f"{action_word} the {assign_colour(noun)} {sem_or_dir} the {assign_colour(noun2)}")
+                    if not success:
+                        print(text)
+                return
 
     else:
         if sem_or_dir in down_words:
@@ -2128,7 +2128,9 @@ def put(format_tuple, input_dict, location=None):
                 move_a_to_b(a=a, b=b, action=action_word, direction=sem_or_dir, current_loc=location)
                 return
 
-    print(f"You can't put the {assign_colour(noun)} on the {assign_colour(noun2)}; I just haven't programmed it yet.")
+    print(f"Noun: {noun} / noun2: {noun2}")
+    print_failure_message(init_dict=input_dict, noun=noun, noun2=noun2, verb="put")
+    #print(f"You can't put the {assign_colour(noun)} on the {assign_colour(noun2)}; I just haven't programmed it yet.")
 
 def throw(format_tuple, input_dict):
     logging_fn()

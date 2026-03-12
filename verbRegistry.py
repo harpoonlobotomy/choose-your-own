@@ -168,6 +168,9 @@ class Parser:
                     temp = kinds
                     kinds = set()
                     kinds.add(temp)
+            else:
+                if not kinds or not isinstance(kinds, set):
+                    kinds = set()
             kinds.add(word_type)
             potential_match=True
             omit_next += matches_count-1
@@ -180,7 +183,7 @@ class Parser:
             least_missing = 10
             winner = None
             locals = list()
-            if word_type == "noun":
+            if word_type == "noun" and local_nouns:
                 for item in local_nouns:
                     if item in compound_matches:
                         locals.append(item)
@@ -206,7 +209,7 @@ class Parser:
                 missing = total_parts - matched
                 ratio = missing/total_parts
                 #print(f"Missing: {missing} / ratio total/missing: {ratio} (total_parts: {total_parts})")
-                if missing < least_missing:
+                if missing <= least_missing:
                     least_missing = missing
                     winner = item
 
@@ -328,6 +331,8 @@ class Parser:
 
                     else:
                         kinds.add("verb")
+                        #if word == "watch": # specific allowance. Needs a better solution but works for now.
+                        #    kinds.add("noun")
                         canonical = word
 
                 if word in verbs.adjectives:
@@ -352,14 +357,21 @@ class Parser:
                                 canonical = word
 
                 if canonical != None:
+                    if canonical == "watch" and "verb" in kinds and idx != 0:
+                        watch_test = self.quick_compounds(membrane.plural_words_dict, idx, word, parts) # only tests for perfects.
+                        if watch_test:
+                            kinds = {"noun"}
+                            canonical = watch_test
+
                     if "meta" in kinds and "verb" in kinds and len(kinds) == 2:
                         kinds = (("meta",))
                     tokens.append(Token(idx, word, kinds, canonical))
                     potential_match = True
                 else:
 
-                    kind = "semantic"
                     canonical = self.quick_compounds(membrane.plural_semantics, idx, word, parts)
+                    if canonical:
+                        kind = "semantic"
 
                     if not canonical:
                         kind = "location"
@@ -372,7 +384,7 @@ class Parser:
 
                     if canonical:
                         #print(f"\nCanonical found with quick_compounds: {canonical}\n")
-                        kinds = ((kind,))
+                        kinds.add(kind)# = ((kind,))
                         tokens.append(Token(idx, word, kinds, canonical))
                         omit_next = len(canonical.split()) - 1
                         potential_match = True
@@ -678,7 +690,43 @@ class Parser:
                 sequences.append(new_seq)
 
                 viable_sequences = run_sequences(sequences, verb_instances) # why did I run this twice on the mainline?
+        if not viable_sequences and len(verb_instances) >= 2:
+            from verb_membrane import membrane
+            #print("Testing check_compound_nouns")
+            for i, item in enumerate(strings):
+                if i == len(strings) -1:
+                    replace_token = list(i for i in tokens if i.idx == len(strings)-1)
+                    if replace_token:
+                        #print(f"Strings: {item}")
+                        idx, word, kinds, canonical, potential_match, omit_next, perfect_match = Parser.check_compound_words(membrane.plural_words_dict, item, strings, idx=i, kinds=set(), word_type="noun", omit_next=0, local_nouns = None)
+                        if canonical:
+                            replace_token = replace_token[0]
+                            replace_token.kind = kinds
+                            if canonical == "assumed_noun":
+                                replace_token.text = word
+                            else:
+                                replace_token.text = canonical
+                            remove_verb = None
+                            for item in verb_instances:
+                                for k in item.keys():
+                                    if k == idx:
+                                        remove_verb = item
+                            if remove_verb:
+                                verb_instances.remove(remove_verb)
+                            sequence = []
+                            for token in tokens:
+                                sequence.append(list(token.kind)[0])
+                            sequences.append(sequence)
+                            #print(f"Sequences: {sequences}")
+                            viable_sequences = run_sequences(sequences, verb_instances)
+                            #print(f"Viable sequences: {viable_sequences}")
+                            #print(f"Canonical compound word after failed sequences: {canonical}, word: {word}. omit_next: {omit_next}")
+                        else:
+                            print(f"No canonical for {item}")
+
         verbReg_Reciever(f"return for sequences: viable sequences: {viable_sequences}, verb_instances: {verb_instances}, sequences: {sequences}")
+        if not viable_sequences:
+            return None, verb_instances, tokens
         return [tuple(seq) for seq in viable_sequences if seq], verb_instances, tokens
 
     def resolve_verb(tokens, verb_name, format_key) -> tuple[VerbInstance|str]:
@@ -730,6 +778,15 @@ class Parser:
         sequences = list(())
         no_verb = no_noun = True
         verb1 = verb2 = noun1 = noun2 = direction = None
+        verb_tokens = list(i for i in tokens if "verb" in i.kind)
+        if len(verb_tokens) > 2:
+            noun_verbs = list(i for i in verb_tokens if "noun" in i.kind)
+            if len(noun_verbs) == 1:
+                force_noun = noun_verbs[0]
+                force_noun.kind = {"noun"}
+            #print(f"Noun_verbs: {noun_verbs}")
+        #print(f"Verb tokens: {verb_tokens}")
+
         for token in tokens:
             #print(f"TOKEN: {token}, vars: {vars(token)}")
             if "verb" in token.kind:
@@ -738,8 +795,8 @@ class Parser:
                         print("This should only be used for `use` x to verb y. It probably won't work with anything else.")
                     verb1 = token
                     no_verb = False
-                else:
-                    verb2 = token
+                elif not verb2:
+                    verb2 = token # excludes third verbs like 'use x to verb 'watch'.
             if "direction" in token.kind:
                 direction = token
 
@@ -762,7 +819,9 @@ class Parser:
         verb1_idx = verb1.idx
         #print(f"TOKENS type: {type(tokens)}")
         verb2.idx = verb1_idx
-        noun2.idx = noun2.idx - 1
+        #noun2.idx = noun2.idx - 1
+        noun2.idx = 1
+        noun1.idx = 3
 
 
         def sort_tokens(counter, token, verb1):
@@ -867,8 +926,8 @@ class Parser:
             length_checked_sequences = sequences # may make things fail unexpectedly, but allows for 'failed' words to be attributed as nouns if the sequence would be correct without them (eg 'burned book' if there's a book but not a burned one. Not sure if I want this or not but that's what it is for now.)
 
         for seq in length_checked_sequences:
-            if seq == tuple(('verb', 'noun', 'semantic', 'noun')) and len(tokens) == 5 and len(verb_instances) == 2:
-                #print("switcharoo sequence found.")
+            if seq == tuple(('verb', 'noun', 'semantic', 'noun')) and len(tokens) == 5 and len(verb_instances) >= 2:
+                #print("switcharoo sequence found.\n")
                 # use x to verb y switcharoo time.
                 #print("Going to reorder_tokens_to_sequence")
                 test_tokens, test_length_checked_sequences, success = self.reorder_tokens_to_sequence(tokens, seq)

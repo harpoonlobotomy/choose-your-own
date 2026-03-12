@@ -246,3 +246,112 @@ Todo:
 7.05pm Well that wasn't too hard. 'take battery out of watch' works now.
 
 God I'm wiped. Going to stop soon before I break everything.
+
+3.45pm 11/3/26
+Had a couple of days off to work on supermarket simulator scripts. Back to it now. So. What was I working on again?
+Discovered item flags, maybe. Will work on that today. Need to merge all the watch/battery stuff w/ main first. I think that was finished succesfully?
+
+Fixing a couple of small things first. One, need to update the watch description if it has a suitable description for 'has battery'. Also need to change the description back in the battery is removed.
+
+Also, 'put watch in battery' fails without a proper error print, so I need to redirect it.
+
+Huh. Why does 'use battery to break watch' fail the parser?
+
+It's because watch is also a verb, isn't it...
+
+Also,
+
+[<  use battery to break jar  >]
+
+You slice the watch battery with the glass jar, but glass jar was weaker - glass jar breaks.
+
+While the interaction is right, it's used the wrong order - the battery was the actor here, not the target.
+Oh, it's because it's not doing the 'use x to verb y' flip. I wonder why not?
+
+Okay. so the issue is that the nouns aren't switched. Is switches the verb, not the nouns.
+
+Okay goddamn. I just need to redo that whole section. I wish I could remember the original test phrase I was using because clearly I thought it worked at some point.
+
+Also:
+
+`You slice the god hammer with the dried flowers, but dried flowers was weaker - dried flowers breaks.`
+
+`Failed to find the correct function to use for <verbInstance break (b7d5b508-9f25-4c17-8823-3b0807382bfb)>: not enough values to unpack (expected 2, got 1)`
+
+So, the original still fails. I have no idea why I thought it worked earlier.
+
+Tangent time then. Need to sort this.
+the swap exclusive to format "'verb', 'noun', 'direction', 'verb', 'noun'". So I'll just use that instead of looping to try to catch word-types.
+
+idx 0: 'verb',
+1: 'noun',
+2: 'direction',
+3: 'verb',
+4: 'noun'
+
+idx 0: 'verb',
+1: 'noun', <-- is noun2, was noun1
+2: 'direction',
+3: 'noun' <- is noun1, was noun2
+
+Ah. I reduce the noun2 idx to compensate for the missing second verb, but I could just swap those nouns then. idk why I didn't do that.
+
+Okay so other issue fixed: 'use battery to break watch' now forces noun if there's already 2 nouns, so it no longer assigns 'watch' as a verb in the reorder. (Would still break if you said 'use watch to watch battery' but when it gets to that point the user is just being mean.)
+
+Hm.
+
+`[<  look at watch  >]`
+
+`Sorry, what do you want to look?`
+
+Hm. Because it's not finding perfect (as the watch in this example is 'broken watch'), it assumes it's a verb. If you give the full name ('look at broken watch'), it works fine.
+
+Yeah, it fully just calls 'watch' a verb, it doesn't even assign the possibility of 'noun'.
+
+Hm.
+Did it not add 'broken watch' to plural nouns or something? Even if I force it to recognise 'watch' as maybe-noun, it still says 'tehre's no watch around here to look at', but 'look at broken watch' still works.
+
+Oh, it only checks plural nouns if no canonical. So because it finds a canonical with watch (verb), it never finds (broken) watch. But typing 'broken watch' gets the perfect canonical without finding the watch-verb.
+
+Hm.
+I can't tell it 'never take the canonical for 'watch'' because then 'look at watch' finds 'watch battery' because it's forced to look for compounds.
+
+Huh.
+`You smash the watch with the watch battery, but the watch and the watch battery are evenly matched; nothing happens.`
+
+but:
+`You smash the watch battery with the watch, but watch was weaker - watch breaks.`
+
+So there's a logic flaw in def break. Will fix that shortly. #TODO.
+
+Also, 'break' doesn't abide by item locations. 'break x with y' works even if y is not in loc.current.
+
+Hm. Okay so have made a little progress, but still no win. I have it running the compound check again after sequencing if no sequence was found, but in this case we have both 'watch battery' and 'broken watch', and it doesn't know how to pick between them.
+
+Potentially solved, though it might break other things.
+Now checks
+    if not noun_inst:
+        noun_inst = registry.instances_by_name(entry["text"])
+if no noun_inst is found, so it gives another chance for assumed_nouns to be identified using the post-sequencer compound attribution. Works in this one case:
+
+# [<  look at watch  >]
+
+# You look at the broken watch:
+
+#    A scratched gold broken watch.
+
+So that works properly. It's arbitrary that it found broken watch instead of watch battery, so it's fragile, but conceptually works.
+I think I need to add a list of adjectives it ignores, so it'll choose 'broken x' instead of 'x something' if I tell it to look for 'x'. So it recognises 'variant of x' as separate from 'x thing' (broken watch vs watch battery).
+
+Maybe I should just hardcode 'last word of noun == primary word' as a concept into it. So 'watch' will prioritise 'broken watch' over 'watch battery', and 'battery' would prioritise 'used battery' over 'battery hen'. That might be a good idea. Doesn't solve 'look at watch' == 'look at look' but the post-sequence retest does seem to fix that one well enough.
+
+"[<  use hammer to break watch  >]" still fails though.
+
+On the upside, 'use hammer to break watch' works now. So that's nice.
+
+I should use the slice/bash stats to determine the print line. High slash/low bash == 'x shatters' instead of 'breaks', etc. Maybe.
+
+Oh, 'break' doesn't take the location of the target into account either.
+
+I need to bring some of the error printing back to verb functions. Allowing for all permutations is harder than it needs to be, and the verb fn already worked out which nouns are viable etc. It was a mistake to try to re-parse everything.
+Instead, I need to figure out a format to send error messages to the failure printing so the structure matches but is already pre-prepared. Or just break up the failure printing fn into distinct sections based on what it needs (eg is everything provided, is just the input_str, etc etc.)
