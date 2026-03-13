@@ -478,3 +478,30 @@ It's a bit rough but breakage now takes can_break into account.
 I need to divide it into slash and smash properly. Paper should never break but can be slashed. I guess that's what the defence values are for though.
 
 Will work on the conversation for a bit.
+
+12.11pm. 13/3/26
+
+So. How does conversation work.
+Need to brainstorm.
+* Shared information: NPCs can have access to a shared databank, about the world, events, items, etc. May have different ways of phrasing things.
+* Specific information: NPC may (should) have unique dialogue.
+* Trading? Implement later but would make sense at least sometimes. Will need to add value to items for this to work. Or maybe only items from the table can be traded, and the value comes from the table status. Would be easier than giving every item a value. Maybe when it enters trade state it is assigned a random value from within a loot category limit, and that value is then used thereafter like item.colour is.
+* Need conversation to be visually different so it's clear it's a specific context, as meta commands etc won't work like that do usually. Probably just a couple of tabs and/or colouring.
+* NPC specific colouring/formatting.
+* Need to add NPCs to locations.
+* Need to add NPC names/titles to parser. Probably just as nouns, so look/talk/etc can just be used as usual.
+
+I have to remember how the item generator works.
+I can't remember how this worked:
+`description_dict = item_type_descriptions[def_type]`
+I guess maybe it's from when type descriptions were listed separately? Idk. Goddamn.
+
+Making notes in conversation_notes.
+
+Also: currently I have the Raven listed as can_talk, but it's in item_defs. I guess I should move it to NPCs. Anything that can talk goes to NPCs. But we just add NPC defs to noun_list etc so they're still found the same way.
+Hm. Will need to add them to noun instances? Or we keep calling them nouns, but give the npc_instance. But that'll break things.... goddamn. I really don't want to have to add verb_dir_npc formats. I guess I could though. Not sure. Or could just add 'npc' as a valid alt to 'noun' for all formats, so 'give paperclip to Father' would automatically pass.
+
+I would just need to make sure npcInstances were allowed in the various isinstance checks. I'm using largely the same formatting as for item defs, just with different itemTypes. So it should be okay.
+I think allowing 'npc' to be 'noun' in formats is the best bet. Will need to figure out the best way to do it. I do think it's important to keep them separate, they'll hold conversation data etc that regular items won't.
+
+Also I might keep 'parts_said' in conversations.json, so I have a global tracker per conversation. Not sure though. Thinking on it soon.

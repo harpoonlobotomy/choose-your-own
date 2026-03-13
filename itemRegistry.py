@@ -83,8 +83,9 @@ type_defaults = {
     "electronics":
         {"requires_powered_location": False, "can_be_charged": True, "is_charging":False, "is_charged": False, "takes_batteries": True, "has_batteries": False, "is_on": False},
     "battery": {"can_be_charged": True, "is_charged": True, "in_use": False},
+    "living": {"can_die": True, "age": "average"},
     "can_speak" :
-        {'can_speak': True, 'speaks_common': True},
+        {'can_speak': True, 'speaks_common': True, "knows_about": None, "speech_traits": [], "languages_spoken": ["common"]},
     "transition":
         {"is_transition_obj": True, "int_location": None, "ext_location": None},
     "loc_exterior":

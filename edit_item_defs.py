@@ -650,7 +650,7 @@ So indexed view is definitely what I need. The duplication and even deep nesting
             print("Nothing to add, all entries in main dict and/or no changes made.")
     """
 
-from item_dict_gen import item_type_descriptions
+#from item_dict_gen import item_type_descriptions
 from itemRegistry import type_defaults
 
 def get_all_default_flags(item, testReg:tempDatastore):
@@ -690,48 +690,46 @@ def get_all_default_flags(item, testReg:tempDatastore):
 
         item_def["item_type"] = types
 
-        for def_type in type_defaults:
-            if def_type in types:
-                flags = type_defaults.get(def_type)
-                for flag, val in flags.items():
-                    if flag in item_def:
-                        continue
-                    if isinstance(val, dict):
-                        item_def[flag] = val.copy()
-                    else:
-                        item_def[flag] = val
-                #for flag, val in flags.items():
-                #    if flag in item_def:
-                #        continue
-                #    item_def[flag] = val
-
-
-                if item_type_descriptions.get(def_type):
-                    description_dict = item_type_descriptions[def_type]
-
-
-                if item_def.get("descriptions"):
-                    for entry in description_dict.keys():
-                        if entry not in item_def["descriptions"]:
-                            item_def["descriptions"].update({entry: ""})
+        for def_type in types:
+            flags = type_defaults.get(def_type)
+            for flag, val in flags.items():
+                if flag in item_def:
+                    #print(f"Flag in item_def: {item_def[flag]}")
+                    continue
+                if isinstance(val, dict):
+                    item_def[flag] = val.copy()
                 else:
-                    item_def["descriptions"] = description_dict
+                    item_def[flag] = val
+            #for flag, val in flags.items():
+            #    if flag in item_def:
+            #        continue
+            #    item_def[flag] = val
 
-                if item_def.get("nicename"):
-                    nicename = item_def["nicename"]
-                    if nicename == None:
-                        nicename = item
-                    if not nicename.startswith("a ") and not nicename.startswith("an "):
-                        nicename = f"a {nicename}"
+                if flag == "descriptions":
+                    description_dict = flag
 
-                    if item_def.get("nicenames"):
-                        for entry in item_def["nicenames"]:
-                            if not item_def["nicenames"][entry]:
-                                item_def["nicenames"][entry] = nicename
+                    if item_def.get("descriptions"):
+                        for entry in description_dict.keys():
+                            if entry not in item_def["descriptions"]:
+                                item_def["descriptions"].update({entry: ""})
                     else:
-                        item_def["nicenames"] = {"generic": nicename}
+                        item_def["descriptions"] = description_dict
 
-                    item_def.pop("nicename")
+            if item_def.get("nicename"):
+                nicename = item_def["nicename"]
+                if nicename == None:
+                    nicename = item
+                if not nicename.startswith("a ") and not nicename.startswith("an "):
+                    nicename = f"a {nicename}"
+
+                if item_def.get("nicenames"):
+                    for entry in item_def["nicenames"]:
+                        if not item_def["nicenames"][entry]:
+                            item_def["nicenames"][entry] = nicename
+                else:
+                    item_def["nicenames"] = {"generic": nicename}
+
+                item_def.pop("nicename")
 
     #if item_def["descriptions"] is type_defaults["standard"]["descriptions"]:
     #    print("item def descriptions == type_default standard descriptions")
@@ -825,15 +823,16 @@ def serialise_item_defs(dictionary):
         if isinstance(field, dict):
             dictionary[item] = serialise_item_defs(field)
         else:
-        #print(f"item: {item} / field: {field}, field_type: {type(field)}")
+            #print(f"item: {item} / field: {field}, field_type: {type(field)}")
         #for k, v in field.items():
-            if isinstance(field, set):
-                temp_list = list(field)
-                dictionary[item] = sorted(temp_list)
+            if isinstance(field, list):
+                dictionary[item] = sorted(field)
+            elif isinstance(field, set):
+                dictionary[item] = sorted(list(field))
                 #dictionary[item][k] = list(v)
-            if isinstance(field, itemInstance|placeInstance):
+            elif isinstance(field, itemInstance|placeInstance):
                 dictionary[item] = field.name
-            if isinstance(field, cardinalInstance):
+            elif isinstance(field, cardinalInstance):
                 dictionary[item] = field.place_name
             else:
                 dictionary[item] = str(field)
@@ -862,7 +861,7 @@ def fix_flags(dictionary, testReg:tempDatastore):
 def the_gamut(output_to_main=False, add_single=None):
     print("the gamut\n")
     if add_single:
-        item_defs = r"dynamic_data\generated_items.json"
+        item_defs = r"ref_files\NPC_defs.json"#r"dynamic_data\generated_items.json"
     else:
         item_defs = r"ref_files\items_main.json"
 
@@ -883,6 +882,7 @@ def the_gamut(output_to_main=False, add_single=None):
 
     #update_ref_file(generated_file, updated=False)
     #dictionary = testReg.updated_defs
+    print(f"Testreg: {testReg.item_defs}")
     fix_flags(dictionary, testReg)
     testReg.updated_defs = serialise_item_defs(testReg.updated_defs)
     testReg.updated_defs = order_dict(testReg.updated_defs)
@@ -897,7 +897,7 @@ def the_gamut(output_to_main=False, add_single=None):
     #print(testReg.flags_to_amend)
     return f"Output corrected dict to {json_file}"
 
-def add_new_item(item_name, item_def):
+def add_new_item(item_name, item_def=None):
 
     #Right now the_gamut does full dicts, not single elements.
     new_item = {}
@@ -906,6 +906,7 @@ def add_new_item(item_name, item_def):
     print(f"Result: {result}")
 
 
-#if __name__ == "__main__":
+if __name__ == "__main__":
+    add_new_item("Father")
 
 

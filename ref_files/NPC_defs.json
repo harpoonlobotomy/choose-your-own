@@ -1,0 +1,38 @@
+{
+  "Father": {
+    "alt_names": [
+      "pastor"
+    ],
+    "can_die": "True",
+    "can_speak": "True",
+    "descriptions": {
+      "generic": "the Father of this church",
+      "npc_introduction": "A tall, broad-shouldered man with dark hair and charcoal robes. His appearance makes you a little uncomfortable, but you can't put a finger on why. He stands near the podium at the head of the aisle of the church, seemingly deep in thought."
+    },
+    "item_type": [
+      "can_speak",
+      "living",
+      "standard"
+    ],
+    "knows_about": [
+      "church_history",
+      "holy_book"
+    ],
+    "languages_spoken": [
+      "common"
+    ],
+    "location": "church north",
+    "nicenames": {
+      "generic": ""
+    },
+    "slice_attack": "5",
+    "slice_defence": "5",
+    "smash_attack": "5",
+    "smash_defence": "5",
+    "speaks_common": "True",
+    "speech_traits": [
+      "ellipses",
+      "no_pronouns"
+    ]
+  }
+}

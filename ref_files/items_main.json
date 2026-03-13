@@ -1284,6 +1284,7 @@
     "item_size": 0,
     "item_type": [
       "can_pick_up",
+      "living",
       "can_speak",
       "food_drink",
       "standard"

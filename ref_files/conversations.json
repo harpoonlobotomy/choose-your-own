@@ -1,0 +1,24 @@
+{
+    "church_history": {
+        "relevant_items": ["paperclip"],
+        "conversation": {
+            "0": {
+                "has_requirements": false,
+                "keywords": [],
+                "speech": "The church has a history"
+                },
+            "1": {
+                "has_requirements": false,
+                "keywords": ["things"],
+                "speech": "Things things things"
+                },
+            "2": {
+                "has_requirements": {"item": "paperclip"},
+                "keywords": ["things"],
+                "speech": "Things things things"
+                }
+            },
+        "parts_said": []
+        },
+    "holy_book": {}
+}
