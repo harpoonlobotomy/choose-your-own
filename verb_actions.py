@@ -1423,6 +1423,7 @@ def break_item(format_tuple, input_dict):
     print_desc = False
     noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict, verb="use")
     #noun, noun_str, noun2, noun2_str = get_nouns(input_dict)
+    verb = get_verb(input_dict, get_str=True)
     if not noun:
         return
     broken = None
@@ -1438,18 +1439,31 @@ def break_item(format_tuple, input_dict):
         if noun2:
             dir_or_sem = get_dir_or_sem(input_dict)
             if dir_or_sem and dir_or_sem in ("with", "using", "on", "against"):
+                cant_be_broken = None
                 for attack in ('smash', 'slice'):
                     if getattr(noun2, f"{attack}_attack") > getattr(noun, f"{attack}_defence"):
-                        print(f"You {attack} the {assign_colour(noun)} with the {assign_colour(noun2)}, and it breaks.")
-                        broken = noun#set_noun_attr(("is_broken", True), noun=noun)
-                        break
-                    elif getattr(noun, f"{attack}_attack") < getattr(noun2, f"{attack}_defence"):
-                        print(f"You {attack} the {assign_colour(noun)} with the {assign_colour(noun2)}, but {assign_colour(noun2)} was weaker - {assign_colour(noun2)} breaks.")
-                        broken = noun2#set_noun_attr(("is_broken", True), noun=noun_2)
-                        break
-                    elif getattr(noun, f"{attack}_attack") == getattr(noun2, f"{attack}_defence"):
+                        if has_and_true(noun, "can_break"):
+                            print(f"You {attack} the {assign_colour(noun)} with the {assign_colour(noun2)}, and it breaks.")
+                            broken = noun#set_noun_attr(("is_broken", True), noun=noun)
+                            break
+                        else:
+                            cant_be_broken = noun
+                    elif getattr(noun2, f"{attack}_attack") < getattr(noun, f"{attack}_defence"):
+                        if has_and_true(noun2, "can_break"):
+                            print(f"You {attack} the {assign_colour(noun)} with the {assign_colour(noun2)}, but the {assign_colour(noun2)} was weaker - {assign_colour(noun2)} breaks.")
+                            broken = noun2#set_noun_attr(("is_broken", True), noun=noun_2)
+                            break
+                        else:
+                            cant_be_broken = noun2
+                    elif getattr(noun, f"{attack}_attack") == getattr(noun2, f"{attack}_defence") or (has_and_true(noun, "can_break") and has_and_true(noun2, "can_break")):
                         print(f"You {attack} the {assign_colour(noun)} with the {assign_colour(noun2)}, but the {assign_colour(noun)} and the {assign_colour(noun2)} are evenly matched; nothing happens.")
                         return
+                if cant_be_broken:
+                    if cant_be_broken == noun:
+                        print(f"You try to {verb} the {assign_colour(noun)} with the {assign_colour(noun2)}, but it doesn't seem like the {assign_colour(noun)} can break.")
+                    else:
+                        print(f"You try to {verb} the {assign_colour(noun)} with the {assign_colour(noun2)}, but neither one breaks.")
+                    return
     print()
     if broken:
         set_noun_attr(("is_broken", True), noun=broken, event_type = "state_change")

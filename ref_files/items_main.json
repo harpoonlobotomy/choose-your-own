@@ -26,11 +26,9 @@
     },
     "requires_key": false,
     "slice_attack": 5,
-    "slice_defence": 5,
-    "slice_threshold": 5,
+    "slice_defence": 10,
     "smash_attack": 5,
-    "smash_defence": 5,
-    "smash_threshold": 5
+    "smash_defence": 8
   },
   "gate": {
     "can_be_closed": true,
@@ -98,11 +96,9 @@
     },
     "requires_key": false,
     "slice_attack": 5,
-    "slice_defence": 5,
-    "slice_threshold": 5,
+    "slice_defence": 3,
     "smash_attack": 5,
-    "smash_defence": 5,
-    "smash_threshold": 5,
+    "smash_defence": 1,
     "starting_children": null
   },
   "moss": {
@@ -471,10 +467,8 @@
     },
     "slice_attack": 5,
     "slice_defence": 5,
-    "slice_threshold": 5,
     "smash_attack": 5,
-    "smash_defence": 5,
-    "smash_threshold": 5
+    "smash_defence": 5
   },
   "headstone": {
     "alt_names": [
@@ -935,11 +929,9 @@
     },
     "requires_key": false,
     "slice_attack": 5,
-    "slice_defence": 5,
-    "slice_threshold": 5,
+    "slice_defence": 3,
     "smash_attack": 5,
-    "smash_defence": 5,
-    "smash_threshold": 5,
+    "smash_defence": 9,
     "starting_children": null
   },
   "pretty rock": {
@@ -987,11 +979,9 @@
     },
     "print_on_investigate": true,
     "slice_attack": 5,
-    "slice_defence": 5,
-    "slice_threshold": 5,
+    "slice_defence": 4,
     "smash_attack": 5,
-    "smash_defence": 5,
-    "smash_threshold": 5
+    "smash_defence": 9
   },
   "5 dollar note": {
     "alt_names": ["money", "5 dollars", "dollars", "notes"],
@@ -1015,11 +1005,9 @@
       "generic": "a 5 dollar note"
     },
     "slice_attack": 5,
-    "slice_defence": 5,
-    "slice_threshold": 5,
+    "slice_defence": 3,
     "smash_attack": 5,
-    "smash_defence": 5,
-    "smash_threshold": 5
+    "smash_defence": 9
   },
   "paper scrap with number": {
     "can_break": true,
@@ -1049,11 +1037,9 @@
     },
     "print_on_investigate": true,
     "slice_attack": 5,
-    "slice_defence": 5,
-    "slice_threshold": 5,
+    "slice_defence": 3,
     "smash_attack": 5,
-    "smash_defence": 5,
-    "smash_threshold": 5
+    "smash_defence": 9
   },
   "mobile phone": {
     "alt_names": ["cell phone"],
@@ -1378,12 +1364,10 @@
     "nicenames": {
       "generic": "a comb"
     },
-    "slice_attack": 5,
-    "slice_defence": 5,
-    "slice_threshold": 5,
-    "smash_attack": 5,
-    "smash_defence": 5,
-    "smash_threshold": 5
+    "slice_attack": 3,
+    "slice_defence": 6,
+    "smash_attack": 2,
+    "smash_defence": 6
   },
   "trident": {
     "can_break": false,
@@ -1451,11 +1435,9 @@
       "generic": "a mummified mouse"
     },
     "slice_attack": 5,
-    "slice_defence": 5,
-    "slice_threshold": 5,
+    "slice_defence": 2,
     "smash_attack": 5,
-    "smash_defence": 5,
-    "smash_threshold": 5
+    "smash_defence": 3
   },
   "grandfather clock": {
     "can_be_added_to": true,
@@ -1558,10 +1540,8 @@
     "print_on_investigate": true,
     "slice_attack": 5,
     "slice_defence": 5,
-    "slice_threshold": 5,
     "smash_attack": 5,
-    "smash_defence": 5,
-    "smash_threshold": 5
+    "smash_defence": 10
   },
   "work shed": {
     "can_break": false,

@@ -423,4 +423,58 @@ But next issue: it just lists "match". Not counting or using the plural name for
 Okay, fixed it. I lost that plural nicename when I switched to print_names. Have now set it properly to obey when nicenames is set True.
 
 Hm.
-Loc descriptions is still giving "watch battery x3" when the batteries are 
+Loc descriptions is still giving "watch battery x3" when the batteries are
+
+11.00 13/3/26
+Fixed the issue of loc descriptions not properly giving 'x3' versions if the items aren't in loc_desc.
+Changed it so that instead of
+`watch battery x3`, it says
+"3 `watch batteries`".
+currently with the colour only applied to the name, not the number, so it's clearer that the `3` isn't part of the item name.
+
+Going to work on def break again, not sure if I finished fixing it last time.
+
+The issue:
+* `You smash the watch with the watch battery, but the watch and the watch battery are evenly matched; nothing happens.`
+but:
+* `You smash the watch battery with the watch, but watch was weaker - watch breaks.`
+
+Also def break didn't get the correct nouns so allowed actors and targets to be remote. That's already fixed now.
+
+Ah, for the above issue, I think I had the nouns switched. It should have been
+`getattr(noun2, f"{attack}_attack") < getattr(noun, f"{attack}_defence")`
+but I had
+`getattr(noun, f"{attack}_attack") < getattr(noun2, f"{attack}_defence")`
+So I was literally testing 'is the defender stronger than the attacker, if so the attacker wins'.
+
+I'm not sure if I necessarily want things to break if you use them to break things though. I guess I have the breakable flag for that. 's why I made attack and defense different, but then if I'm using defense to do funtionally 'return damage' then it gets messy. not sure.
+
+Like it makes sense, if you try to break a chest with a glass jar, the jar should break, no? Maybe that's too harsh and only the defender has a risk of breaking. Idk.
+
+Or maybe I need a 'damaged' state? So on the first 'break' it is `damaged`, functionally identical but at risk of breaking next time. that might work.
+
+Oh, I had
+"slice_threshold": 1, "smash_threshold": 1
+for this kind of thing. Maybe I use that - if the item is an attacker but the diff is greater than threshold in favour of defender, attacker breaks? Otherwise attacker doesn't break. Idk. Maybe? Because the watch breaking the battery is just silly, but the battery should be able to be smushed by a big hammer.
+
+Oh, slice/smash_threshold was just the original term for slice/smash_defence. Right.
+
+Maybe just use the 'fragile' tag, then? If fragile, breaks if defender or attacker and defender's defense is lower than attacker's attack. So the jar would break if you try to break a chest with it, but the battery wouldn't because it's not tagged fragile, it would just fail to break the chest. That might be better.
+
+Will remove Threshold. Or more correctly, rename it to _defence, so that 'fragile' things start with their defences set to 1 instead of the default 5. That works.
+Okay. Threshold in item defs now changed to defence values, and the standard defaults added:
+fragile: slice/smash defence 1.
+books_paper: slice defence = 3, smash defence = 9.
+
+I need to make sure all the checks that use item_type are properly in the defaults. eg 'battery' needs 'in_use', which wasn't there previously. So I only need to check for item_type, and then all checks after that are guaranteed hasattr True.
+Added defences of 10 to default walls and floors.
+
+I should really do a conversation setup. Don't have that at all yet. God that feels like it might be a nightmare.
+I think I'll need an internal loop that calls the parser but doesn't go through to Router, so conversations can be dealt with separately. Man I have no idea how that'll work yet. Okay. Well I need to keep busy today because my head's a bad place so might as well try it.
+
+First, going to add those checks to def break. Also, make sure that only things that can break are broken.
+
+It's a bit rough but breakage now takes can_break into account.
+I need to divide it into slash and smash properly. Paper should never break but can be slashed. I guess that's what the defence values are for though.
+
+Will work on the conversation for a bit.

@@ -69,20 +69,20 @@ type_defaults = {
     "trigger":
         {"trigger_type": "plot_advance", "trigger_target": None, "is_exhausted": False},
     "flooring":
-        {"is_horizontal_surface": True},
+        {"is_horizontal_surface": True, "slice_defence": 10, "smash_defence": 10},
     "wall":
-        {"is_vertical_surface": True},
+        {"is_vertical_surface": True, "slice_defence": 10, "smash_defence": 10},
     "food_drink":
-        {"can_consume": True, "can_spoil": True, "is_spoiled": True, "is_safe": True, "effect": None},
+        {"can_consume": True, "can_spoil": True, "is_spoiled": False, "is_safe": True, "effect": None},
     "fragile":
-        {"is_broken": False, "slice_threshold": 1, "smash_threshold": 1, "description": {"is_broken": None}},
+        {"is_broken": False, "slice_defence": 1, "smash_defence": 1, "description": {"is_broken": None}},
     "flammable":
         {"can_burn": True, "is_burned": False, "description": {"is_burned": None}},
     "books_paper":
-        {'print_on_investigate': True, 'flammable': True, 'is_burned': False, 'can_read': True, 'material_type': 'paper'},
+        {'print_on_investigate': True, 'flammable': True, 'is_burned': False, 'can_read': True, 'material_type': 'paper', "smash_defence": 9, "slice_defence": 3},
     "electronics":
         {"requires_powered_location": False, "can_be_charged": True, "is_charging":False, "is_charged": False, "takes_batteries": True, "has_batteries": False, "is_on": False},
-    "battery": {"can_be_charged": True, "is_charged": True},
+    "battery": {"can_be_charged": True, "is_charged": True, "in_use": False},
     "can_speak" :
         {'can_speak': True, 'speaks_common': True},
     "transition":
