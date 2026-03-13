@@ -247,9 +247,11 @@ class placeRegistry:
         if loc_name == "inventory":
             loc_name = config.inv_loc_str
             loc_name = loc_name.replace(f"{config.key_dir} ", "")
-            print(f"loc_name: {loc_name}, type: {type(loc_name)}")
 
-        loc_inst = self.by_name.get(loc_name.lower())
+        if loc_name and isinstance(loc_name, str):
+            loc_name = loc_name.lower()
+
+        loc_inst = self.by_name.get(loc_name)
         if not loc_inst:
             loc_inst = self.by_alt_name.get(loc_name)
 
@@ -258,32 +260,36 @@ class placeRegistry:
             if card_inst:
                 loc_inst = card_inst.place
 
-        if isinstance(loc_inst, placeInstance):
+        if loc_inst and isinstance(loc_inst, placeInstance):
             return loc_inst
 
-        print(f"loc name: {loc_name} / self.by_name: {self.by_name} // LOC INST: {loc_inst}, type: {type(loc_inst)}")
-        print(f"Failed to get placeInstance for {loc_name}. Please investigate. Exiting from env_data.")
-        from logger import traceback_fn
-        traceback_fn()
-        exit()
+        else:
+            return None
+        #print(f"loc name: {loc_name} / self.by_name: {self.by_name} // LOC INST: {loc_inst}, type: {type(loc_inst)}")
+        #print(f"Failed to get placeInstance for {loc_name}. Please investigate. Exiting from env_data.")
+        #from logger import traceback_fn
+        #traceback_fn()
+        #exit()
 
 
     def by_cardinal_str(self, cardinal_str:str|dict, loc=None) -> cardinalInstance:
         """Used to get the cardinalInstance from a string, with or without separate 'loc'. cardinal_str can be a dict (but this is not regularly used anymore) or more often, a string in the form 'graveyard east'. 'east graveyard' will also be found. If no location is found, it will take the cardinal str and apply it to the current location (eg `east` will return the cardinalInstance for '{currentPlace} east')."""
-        #logging_fn()
+        logging_fn()
         if isinstance(cardinal_str, cardinalInstance):
             return cardinal_str
         str_loc = None
         if isinstance(cardinal_str, dict):
             loc, cardinal_str = next(iter(cardinal_str.items()))
-        elif isinstance(cardinal_str, str):
-            if " " in cardinal_str:
-                [str_loc, cardinal_str2] = cardinal_str.rsplit(" ", 1)
-                if not self.by_name.get(str_loc):
-                    [cardinal_str2, str_loc] = cardinal_str.split(" ", 1)
-                cardinal_str = cardinal_str2
-                if str_loc and not loc:
-                    loc = str_loc
+        elif isinstance(cardinal_str, str) and " " in cardinal_str:
+            [str_loc, cardinal_str2] = cardinal_str.rsplit(" ", 1)
+            if not self.by_name.get(str_loc):
+                [cardinal_str2, str_loc] = cardinal_str.split(" ", 1)
+            cardinal_str = cardinal_str2
+            if str_loc and not loc:
+                loc = str_loc
+
+            if cardinal_str and cardinal_str not in cardinals_list:
+                return None
 
         if loc == None:
             loc = self.currentPlace
@@ -291,12 +297,17 @@ class placeRegistry:
             loc = self.place_by_name(loc)
         elif isinstance(loc, placeInstance):
             loc = loc
+        else:
+            return None #No loc, cannot continue.
 
         if str_loc and str_loc != loc.name:
             print(f"Cardinal gives a different location than the given loc: {str_loc} // {loc}")
 
-        cardinal_inst = locRegistry.cardinals[loc][cardinal_str]
-        return cardinal_inst
+        if locRegistry.cardinals.get(loc):
+            cardinal_inst = locRegistry.cardinals[loc].get(cardinal_str)
+            return cardinal_inst
+
+        return None
 
 
 locRegistry = placeRegistry()

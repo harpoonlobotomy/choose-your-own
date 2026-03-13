@@ -937,6 +937,7 @@ class Parser:
                     break
 
         initial_dict, sequence = Parser.generate_initial_dict(tokens, length_checked_sequences) # culls to just the first sequence. Doesn't deal with 'picking the best version' if there's more than one yet. Needs to in the future.
+        verbReg_Reciever(f"Done with generate_initial_dict: {initial_dict} / {sequence}")
         #print(f"``{input_str}``  About to go to build_dict: {initial_dict}\n")
         dict_for_output, tokens = self.build_dict(verb_instances, tokens, initial_dict, sequence)
         #print(f"dict for output; {dict_for_output}\n")

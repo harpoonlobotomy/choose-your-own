@@ -314,7 +314,7 @@ class itemRegistry:
         self.item_defs: dict[str: dict] = {}
 
         self.transition_objs = set()
-        self.door_open_strings = ["The door creaks, but allows you to head [[inside]].", "The door creaks slightly as you make your way [[inside]].", "You open the door and make your way [[inside]].", "You open the door and head [[inside]]."]
+        self.door_open_strings = ["the door creaks, but allows you to head [[inside]].", "the door creaks slightly as you make your way [[inside]].", "you open the door and make your way [[inside]].", "you open the door and head [[inside]]."]
     # -------------------------
     # Creation / deletion
     # -------------------------
@@ -634,7 +634,7 @@ class itemRegistry:
 
     def run_check(self, inst:itemInstance) -> tuple[itemInstance|None, int, str]: ## replaced check_item_is_accessible with this, as all check_item_is_accessible did was run this. Previously it used to do noun selection, but it doesn't any more.
         """
-        Checks the current state of the given itemInstance, returning (the instance, its container if found, the reason_val, and the meaning string for that reason.)\n
+        Checks the current state of the given itemInstance, returning (the instance's container if found, the reason_val, and the meaning string for that reason.)\n
         ### Reason_val: meaning --\n
         0: "accessible"\n
         1: "in a closed local/accessible container"\n
@@ -1031,7 +1031,7 @@ class itemRegistry:
 
                 return_text.append((f"Item `[{inst}]` removed from old container `[{parent}]`", inst, parent))
                 if not no_print:
-                    print(f"Removed {assign_colour(inst)} from {assign_colour(parent)}.")
+                    print(f"You remove the {assign_colour(inst)} from the {assign_colour(parent)}.")
                 updated.add(parent)
 
             if new_container:
@@ -1284,10 +1284,11 @@ class itemRegistry:
         if not hasattr(inst, "nicenames"):
             inst.nicenames = {}
 
-        if inst.nicenames.get("is_singular") and inst.has_multiple_instances == 1:
-            inst.nicename = inst.nicenames["is_singular"]
-        if inst.nicenames.get("is_plural") and inst.has_multiple_instances > 1:
-            inst.nicename = inst.nicenames["is_plural"]
+        if hasattr(inst, "has_multiple_instances"):
+            if inst.nicenames.get("is_singular") and inst.has_multiple_instances == 1:
+                inst.nicename = inst.nicenames["is_singular"]
+            if inst.nicenames.get("is_plural") and inst.has_multiple_instances > 1:
+                inst.nicename = inst.nicenames["is_plural"]
 
         if description:
             if "[[choose" in description:

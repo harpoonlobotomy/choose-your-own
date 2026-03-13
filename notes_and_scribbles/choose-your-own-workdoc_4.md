@@ -355,3 +355,72 @@ Oh, 'break' doesn't take the location of the target into account either.
 
 I need to bring some of the error printing back to verb functions. Allowing for all permutations is harder than it needs to be, and the verb fn already worked out which nouns are viable etc. It was a mistake to try to re-parse everything.
 Instead, I need to figure out a format to send error messages to the failure printing so the structure matches but is already pre-prepared. Or just break up the failure printing fn into distinct sections based on what it needs (eg is everything provided, is just the input_str, etc etc.)
+
+Going to work on the 'verb action fns picking the wrong noun'. I think it's just that I'm using the old 'get_nouns' instead of the corrected one. If I fix that it should resolve immediately.
+
+Hm. Slight tangent: why does 'put paperclip in jar in graveyard' fail, but 'put paperclip in jar' succeeds? The jar and paperclip are both accessable.
+
+Okay, fixed it. It's because I had a requirement for format_tuple length that excluded the location. Now it accepts that format as long as the location is loc.current.place.
+
+3.55pm, 12/3/26
+Hm. 'Enter shed' doesn't work anymore, it gets stuck in get_noun_instances.
+Okay, fixed that.
+
+Oop, no I didn't. It's still getting mixed up when I say 'enter shed'. Never even makes it out of the parser, so all my finagling the other day/week in transition_objs does nothing.
+
+Oh, it's because it ends up with:
+
+'location': {'canonical': 'shed door', 'text': 'shed'}
+
+It doesn't save canonical by kind, so even though it recognises both noun and location and found matches for both, it doesn't keep the location name.
+
+Oooh. Okay. So the intermittency is just whether it takes 'shed door' or 'work shed'. The specific failure is that it had [loc][cardinal_str], expecting 'graveyard north', but 'shed door' broke up the same way. I never tested to make sure the split str contained a viable cardinal and wasn't just a compound noun.
+
+Fixed now. If location_str and no location, it checks to see if it's viable in compound_locations, and applies the result to location if found. Also added the check inside get_cardinal_str that ensures the 'cardinal str' is actual a cardinal before continuing.
+
+It only hit that error every 5-6 runs, but now it never should again.
+
+4.37pm
+Added a little amendment to the 'enter' print, that specifies you moving to the ext_location before opening the door.
+
+Okay. Back to making sure get_correct_nouns is always used.
+
+Actually - replacing get_noun etc with get_component, they all use the same pattern. Right?
+
+6.40pm
+Oh, what the hell.
+
+There's a dark fence blocking the horizon, prominently featuring a heavy wrought-iron gate - standing strong but run-down, an old dark-metal padlock on a chain, holding the gate closed, a watch battery, and a watch battery.
+
+Why. Why are they not blending properly.
+
+Also the watch battery (singular) in inventory doesn't have the right colour. It has the colour of another watch battery.
+
+6.57pm
+Okay. Inventory now actively checks for the right item instance to get the colour for, not just matching name.
+
+7.38pm
+Loc descriptions now include multiple items. I think it was before, I was testing maybe with preset local items? Whereas this time I dropped the batteries to the loc, so they weren't in loc_desc. Etiehr way it seems done now. God I feel like shit though.
+
+Am now using 'is_plural' nicename for general objects, for when there are multiples in the loc description. So instead of
+# You're facing north. There's a dark fence blocking the horizon, prominently featuring a heavy wrought-iron gate - standing strong but run-down, an old dark-metal padlock on a chain, holding the gate closed, and watch battery x3.
+
+you get
+# You're facing north. There's a dark fence blocking the horizon, prominently featuring a heavy wrought-iron gate - standing strong but run-down, an old dark-metal padlock on a chain, holding the gate closed, and 3 watch batteries.
+
+Which is just much nicer. May as well use that same field.  Cluster items still retain their custom plural nicenames and aren't affected by this (and still do not get the number-count, as intended).
+
+10.52
+
+[<  open matchbox  >]
+
+Cannot open matchbox because in inventory.
+
+hang on what? goddamn. Okay.
+
+Well fixed that, for some reason I excluded inventory items from being allowed to open.
+But next issue: it just lists "match". Not counting or using the plural name for the compound item in inv container. will fix that too.
+Okay, fixed it. I lost that plural nicename when I switched to print_names. Have now set it properly to obey when nicenames is set True.
+
+Hm.
+Loc descriptions is still giving "watch battery x3" when the batteries are 

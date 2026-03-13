@@ -443,7 +443,6 @@ def from_inventory_name(test:str) -> itemInstance:
 
     from env_data import locRegistry
     inst_inventory = locRegistry.inv_place.items
-
     cleaned_name,_ = check_name(test)
     for inst in inst_inventory:
         if inst.name == cleaned_name:
@@ -467,6 +466,9 @@ def generate_clean_inventory(inventory_inst_list=None, will_print = False, colou
 
     if inventory_inst_list == None:
         inventory_inst_list = loc.inv_place.items
+        is_inventory=True
+    else:
+        is_inventory=False
 
     no_xval_inventory_names = []
 
@@ -480,6 +482,7 @@ def generate_clean_inventory(inventory_inst_list=None, will_print = False, colou
             if item_name in checked:
                 continue
             else:
+                print(f"adding {item_name} to checked")
                 checked.add(item_name)
         else: # Removed all the notes about children, because children of inventory items are no longer stored directly in the inventory.
             inventory_names.append(item_name) ## add to inventory if item does not have a parent(container)
@@ -509,7 +512,7 @@ def generate_clean_inventory(inventory_inst_list=None, will_print = False, colou
         if coloured_and_spaced:
             if isinstance(coloured_and_spaced, list):
                 for item in coloured_and_spaced:
-                    print(assign_colour(item))
+                    print(assign_colour(item, is_inventory=is_inventory))
             elif isinstance(coloured_and_spaced, str):
                 print(coloured_and_spaced)
 
@@ -575,7 +578,7 @@ def get_itemname_from_sqrbrkt(string, noun, colour):
     return compiled_str
 
 
-def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=False, not_bold=False, caps=False, card_type = None, noun=None, not_inventory=False):
+def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=False, not_bold=False, caps=False, card_type = None, noun=None, not_inventory=False, is_inventory=False):
     """Take an item and apply its colour. If the item has .colour, that will be applied (either 'colour' if colour provided, otherwise a selection from the colour list on a rotating basis). If item is an instance or instance.name without associated colour, will assign that colour to item.colour and apply the colour.\n\ncard_type specifies the variation of cardinalInstance name to print, the options are\n
         * "name"
         * "ern_name"
@@ -587,6 +590,15 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
     If "  - " is in the item name, it will be removed and re-applied at the end of the function, so that inventory items can have the correct colouring applied while maintaining the spacing.
     """
     from tui.colours import Colours
+
+    if is_inventory and isinstance(item, itemInstance):
+        print("is_inventory and instance\n")
+        from env_data import locRegistry
+        if item.location != locRegistry.inv_place:
+            for loc_item in locRegistry.inv_place.items:
+                if loc_item.name == item.name:
+                    item = loc_item
+                    break
 
     if hasattr(item, "colour") and not colour and not nicename and not caps and not card_type and not noun:
         simple = True
@@ -684,14 +696,21 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
                 if isinstance(item, placeInstance):
                     item=item.name
                 elif isinstance(item, itemInstance):
-                    item = item.print_name
+                    if nicename:
+                        item.nicename
+                    else:
+                        item = item.print_name
             else:
                 colour=cardinals[Colours.colour_counter%len(cardinals)]
                 colour=cardinal_cols[colour] # TODO: is there any reason fo this to be separate? Can't we just use the %len directly against cardinal_cols?
                 Colours.colour_counter += 1
 
                 if isinstance(item, itemInstance):
-                    item=registry.register_name_colour(item, colour)
+                    print_name=registry.register_name_colour(item, colour)
+                    if nicename:
+                        item = item.nicename
+                    else:
+                        item = print_name
                     bld=True
                 elif isinstance(item, placeInstance|cardinalInstance):
                     item.colour=colour
@@ -709,32 +728,38 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
         from itemRegistry import registry
 
         if isinstance(item, str):
-
-            plain_name, val = check_name(item)
-            if val > 0:
-                if not_inventory:
-                    for inst in not_inventory:
-                        if inst.name == plain_name:
-                            item_instance = inst
-                            break
-                else:
-                    item_instance = from_inventory_name(plain_name)
+            item_instance = None
+            if is_inventory:
+                item_instance = from_inventory_name(item)
                 colour, _, bld = check_instance_col(item_instance)
-            else:
-                item_instances=registry.instances_by_name(item)
-                if item_instances:
-                    item=item_instances[0]
-                    colour, item, bld = check_instance_col(item)
-                    #colour = item.colour
+
+            if not item_instance:
+                plain_name, val = check_name(item)
+                if val > 0:
+                    if not_inventory:
+                        for inst in not_inventory:
+                            if inst.name == plain_name:
+                                item_instance = inst
+                                break
+                    else:
+                        item_instance = from_inventory_name(plain_name)
+                    colour, _, bld = check_instance_col(item_instance)
+                else:
+                    item_instances=registry.instances_by_name(item)
+                    if item_instances:
+                        item=item_instances[0]
+                        colour, item, bld = check_instance_col(item)
+                        #colour = item.colour
 
         if isinstance(item, itemInstance|placeInstance|cardinalInstance):
             if nicename:
                 held_name = item.nicename
+                #print(f"HELD NAME: {held_name}")
             colour, item, bld = check_instance_col(item)
             if nicename and held_name: # Need to check here to make sure nicename exists and isn't None. Maybe the issue with the matchbox?
                 item = held_name
 
-            if isinstance(item, itemInstance):
+            elif isinstance(item, itemInstance):
                 print(f"ITEM INSTANCE PRINT_NAME: {item.print_name}/name: {item.name}")
                 item = item.print_name
 

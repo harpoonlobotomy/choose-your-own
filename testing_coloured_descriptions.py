@@ -113,21 +113,42 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                                 val = val.strip("a ")
                                 long_desc.append(val + f" x{count}\x1b[0m")
 
-            if long_desc and len(long_desc) == 1 and no_items_text:
-                if local_items:
-                    for loc_item in local_items:
-                        if not long_dict.get(loc_item):
-                        #    print("pass, assume already included.")
-                        #else:
-                        #    print(f"loc_item: {loc_item}")
-                            long_desc.append(assign_colour(loc_item, nicename=True))
-                else:
+            if local_items:
+                local_items = list(i for i in local_items if not long_dict.get(i.name))
+
+            if long_desc and len(long_desc) == 1 and no_items_text and not local_items:
+                #if local_items:
+                #    for loc_item in local_items:
+                #        if not long_dict.get(loc_item):
+                #        #    print("pass, assume already included.")
+                #        #else:
+                #        #    print(f"loc_item: {loc_item}")
+                #            long_desc.append(assign_colour(loc_item, nicename=True))
+                #else:
                     long_desc.append(no_items_text)
 
             else:
                 if local_items:
+                    added = set()
                     for loc_item in local_items:
-                        if not long_dict.get(loc_item.name):
+                        if loc_item.name in added:
+                            continue
+                        named = list(i for i in local_items if i.name == loc_item.name)
+                        if len(named) > 1 and not loc_item.name in added:
+                            val = f"{assign_colour(loc_item)}"
+                            #val = val.strip("\x1b[0m")
+                            if val.startswith("a "):
+                                val = val.replace("a ", count=1)
+                            if hasattr(loc_item, "nicenames") and loc_item.nicenames.get("is_plural"):
+                                val = val.replace(loc_item.name, loc_item.nicenames["is_plural"])
+                            elif loc_item.name[-1] != "s":
+                                val = val.replace(loc_item.name, loc_item.name + "s")
+
+                            long_desc.append(f"{len(named)} {val}\x1b[0m")
+                            #long_desc.append(f"\033[0m{val} x{len(named)}\x1b[0m")
+                            added.add(loc_item.name)
+
+                        else:#if not long_dict.get(loc_item.name):
                             long_desc.append(assign_colour(loc_item, nicename=True))
 
     return long_desc
