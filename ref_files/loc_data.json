@@ -208,9 +208,9 @@
     "alt_names": [],
     "north": {
       "item_desc": {
-        "generic": ""
+        "generic": "It's a church, it's quite churchlike. This is the north."
       },
-      "short_desc": "",
+      "short_desc": "North of the church interior",
       "items": {}
     },
     "east": {

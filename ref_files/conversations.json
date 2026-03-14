@@ -5,7 +5,7 @@
             "0": {
                 "has_requirements": false,
                 "keywords": [],
-                "speech": "The church has a history"
+                "speech": "The church has a history, it says lots of things. Who knows, really. I think it's an interesting thing."
                 },
             "1": {
                 "has_requirements": false,
@@ -15,10 +15,32 @@
             "2": {
                 "has_requirements": {"item": "paperclip"},
                 "keywords": ["things"],
-                "speech": "Things things things"
+                "speech": "Things things stuff"
                 }
             },
-        "parts_said": []
+        "parts_said": [],
+        "language": "common"
         },
-    "holy_book": {}
+    "holy_book": {
+        "relevant_items": [],
+        "conversation": {
+            "0": {
+                "has_requirements": false,
+                "keywords": [],
+                "speech": ""
+                },
+            "1": {
+                "has_requirements": false,
+                "keywords": [],
+                "speech": ""
+                },
+            "2": {
+                "has_requirements": {},
+                "keywords": [],
+                "speech": ""
+                }
+            },
+        "parts_said": [],
+        "language": "common"
+    }
 }

@@ -19,6 +19,7 @@ item_data = r"ref_files\items_main.json"
 loc_data = r"ref_files\loc_data.json"
 event_data = r"ref_files\event_defs.json"
 npc_data = r"ref_files\NPC_defs.json"
+conversation_data = r"ref_files\conversations.json"
 
 usual_start = "graveyard"
 test_start = "testing grounds"

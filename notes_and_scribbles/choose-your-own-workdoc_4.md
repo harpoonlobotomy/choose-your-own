@@ -505,3 +505,29 @@ I would just need to make sure npcInstances were allowed in the various isinstan
 I think allowing 'npc' to be 'noun' in formats is the best bet. Will need to figure out the best way to do it. I do think it's important to keep them separate, they'll hold conversation data etc that regular items won't.
 
 Also I might keep 'parts_said' in conversations.json, so I have a global tracker per conversation. Not sure though. Thinking on it soon.
+
+6.22pm
+Been a decent day of progress. Have set up the classes and their linkages, and am working on the string manipulation.
+
+eg:
+
+`"The church has a history, it says lots of things. Who knows, really. I think it's an interesting thing."`
+
+becomes:
+
+`Ah, the church has a history, it says lots of things. Well, uh, who knows, really. Think it's an interesting thing.`
+with no_pronouns and well_um speech traits
+
+or:
+`Well, the church has a history, it says lots of things, who knows, really, I guess, I think it's an interesting thing.`
+with 'run_ons' and well_um traits.
+
+or
+ `I think... the church has a history, it says lots of things... Who knows, really... Well, uh, I think it's an interesting thing.`
+with well_um and ellipses
+
+or
+`The church has a history... it says lots of things... Who knows... really... I think it's an interesting thing.`
+with ellipses and commalipses.
+
+ Note: 'well_um' is randomised, both with how often it adds fillers and which filler it adds, so the sentence will be a little different each time. Will do something similar with ellipses/commalipses, for degrees of ellipsification.

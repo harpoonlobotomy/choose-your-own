@@ -42,12 +42,14 @@ class cardinalInstance:
         self.description:str|None = None
         self.colour = cardinal_cols.get(self.name)
 
+        self.NPCs = set()
+
         self.cardinal_data = loc_dict[self.place.name].get(cardinal)
         self.missing_cardinal:str = loc_dict[self.place.name].get("missing_cardinal")
         setattr(self, cardinal, self.cardinal_data)
 
         self.surfaces = {}
-        self.by_placename = {}
+        #self.by_placename = {}
         all_cardinals.add(self)
 
         if loc_dict[self.place.name].get(self.name) and loc_dict[self.place.name][self.name].get("items"):
@@ -397,6 +399,7 @@ def get_descriptions(place:placeInstance, cardinal:cardinalInstance=None):
             card_inst = locRegistry.cardinals[place].get(card)
             if description_dict[place.name].get(card):
                 card_inst.description = description_dict[place.name].get(card)
+
 
 
 def get_loc_descriptions(place=None, cardinal=None):

@@ -24,6 +24,11 @@ def initialise_all():
         eventRegistry.initialise_eventRegistry()
         eventRegistry.add_items_to_events()
 
+    import npcRegistry
+    npcRegistry.initialise_conversations()
+    npcRegistry.initialise_npcs()
+    #npcRegistry.test_npc()
+
     #print("get_loc_descriptions() being run in initialise_all")
     #env_data.get_loc_descriptions() # Moved here so the event data is in place. No idea how it works before but not now, I can't see which change affected it, but it seems to work as long as I init the descriptions at the end (which makes sense anyway).
     #time.sleep(.5)

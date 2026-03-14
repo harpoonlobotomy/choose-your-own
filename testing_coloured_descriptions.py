@@ -261,6 +261,16 @@ def loc_descriptions(place=None, card_inst=None):
             print(f"{overview}")
         if cardinal_descriptions.get(location):
             for cardinal, card_description in cardinal_descriptions[location].items():
+                if card_inst:
+                    if card_inst.NPCs:
+                        for npc in card_inst.NPCs:
+                            if npc.text_styling:
+                                npc_desc = npc.colourcode_start + npc.description + npc.colourcode_end
+                            else:
+                                npc_desc = npc.description
+                            card_description = card_description + f" You also see {npc_desc}."
+
+                    card_inst.description = card_description
                 combined_dict[location][cardinal] = card_description
                 if print_test_descriptions:
                     print_red(f"Cardinal: {cardinal}")
