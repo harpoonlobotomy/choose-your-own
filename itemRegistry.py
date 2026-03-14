@@ -1,6 +1,4 @@
 
-import random
-from re import I
 import uuid
 
 from env_data import cardinalInstance, placeInstance, locRegistry as loc
@@ -654,8 +652,8 @@ class itemRegistry:
         confirmed_container = None
         reason = 7
         meaning = "other error, investigate"
-
-        if not inst or not isinstance(inst, itemInstance):
+        from npcRegistry import npcInstance
+        if not inst or not isinstance(inst, itemInstance|npcInstance):
             return None, 10, accessible_dict[10]
 
         if hasattr(inst, "is_hidden") and inst.is_hidden == True:
@@ -1104,9 +1102,11 @@ class itemRegistry:
         if self.by_name.get(definition_key):
             return self.by_name.get(definition_key)
 
-        elif self.by_alt_names.get(definition_key):
-            return self.by_name.get(self.by_alt_names.get(definition_key))
+        elif self.by_alt_names.get(definition_key): # why does alt_names not store the instance directly?
+            if isinstance(self.by_alt_names[definition_key], str):
+                return self.by_name.get(self.by_alt_names.get(definition_key))
 
+            return list((self.by_alt_names[definition_key],)) # allows for npcInstances without having to add them to itemReg directly.
 
     def instances_by_container(self, container:itemInstance)->list:
         logging_fn()
@@ -1179,6 +1179,11 @@ class itemRegistry:
             print(f"Not inst.descriptions. inst.description: {inst.description}")
             return
         if inst.descriptions:
+            from npcRegistry import npcInstance
+            if isinstance(inst, npcInstance):
+                if not inst.encountered:
+                    description = inst.descriptions.get("npc_introduction")
+
             for entry in inst.descriptions:
                 val = inst.descriptions[entry]
                 if val and isinstance(val, str) and "[[choose" in val:
@@ -1255,8 +1260,8 @@ class itemRegistry:
             elif inst.descriptions.get("has_batteries") and hasattr(inst, "has_batteries") and inst.has_batteries:
                     description = inst.descriptions["has_batteries"]
 
-        if not description and hasattr(inst, "descriptions"): # nothing should have 'description' on init anymore, shouldn't need this.
-            if not inst.descriptions:
+        if not description: # nothing should have 'description' on init anymore, shouldn't need this.
+            if not hasattr(inst, "descriptions") or not inst.descriptions:
                 inst.descriptions = {}
                 inst.descriptions["generic"] = f"It's a {inst.name}"
                 inst.description = inst.descriptions["generic"]

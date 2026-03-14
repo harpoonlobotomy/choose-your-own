@@ -5,7 +5,7 @@ from env_data import cardinalInstance, placeInstance, locRegistry as loc
 from interactions import item_interactions
 from interactions.player_movement import relocate
 from itemRegistry import itemInstance, registry
-from misc_utilities import assign_colour, col_list, generate_clean_inventory, has_and_true, is_plural_noun, smart_capitalise, print_failure_message
+from misc_utilities import assign_colour, col_list, generate_clean_inventory, has_and_true, is_plural_noun, look_around, smart_capitalise, print_failure_message
 from printing import print_yellow
 from verb_definitions import directions, semantics
 
@@ -211,6 +211,7 @@ def get_correct_nouns(input_dict, verb=None, access_str=None, access_str2=None, 
     # Have added but not tested `access_str=None, access_str2=None`, to be able to specify access strings from the outside. This would expand it to basically all usecases.
     noun, noun_str, noun2, noun2_str = get_nouns(input_dict)
     from verbRegistry import VerbInstance
+    from npcRegistry import npcInstance
     if verb:
         if isinstance(verb, VerbInstance):
             verb = verb.name
@@ -219,7 +220,7 @@ def get_correct_nouns(input_dict, verb=None, access_str=None, access_str2=None, 
 
     if noun:
         outcome = item_interactions.find_local_item_by_name(noun, verb=verb, access_str=access_str, current_loc=loc.current)
-        if isinstance(outcome, itemInstance):
+        if isinstance(outcome, itemInstance|npcInstance):
             noun = outcome
         else:
             if outcome == None and not hold_error_messages:
@@ -232,14 +233,14 @@ def get_correct_nouns(input_dict, verb=None, access_str=None, access_str2=None, 
 
     if noun2:
         outcome = item_interactions.find_local_item_by_name(noun2, verb=verb, access_str=access_str2, current_loc=loc.current)
-        if outcome and isinstance(outcome, itemInstance):
+        if outcome and isinstance(outcome, itemInstance|npcInstance):
             noun2 = outcome
         else:
             if outcome == None and not hold_error_messages:
                 noun2 = noun2_str
                 return None, None, None, None, None, None
             #noun2 = None
-    if not isinstance(noun, itemInstance) or (noun2 and not isinstance(noun2, itemInstance)):
+    if not isinstance(noun, itemInstance|npcInstance) or (noun2 and not isinstance(noun2, itemInstance|npcInstance)):
         logging_fn(f"Going to print error from def {verb} `{input_dict}`")
         print_failure_message(noun=noun, noun2=noun2, verb=verb, init_dict=input_dict)
         return None, None, None, None, None, None
@@ -977,10 +978,6 @@ def look(format_tuple=None, input_dict=None, force_look=False): # force_look - s
                     else:
                         item_interactions.look_at_item(noun, noun_entry)
                         return
-
-
-
-
 
             else:
                 print(f"`{assign_colour(noun2, caps=True)}` isn't a container.")
@@ -2022,7 +2019,7 @@ def take(format_tuple, input_dict):
                         #print("Outcome is in inventory. (line 1480)")
                         return 0, outcome
                     if noun in loc.inv_place.items:
-                        #print("noun_inst is in inventory. line 1483")
+                        print("noun_inst is in inventory. line 1483")
                         added_to_inv = noun
                         return 0, added_to_inv
                 print(f"{noun} failed to be processed, not reasonval 3, 4, 5. reason_val: {reason_val}")
@@ -2130,8 +2127,8 @@ def take(format_tuple, input_dict):
                 noun = added_to_inv
 
         outcome, _ = events.is_event_trigger(noun_inst = noun, reason = "item_in_inv")
-        if not outcome:
-            print(f"\nThe {assign_colour(noun)} {is_plural_noun(noun)} now in your inventory.")
+        if not outcome: # removed a newline from the next. If it causes issues, add it elsewhere, not here.
+            print(f"The {assign_colour(noun)} {is_plural_noun(noun)} now in your inventory.")
         return
 
 def put(format_tuple, input_dict, location=None):
@@ -2640,6 +2637,20 @@ def enter(format_tuple, input_dict, noun=None):
         print("enter else")
         return look(format_tuple, input_dict)
 
+def talk(format_tuple, input_dict):
+    noun, noun_str, reason, _, _, _ = get_correct_nouns(input_dict)
+    from npcRegistry import npcInstance
+    if noun:
+        if isinstance(noun, itemInstance):
+            print(f"The {assign_colour(noun)} doesn't seem like it'll talk back.")
+        elif isinstance(noun, npcInstance):
+            import interactions.conversations
+            interactions.conversations.start_conversation(noun)
+            look_around()
+            return
+        else:
+            print_failure_message(init_dict=input_dict)
+
 MOVE_UP = "\033[A"
 print_extra_decorations = True
 
@@ -2719,9 +2730,10 @@ def router(viable_format, inst_dict, input_str=None):
 
         "lock": lock_unlock,
         "unlock": lock_unlock,
-        "open": simple_open_close,#open_close,#open_item,
-        "close": simple_open_close,#open_close,#close,
+        "open": simple_open_close,
+        "close": simple_open_close,
 
+        "talk": talk,
         "barricade": barricade,
 
         "enter": enter,

@@ -1,9 +1,8 @@
 #item_interactions.py
 
-
-from re import I
 from interactions.player_movement import relocate
 from itemRegistry import itemInstance, registry
+from npcRegistry import npcInstance
 from env_data import cardinalInstance, locRegistry as loc
 from misc_utilities import assign_colour, has_and_true
 from logger import logging_fn
@@ -28,7 +27,8 @@ def show_map(noun):
 def look_at_item(item_inst, entry): ## this is just using everything from registry. Should really just be in registry....
     """Checks an item is viable to be seen, then looks at the item. If the item is a loc_exterior that is nearby to the player, instead turns to face that cardinal and prints the description. If the item has children, they will be printed in a list. If the item is a map-item and show_map==True, it will open the map image externally."""
     logging_fn()
-    if isinstance(item_inst, itemInstance):
+    from npcRegistry import npcInstance
+    if isinstance(item_inst, (itemInstance, npcInstance)):
         container, reason_val, meaning = registry.run_check(item_inst)
         logging_fn(f"reason_val: {reason_val}")
         #print(f"Look at item MEANING: {meaning}")
@@ -54,6 +54,9 @@ def look_at_item(item_inst, entry): ## this is just using everything from regist
             print(f"You look at the {assign_colour(item_inst)}{extra}")
             if item_inst.descriptions.get("from_inside") and hasattr(item_inst, "int_location") and loc.by_cardinal_str(item_inst.int_location) == loc.current: # this is hyper specific for now, but need to check for things that change when I'm not paying attention, so to speak. I don't want to redo the descriptions for every item in an area, but in cases like writing on the door that only appears from the inside, I need a way to set that.
                 registry.init_descriptions(item_inst)
+            if isinstance(item_inst, npcInstance):
+                registry.init_descriptions(item_inst)
+
             print(f"\n   {assign_colour(registry.describe(item_inst, caps=True), colour="description")}")
             if hasattr(item_inst, "is_open") and item_inst.is_open and hasattr(item_inst, "description") and ((hasattr(item_inst, "print_children_as_list") and item_inst.print_children_as_list) or not hasattr(item_inst, "print_children_as_list")):
                 verb_actions.print_children_in_container(item_inst)
@@ -229,7 +232,7 @@ simple_assignments = ["drop_subject", "drop_target", "pick_up", "inventory_only"
 
 scope_to_verb = {
     "inv_and_inv_containers": ["drop"], # only things in inventory, including recursion.
-    "all_local": ["look", "find", "burn", "fire_source", "use"], # everything accessable, carried/ local/etc
+    "all_local": ["look", "find", "burn", "fire_source", "use", "talk"], # everything accessable, carried/ local/etc
     "local_and_inv_containers_only": ["take"],
     "not_in_inv": ["pick_up"], # includes local containers, just nothing I'm already carrying.
     "only_loc_no_containers": [""], # No idea what would call for this tbh. It's just 'stuff you can see around you'.
@@ -282,7 +285,7 @@ def build_relevant_items_set(verb=None, noun=None, access_str=None, current_loc=
             location = current_loc
         elif current_loc and isinstance(current_loc, str):
             location = loc.by_cardinal_str(current_loc)
-        elif (not current_loc or not location) and noun and isinstance(noun, itemInstance):
+        elif (not current_loc or not location) and noun and isinstance(noun, (itemInstance, npcInstance)):
             location = noun.location # not sure this is ever ideal? The noun isn't even confirmed correct yet.
         from env_data import locRegistry
         if not location or location == locRegistry.inv_place: #assume current.
@@ -316,7 +319,7 @@ def build_relevant_items_set(verb=None, noun=None, access_str=None, current_loc=
             final_items.add(item)
     return final_items, access_str
 
-def find_local_item_by_name(noun:itemInstance=None, noun_text = None, verb=None, access_str:str=None, current_loc:cardinalInstance=None, hidden_cluster=False, priority="single") -> itemInstance|set:
+def find_local_item_by_name(noun:itemInstance|npcInstance=None, noun_text = None, verb=None, access_str:str=None, current_loc:cardinalInstance=None, hidden_cluster=False, priority="single") -> itemInstance|npcInstance|set:
     """
     Builds relevant items set using verb scope derived from `access_str` or `verb`'s status in `verb_to_noun_access`. If `noun` provided, returns the relevant `ItemInstance` of that name if found. If no `noun` provided, returns the full set.
 
@@ -357,7 +360,7 @@ def find_local_item_by_name(noun:itemInstance=None, noun_text = None, verb=None,
         return None
 
     if noun:
-        if isinstance(noun, itemInstance):
+        if isinstance(noun, itemInstance|npcInstance):
             if noun in final_items and "is_cluster" in noun.item_type:
                 if access_str in ("pick_up", "not_in_inv", "local_and_inv_containers_only"):
                     single_and_local = True

@@ -114,7 +114,7 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                                 long_desc.append(val + f" x{count}\x1b[0m")
 
             if local_items:
-                local_items = list(i for i in local_items if not long_dict.get(i.name))
+                local_items = list(i for i in local_items if isinstance(i, itemRegistry.itemInstance) and not long_dict.get(i.name))
 
             if long_desc and len(long_desc) == 1 and no_items_text and not local_items:
                 #if local_items:
@@ -269,6 +269,11 @@ def loc_descriptions(place=None, card_inst=None):
                             else:
                                 npc_desc = npc.description
                             card_description = card_description + f" You also see {npc_desc}."
+                            if "[[this]]" in card_description:
+                                if npc.location.place == loc.current.place:
+                                    card_description = card_description.replace("[[this]]", "this")
+                                else:
+                                    card_description = card_description.replace("[[this]]", "the")
 
                     card_inst.description = card_description
                 combined_dict[location][cardinal] = card_description

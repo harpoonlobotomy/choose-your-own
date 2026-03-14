@@ -531,3 +531,9 @@ or
 with ellipses and commalipses.
 
  Note: 'well_um' is randomised, both with how often it adds fillers and which filler it adds, so the sentence will be a little different each time. Will do something similar with ellipses/commalipses, for degrees of ellipsification.
+
+3.47pm 14/4/26
+
+Hm. 'take battery' adds 2 newlines between input and return print, but everything else only adds one. Why.
+
+Fixed. Had a \n in the 'now in inventory' print line. Removing it doesn't seem to cause immediate issues.

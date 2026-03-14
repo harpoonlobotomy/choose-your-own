@@ -401,7 +401,6 @@ def get_descriptions(place:placeInstance, cardinal:cardinalInstance=None):
                 card_inst.description = description_dict[place.name].get(card)
 
 
-
 def get_loc_descriptions(place=None, cardinal=None):
     """Used for generating location descriptions en masse. Without place and cardinal data provided, will generate descriptions all cardinals for all places.\nOnly to run without place and cardinal at initialisation."""
     logging_fn(f"{place}, {cardinal}")

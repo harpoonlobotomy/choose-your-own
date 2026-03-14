@@ -9,6 +9,8 @@ class conversationInstance:
 
     def __init__(self, topic, data):
         self.topic = topic
+        self.topic_label = data["topic_label"]
+        print(f"self.label: {self.topic_label}")
         self.relevant_items = data["relevant_items"]
         #self.conversation_data =  # "0": has_requirements, keywords, speech
         self.parts_said = data["parts_said"] # list of str digits identifying which parts of the conversation have been said globally. Does not track per character. Should probably get these from npcInstances, actually, instead of storing it twice.
@@ -57,7 +59,11 @@ class npcInstance:
     def __init__(self, name, data):
 
         self.name = name
+        self.print_name = data.get("print_name") if data.get("print_name") else name
         self.text_styling = data.get("text_styling")
+        self.colour = None
+        self.colourcode_start = None
+        self.colourcode_end = None
         self.age = data.get("age")
         if not self.age:
             self.age = "average"
@@ -94,12 +100,18 @@ class npcInstance:
             if "[[playername]]" in self.convo_end:
                 self.convo_end = self.convo_end.replace("[[playername]]", game.playername)
 
+        self.keywords = {} # npc.keywords[kw] = {convo:convo.keywords[kw]} <- saving convo:idx on npcs, so I can check directly during conversations across all possible conversations for keywords.
+
         self.slice_attack = data.get("slice_attack")
         self.slice_defence = data.get("slice_defence")
         self.smash_attack = data.get("smash_attack")
         self.smash_defence = data.get("smash_defence")
 
         self.encountered = False
+
+        self.approval = data.get("approval")
+        self.disapproval = data.get("disapproval")
+        self.unsure = data.get("unsure")
 
         for item in data:
             if not hasattr(self, item):
@@ -131,7 +143,9 @@ class npcRegistry:
             self.by_name[name] = npc
             if hasattr(npc, "alt_names") and npc.alt_names:
                 for alt in npc.alt_names:
-                    self.by_altname[alt] = npc
+                    from itemRegistry import registry
+                    registry.by_alt_names[alt] = npc # adding to itemReg so I can still use the parser.
+                    self.by_altname[alt] = npc # might not need this one.
             if not hasattr(npc, "location") or not npc.location:
                 npc.location = locRegistry.no_place
             elif isinstance(npc.location, str):
@@ -145,7 +159,7 @@ class npcRegistry:
                     self.by_language_spoken.setdefault(language, set()).add(npc)
 
             if npc.text_styling:
-                ita = bld = und = bg = False
+                ita = bld = und = bg = colour = False
                 from tui.colours import Colours
                 for item in npc.text_styling:
                     if item == "italics":
@@ -156,7 +170,8 @@ class npcRegistry:
                         und = True
                     else:
                         colour = item
-
+                if colour:
+                    npc.colour = colour
                 code = Colours.c("split", fg=colour, bg=None, bold=bld, italics=ita, underline=und, invert=False, no_reset=False)
                 code_parts = code.split("split")
                 npc.colourcode_start = code_parts[0]
@@ -166,6 +181,7 @@ class npcRegistry:
     def alter_speech(self, npc:npcInstance, speech_str:str, styling=True):
         """Here we edit the speech str in accordance with npc.speech_traits"""
 # "ellipses": Replaces all full-stops at end of sentences with "...". Possibly commas too, need to test.
+# "commalipses": Replaces all commas with "...".
 # "run_ons": replaces mid-speech full stops with commas.
 # "no_pronouns": not techinically accurate, still allows 'you', but does not refer to self directly.
 # "it_not_i": replaces 'I' with 'it'.
@@ -182,49 +198,50 @@ class npcRegistry:
             prev_filler = None
 
             for i, speech in enumerate(string_parts):
-                for trait in npc.speech_traits:
-                    if trait == "it_not_i":
-                        speech = speech.replace(" I.", " it.")
-                        speech = speech.replace(" I ,", " it ")
-                        if speech.startswith("I "):
-                            speech = speech.replace("I ", "It ", 1)
-                            speech = speech.replace("It think ", "It thinks ", 1)
+                #print(f"speech; {speech}")
+                if speech == None:
+                    continue
+                if "no_pronouns" in npc.speech_traits:
+                    speech = speech.replace(" I.", ".")
+                    speech = speech.replace(" I ", " ")
+                    if speech.startswith("I "):
+                        speech = speech.replace("I ", "", 1)
+                        speech = speech.capitalize()
 
-                    elif trait == "no_pronouns":
-                        speech = speech.replace(" I.", ".")
-                        speech = speech.replace(" I ,", " ")
-                        if speech.startswith("I "):
-                            speech = speech.replace("I ", "", 1)
-                            speech = speech.capitalize()
+                elif "it_not_i" in npc.speech_traits:
+                    speech = speech.replace(" I.", " it.")
+                    speech = speech.replace(" I ,", " it ")
+                    if speech.startswith("I "):
+                        speech = speech.replace("I ", "It ", 1)
+                        speech = speech.replace("It think ", "It thinks ", 1)
 
-                    if trait == "well_umm":
-                        import random
-                        if i == 0 or random.choice((True, False)) == True:
-                            #if speech[0].isupper() and not speech.startswith("I "):
-                            #    speech = speech[0].lower() + speech[1:]
-                            if prev_filler:
-                                choose_from = list(i for i in filler_words if i != prev_filler)
-                            else:
-                                choose_from = filler_words
-                            filler = random.choice(choose_from).capitalize()
-                            prev_filler = filler.lower()
-                            if "run_ons" in npc.speech_traits:
-                                if i != 0:
-                                    filler = filler.lower()
-                                speech = speech[0].lower() + speech[1:]
-                            if "commalipses" in npc.speech_traits:
-                                speech = speech[0].lower() + speech[1:]
-                                speech = filler + ". " + speech
-                            else:
-                                if not speech.startswith("I "):
-                                    speech = speech[0].lower() + speech[1:]
-                                speech = filler + ", " + speech
-
-                    if trait == "run_ons":
-                        if speech[0].isupper() and not speech.startswith("I "):
+                if "well_umm" in npc.speech_traits:
+                    import random
+                    if i == 0 or random.choice((True, False)) == True:
+                        #if speech[0].isupper() and not speech.startswith("I "):
+                        #    speech = speech[0].lower() + speech[1:]
+                        if prev_filler:
+                            choose_from = list(i for i in filler_words if i != prev_filler)
+                        else:
+                            choose_from = filler_words
+                        filler = random.choice(choose_from).capitalize()
+                        prev_filler = filler.lower()
+                        if "run_ons" in npc.speech_traits:
+                            if i != 0:
+                                filler = filler.lower()
                             speech = speech[0].lower() + speech[1:]
+                        if "commalipses" in npc.speech_traits:
+                            if not speech.startswith("I "):
+                                speech = speech[0].lower() + speech[1:]
+                            speech = filler + ". " + speech
+                        else:
+                            if not speech.startswith("I "):
+                                speech = speech[0].lower() + speech[1:]
+                            speech = filler + ", " + speech
 
-                if "run_ons" in npc.speech_traits:
+                if "run_ons"  in npc.speech_traits:
+                    if speech[0].isupper() and not speech.startswith("I "):
+                        speech = speech[0].lower() + speech[1:]
                     dot = ","
                 else:
                     dot = "."
@@ -245,6 +262,11 @@ class npcRegistry:
 
             if reformed[-1] == " ":
                 reformed = reformed[:-1]
+
+            if "run_ons" in npc.speech_traits:
+                reformed = reformed[:-1] + reformed[-1].replace(",", ".")
+
+            reformed = reformed[0].upper() + reformed[1:]
 
             if styling and npc.text_styling:
                 reformed = npc.colourcode_start + reformed + npc.colourcode_end
@@ -283,15 +305,19 @@ def initialise_npcs():
                     print(f"No convo found for `{topic}`.")
                     continue
                 npc.conversations[convo] = {"parts_said": set()}
+                if convo.keywords:
+                    for kw in convo.keywords:
+                        npc.keywords[kw] = {convo:convo.keywords[kw]}
 
 
         if npc.location and isinstance(npc.location, cardinalInstance):# and npc.location.description:
             npc.location.NPCs.add(npc)
-            import testing_coloured_descriptions
-            testing_coloured_descriptions.loc_descriptions(npc.location.place, npc.location)
-    # Does this manually for each NPC here to make sure the description is properly updated. TODO: test if this is still needed in actual gameplay. For testing it does because no location is fully 'loaded'.
-            print(f"npc.location.description: {npc.location.description}")
-
+            from itemRegistry import registry
+            registry.by_location[npc.location].add(npc)
+            #import testing_coloured_descriptions
+            #testing_coloured_descriptions.loc_descriptions(npc.location.place, npc.location)
+#Note: This section only seems to be needed when testing in isolation, in regular gameplay the description is correct without this.
+            #print(f"npc.location.description: {npc.location.description}")
 
 def test_npc():
     for npc in npc_Registry.npcs:

@@ -92,7 +92,8 @@ formats = {
     "verb_noun_dir_noun_dir_loc": (verb, noun, direction, noun, direction, location), # put paperclip in glass jar in graveyard # pointless, but included just in case.
     "verb_noun_sem_noun": (verb, noun, sem, noun), # mix water with potion
     "verb_dir_noun_sem_noun": (verb, direction, noun, sem, noun), #go to table with box
-
+    "verb_dir_noun_dir_loc": (verb, direction, noun, direction, location), # talk to father in church
+    "verb_sem_noun_dir_loc": (verb, sem, noun, direction, location), # talk with father in church
     "sem_noun_verb": (sem, noun, verb), # 'set magazine alight
     "sem_noun_dir_verb": (sem, noun, direction, verb), # set magazine on fire
     ## Numbers:
@@ -170,6 +171,8 @@ verb_noun_sem_num_sem = formats["verb_noun_sem_num_sem"] # read book for 3 hours
 verb_noun_sem_noun = formats["verb_noun_sem_noun"]
 verb_dir_noun_sem_noun = formats["verb_dir_noun_sem_noun"]
 verb_dir_noun_dir_noun = formats["verb_dir_noun_dir_noun"] # look at thing in container
+verb_dir_noun_dir_loc = formats["verb_dir_noun_dir_loc"]
+verb_sem_noun_dir_loc = formats["verb_sem_noun_dir_loc"]
 
 sem_noun_verb = formats["sem_noun_verb"]
 sem_noun_dir_verb = formats["sem_noun_dir_verb"]
@@ -231,7 +234,8 @@ verb_defs_dict = {
     "clean": {"alt_words": ["wipe"], "allowed_null": None, "formats": [verb_noun, verb_loc, verb_noun_sem_noun]},
     "enter": {"alt_words": [], "allowed_null": None, "formats": [verb_loc, verb_dir_loc, verb_noun, verb_dir_noun, verb_noun_noun, verb_loc_noun]},
     "time": {"alt_words": ["wait", "waste time", "spend time"], "allowed_null": None, "formats": [verb_only, verb_dir, verb_sem, verb_sem_noun, verb_sem_sem, verb_num_sem, verb_sem_num_sem, verb_noun_sem_sem, verb_noun_sem_num_sem]},
-    "find": {"alt_words": ["search"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_loc, verb_loc, verb_sem_noun]}
+    "find": {"alt_words": ["search"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_loc, verb_loc, verb_sem_noun]},
+    "talk": {"alt_words": ["speak", "converse"], "allowed_null": None, "formats": [verb_noun, verb_dir_noun, verb_sem_noun, verb_dir_noun_dir_loc, verb_sem_noun_dir_loc]}
     }
 
 

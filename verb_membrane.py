@@ -65,11 +65,11 @@ def get_noun_instances(dict_from_parser, viable_formats):
                             dict_from_parser[idx][kind] = ({"instance": "assumed_noun", "str_name": entry["str_name"], "text": entry["text"]})
                             error = ("assumed_noun", (idx, kind))
                     else:
-
                         noun_inst = registry.instances_by_name(name) ## NOTE: This won't hold for long. Different instances may have different attr.
                         if not noun_inst:
                             noun_inst = registry.instances_by_name(entry["text"])
                         if not noun_inst:
+                            print(f"Not noun_inst for {name}\n")
                             dict_from_parser[idx][kind] = ({"instance": "assumed_noun", "str_name": entry["str_name"], "text": entry["text"]})
                             error = ("assumed_noun", (idx, kind))
                         else:
@@ -127,20 +127,13 @@ class Membrane:
 
         self.formats = formats
 
-        def get_children(parent, local_items):
-            logging_fn()
-            if "container" in parent.item_type and hasattr(parent, "children") and parent.children:
-                for child in parent.children:
-                    local_items[child.name] = child
-            return local_items
-
         from env_data import locRegistry
 
         ## check to see if they ever diverge:
         inventory = registry.get_item_by_location(locRegistry.inv_place)
         alt_inventory = locRegistry.inv_place.items
 
-        if inventory or alt_inventory:
+        if inventory and alt_inventory:
             if len(inventory) != len(alt_inventory):
                 print(f"\nitems in inv_place and inv_place.items are not equal\nitems at inv_place:\n{inventory}\n\ninv_place.items(): \n{alt_inventory}\n")
                 exit()

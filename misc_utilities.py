@@ -232,6 +232,9 @@ def print_failure_message(input_str=None, message=None, noun=None, noun2=None, v
                         w_word = "where"
                     else:
                         w_word = "what"
+                    if token.text == "talk":
+                        print(f"\nSorry, who do you want to {assign_colour(token.text, colour="green")} to?")
+                        return
                     print(f"\nSorry, {w_word} do you want to {assign_colour(token.text, colour="green")}?")
                     return
         print(f"Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
@@ -363,6 +366,9 @@ def print_failure_message(input_str=None, message=None, noun=None, noun2=None, v
                 print(f"You can't drop the {assign_colour(test)} {dir_or_sem} a {assign_colour(first_noun, colour='yellow')}; you can't see one.")
             else:
                 print(f"You can't drop a {assign_colour(first_noun, colour="yellow")}; you aren't holding one.")
+            return
+        if verb == "talk":
+            print(f"Who do you want to {assign_colour(verb, colour="green")} to?")
             return
         if not second_noun:
             if verb == "look":
@@ -556,6 +562,15 @@ def separate_loot(child_input=None, parent_input=None, inventory=[]): ## should 
 
 ### COLOUR ASSIGNMENT
 
+from npcRegistry import npcInstance
+def npc_colour(npc:npcInstance, string=None):
+    if not string:
+        string = npc.name
+
+    npc.colourcode_start
+    npc.colourcode_end
+    return f"{npc.colourcode_start}{string}{npc.colourcode_end}"
+
 def get_itemname_from_sqrbrkt(string, noun, colour):
     """To replace [[item]] with <{noun} with noun.colour applied>."""
 # colour = "event_msg": {"ita":True, "colour": "yellow"}
@@ -590,8 +605,9 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
     If "  - " is in the item name, it will be removed and re-applied at the end of the function, so that inventory items can have the correct colouring applied while maintaining the spacing.
     """
     from tui.colours import Colours
+    from npcRegistry import npcInstance
 
-    if is_inventory and isinstance(item, itemInstance):
+    if is_inventory and isinstance(item, (itemInstance, npcInstance)):
         print("is_inventory and instance\n")
         from env_data import locRegistry
         if item.location != locRegistry.inv_place:
@@ -605,7 +621,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
     else:
         simple = False
 
-    if isinstance(item, itemInstance) and simple and item.colour:
+    if isinstance(item, itemInstance|npcInstance) and simple and item.colour:
         coloured_text=Colours.c(item.print_name, item.colour, bold=True)
         return coloured_text # shortcut for simple assign_colour(noun) calls.
 
@@ -687,7 +703,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
     def check_instance_col(item):
         """Checks for `item.colour`. If not found, assigns `item.colour` using `Colours.colour_counter`."""
         from itemRegistry import registry
-        if isinstance(item, itemInstance|placeInstance|cardinalInstance):
+        if isinstance(item, itemInstance|npcInstance|placeInstance|cardinalInstance):
             entry = item
 
             if entry and entry.colour != None:
@@ -695,7 +711,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
                 bld=True
                 if isinstance(item, placeInstance):
                     item=item.name
-                elif isinstance(item, itemInstance):
+                elif isinstance(item, itemInstance|npcInstance):
                     if nicename:
                         item.nicename
                     else:
@@ -705,7 +721,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
                 colour=cardinal_cols[colour] # TODO: is there any reason fo this to be separate? Can't we just use the %len directly against cardinal_cols?
                 Colours.colour_counter += 1
 
-                if isinstance(item, itemInstance):
+                if isinstance(item, itemInstance|npcInstance):
                     print_name=registry.register_name_colour(item, colour)
                     if nicename:
                         item = item.nicename
@@ -724,7 +740,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
         colour=cardinal_cols[item]
         bld=True
 
-    elif (isinstance(item, str) and not colour) or isinstance(item, itemInstance|placeInstance|cardinalInstance):
+    elif (isinstance(item, str) and not colour) or isinstance(item, itemInstance|npcInstance|placeInstance|cardinalInstance):
         from itemRegistry import registry
 
         if isinstance(item, str):
@@ -751,7 +767,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
                         colour, item, bld = check_instance_col(item)
                         #colour = item.colour
 
-        if isinstance(item, itemInstance|placeInstance|cardinalInstance):
+        if isinstance(item, itemInstance|npcInstance|placeInstance|cardinalInstance):
             if nicename:
                 held_name = item.nicename
                 #print(f"HELD NAME: {held_name}")
@@ -759,7 +775,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
             if nicename and held_name: # Need to check here to make sure nicename exists and isn't None. Maybe the issue with the matchbox?
                 item = held_name
 
-            elif isinstance(item, itemInstance):
+            elif isinstance(item, itemInstance|npcInstance):
                 print(f"ITEM INSTANCE PRINT_NAME: {item.print_name}/name: {item.name}")
                 item = item.print_name
 

@@ -1,43 +1,45 @@
 {
     "church_history": {
+        "topic_label": "the history of the Church",
         "relevant_items": ["paperclip"],
         "conversation": {
             "0": {
                 "has_requirements": false,
+                "autoplay": true,
                 "keywords": [],
                 "speech": "The church has a history, it says lots of things. Who knows, really. I think it's an interesting thing."
                 },
             "1": {
                 "has_requirements": false,
+                "autoplay": true,
                 "keywords": ["things"],
                 "speech": "Things things things"
                 },
             "2": {
                 "has_requirements": {"item": "paperclip"},
+                "autoplay": true,
                 "keywords": ["things"],
                 "speech": "Things things stuff"
+                },
+            "3": {
+                "has_requirements": false,
+                "autoplay": false,
+                "keywords": ["cult"],
+                "speech": "Oh, you're starting to remember. Good. Your mother's around town somewhere, though whether she will want to talk to you after all this is questionable."
                 }
             },
         "parts_said": [],
         "language": "common"
         },
     "holy_book": {
+        "topic_label": "the missing holy book",
         "relevant_items": [],
         "conversation": {
             "0": {
                 "has_requirements": false,
-                "keywords": [],
-                "speech": ""
-                },
-            "1": {
-                "has_requirements": false,
-                "keywords": [],
-                "speech": ""
-                },
-            "2": {
-                "has_requirements": {},
-                "keywords": [],
-                "speech": ""
+                "autoplay": true,
+                "keywords": ["missing book"],
+                "speech": "There's a book, and it's missing. And this missing book is holy."
                 }
             },
         "parts_said": [],
