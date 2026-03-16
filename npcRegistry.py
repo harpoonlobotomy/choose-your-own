@@ -13,14 +13,17 @@ class conversationInstance:
         print(f"self.label: {self.topic_label}")
         self.relevant_items = data["relevant_items"]
         #self.conversation_data =  # "0": has_requirements, keywords, speech
-        self.parts_said = data["parts_said"] # list of str digits identifying which parts of the conversation have been said globally. Does not track per character. Should probably get these from npcInstances, actually, instead of storing it twice.
+        self.parts_said = [] # list of str digits identifying which parts of the conversation have been said globally. Does not track per character. Should probably get these from npcInstances, actually, instead of storing it twice.
         self.by_part = {}
         self.keywords = {} # keyword: part_idx
+        self.autoplay_parts = set()
         for idx in data["conversation"]:
             if data["conversation"][idx].get("keywords"):
                 for keyword in data["conversation"][idx]["keywords"]:
                     self.keywords[keyword] = idx
             self.by_part.setdefault(idx, data["conversation"][idx])
+            if data["conversation"][idx].get("autoplay"):
+                self.autoplay_parts.add(idx)
         self.language = data.get("language")
 
     def __repr__(self):
@@ -109,6 +112,7 @@ class npcInstance:
 
         self.encountered = False
 
+        self.acceptance = data.get("acceptance")
         self.approval = data.get("approval")
         self.disapproval = data.get("disapproval")
         self.unsure = data.get("unsure")
@@ -192,7 +196,7 @@ class npcRegistry:
             return speech_str
         else:
             if "..." in speech_str:
-                print(f"Do something? idk. `{speech_str}`")
+                speech_str = speech_str.replace("...", "**") # replace w double asterisks so it's unaffected by speech traits, and put it back later.
             string_parts = speech_str.split(". ")
             reformed = ""
             prev_filler = None
@@ -266,12 +270,24 @@ class npcRegistry:
             if "run_ons" in npc.speech_traits:
                 reformed = reformed[:-1] + reformed[-1].replace(",", ".")
 
+            reformed = reformed.replace("**", "...")
             reformed = reformed[0].upper() + reformed[1:]
 
             if styling and npc.text_styling:
                 reformed = npc.colourcode_start + reformed + npc.colourcode_end
 
             return reformed
+
+    def add_conversation_to_npc(self, npc:npcInstance, topic:str):
+        self.by_conversation_topic.setdefault(topic, set()).add(npc)
+        convo = conversing.by_topic.get(topic)
+        if not convo:
+            print(f"No convo found for `{topic}`.")
+            return
+        npc.conversations[convo] = {"parts_said": set()}
+        if convo.keywords:
+            for kw in convo.keywords:
+                npc.keywords[kw] = {convo:convo.keywords[kw]}
 
     def __repr__(self):
         print(f"<npcRegistry>")
@@ -287,6 +303,8 @@ def initialise_conversations():
         convo_defs = json.load(f)
     conversing.init_conversations(convo_defs)
 
+
+
 def initialise_npcs():
     from config import npc_data
     import json
@@ -299,15 +317,7 @@ def initialise_npcs():
         #print(f"introduction: {npc.introduction},  npc.languages: {npc.languages_spoken}")
         if npc.knows_about:
             for topic in npc.knows_about:
-                npc_Registry.by_conversation_topic.setdefault(topic, set()).add(npc)
-                convo = conversing.by_topic.get(topic)
-                if not convo:
-                    print(f"No convo found for `{topic}`.")
-                    continue
-                npc.conversations[convo] = {"parts_said": set()}
-                if convo.keywords:
-                    for kw in convo.keywords:
-                        npc.keywords[kw] = {convo:convo.keywords[kw]}
+                npc_Registry.add_conversation_to_npc(npc, topic)
 
 
         if npc.location and isinstance(npc.location, cardinalInstance):# and npc.location.description:

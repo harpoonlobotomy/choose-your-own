@@ -537,3 +537,62 @@ with ellipses and commalipses.
 Hm. 'take battery' adds 2 newlines between input and return print, but everything else only adds one. Why.
 
 Fixed. Had a \n in the 'now in inventory' print line. Removing it doesn't seem to cause immediate issues.
+
+3.59pm 16/3/26
+Working on conversations. Have not updated here but basic conversations are working, albit rather simplistically.
+
+dammit.
+
+Event: <eventInst learn_about_cult ..bac839a2878f // state: 1>
+    Mm... I do miss having her around the place, I suppose... But, needs must, `greater good` and all of that... I suppose I'll see her again someday... Have you seen her around?...
+
+...mother
+
+    We've discussed this topic before... Do you want to discuss it again?...
+
+... y
+
+    Yes, good.
+
+    Oh, that must have been something of a shock... I'm very sorry... I would ask if she was well, but... Well.
+
+that 'yes' should only apply to the 'discuss it again', but its being carried throughg
+
+if you get the the 'mother' conversation part, it should add a new conversation to the list. not just a line, anothe thing you can reference entirely.
+
+Okay. It does that now, ish. If you ask about the cult, it references your mother and if you say you've seen her, then it adds a new conversation topic.
+
+Now I need to figure this out.
+
+# parts_said: {'3'}
+# parts_said: {'4', '3'}
+#     Mm... I do miss having her around the place, I suppose... But, needs must, `greater good` and all of that... I suppose I'll see her again someday... Have you seen her around?...
+#
+# ...yes
+#
+# parts said: {'4', '3'}, type: <class 'set'> // conversation.autoplay_parts: {'1', '2', '0'}
+# no parts_said: None
+# parts_said: {'4', '3'}
+# parts_said: {'4', '3', '5'}
+#     Oh, that must have been something of a shock... I'm very sorry... I would ask if she was well, but... Well.
+#
+# ...
+#     It seems like there's nothing else to say about this.
+#
+# discuss_topic outcome for seen_mother: end_topic
+#     It seems like there's nothing else to say about this.
+#
+# discuss_topic outcome for mother: end_topic
+#     It seems like there's nothing else to say about this.
+#
+# discuss_topic outcome for cult: end_topic
+#
+#    Nothing else you want to discuss? Alright... Enough for now then, I suppose.
+#
+# You step aside, leaving the conversation with Father.
+#
+
+During, the interaction goes well, but then they all resolve when it's done and they all repeat the end.
+
+6.20pm
+Okay. Think it's fixed now though it's probably still tenuous. It seems to loop correctly, ignoring recursed internal loops on leaving the loop cycle so it only officially ends once, as it should. Also conversation threads adding new conversations works nicely too.

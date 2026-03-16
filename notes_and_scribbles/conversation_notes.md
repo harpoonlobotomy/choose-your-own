@@ -31,3 +31,17 @@ Working on the class now.
 Have made
  "has_requirements": {"item": "paperclip"},
 into a dict, so I can specify type. If not an item, perhaps certain conversations have to happen at night, at certain locations, etc.
+
+parts_said is working, and the basic conversation loop is alright. So far all it can do at most is recognise keywords that can lead to either a conversation topic (given in a list at present) or keywords that will access specific lines of dialogue, and potentially start events related to them.
+
+Some parts of conversation require a trigger to be present to play that line (eg holding a particular item).
+
+Things I need to add:
+Specific things you can ask all NPCs, eg ask about items or places, things like that. currently it only works if they have a keyworded response.
+
+Also, I need a way to prioritise triggered conversation elements. Currently they're ordered, but I need to be able to say 'if a person is carrying a trigger item, start the conversation with that'. Though maybe I just do that using the speech line idx tbh. Will make it a pain down the line though if I realise I want to add a new trigger item line and have to relabel every speech line thereafter. Yeah I need a fix for that. Okay.
+
+I need to figure out how to have proper conversation chains. So the npc can ask a question and have the player answer without having to make events for each element.
+
+
+dammit.

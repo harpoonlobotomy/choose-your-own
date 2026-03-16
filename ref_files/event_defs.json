@@ -196,5 +196,10 @@
     "messages": {
         "end_msg": "The [[]] seems to be charged now."
         }
+    },
+"learn_about_cult": {
+    "messages": {
+        "start_msg": "(Seems like something worth looking into...)"
+        }
     }
 }

@@ -27,14 +27,16 @@ class itemGenerator:
 
         for placeInstance in loc.places:
             for cardinal in loc.cardinals[placeInstance]:
-                self.by_location.setdefault(cardinal, set())
+                card = loc.by_cardinal_str(cardinal, placeInstance)
+                print(f"cardinal in placeInstance: {cardinal}, card: {card}, {placeInstance}")
+                self.by_location.setdefault(card, set())
 
     def assign_item_to_loc(self, location, cardinal, item):
         card = loc.by_cardinal_str(cardinal, location)
         if not self.by_location.get(card):
-            self.by_location[card] = list()
+            self.by_location[card] = set()
 
-        self.by_location[card].append(item)
+        self.by_location[card].add(item)
 
 generator = itemGenerator()
 

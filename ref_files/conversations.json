@@ -25,10 +25,24 @@
                 "has_requirements": false,
                 "autoplay": false,
                 "keywords": ["cult"],
-                "speech": "Oh, you're starting to remember. Good. Your mother's around town somewhere, though whether she will want to talk to you after all this is questionable."
+                "speech": "Oh, you're starting to remember. Good. Though I do so hate that word. Your mother's around town somewhere, though whether she will want to talk to you after all this is questionable.\n      The rest of the congregation have... left.",
+                "event": {"starts_event": "learn_about_cult"}
+                },
+            "4": {
+                "has_requirements": {"event": "learn_about_cult"},
+                "autoplay": false,
+                "keywords": ["mother"],
+                "speech": "Mm. I do miss having her around the place, I suppose. But, needs must, `greater good` and all of that. I suppose I'll see her again someday. Have you seen her around?",
+                "can_be_answered": {"if_yes": "seen_mother"}
+                },
+            "5": {
+                 "has_requirements": false,
+                 "autoplay": false,
+                 "keywords": ["seen_mother"],
+                 "speech": "Oh, that must have been something of a shock. I'm very sorry. I would ask if she was well, but... Well.",
+                 "add_conversation": "gardenia"
                 }
             },
-        "parts_said": [],
         "language": "common"
         },
     "holy_book": {
@@ -42,7 +56,18 @@
                 "speech": "There's a book, and it's missing. And this missing book is holy."
                 }
             },
-        "parts_said": [],
         "language": "common"
+    },
+    "gardenia": {
+        "topic_label": "Gardenia",
+        "relevant_items": [],
+        "conversation": {
+            "0": {
+                "has_requirements": false,
+                "autoplay": true,
+                "keywords": [],
+                "speech": "Blah blah talk about mummy"
+            }
+        }
     }
 }

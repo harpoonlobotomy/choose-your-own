@@ -8,7 +8,7 @@
     "can_speak": "True",
     "descriptions": {
       "generic": "the Father of [[this]] church",
-      "npc_introduction": "A tall, broad-shouldered man with dark hair and charcoal robes. His appearance makes you a little uncomfortable, but you can't put a finger on why.\n     He stands near the podium at the head of the aisle of the church, seemingly deep in thought."
+      "npc_introduction": "He is a tall, broad-shouldered man with dark hair and charcoal robes. His presence makes you a little uncomfortable, but you can't put a finger on why.\nHe stands near the podium at the head of the aisle of the church, seemingly deep in thought."
     },
     "conversation_parts": {"start": "Well, good to see you finally arrived, [[playername]]. Everyone else has long gone, but I could still use your help, if you're willing.", "end": "Alright. Enough for now then, I suppose."},
     "item_type": [
@@ -23,7 +23,7 @@
     "languages_spoken": [
       "common"
     ],
-    "location": "graveyard north",
+    "location": "church north",
     "nicenames": {
       "generic": ""
     },
@@ -33,9 +33,9 @@
     "smash_defence": "5",
     "speaks_common": "True",
     "speech_traits": [
-      "ellipses",
-      "run_ons"
+      "ellipses"
     ],
+    "acceptance": ["Very good.", "Understood."],
     "approval": ["Yes, good.", "Indeed so."],
     "disapproval": ["... Really?", "I wouldn't think so."],
     "unsure": ["I'm not really sure what you're talking about, to be honest.", "I'm not sure I know what you mean."]
