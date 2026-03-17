@@ -14,21 +14,18 @@ from itemRegistry import type_defaults
 class itemGenerator:
     def __init__(self):
         self.item_defs = {}
-
         self.alt_names = {}
 
-        self.is_child = {"child": {}, "parent": {}} # really should just have child:parent, but that won't include locations etc. Doesn't work.
         self.has_children = {"parent": {}, f"children": {}} # item + def
         self.requires_key = {"lock": {}, "key": {}}
-        self.is_key = {"key": {}, "lock": {}} # again - these two have a lot of redundant info but I want to start here.
-        self.by_location = {} # not using this at all currently. May delete later.
+
+        self.by_location = {}
 
     def complete_location_dict(self):
 
         for placeInstance in loc.places:
             for cardinal in loc.cardinals[placeInstance]:
                 card = loc.by_cardinal_str(cardinal, placeInstance)
-                print(f"cardinal in placeInstance: {cardinal}, card: {card}, {placeInstance}")
                 self.by_location.setdefault(card, set())
 
     def assign_item_to_loc(self, location, cardinal, item):
@@ -69,8 +66,7 @@ def get_type_tags(new_str, item_dict):
 
     for category in new_str:
         if category not in type_defaults:
-            print(f"Category `{category}` not in type_defaults.")
-            exit()
+            exit(f"Category `{category}` not in type_defaults. Exiting.")
 
         for flag, val in type_defaults[category].items():
             if flag not in item_dict: # so it doesn't overwrite any custom flag in a loc item entry
@@ -79,8 +75,6 @@ def get_type_tags(new_str, item_dict):
                 for k, v in type_defaults[category][flag].items:
                     if k not in item_dict[flag]:
                         item_dict[flag].update({k: v})
-
-
 
     return item_dict
 
@@ -112,8 +106,7 @@ def item_def_from_str(item_name:str, item_dict=None):
         new_item_dict = {}
 
     if item_name == "":
-        print("No item name given.")
-        exit()
+        exit("No item name given to item_def_from_str. Cannot continue. Exiting.")
 
     print("\n")
     printing.print_green(f"Options: {list(type_defaults)}", invert=True)
@@ -157,12 +150,10 @@ with open(json_primary, 'r') as file:
     item_defs = json.load(file)
 
 json_to_edit = "ref_files/generated_items.json"
-#with open(json_to_edit, 'r') as file:
-#    gen_items = json.load(file)
+
 gen_items = {} # not currently using the actual file, just for temp storage.
 
-def get_item_data(item_name, incoming_data=None): # note: no locations here. This is pure item-def building using available item details from loc_data + item+gen_defs. Use these as bases for instancing the items in itemReg.
-    #print(f"item_name in get_item_data: {item_name}")
+def get_item_data(item_name, incoming_data=None):
     if not incoming_data:
         incoming_data = {}
 

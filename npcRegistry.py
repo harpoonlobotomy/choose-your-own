@@ -10,10 +10,8 @@ class conversationInstance:
     def __init__(self, topic, data):
         self.topic = topic
         self.topic_label = data["topic_label"]
-        print(f"self.label: {self.topic_label}")
         self.relevant_items = data["relevant_items"]
-        #self.conversation_data =  # "0": has_requirements, keywords, speech
-        self.parts_said = [] # list of str digits identifying which parts of the conversation have been said globally. Does not track per character. Should probably get these from npcInstances, actually, instead of storing it twice.
+        self.parts_said = []
         self.by_part = {}
         self.keywords = {} # keyword: part_idx
         self.autoplay_parts = set()

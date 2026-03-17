@@ -42,10 +42,40 @@ def check_requirements(data):
                 if isinstance(event, set):
                     event = list(i for i in event if i.state in (0, 1))
                     event = event[0] if event else None
-                print(f"Event: {event}")
+                #print(f"Event: {event}")
                 if event and event.state in (0, 1): # past + present, not future. May set this to just future or specify required state at some point.
                     requirement_met = True
     return requirement_met
+
+def confirm_use_of_data(npc, data):
+    if data.get("event"):
+        manage_events(npc, data["event"])
+
+    if data.get("add_conversation"):
+        from npcRegistry import npc_Registry
+        npc_Registry.add_conversation_to_npc(npc, topic=data["add_conversation"])
+
+def if_can_be_answered(data):
+    requirement_met = True
+    failure = None
+
+    if data["can_be_answered"].get("requirements"):
+        requirement_met = False
+        for key, value in data["can_be_answered"]["requirements"].items():
+            if key != "if_requirement_not_met":
+                if key == "datapoint":
+                    from set_up_game import game
+                    if game.datapoints:
+                        for k, v in game.datapoints.items():
+                            if v == value:
+                                requirement_met = True
+                # if key == othe things that aren't set up yet
+        if not requirement_met:
+            failure = data["can_be_answered"]["requirements"].get("if_requirement_not_met")
+    else:
+        requirement_met = True
+
+    return requirement_met, failure
 
 def check_data(npc:npcInstance, idx:str, conversation:conversationInstance, data:dict, parts_said=None, is_keyword=False):
 
@@ -61,50 +91,59 @@ def check_data(npc:npcInstance, idx:str, conversation:conversationInstance, data
         return
 
     if parts_said and idx in parts_said:
-        print(f"parts_said and idx in parts said: {idx} // {parts_said}")
+        #print(f"parts_said and idx in parts said: {idx} // {parts_said}")
         return
 
     if not parts_said and parts_said == None:
-        print(f"no parts_said: {parts_said}")
+        #print(f"no parts_said: {parts_said}")
         parts_said = npc.conversations[conversation].get("parts_said")
-        print(f"parts_said: {parts_said}")
+        #print(f"parts_said: {parts_said}")
 
     parts_said.add(idx)
-    print(f"parts_said: {parts_said}")
-    print("   ", affect(npc, data["speech"]), "\n")
+    if is_keyword:
+        print("\n   ", affect(npc, data["speech"]), "\n")
+    else:
+        print("\n   ", affect(npc, data["speech"]), "\n")
+    #print(f"parts_said: {parts_said}")
 
-    if data.get("event"):
-        manage_events(npc, data["event"])
-
-    if data.get("add_conversation"):
-        from npcRegistry import npc_Registry
-        npc_Registry.add_conversation_to_npc(npc, topic=data["add_conversation"])
-
+    confirm_use_of_data(npc, data)
 
     test = input("...")
     if test:
         skip = False
         if data.get("can_be_answered"):
+            requirement_met, failure = if_can_be_answered(data)
+
             if data["can_be_answered"].get("if_yes"):
                 if test.lower() in ("y", "yes"):
-                    test = data["can_be_answered"]["if_yes"]
+                    if requirement_met:
+                        confirm_use_of_data(npc, data)
+                        test = data["can_be_answered"]["if_yes"]
+                    elif failure:
+                        print("\n   ", affect(npc, failure), "\n")
+                        return
                 else:
+                    import random
+                    print("\n   ", affect(npc,random.choice(npc.acceptance)), "\n")
                     return
+        else:
+            confirm_use_of_data(npc, data)
 
-        elif test.lower() in ("y", "yes"):
+        if test.lower() in ("y", "yes"):
             print("What do you want to say?")
             test = input("\n... ")
     else:
+        confirm_use_of_data(npc, data)
         skip = True
 
-    #print()
+
     if test:
         is_keyword = False
         if npc.keywords.get(test):# = {convo:convo.keywords[kw]}
             for convo, entry in npc.keywords[test].items():
                 outcome = discuss_topic(npc, convo, entry, skip=skip)
                 skip = True
-                print(f"discuss_topic outcome for {test}: {outcome}")
+                #print(f"discuss_topic outcome for {test}: {outcome}")
                 if outcome == "end_topic":
                     return "end_topic"
                 if outcome == "inner_loop":
@@ -150,16 +189,15 @@ def discuss_topic(npc:npcInstance, conversation:conversationInstance, keyword_pa
 
     import random
     if not keyword_part:
-        print("\n  ", affect(npc, f"{random.choice(npc.approval)} Let's discuss {conversation.topic_label}."), "\n")
-    else:
-        print()
+        print("\n  ", affect(npc, f"{random.choice(npc.approval)} Let's discuss {conversation.topic_label}."))#, "\n")
+
     play_again = True
     parts_said = npc.conversations[conversation].get("parts_said")
-    print(f"parts said: {parts_said}, type: {type(parts_said)} // conversation.autoplay_parts: {conversation.autoplay_parts}")
+    #print(f"parts said: {parts_said}, type: {type(parts_said)} // conversation.autoplay_parts: {conversation.autoplay_parts}")
     autoplay_in_said = list(i for i in conversation.autoplay_parts if i in parts_said)
     if autoplay_in_said and len(autoplay_in_said) == len(conversation.autoplay_parts) and not keyword_part: # < so it doesn't succeed if we said a bunch of keyword lines but not the autoplay ones as happened in testing.
     #if parts_said and len(parts_said) >= len(conversation.autoplay_parts):
-        print("   ", affect(npc, "We've discussed this topic before. Do you want to discuss it again?"), "\n")
+        print("\n   ", affect(npc, "We've discussed this topic before. Do you want to discuss it again?"), "\n")
         test = input("... ")
         if test and test.lower() in ("y", "yes"):
             print("\n   ", affect(npc, f"{random.choice(npc.approval)}"), "\n")
@@ -183,7 +221,7 @@ def discuss_topic(npc:npcInstance, conversation:conversationInstance, keyword_pa
 
         else:
             for idx, data in conversation.by_part.items():
-                print(f"idx: {idx}, data: {data}")
+                #print(f"idx: {idx}, data: {data}")
                 test = check_data(npc, idx, conversation, data, parts_said)
                 if test == "end_topic":
                     return
@@ -195,7 +233,10 @@ def discuss_topic(npc:npcInstance, conversation:conversationInstance, keyword_pa
     if autoplay_in_said and len(autoplay_in_said) == len(conversation.autoplay_parts):
     #if parts_said and len(parts_said) >= len(conversation.autoplay_parts):
     #if not skip:
-        print("   ", affect(npc, "It seems like there's nothing else to say about this."))
+        if keyword_part:
+            print("   ", affect(npc, "It seems like there's nothing else to say about this."))
+        else:
+            print("\n   ", affect(npc, "It seems like there's nothing else to say about this."))
         print()
     return "end_topic"
 
@@ -239,7 +280,7 @@ def conversation_loop(npc:npcInstance):
 
         if not found:
             import random
-            print(f"\n    {npc_colour(npc, f'`{test}`?')}", affect(npc, f"{random.choice(npc.unsure)}"), "\n")
+            print(f"    {npc_colour(npc, f'`{test}`?')}", affect(npc, f"{random.choice(npc.unsure)}"), "\n")
             return "end_topic" # get it to relist the conversation options. Might not work.
 
     else:
@@ -269,10 +310,10 @@ def start_conversation(npc:npcInstance):
     output = conversation_loop(npc)
     while output in ("end_topic", "inner_loop"):
         output = conversation_loop(npc)
-        print(f"output: {output}")
+        #print(f"output: {output}")
         if output == "inner_loop":
             output = conversation_loop(npc)
-            print(f"output: {output}")
+            #print(f"output: {output}")
 
 
     if not output:

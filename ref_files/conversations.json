@@ -25,7 +25,7 @@
                 "has_requirements": false,
                 "autoplay": false,
                 "keywords": ["cult"],
-                "speech": "Oh, you're starting to remember. Good. Though I do so hate that word. Your mother's around town somewhere, though whether she will want to talk to you after all this is questionable.\n      The rest of the congregation have... left.",
+                "speech": "Oh, you're starting to remember. Good. Though I do so hate that word. Your mother's around town somewhere, though whether she will talk to you after all this is questionable.\n      The rest of the congregation have... left.",
                 "event": {"starts_event": "learn_about_cult"}
                 },
             "4": {
@@ -33,7 +33,7 @@
                 "autoplay": false,
                 "keywords": ["mother"],
                 "speech": "Mm. I do miss having her around the place, I suppose. But, needs must, `greater good` and all of that. I suppose I'll see her again someday. Have you seen her around?",
-                "can_be_answered": {"if_yes": "seen_mother"}
+                "can_be_answered": {"if_yes": "seen_mother", "requirements": {"datapoint": "mother_seen", "if_requirement_not_met": "Really? That is surprising."}}
                 },
             "5": {
                  "has_requirements": false,
