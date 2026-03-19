@@ -2,19 +2,20 @@
 
 from env_data import cardinalInstance
 
-
 filler_words = ["well", "umm", "ah", "well, uh", "I guess", "I think"]
+sample_convo_parts = {"start": "Hello.", "end": "Goodbye."}
+sample_responses = {"acceptance": "Alright", "approval": "Indeed", "disapproval": "I doubt that.", "unsure": "What?"}
 
 class conversationInstance:
 
-    def __init__(self, topic, data):
+    def __init__(self, topic:str, data:dict):
         self.topic = topic
-        self.topic_label = data["topic_label"]
-        self.relevant_items = data["relevant_items"]
+        self.topic_label:str = data["topic_label"]
+        self.relevant_items:list = data.get("relevant_items")
         self.parts_said = []
-        self.by_part = {}
-        self.keywords = {} # keyword: part_idx
-        self.autoplay_parts = set()
+        self.by_part:dict[str, dict] = {}
+        self.keywords: dict[str, str] = {} # keyword: part_idx
+        self.autoplay_parts:set[str] = set()
         for idx in data["conversation"]:
             if data["conversation"][idx].get("keywords"):
                 for keyword in data["conversation"][idx]["keywords"]:
@@ -22,7 +23,7 @@ class conversationInstance:
             self.by_part.setdefault(idx, data["conversation"][idx])
             if data["conversation"][idx].get("autoplay"):
                 self.autoplay_parts.add(idx)
-        self.language = data.get("language")
+        self.language:str = data.get("language")
 
     def __repr__(self):
         return f"<conversationInstance `{self.topic}`>"
@@ -32,13 +33,13 @@ class conversationsRegistry:
 
     def __init__(self):
 
-        self.conversations = set()
-        self.by_topic = {} # effectively 'by_name', eg "church_history". dict of dicts
-        self.by_item = {} # for finding topics related to items
-        self.by_character = {} # for storing which character has spoken about what
-        self.by_language = {}
+        self.conversations:set[conversationInstance] = set()
+        self.by_topic:dict[str, conversationInstance] = {} # effectively 'by_name', eg "church_history" > church history instance
+        self.by_item:dict[str, set] = {} # for finding topics related to items
+        self.by_character:dict[npcInstance, set[conversationInstance]] = {} # for storing which character has spoken about what
+        self.by_language:dict[str, set[conversationInstance]] = {}
 
-    def init_conversations(self, convo_defs):
+    def init_conversations(self, convo_defs:dict):
         """Init all NPCs from NPC_defs and add to npcRegistry"""
 
         for name, data in convo_defs.items():
@@ -57,33 +58,41 @@ class conversationsRegistry:
 
 class npcInstance:
 
-    def __init__(self, name, data):
+    def __init__(self, name:str, data:dict):
 
         self.name = name
         self.print_name = data.get("print_name") if data.get("print_name") else name
         self.text_styling = data.get("text_styling")
-        self.colour = None
-        self.colourcode_start = None
-        self.colourcode_end = None
-        self.age = data.get("age")
+        self.colour:str = None
+        self.colourcode_start:str = None
+        self.colourcode_end:str = None
+        self.age:str = data.get("age")
         if not self.age:
-            self.age = "average"
-        self.can_die = data.get("can_die")
-        self.is_dead = False
-        self.alt_names = data["alt_names"]
-        self.can_speak = data.get("can_speak")
+            self.age:str = "average"
+        self.can_die:bool = data.get("can_die")
+        self.is_dead:bool = False
+        self.alt_names:list[str] = data["alt_names"]
+        self.can_speak:bool = data.get("can_speak")
 
-        self.speaks_common = data.get("speaks_common")
-        self.languages_spoken = data.get("languages_spoken")
-        self.speech_traits = data.get("speech_traits")
+        self.speaks_common:bool = data.get("speaks_common")
+        self.languages_spoken:list[str] = data.get("languages_spoken")
+        self.speech_traits:list[str] = data.get("speech_traits")
 
-        self.item_type = data.get("item_type")
-        self.knows_about = data.get("knows_about")
-        self.conversations = {} # conversationInstance: {parts_said: idx}
+        self.item_type:list[str] = data.get("item_type")
+        self.knows_about:list[str] = data.get("knows_about")
+        self.conversations:dict[conversationInstance, str] = {}
 
         self.location = data.get("location")
+        from env_data import locRegistry, cardinalInstance
 
-        self.nicenames = data.get("nicenames")
+        if not self.location:
+            self.location = locRegistry.no_place
+        elif isinstance(self.location, str):
+            loc = locRegistry.by_cardinal_str(self.location)
+            if loc and isinstance(loc, cardinalInstance):
+                self.location = loc
+
+        self.nicenames:dict = data.get("nicenames")
         if (self.nicenames and self.nicenames.get("generic") and self.nicenames["generic"] == "") or not self.nicenames or not self.nicenames.get("generic"):
             self.nicenames["generic"] = self.name
         self.nicename = self.nicenames["generic"]
@@ -91,17 +100,20 @@ class npcInstance:
         self.descriptions = data.get("descriptions") if data.get("descriptions") and data["descriptions"]["generic"] != "" else {"generic": f"It's a {self.name}", "npc_introduction": f"Before you, you see {(self.name)}"}
         self.description = self.descriptions["generic"]
         self.introduction = self.descriptions.get("npc_introduction")
-        self.conversation_parts = data.get("conversation_parts")
-        if self.conversation_parts:
-            from set_up_game import game
-            self.convo_start = self.conversation_parts.get("start")
-            if "[[playername]]" in self.convo_start:
-                self.convo_start = self.convo_start.replace("[[playername]]", game.playername)
-            self.convo_end = self.conversation_parts.get("end")
-            if "[[playername]]" in self.convo_end:
-                self.convo_end = self.convo_end.replace("[[playername]]", game.playername)
+        self.conversation_parts:dict[str, str] = data.get("conversation_parts")
+        if not self.conversation_parts:
+            self.conversation_parts = sample_convo_parts
 
-        self.keywords = {} # npc.keywords[kw] = {convo:convo.keywords[kw]} <- saving convo:idx on npcs, so I can check directly during conversations across all possible conversations for keywords.
+        self.convo_start = self.conversation_parts["start"]
+        if "[[playername]]" in self.convo_start:
+            from set_up_game import game
+            self.convo_start = self.convo_start.replace("[[playername]]", game.playername)
+        self.convo_end = self.conversation_parts["end"]
+        if "[[playername]]" in self.convo_end:
+            from set_up_game import game
+            self.convo_end = self.convo_end.replace("[[playername]]", game.playername)
+
+        self.keywords: dict[str, dict[conversationInstance, str]] = {} # npc.keywords[kw] = {convo:convo.keywords[kw]} <- saving convo:idx on npcs, so I can check directly during conversations across all possible conversations for keywords.
 
         self.slice_attack = data.get("slice_attack")
         self.slice_defence = data.get("slice_defence")
@@ -110,33 +122,36 @@ class npcInstance:
 
         self.encountered = False
 
-        self.acceptance = data.get("acceptance")
-        self.approval = data.get("approval")
-        self.disapproval = data.get("disapproval")
-        self.unsure = data.get("unsure")
+        if not data.get("responses"):
+            responses = sample_responses
+        else:
+            responses = data["responses"]
+        self.acceptance = responses.get("acceptance")
+        self.approval = responses.get("approval")
+        self.disapproval = responses.get("disapproval")
+        self.unsure = responses.get("unsure")
 
         for item in data:
-            if not hasattr(self, item):
+            if not hasattr(self, item) and item != "responses":
                 print(f"Item `{item}` in NPC_defs but not in npcInstance")
 
     def __repr__(self):
-        return(f"<npcInstance `{self.name}`, {(f'at {self.location}') if self.location else ''}")
+        return(f"<npcInstance `{self.name}`, {(f'at {self.location}') if hasattr(self, "location") else ''}")
 
 
 class npcRegistry:
 
     def __init__(self):
-        self.npcs = set() # all instances
-        self.by_name = {} # name: instance # one per name, for now. can change it later if I need to.
-        self.by_altname = {} # altname: instance
-        self.by_location = {} # cardinalInstance: set of npcInstances
-        self.by_language_spoken = {} # language str: set of npcInstances
-        self.by_conversation_topic = {} # topic: set of npcInstances with that topic
+        self.npcs:set[npcInstance] = set() # all instances
+        self.by_name:dict[str, npcInstance] = {} # name: instance # one per name, for now. can change it later if I need to.
+        self.by_altname:dict[str, npcInstance] = {} # altname: instance
+        self.by_location:dict[cardinalInstance, set[npcInstance]] = {}
+        self.by_language_spoken:dict[str, set[npcInstance]] = {}
+        self.by_conversation_topic:dict[str, set[npcInstance]] = {} # topic: set of npcInstances with that topic
 
 
-    def init_npcs(self, npc_defs):
+    def init_npcs(self, npc_defs:dict):
         """Init all NPCs from NPC_defs and add to npcRegistry"""
-        from env_data import locRegistry, cardinalInstance
 
         for name, data in npc_defs.items():
             npc = npcInstance(name, data)
@@ -148,12 +163,7 @@ class npcRegistry:
                     from itemRegistry import registry
                     registry.by_alt_names[alt] = npc # adding to itemReg so I can still use the parser.
                     self.by_altname[alt] = npc # might not need this one.
-            if not hasattr(npc, "location") or not npc.location:
-                npc.location = locRegistry.no_place
-            elif isinstance(npc.location, str):
-                    loc = locRegistry.by_cardinal_str(npc.location)
-                    if loc and isinstance(loc, cardinalInstance):
-                        npc.location = loc
+
             self.by_location.setdefault(npc.location, set()).add(npc)
 
             if npc.languages_spoken:
@@ -174,7 +184,7 @@ class npcRegistry:
                         colour = item
                 if colour:
                     npc.colour = colour
-                code = Colours.c("split", fg=colour, bg=None, bold=bld, italics=ita, underline=und, invert=False, no_reset=False)
+                code = Colours.c("split", fg=colour, bg=bg, bold=bld, italics=ita, underline=und, invert=False, no_reset=False)
                 code_parts = code.split("split")
                 npc.colourcode_start = code_parts[0]
                 npc.colourcode_end = code_parts[1]
@@ -302,7 +312,6 @@ def initialise_conversations():
     conversing.init_conversations(convo_defs)
 
 
-
 def initialise_npcs():
     from config import npc_data
     import json
@@ -311,21 +320,16 @@ def initialise_npcs():
     npc_Registry.init_npcs(npc_defs)
 
     for npc in npc_Registry.npcs:
-        npc:npcInstance
         #print(f"introduction: {npc.introduction},  npc.languages: {npc.languages_spoken}")
         if npc.knows_about:
             for topic in npc.knows_about:
                 npc_Registry.add_conversation_to_npc(npc, topic)
 
-
         if npc.location and isinstance(npc.location, cardinalInstance):# and npc.location.description:
             npc.location.NPCs.add(npc)
             from itemRegistry import registry
             registry.by_location[npc.location].add(npc)
-            #import testing_coloured_descriptions
-            #testing_coloured_descriptions.loc_descriptions(npc.location.place, npc.location)
-#Note: This section only seems to be needed when testing in isolation, in regular gameplay the description is correct without this.
-            #print(f"npc.location.description: {npc.location.description}")
+
 
 def test_npc():
     for npc in npc_Registry.npcs:

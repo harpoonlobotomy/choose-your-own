@@ -1,3 +1,11 @@
+cardinals_list = ["north", "south", "east", "west"]
+
+cardinal_cols = {
+    "north": "red",
+    "south": "blue",
+    "east": "cyan",
+    "west": "magenta"
+} # putting it here so it's in a neutral place that everything can reference.
 
 enable_tui: bool = False
 

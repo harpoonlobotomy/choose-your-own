@@ -156,10 +156,7 @@ def relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=None
         test_cardinal, success = get_viable_cardinal(new_cardinal)
         #print(f"new cardinal: {new_cardinal} // value: {success}")
         if not success:
-            if hasattr(test_cardinal.place, "missing_cardinal"):
-                print(assign_colour(test_cardinal.place.missing_cardinal, "event_msg"))
-            else:
-                print(assign_colour("There's nothing over that way.", colour="event_msg"))
+            print(assign_colour(test_cardinal.place.missing_cardinal, "event_msg"))
 
             if new_cardinal.cardinal_data or new_cardinal.place == loc.current.place: # separated new_ from test_ so it tests if the expected location will be chosen, and prints based on that, not just loc.current (which may not be where we 'turn back' to, or for times where you're turning within the current loc.)
                 print(assign_colour("   You decide to turn back.\n", colour="event_msg"))
@@ -208,8 +205,8 @@ def relocate(new_location:placeInstance=None, new_cardinal:cardinalInstance=None
         loc.set_current(cardinal=new_cardinal)
         get_loc_descriptions(loc.current.place, loc.current)
         from itemRegistry import registry
-        if registry.by_location.get(loc.current):
-            items = registry.get_item_by_location(loc.current)
+        #if registry.by_location.get(loc.current):
+        #    items = registry.get_item_by_location(loc.current) # does nothing with items at all here, why get it?
         print(f"You're facing the {assign_colour(loc.current, card_type="place_name")}.\n\n{loc.current.description}")
 
     assert isinstance(loc.current, cardinalInstance)

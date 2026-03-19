@@ -175,7 +175,7 @@ def get_transition_noun(noun, format_tuple, input_dict, take_first=False, return
                 location = loc.current.place
             if hasattr(location, "entry_item"):
                 test_item = location.entry_item
-                print(f"HAs loc item: {loc_item}")
+                print(f"HAs loc item: {test_item}")
                 if take_first:
                     return test_item
                 if isinstance(test_item, str) and local_items_list:
@@ -184,17 +184,14 @@ def get_transition_noun(noun, format_tuple, input_dict, take_first=False, return
                             noun = loc_item
                             return noun
 
-
-                elif isinstance(loc_item, itemInstance) and local_items_list:
-                    if loc_item in local_items_list:
-                        noun = loc_item
+                elif isinstance(test_item, itemInstance) and local_items_list:
+                    if test_item in local_items_list:
+                        noun = test_item
                         return noun
                     else:
-                        local_names = dict()
                         for item in local_items_list:
-                            local_names[item.name] = item
-                        if loc_item.name in local_names: ## Fix this later, this should not be necessary.
-                            return local_names[loc_item.name]
+                            if item.name == test_item.name:
+                                return item
 
         return None
 
@@ -877,10 +874,25 @@ def go(format_tuple, input_dict, no_noun=None): ## move to a location/cardinal/i
     if (len(format_tuple) == 2 and (noun_entry or location_entry)) or (len(format_tuple) == 3 and (direction_entry and direction_entry["text"] in to_words)):
         #print(f"def go len2 or len3. Format tuple: {format_tuple}, dict: {input_dict}")
         noun = noun_entry["instance"] if noun_entry else None
+        if location_entry and not location_entry["instance"] and location_entry["str_name"]:
+            noun = registry.by_name.get(location_entry["str_name"])
+            if noun:
+                noun = next(iter(noun), None)
+            else:
+                from verb_membrane import membrane
+                for comp_loc in membrane.compound_locations:
+                    if location_entry["text"] in membrane.compound_locations[comp_loc]:
+                        location_entry["str_name"] = comp_loc
+                        location_entry["instance"] = loc.place_by_name(comp_loc)
+
+                if membrane.compound_locations.get(location_entry["text"]):
+                    location_entry["instance"] = membrane.compound_locations[location_entry["text"]]
+            #print(f'registry.by_name.get(location_entry.get("str_name"): {registry.by_name.get(location_entry.get("str_name"))}')
 
         if not noun and location_entry and registry.by_name.get(location_entry.get("str_name")):
+            #print("no noun but location with str_name that is a location")
             noun = registry.instances_by_name(location_entry.get("str_name"))
-            noun = noun[0] if noun else None
+            noun = next(iter(noun), None)
 
         if noun and ("transition" in noun.item_type or "loc_exterior" in noun.item_type):
             #if location_entry and location_entry["instance"] == loc.current.place:

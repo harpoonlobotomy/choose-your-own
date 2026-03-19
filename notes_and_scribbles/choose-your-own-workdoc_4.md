@@ -596,3 +596,216 @@ During, the interaction goes well, but then they all resolve when it's done and 
 
 6.20pm
 Okay. Think it's fixed now though it's probably still tenuous. It seems to loop correctly, ignoring recursed internal loops on leaving the loop cycle so it only officially ends once, as it should. Also conversation threads adding new conversations works nicely too.
+
+10.47am 18/3/26
+I'm starting to struggle with this, particularly I think because I don't have a story. Testing little discreet elements is all well and good but it's difficult to think of everything that would come up in genuine use, if not impossible.
+
+Though I did just remember how messy the is_event_trigger fn is. I guess I can just clean that up.
+
+I should read through all the existing scripts and see what needs fixing, what needs removing, etc. Maybe that's today's job.
+
+Man I kinda want a GUI/TUI for item generation. So you can press buttons for item type, fill fields, etc. Like filling out a pdf. That'd be cool.
+
+## Things to work on for existing scripts:
+* edit_item_defs: is messy but does work.
+* env_data: not sure what 'setattr(self, cardinal, self.cardinal_data)' is doing at env_data ln 50 when self.cardinal_data already exists.
+* env_data, ln 66ish. card and place carry 'transition_objs' but it's different data. card is a set of itemInstances, place is a dict specifying int_loc and ext_loc. Need to change it so that one builds the dict, and the other just takes that same dict. I think?
+* env_data: remove alt_names from placeInstance init once confirmed it's never used. it's not referenced outside env_data as far as I can see.
+* env_data: set_current(self, loc=None, cardinal=None) needs a serious cleanup. It's such a mess.
+* env_data: does anything still send by_cardinal_str a dict? I don't think so but need to check.
+* env_data: the transition_objs section in init placereg at ln 341 needs reworking (relates to earlier note re: ln 66)
+* env_data get_descriptions: is place.overview ever not a str? `if not isinstance(place.overview, str)` ln388
+* env_data get_loc_descriptions: was returning after the first get_descriptions(place). Check to find out if this is why I had to redo them later, maybe I can reduce redundancy here.
+
+* is start_trigger_by_item etc in eventRegistrar actually used by eventRegistry? Check.
+* why am I adding generated events to add_to_intake before events.add_event? Is it for preprocessing? Probably I suppose. check.
+* eventRegistry: event_state_by_int is only used by trigger/event repr.
+* eventReg: reg.trigger_items is not used. Remove?
+* apparently reg.self.triggers is not used either. Remove also?
+* reg.self.start_triggers is not used either. I don't think we use this because we tell the trigger items themselves that they're triggers.
+* reg.no_item_restriction also not used.
+* reg line 1432: calls 'event' without checking if event exists. but is_event_trigger is such a mess I'm not fixing it yet.
+* ln 496, we use registrar's 'start_trigger_is_attr' instead of 'events'. idk why. generate_events_from_itemname is used from eventReg *fixed
+* ln 1692, add_to_intake adds the intake event to registrar.events, but adds 'generate_events_from_itemname to 'events' directly. What the hell. Surely they shoul all be in registrar, no? * fixed
+* match_item_to_name_only is not used anywhere I can see.
+* start_trigger_is_attr is not a set attr for eventInstances. I think it's just set by `for item in attr: setattr(self, item, attr[item])`, along with other things. God I need to redo this whole thing so badly.
+* self.start_triggers used to be 'start_trigger_is_item' from registrar.
+* > match_item_by_name_only is used here:
+`intake_event.start_trigger["item_trigger"].get("match_item_by_name_only")`, ln 1446. But it's after if `registrar.generate_items_from_itemname.get(noun_inst.name)`, which is literally created by
+`self.generate_events_from_itemname[event.start_trigger["item_trigger"]["trigger_item"]] = event.name`. So anything in generate_items_from_itemname is definitely an item_trigger start_trigger... So unless there's a route where an item can be generate_events_from_itemname but not be a start trigger item, I don't need that second check.
+* event.no_item_restriction is checked once, but I can't see it ever added to. Currently entirely pointless I think.
+* need to set item triggers as is_event_key more intentionally.
+* get_parts_from_tuple(attr_trigger) is broken. It calls get_parts_from_tuple internally but then still returns tup?
+* is_event_trigger only runs after if event.end_triggers, as an elif. So whether it can have start_triggers is defined by it not having end_triggers. That can't be right.
+* this line: `if event.no_item_restriction[noun_inst.name] == noun_inst:` doesn't work. if it gets to this point there is no 'event'
+* verb_actions: move_a_to_b uses container_limit_sizes to check if something can go into a container. None of the other move functions seem to do that. def move_item should really do that...
+* in itemReg, starting_location starts as str but is sometimes cardinalInstance. (It was sometimes placeInstance too but I changed that at least.)
+* itemreg does this: `if attr["exceptions"].get("starting_location"):` twice, once inside item init and once immediately after it in init_single.
+* itemReg init: remove `for attribute in attr:`, do it intentionally, using item_type for more specific attr.
+* itemreg create_base_items, does if cardinal == None: to get card_inst but then checks by_cardinal_str anyway. Silly. just get card_inst from by_cardinal_str if cardinal_str is given
+* itemreg adds 'item_data["description]' to the item defs dict if it doesn't exist, arbitrarily, from item_data["descriptions"]. Given I add description later, this feels utterly bizarre to do. Should remove entirely, no? Oh, wait - no, it's because it allows for location specific descriptions. Right. It can stay for now I guess. Has to be a better way of doing it though.
+* Can I remove `if hasattr(obj, "is_loc_exterior"):` from ln 1749 in itemReg? Should all be done in item init by that point, no?
+* misc_utilites:: check if I still need to run get_loc_descriptions for def look_around (get_loc_descriptions(place=loc.currentPlace)) at all, and/or if I can just run it for cardinal instead of place.
+* misc_utilities print_failure_message needs a rework, but needs strenuous testing before applying any changes.
+* Why is env_data calling itemReg? OH - because env_data calls misc_utilities, which imports itemInst. Right. Well it does it slightly later now but it still calls misc_util, and I really can't avoid that. It doesn't break anything though, so I'm just going to leave it.
+* npcRegistry: need to set self.location at npc init instead of leaving it as the str (ln 84, self.location = data.get("location"))
+* have made self.conversation_parts["start"] mandatory; need to add something for it to choose start/ends from a random selection if not given. For now though all will be given. Have added a simple 'hello/goodbye' sample_conversation_parts for now.
+* What the hell is `setattr(self, cardinal, self.cardinal_data)` doing in env_data? I'm adding it /to the cardinalInstance/, why am I adding it to cardinal_instance[cardinal_str]? Especially when cardinal_data is already added to self directly.
+* verb_actions: line 194~  `for item in local_items_list:` makes a dict from a dict, then checks if a key from the dict is in the enw dict and returns it. Totally arbitrary. Gave it a quick fix but it needs more work.
+
+# Things fixed:
+* All places now have missing_cardinal added at init, so player_movement doesn't need to check for it and provide an alternative.
+* removed alt_name 'hotel room' from `city hotel room` because the parser already finds 'city hotel room' from 'hotel room'.
+* changed init_loc_items from importing the loc_data json to just using loc_data from locReg. Now it's only imported by env_data and generate_locations.
+* added type hinting for place.cardinals and self.places, much nicer.
+* also added type hinting for events and eventRegistrar.
+* placeInstance was carrying self.current_loc when only locReg needs that.
+* moved generate_events_from_itemname to registrar so it matches the rest of add_to_intake
+* removed check for 'if generate_event_from_itemname' has start_trigger item_trigger'.
+* stopped is_event_trigger from exiting is a noun already had an event, now just returns None, None.
+* changed event.no_item_restriction to events.no_item_restricted and updated how that dict works. Now takes an itemName as key and returns an event, for events with by-name-only noun acceptance.
+* moved the npc.location to be cardinalInstance during init, will only be str if self.location is a string that fails by_cardinal_str. I think it used to do it later because repr failed otherwise, but I think that was just during isolated testing because the location didnt' exist.
+* changed set_up_game to not bother looking for magazine + tentacle instances, but just generate them directly. Otherwise it'll steal them from location if they're ever added to locations at init. This way it generates those items for inv at startup instead of stealing from locs.
+* hopefully fixed cluster selection again, not sure when it broke but it should be more rigourous now.
+
+(eventRegistry is over 1k lines. Eep.)
+
+Major notes:
+* is_event_trigger is just a mess and needs some heavy checking/culling.
+* `reason` going into is_event_trigger needs cleaning up. Sometimes it's a str, sometimes it's a tuple, sometimes it's a tuple in a tuple.
+* Important one: currently, triggers either start or end, there are no 'contributes to the event' triggers. I need to add those. An event that needs you to collect 5 orbs, and only ends when you've done it. I don't want to check each time 'are you holding 5 orbs now', I want to know 'ah, you've collected all 5 orbs, now let me check if you're holding them'. so I need contribution-triggers to update event attr without ending the event.
+
+check_triggers only checks start_triggers if there are no end_triggers, whether end_triggers failed or not. And given all events have an end_trigger (and may not have a start_trigger if they `start_current`), that means the 'start_triggers' half of check_triggers just straight up never runs.
+So, 'check_triggers' should actually just be 'check_for_end_triggers' but is poorly named (and holds useless code that never runs).
+
+I'm assuming 'no_item_restriction' was for events where say, there are multiple instances of 'magic orb' and any orb can participate in that particular event, instead of being item-instance specific (like the moss).
+
+Updated to meet that idea.
+
+Also """"""'d out the event.start_triggers section to make sure it's never referenced before deleting it.
+
+I'm not touching item_dict_gen for this find-all-the-bad-things, my brain's hurting after just env_data and eventReg.
+
+3.50pm
+Hm.
+'drop moss' fails because 'you're not holding one', even though I am, because I'm holding 'dried moss', not 'moss', and there's 'moss' nearby.
+If i move away from the 'moss' obj, then it works. So I need to check compound_nouns even if it finds a local match.
+
+Going to change itemreg init to apply more attributes manually. eg if electronics in item_type, self.is_charged, etc etc.
+
+re: the moss thing, maybe I need to check using
+`from_inventory_name(test:str)` in misc_unilities but also check against plural_nouns, which currently it doesn't do. Hm. This is for if holding 'dried moss' and then trying to do def drop() and not finding moss in inv, so it double-checks the inv items before reporting failure via local items. if no local items match then it correctly reports the compound noun in inv.
+
+itemReg: if can_pick_up, add attr self.contained_in (currently it does this anyway but it doesn't add the attr openly so it's not in item.(attrs list) autofill)
+
+5.27pm
+'break jar' claims to break the jar, but the jar is still in tact and no glass shards are present.
+
+Have just checked, and prior to today's edits, the broken items worked properly. So I've broken it somewhere in today's edits. eeeeeeh.
+
+So now I gotta figure out which of the ten million tiny changes I made have broken it. Okay.
+Most likely: the by_name switch to set from list.
+Working on it.
+5.33pm
+partial improvement: break jar now separates dried flowers from jar, but the jar is still unbroken. This was in assign_colour.
+
+Oh jeez. If you do 'break jar' again after breaking it the first time, the output is this:
+"""
+ .-           -.
+[<  break jar  >]
+ '-           -'
+
+You smash the glass jar on the ground.
+
+
+
+
+
+"""
+All those blank lines.
+
+Oh - turns out that's what the 'elif start_triggers' was for. For immediate_actions. Fixed now, all breaking properly again.
+
+5.46pm
+Oh, interesting.
+
+ .-           -.
+[<  drop moss  >]
+ '-           -'
+
+Failed to find the correct function to use for <verbInstance drop (9683c64b-047c-4976-9011-75dbbbe3ed1a)>: 'NoneType' object is not iterable
+
+drop moss fails in the church.
+
+1: church has no items.
+2: only church north really has anything of note at all
+
+Oh, I think the church was from an earlier iteration where I had to make sure every cardinal exists. Whereas now, it allows nonexisting cardinals and just makes appropriate arrangements. So it's breaking because it says 'this cardinal exists' but it doesn't have any of the expected data. Okay.
+
+Oh, actually it's not the church being the bad thing, it's something in clusters specifically.
+
+#   While fixing that, more moss issues:
+
+pick up moss, works
+drop moss: does not print any 'you drop the moss' print even though the event just failed. It should print the event failed text. Why didn't it?
+pick up moss: finds the existing "Not new noun", but picks up something else instead.
+drop moss: still doesn't print the failure text
+pick up moss: now finds the original dropped moss. Should have found it the first time.
+
+6.12pm
+have checked, these errors are present in the last commit on main. So at least I haven't newly broken things.
+
+Hm. I can get a total of 4 mosses now. Yeah it's broken, just slightly. Why is it not always taking the singular moss? I thought it did before...
+
+Oh, now I have 7 mosses. Oops.
+
+Okay, so 'pick up moss' is not correctly moving the shard from its current loc. It picks it up and adds to inv, but doesn't move it from current loc.
+
+I think perhaps it's because that first 'drop' doesn't return correctly, if it fails to find an existing compound instance.
+
+6.43pm
+Okay, fixed it so it prints the failure message correctly. Need to fix it properly though because it should have the correct state_type already, but state_type is "end", not "failure".
+
+Back to the issue: it's not picking up the single moss by default.
+I set up 'singletons' in the separate_clusters fn to try to be more intentional about it.
+
+Hm.
+
+So:
+
+Not new noun: [<ItemInst moss / (b39206f2df1f) / east graveyard / None / 3>, <ItemInst moss / (247433b7dd3d) / east graveyard / None / 0>, <ItemInst moss / (60a01c010fd6) / east graveyard / None / 0>]
+SINGLETONS: [<ItemInst moss / (247433b7dd3d) / east graveyard / None / 0>, <ItemInst moss / (60a01c010fd6) / east graveyard / None / 0>]
+shard:  <ItemInst moss / (a569f6be6136) / east graveyard / None / 3> //  cluster <ItemInst moss / (b39206f2df1f) / east graveyard / None / 3>
+returning <ItemInst moss / (a569f6be6136) / north inventory_place / None / 1>
+You pick up the moss, and feel it squish a little between your fingers.
+
+After picking up and dropping 2 mosses (so I have 3 total instances), and taking moss again, if finds the 2 singletons, but generates a new one /instead/ of taking either of those. Whyyyyyy. Now I have 5 mosses again. Blaaaah
+
+6.53pm
+Okay, so it seems to be working again now. Will have to test it more thoroughly but it appears to be picking up singletons each time unless only clusters exist.
+
+Also you can drop moss in the church now.
+
+Oh, goddamn it. That quick fix for the event printing didn't work; now if the moss dries properly, it prints the success print, but then also prints the failure when the event ends. Okay. Well I knew I needed to properly fix it to recognise the 'failure' state_change.
+
+
+Huh. If you take /two/ mosses to the church and try to drop one, it fails.
+# [<  drop moss  >]
+#
+# Failed to find the correct function to use for <verbInstance drop (ceed8e9a-2bd6-45e1-aa1d-228768475eeb)>: cannot access local variable 'local_clusters' where it is not associated with a value
+
+okay fixed that too.
+
+Back to the event failure printing.
+event end_type is 'end', not failure. I have a check here that checks the trigger for an end_type, and that should be what tells it it's a failure-type, not an end_type.
+
+Okay, so the trigger just doesn't have end_type at all. It definitely should.
+
+So, at init, the trigger has failure:
+trig_data["item_trigger"].get("end_type"): failure
+
+7.25pm
+oh ffs. now 'go to shed' fails because nonetype has no attr 'place'.
+Okay so it's because it figured that 'shed' meant 'shed door' but it assigned it as 'location'. but with no instance.
+
+Okay. Now it checks compound_locations for the loc_entry text and gets the instance from place_by_name. 'go to shed' was failing occasionally if it found the location before the noun. Still means the parser could use some improvement so it properly gets that location instance, but for now this is a workaround that does the job. It's because it can only have one kind at the end of the parser, so if the sequencer then says 'no, you're a location', it doesn't have the location instance it would have. Thisis just a way of adding it back in.

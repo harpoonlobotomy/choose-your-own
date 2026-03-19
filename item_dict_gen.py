@@ -13,7 +13,7 @@ from itemRegistry import type_defaults
 
 class itemGenerator:
     def __init__(self):
-        self.item_defs = {}
+        self.item_defs:dict[str: dict()] = {}
         self.alt_names = {}
 
         self.has_children = {"parent": {}, f"children": {}} # item + def
@@ -292,9 +292,8 @@ def get_items_from_card(loc, cardinal, loc_data):
 
 def get_loc_items_dict(loc=None, cardinal=None):
 
-    import json, config
-    with open(config.loc_data, 'r') as file:
-        loc_dict = json.load(file)
+    from env_data import locRegistry
+    loc_dict = locRegistry.loc_data
 
     def get_cardinal_items(loc, cardinal):
 

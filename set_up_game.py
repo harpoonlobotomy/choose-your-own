@@ -1,11 +1,10 @@
 # Choose your own adventure
 
 import random
-from env_data import locRegistry as loc
+from env_data import locRegistry as loc, weatherdict
 from itemRegistry import registry, new_item_from_str
-import choices
+import choices, misc_utilities, config
 from logger import logging_fn
-import misc_utilities
 
 
 def test_for_weird():
@@ -20,15 +19,13 @@ def test_for_weird():
 def set_inventory():
 
     if game.w_value != 0:
-        instances = registry.by_name.get("severed tentacle")
-        if not instances:
-            from item_dict_gen import generator
-            item_dict = generator.item_defs.get("severed tentacle")
-            instance = new_item_from_str(item_name="severed tentacle", loc_cardinal=(loc.inv_place), partial_dict=item_dict)
-            if instance:
-                loc.inv_place.items.add(instance)
-        else:
-            instance = registry.move_item(instances[0], location = loc.inv_place)
+        #instances = registry.by_name.get("severed tentacle")
+        #if not instances: # I should know if there'll be a severed tentacle or not. Surely I should always generate one here, otherwise I'm going to steal one from a location if it exists.
+        from item_dict_gen import generator
+        item_dict = generator.item_defs.get("severed tentacle")
+        instance = new_item_from_str(item_name="severed tentacle", loc_cardinal=(loc.inv_place), partial_dict=item_dict)
+        if instance:
+            loc.inv_place.items.add(instance)
 
         game.weirdness = True
 
@@ -37,25 +34,17 @@ def loadout():
     set_inventory()
     paperclip_inst = registry.get_item_from_defs("paperclip")
     registry.move_item(paperclip_inst, location=loc.inv_place)
-    #paperclip_list = registry.instances_by_name("paperclip")
-
-    #registry.pick_up(paperclip_inst, starting_objects=True)
 
     ### Need to get list of item def entries with 'magazine'
     magazines = registry.item_def_by_attr(loot_type="magazine")
     #print(f"MAGAZINES: {magazines}")
     mag_choice = random.choice(magazines)
-    instances = registry.instances_by_name(mag_choice)
-    if not instances:
-        from item_dict_gen import generator
-        item_dict = generator.item_defs.get(mag_choice)
-        instance = new_item_from_str(item_name=mag_choice, loc_cardinal=(loc.inv_place), partial_dict=item_dict)
-        if instance:
-            loc.inv_place.items.add(instance)
-    else:
-        instance = registry.move_item(instances[0], location = loc.inv_place)
 
-    game.carryweight = 12
+    from item_dict_gen import generator
+    item_dict = generator.item_defs.get(mag_choice)
+    instance = new_item_from_str(item_name=mag_choice, loc_cardinal=(loc.inv_place), partial_dict=item_dict)
+    if instance:
+        loc.inv_place.items.add(instance)
 
     starting_items = registry.instances_by_category("starting") ## starting items ==
 
@@ -99,8 +88,6 @@ def load_world(relocate=False, rigged=False, new_loc=None):
     from misc_utilities import underline_central
     underline_central(textline)
 
-    from env_data import weatherdict
-
     rigged = False#True
     rig_weather = "perfect"
     rig_time = "midnight"
@@ -130,7 +117,6 @@ def init_game():
 
     game.player.update({"hp":random.randrange(4, 8)})
     game.emotional_summary = calc_emotions()
-    import config
 
     test_for_weird()
     #choices.set_choices()
@@ -144,7 +130,7 @@ def set_up(weirdness, bad_language, player_name): # skip straight to init_game t
     game.weirdness = weirdness
     game.bad_language = bad_language
     game.playername = player_name
-    game.facing_direction = random.choice(list(misc_utilities.cardinal_cols.keys()))
+    game.facing_direction = random.choice(list(config.cardinal_cols.keys()))
     game.painting = random.choice(choices.paintings)
     init_game()
 
@@ -180,7 +166,6 @@ class game:
 
     emotional_summary = None
 
-    import config
     place = config.starting_location_str
     time = "mid-morning"
     is_night = False
@@ -193,8 +178,7 @@ class game:
     facing_direction = config.starting_facing_direction
 
     currency = choices.currency
-    carrier = choices.carrier
-    carryweight = choices.carryweight
+    carrier, carryweight = choices.set_choices()
     painting = "a ship in rough seas"
     cardinals = ["north", "south", "east", "west"]
 

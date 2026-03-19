@@ -1,8 +1,6 @@
 {
   "city hotel room": {
-    "alt_names": [
-      "hotel room"
-    ],
+    "alt_names": [],
     "north": {
       "item_desc": {
         "generic": "The bed looks nice enough - nothing fancy, but not a disaster either. Two pillows, a spare blanket at the foot of the bed. There's a small bedside drawer to each side, and a painting above the bed."

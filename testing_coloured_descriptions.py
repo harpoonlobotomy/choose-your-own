@@ -1,6 +1,5 @@
 
-import re
-from env_data import placeInstance
+from env_data import cardinalInstance, placeInstance
 import itemRegistry
 from logger import logging_fn
 from misc_utilities import assign_colour
@@ -42,7 +41,6 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
             location = "city hotel room"
         if loc.loc_data[location].get(cardinal) and loc.loc_data[location][cardinal].get("item_desc"):
             long_dict = loc.loc_data[location][cardinal]["item_desc"]
-            no_starting_items = long_dict.get("no_starting_items")
             local_items = itemRegistry.registry.get_item_by_location(f"{location} {cardinal}")
             if local_items:
                 local_items = list(i for i in local_items if not (hasattr(i, "is_hidden") and getattr(i, "is_hidden")))
@@ -65,6 +63,7 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                         for inst in local_items:
                             if inst.name == item:
                                 if "[[]]" in long_dict[item]:
+                                    import re
                                     long_parts = long_dict[item].split("[[]]")
                                     if "fff" in long_parts[1]:
                                         if hasattr(inst, "event") and inst.event.state in (0, 1):
@@ -157,7 +156,7 @@ def generate_overview(location):
 
     format_descrip(d_type="area_descrip", description="", location = location, cardinal = None)
 
-def compile_long_desc(long_desc):
+def compile_long_desc(long_desc:list):
     if len(long_desc) == 1:
         item_description = long_desc[0]
     elif len(long_desc) == 2:
@@ -174,7 +173,7 @@ def compile_long_desc(long_desc):
 
     return new_desc
 
-def init_loc_descriptions(place=None, card=None):
+def init_loc_descriptions(place:placeInstance=None, card:cardinalInstance=None):
     """Generates or updates the location description for the given place and/or cardinal instances.\n\nUses current item presence and state to ensure the description matches the world-state."""
 
     desc_dict = {}
@@ -247,7 +246,7 @@ def init_loc_descriptions(place=None, card=None):
 
     return location_description, compiled_cardinals
 
-def loc_descriptions(place=None, card_inst=None):
+def loc_descriptions(place:placeInstance=None, card_inst:cardinalInstance=None):
     from env_data import locRegistry as loc
     if place and place == loc.current.place:
         card_inst = loc.current

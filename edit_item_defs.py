@@ -1,36 +1,10 @@
-import uuid
+
 from pprint import pprint
 from env_data import cardinalInstance, placeInstance
-from itemRegistry import itemInstance
-from misc_utilities import assign_colour
-import printing
-
-standard = "standard"
-static = "static"
-can_pick_up = "can_pick_up"
-container = "container"
-event = "event"
-trigger = "trigger"
-
-confirmed_items = {}
-
+from itemRegistry import itemInstance, type_defaults
 import json
+
 gen_items_file = "dynamic_data/generated_items.json"
-
-##  !! container limits come from container_limit_sizes in item defs
-
-# ! 'description_no_children', 'name_children_removed'  -- I really should use the dynamic description system here too. Whenever something is added/removed to/from a container, update the description. I'll add them wholecloth for now but really want to change this.
-
-# 'description_no_children' == description_no_children
-# 'name_children_removed' == name_no_children  ### Both of these two are updated at the name/description stage, not type_defaults.
-
-# 'needs_key_to_lock' = requires_key,
-# 'can_lock' == "can_be_locked"
-# 'is_closed == 'is_open:False'
-#
-## Removed all the interior dicts. They're not necessary and will actually get in the way - having the type defaults exposed is far more beneficial.
-
-from itemRegistry import type_defaults
 
 all_flags_in_type_default = set() # temporarily putting this out here.
 for cat_type in type_defaults:
@@ -131,7 +105,7 @@ def check_all_flags_present():
     #from pprint import pprint
     #pprint(item_defs_dict)
 
-    test=input()
+    test=input("Add item(s) to gen_items file?")
     if test in ("y", "yes"):
         with open(gen_items_file, 'w') as file: ##NOTE: Currently puts it in generated instead so I can check, later just do it directly back to items_main.
             json.dump(item_defs_dict, file, indent=2)
@@ -209,11 +183,7 @@ def testing_t_defaults_against_item_defs(per_item=True, item_name=""):
         print(f"Flags in item_defs but not default_types: {all_def_flags - all_flags_in_type_default}")
         return all_flags_in_type_default
 
-
-use_generated = False
  ## just a shortcut for a min while I test TODO remember to delete later
-gen_items = {}
-
 
 class tempDatastore:
 
@@ -225,7 +195,6 @@ class tempDatastore:
         self.temp_items = set()
         self.confirmed_items = {}
         self.updated = set()
-
 
 
 """
@@ -248,11 +217,6 @@ So indexed view is definitely what I need. The duplication and even deep nesting
     """
 #def init_testreg():
 
-### Okay so I need to apply defaults first, guaranteed, then apply exceptions. I think that's why event_key is failing.
-
-
-
-    #init_testreg()
 """
     def get_loc_items(loc, cardinal=None):
 
@@ -856,11 +820,10 @@ def fix_flags(dictionary, testReg:tempDatastore):
         testReg = get_all_default_flags(item, testReg)
         testReg = flags_not_in_default(item, testReg)
 
-# this first bit is just so I have a direct comparison of entries before/after the change.
-
-def the_gamut(output_to_main=False, add_single=None):
+def the_gamut(output_to_main=False, add_single=None, is_npc=False):
     print("the gamut\n")
-    if add_single:
+
+    if is_npc:
         item_defs = r"ref_files\NPC_defs.json"#r"dynamic_data\generated_items.json"
     else:
         item_defs = r"ref_files\items_main.json"
@@ -897,16 +860,15 @@ def the_gamut(output_to_main=False, add_single=None):
     #print(testReg.flags_to_amend)
     return f"Output corrected dict to {json_file}"
 
-def add_new_item(item_name, item_def=None):
+def add_new_item(item_name, item_def=None, is_npc=False):
 
-    #Right now the_gamut does full dicts, not single elements.
     new_item = {}
     new_item[item_name] = item_def
-    result = the_gamut(add_single=new_item)
+    result = the_gamut(add_single=new_item, is_npc=is_npc)
     print(f"Result: {result}")
 
 
 if __name__ == "__main__":
-    add_new_item("Father")
+    add_new_item("Father", is_npc=True)
 
 

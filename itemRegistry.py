@@ -1,6 +1,4 @@
 
-import uuid
-
 from env_data import cardinalInstance, placeInstance, locRegistry as loc
 from logger import logging_fn, traceback_fn
 import printing
@@ -10,7 +8,7 @@ global all_item_names_generated, all_items_generated
 all_item_names_generated = list()
 all_items_generated = set()
 
-CARDINALS = ["north", "east", "south", "west"]
+CARDINALS = config.cardinals_list
 
 ####### item_size CATEGORIES ############
 
@@ -126,10 +124,8 @@ material_msgs = {
 
 plant_type = ["tuber", "legume", "arctic carrot"]
 
-detail_data = { #moved this from item_definitions.
-
 # failure = <10, success = 10-19, crit = 20.
-}
+
 
 class itemInstance:
     """
@@ -146,7 +142,9 @@ class itemInstance:
         self.held_verb_actions = set()
 
 
-    def clean_item_types(self, attr):
+    def clean_item_types(self, attr) -> set[str]:
+
+        self.item_type = attr
 
         if isinstance(self.item_type, str):
             if isinstance(attr, str):
@@ -194,11 +192,12 @@ class itemInstance:
     def __init__(self, definition_key:str, attr:dict):
         #print(f"\n\n@@@@@@@@@@@@@@@@@ITEM {definition_key} in INIT ITEMINANCE@@@@@@@@@@@@@@@\n\n")
         #print(f"definition_key: {definition_key}, attr: {attr}")
+        import uuid
         self.id = str(uuid.uuid4())  # unique per instance
         self.short_id = self.id.split("-")[-1]
-        self.material_type = "generic"
-        self.on_break = "generic"
-        for attribute in attr:
+        self.material_type:str = "generic"
+        self.on_break:str = "generic"
+        for attribute in attr: # want to remove this and do it intentionally instead.
             setattr(self, attribute, attr[attribute])
 
         self.name:str = definition_key
@@ -211,18 +210,20 @@ class itemInstance:
                 for entry in attr["nicenames"]:
                     self.nicename = attr["nicenames"][entry]
                     break # entirely arbirary. Need to rejig the description-selection function to do nicenames too.
-        self.is_transition_obj = False
+        self.is_transition_obj:bool = False
+
         self.item_type = self.clean_item_types(attr["item_type"])
-        self.colour = None
-        self.descriptions:dict = attr.get("descriptions")
+        self.colour:str = None
+        self.descriptions:dict[str, str] = attr.get("descriptions")
 
         self.description:str = attr.get("description") # will be initd shortly, depending on item conditions. Use default if found for simple objects with no alt names.
         #print(f"Name: {self.name} // self.description in init: {self.description}")
-        self.starting_location:dict = attr.get("starting_location") # currently is styr
+        self.starting_location:dict = attr.get("starting_location") # currently is str
         self.verb_actions = set()
 
         self.location:cardinalInstance = loc.no_place
-        self.event = None
+        from eventRegistry import eventInstance
+        self.event:eventInstance = None
         self.is_event_key = False
 
         if attr.get("exceptions"):
@@ -286,11 +287,10 @@ class itemRegistry:
     def __init__(self):
 
         self.instances = set()
-        self.by_id = {}    # id -> ItemInstance
-        self.by_location = {}  # (cardinalInstance) -> set of itemInstances
-        self.by_name = {}        # definition_key -> set of itemInstances
-        self.by_alt_names = {}
-        #self.by_alt_names: dict[str: str] = {}
+        self.by_id: dict[str, itemInstance] = {}    # id -> ItemInstance
+        self.by_location: dict[cardinalInstance, set[itemInstance]] = {}  # (cardinalInstance) -> set of itemInstances
+        self.by_name: dict[str, set[itemInstance]] = {}        # definition_key -> set, of itemInstances Why is this a list but the others are sets?
+        self.by_alt_names:dict[str, str] = {}
 
         self.by_category = {}        # category (loot value) -> set of instance IDs
         self.by_container = {}
@@ -298,27 +298,23 @@ class itemRegistry:
         self.plural_words = {}
 
         self.temp_items = set()
-        self.updated = set()
 
         self.new_parents = set() ## new_parents, ID is added to all containers. Then after initial generation, force a parent/child check.
         self.child_parent = {} # just for storing the parings, for comparing child/parents directly when midway through the generation to keep things straight.
 
-        self.contained_in_temp = set() # This was for items that will be contained in something (by inst.contained_in) but not registered yet in case the container itself hasn't been inited yet. so was probably intending to add a loop at the end to put all the contained objs in their containers once everything was instanced.
+        self.keys:set[itemInstance] = set()
 
-        self.event_items = {}
-        self.keys = set()
-
-        self.locks_keys = {}
+        self.locks_keys:dict[itemInstance,itemInstance] = {}
 
         self.item_defs: dict[str: dict] = {}
 
-        self.transition_objs = set()
+        self.transition_objs:set[itemInstance] = set()
         self.door_open_strings = ["the door creaks, but allows you to head [[inside]].", "the door creaks slightly as you make your way [[inside]].", "you open the door and make your way [[inside]].", "you open the door and head [[inside]]."]
     # -------------------------
     # Creation / deletion
     # -------------------------
 
-    def add_transition_objs(self, inst):
+    def add_transition_objs(self, inst:itemInstance):
 
         if "transition" in inst.item_type:
             #print(f"TRANSITION ITEM: {inst.name}")
@@ -347,14 +343,14 @@ class itemRegistry:
                 ext_location.place.transition_objs[inst] = ext_location
                 ext_location.place.transition_objs.pop(inst.name)
 
-            inst.int_location = int_location
+            inst.int_location = int_location # adding it back in case int_loc was str previously.
             inst.ext_location = ext_location
 
             setattr(int_location, "location_entered", False)
             setattr(ext_location, "location_entered", False)
             inst.is_transition_obj = True
 
-    def init_single(self, item_name, item_entry = None, apply_location = None):
+    def init_single(self, item_name:str, item_entry:dict = None, apply_location:bool = None) -> itemInstance:
         """Generate an ItemInstance from `item_name`. If no item_entry is provided, it will use `item_defs[item_name]`.\n\n `apply_location` if given should be a `cardinalInstance` object, or a string suitable for `by_cardinal_str`. This is use to place the new item directly in a given location."""
         #print(f"\n\n[init_single] ITEM NAME: {item_name}")
         #print(f"[init_single] ITEM ENTRY: {item_entry}\n\n")
@@ -371,8 +367,8 @@ class itemRegistry:
         self.item_defs[item_name] = item_entry
 
         if not self.by_name.get(inst.name):
-            self.by_name[inst.name] = []
-        self.by_name[inst.name].append(inst)
+            self.by_name[inst.name] = set()
+        self.by_name[inst.name].add(inst)
         self.by_id[inst.id] = inst
 
         loot_type = item_entry.get("loot_type")
@@ -750,7 +746,7 @@ class itemRegistry:
 
         return parent, was_in_container, new_container
 
-    def generate_alt_state_item(self, item_name, noun, state_change):
+    def generate_alt_state_item(self, item_name:str, noun:itemInstance, state_change:bool) -> dict:
         """Generates the item_def for an altered version of an existing item, based on a specified state change (eg 'is_burned', 'is_broken').\n\nUsed for permanent replacement of one instance with another, not a simple attribute/value change."""
         logging_fn()
         #print(f"\nITEM NAME: {item_name} // NOUN: {noun} // in generate_alt_state_items\n")
@@ -792,7 +788,7 @@ class itemRegistry:
         if "burned" in state_change:
             new_def["is_burned"] = True
 
-        new_def["starting_location"] = noun.location.place_name
+        new_def["starting_location"] = noun.location
 
         return new_def
 
@@ -873,16 +869,30 @@ class itemRegistry:
             if compound_test:
                 compound_inst = compound_test
         else:
-            local_item = find_local_item_by_name(noun=noun, verb="take", access_str = "pick_up", current_loc = loc.current, hidden_cluster=True)
-            if local_item and hasattr(noun, "has_multiple_instances") and noun.has_multiple_instances == 0:
-                shard = local_item
-            else:
-                new_def = registry.item_defs.get(compound_inst.name)
-                if origin_type == "location":
-                    new_def["exceptions"] = {"starting_location": origin}
+            shard = None
+            if registry.by_location.get(loc.current):
+                local_items = registry.get_item_by_location()
+                singletons = list(i for i in local_items if i.name == noun.name and i.has_multiple_instances == 0)
 
-                shard = registry.init_single(compound_inst.name, new_def)
-        #print(f"New inst {shard} generated from cluster {compound_inst}")
+                if singletons:
+                    #print(f"SINGLETONS: {singletons}")
+                    shard = singletons[0]
+
+            if not shard:
+
+            #else:
+                local_item = find_local_item_by_name(noun=noun, verb="take", access_str = "pick_up", current_loc = loc.current, hidden_cluster=True)
+                if local_item and hasattr(noun, "has_multiple_instances") and noun.has_multiple_instances == 0:
+                    shard = local_item
+                #print(f"Shard is local_item: {shard}. noun.has_multiple_instances: {noun.has_multiple_instances}")
+                else:
+                    #print(f"Shard is not local_item: {local_item}. noun.has_multiple_instances: {local_item.has_multiple_instances}")
+                    new_def = registry.item_defs.get(compound_inst.name)
+                    if origin_type == "location":
+                        new_def["exceptions"] = {"starting_location": origin}
+
+                    shard = registry.init_single(compound_inst.name, new_def)
+        #print(f"shard:  {shard} //  cluster {compound_inst}")
         if origin_type == "location":
             if compound_inst not in self.by_location[origin] and compound_inst != shard:
                 print(f"For some reason the compound instance isn't already at {origin}")
@@ -911,7 +921,6 @@ class itemRegistry:
         else:
             print(f"No origin? {shard} // critical failure.")
             exit()
-
 
         starting_instance_count = compound_inst.has_multiple_instances
         compound_inst.has_multiple_instances = starting_instance_count - 1
@@ -1072,7 +1081,7 @@ class itemRegistry:
         return self.instances.get(inst_id)
 
 
-    def get_item_by_location(self, loc_cardinal:cardinalInstance=None)->list:
+    def get_item_by_location(self, loc_cardinal:cardinalInstance=None)->set[itemInstance]:
         logging_fn()
 
         if loc_cardinal == None:
@@ -1093,12 +1102,13 @@ class itemRegistry:
                 return items
 
 
-    def instances_by_name(self, definition_key:str)->list:
+    def instances_by_name(self, definition_key:str)->set:
         logging_fn()
 
         if not isinstance(definition_key, str):
             if isinstance(definition_key, list):
                 definition_key = definition_key[0]
+
         if self.by_name.get(definition_key):
             return self.by_name.get(definition_key)
 
@@ -1106,7 +1116,7 @@ class itemRegistry:
             if isinstance(self.by_alt_names[definition_key], str):
                 return self.by_name.get(self.by_alt_names.get(definition_key))
 
-            return list((self.by_alt_names[definition_key],)) # allows for npcInstances without having to add them to itemReg directly.
+            return set((self.by_alt_names[definition_key],)) # allows for npcInstances without having to add them to itemReg directly.
 
     def instances_by_container(self, container:itemInstance)->list:
         logging_fn()
@@ -1166,36 +1176,37 @@ class itemRegistry:
         """Generate or update itemInstance descriptions, as well as nicenames, based on container/child status, plural cluster instances, item state, etc."""
         logging_fn()
         from misc_utilities import has_and_true
-        orig_description = inst.description
+
         description = None
         starting_children_only = False
 
-        if self.alt_names.get(inst.name):
-            descriptions = self.item_defs.get(self.alt_names.get(inst.name)).get("descriptions")
-            if not hasattr(inst, "descriptions") or not inst.descriptions:
-                inst.descriptions = descriptions
+        if self.alt_names.get(inst.name) and (not hasattr(inst, "descriptions") or not inst.descriptions):
+            inst.descriptions = self.item_defs.get(self.alt_names.get(inst.name)).get("descriptions")
 
         if not inst.descriptions and inst.description:
             print(f"Not inst.descriptions. inst.description: {inst.description}")
             return
+
+        if not hasattr(inst, "nicenames"):
+            inst.nicenames = {} # need to properly update nicenames here, not just instances.
+
         if inst.descriptions:
             from npcRegistry import npcInstance
-            if isinstance(inst, npcInstance):
-                if not inst.encountered:
-                    description = inst.descriptions.get("npc_introduction")
+            if isinstance(inst, npcInstance) and not inst.encountered:
+                description = inst.descriptions.get("npc_introduction")
+            else:
+                for entry in inst.descriptions:
+                    val = inst.descriptions[entry]
+                    if val and isinstance(val, str) and "[[choose" in val:
+                        from misc_utilities import choose_option
+                        inst.descriptions[entry] = choose_option(val, inst)
 
-            for entry in inst.descriptions:
-                val = inst.descriptions[entry]
-                if val and isinstance(val, str) and "[[choose" in val:
-                    from misc_utilities import choose_option
-                    inst.descriptions[entry] = choose_option(val, inst)
-
-                if entry == "details":
-                    for detail in inst.descriptions[entry]:
-                        val = inst.descriptions[entry][detail]
-                        if val and isinstance(val, str) and "[[choose" in val:
-                            from misc_utilities import choose_option
-                            inst.descriptions[entry][detail] = choose_option(val, inst)
+                    if entry == "details":
+                        for detail in inst.descriptions[entry]:
+                            val = inst.descriptions[entry][detail]
+                            if val and isinstance(val, str) and "[[choose" in val:
+                                from misc_utilities import choose_option
+                                inst.descriptions[entry][detail] = choose_option(val, inst)
 
         def get_if_open(inst:itemInstance, label:str) ->str:
 
@@ -1260,7 +1271,7 @@ class itemRegistry:
             elif inst.descriptions.get("has_batteries") and hasattr(inst, "has_batteries") and inst.has_batteries:
                     description = inst.descriptions["has_batteries"]
 
-        if not description: # nothing should have 'description' on init anymore, shouldn't need this.
+        if not description:
             if not hasattr(inst, "descriptions") or not inst.descriptions:
                 inst.descriptions = {}
                 inst.descriptions["generic"] = f"It's a {inst.name}"
@@ -1282,13 +1293,11 @@ class itemRegistry:
 
             elif inst.descriptions.get("generic"):
                 description = inst.descriptions["generic"]
-                inst.description = description
+                #inst.description = description # only update inst at the end
 
         if inst.descriptions.get("from_inside") and hasattr(inst, "int_location") and loc.by_cardinal_str(inst.int_location) == loc.current:
             description = inst.descriptions["from_inside"]
         ## Update nicenames ##
-        if not hasattr(inst, "nicenames"):
-            inst.nicenames = {}
 
         if hasattr(inst, "has_multiple_instances"):
             if inst.nicenames.get("is_singular") and inst.has_multiple_instances == 1:
@@ -1303,7 +1312,7 @@ class itemRegistry:
 
             inst.description = description
 
-    def get_duplicate_details(self, inst, inventory_list):
+    """def get_duplicate_details(self, inst, inventory_list):
         logging_fn()
 
         if isinstance(inst, itemInstance):
@@ -1318,7 +1327,7 @@ class itemRegistry:
                     dupe_list.append(thing)
 
             return dupe_list
-        print(f"{inst} not found in instances by name. {type(inst)}")
+        print(f"{inst} not found in instances by name. {type(inst)}")"""
 
     def register_name_colour(self, inst:itemInstance, colour:str)->str:
         """Assigns `colour` to `inst`, and returns `inst.print_name`."""
@@ -1328,18 +1337,17 @@ class itemRegistry:
 
         return inst.print_name
 
-    def pick_up(self, inst:str|itemInstance, location=None, starting_objects=False) -> tuple[itemInstance, list]:
-        """Remnant of an old script. Will be replaced with a separate generation for starting items."""
+    """def pick_up(self, inst:str|itemInstance, location=None, starting_objects=False) -> tuple[itemInstance, list]:
+        Remnant of an old script. Will be replaced with a separate generation for starting items.
         logging_fn()
 
         item_name = None
         if isinstance(inst, str):
             item_name = inst
 
-        if isinstance(inst, set) or isinstance(inst, list):
-            if isinstance(inst, set):
-                inst = list(inst)
-            inst=inst[0]
+        elif isinstance(inst, set) or isinstance(inst, list):
+            print("THIS SHOULD NEVER HAPPEN. DEF PICK_UP SHOULD ONLY EVER GET AN INSTANCE.")
+            inst = next(iter(inst), None)
 
         if location == None:
             location = loc.current
@@ -1390,14 +1398,14 @@ class itemRegistry:
         if isinstance(new_inst, itemInstance) and new_inst != inst:
             print(f"Picked up {new_inst} instead of {inst}.")
             inst = new_inst
-        return inst
+        return inst"""
 
-    def drop(self, inst: itemInstance):
-        """ Replace this with a direct link to {self.move_item(inst, location = loc.current)} instead."""
+    """def drop(self, inst: itemInstance):
+         Replace this with a direct link to {self.move_item(inst, location = loc.current)} instead.
         logging_fn()
 
         if self.move_item(inst, location = loc.current):
-            return inst
+            return inst"""
 
 
 registry = itemRegistry()
@@ -1455,7 +1463,7 @@ def use_generated_items(input_=None):
     return gen_items
 
 
-def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal=None, partial_dict=None, in_container=None)->str|itemInstance:
+def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal:cardinalInstance|str=None, partial_dict:dict=None, in_container=None)->str|itemInstance:
     """Generates an item def entry from item_name and, if given, input_str an a partial dict. Input_str should be a list of item_type categories to be assigned to the item. If loc_cardinal is None, items will be generated in a default location.\n\n`init_single` will be run with this new item def."""
 
     if partial_dict:
@@ -1569,27 +1577,26 @@ def apply_loc_data_to_item(item, item_data, loc_data):
 
     if loc_data and loc_data.get("generate_multiples"): # not cluster objects, just multiple instances of the same archetype in one location.
         #print(f"Need to make multiple of this: {item}: {item_data['generate_multiples']}")
-        for number in range(1, item_data['generate_multiples']):
+        for _ in range(1, item_data['generate_multiples']):
             #print(f"Number in range: {number}")
             inst = registry.init_single(item, item_data)
 
     all_item_names_generated.append((inst, "apply_loc_data_to_item"))
 
-    if hasattr(inst, "requires_key") and getattr(inst, "requires_key"):
-        if not hasattr(registry, "requires_key"):
-            registry.requires_key = []
-        registry.requires_key.append(inst)
+    #if hasattr(inst, "requires_key") and getattr(inst, "requires_key"): # TODO remove this bit once tested
+        #if not hasattr(registry, "requires_key"):
+            #registry.requires_key = []
+        #registry.requires_key.append(inst) # requires_key isn't used, I think.
     return inst
 
 
 def init_loc_items(place=None, cardinal=None):
     """Initialises all items in `loc_data` if no place/cardinal are provided. If place/cardinal are provided, only initalises those specific locations.\nAfter initialisation, runs `registry.clean_relationships`"""
     from item_dict_gen import generator, excluded_itemnames
-    import json
-    registry.alt_names = generator.alt_names
-    with open(config.loc_data, 'r') as file:
-        loc_dict = json.load(file)
+    from env_data import locRegistry
 
+    registry.alt_names = generator.alt_names
+    loc_dict = locRegistry.loc_data
     loc_items_dict = {}
 
     if config.parse_test:
@@ -1603,7 +1610,6 @@ def init_loc_items(place=None, cardinal=None):
         wall = "wall"
         from interactions.player_movement import get_viable_cardinal
         for place in loc.places:
-            place:placeInstance
             for card in place.cardinals:
                 if card == loc.no_place or card == loc.inv_place:
                     continue
@@ -1648,13 +1654,13 @@ def init_loc_items(place=None, cardinal=None):
             if not loc_dict.get(place.lower()):
                 return name_to_inst_tmp
 
-            def create_base_items(place=None, cardinal=None, loc_data={}):
+            def create_base_items(place=None, cardinal=None, loc_data:dict={}):
                 matched = {}
 
                 if place == None:
                     place = loc.currentPlace
-                if  cardinal == None:
-                    cardinal = loc.current
+                if cardinal == None:
+                    cardinal = loc.current # why get card_inst separately when it'll just output immediately anyway.
                 card_inst = loc.by_cardinal_str(cardinal, place)
 
                 if loc_data.get("item_desc"):
@@ -1727,10 +1733,6 @@ def init_loc_items(place=None, cardinal=None):
 
     registry.clean_relationships()
 
-    #I'm not convinced the next lines are necessary, as generate_children_for_parent runs immediately. Surely it's one or the other, not both.
-    #if registry.new_parents and registry.new_parents != None:
-    #    registry.generate_children_for_parent()
-
 
 def initialise_itemRegistry():
     """Initialises itemRegistry, generates all registry.by_location places and cardinals, initialises the item_dict from item_dict_gen (template item defs without instance/location data). Then generates all loc_data items in `init_loc_items`, and creates the plural words dict and assigns transitional objects."""
@@ -1753,14 +1755,14 @@ def initialise_itemRegistry():
 
     registry.plural_words = plural_word_dict
 
-    for obj in registry.instances: # should be able to delete this entirely now.
+    """for obj in registry.instances: # should be able to delete this entirely now.
         if hasattr(obj, "is_loc_exterior"):
             location = loc.place_by_name(obj.name)
             if hasattr(location, "transition_objs") and location.transition_objs:
                 if not hasattr(obj, "transition_objs") or not isinstance(obj.transition_objs, set):
                     obj.transition_objs = set()
                 for item in location.transition_objs:
-                    obj.transition_objs.add(item)
+                    obj.transition_objs.add(item)"""
     return
 
 if __name__ == "__main__":

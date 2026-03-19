@@ -152,10 +152,13 @@ def get_correct_cluster_inst(noun:itemInstance, noun_text=None, priority="single
     if not local_items:
         local_items = find_local_item_by_name(current_loc=loc.current, hidden_cluster=allow_hidden, access_str=access_str)
 
-    local_clusters = list((i for i in local_items if i.name == noun.name))
-    if local_clusters and len(local_clusters) == 1:
-        #print("Only one item in local_clusters, returning.")
-        return local_clusters[0]
+    if local_items:
+        local_clusters = list((i for i in local_items if i.name == noun.name))
+        if local_clusters and len(local_clusters) == 1:
+            #print("Only one item in local_clusters, returning.")
+            return local_clusters[0]
+    else:
+        return noun # must be an inventory item, just return it
 
     if local_clusters and (not noun_text or (noun_text and (plural_id in noun_text or single_id in noun_text))):
         singles = set()
@@ -408,9 +411,10 @@ def find_local_items_by_itemtype(item_type, access_str):
         access_str = "not_in_inv"
         local_items, _ = build_relevant_items_set(verb=None, noun=None, access_str=access_str)
         #print(f"LOCAL ITEMS: {local_items}")
-        local_items = list(i for i in local_items if item_type in i.item_type)
         if local_items:
-            return local_items
+            local_items = list(i for i in local_items if item_type in i.item_type)
+            if local_items:
+                return local_items
         print(f"No items of type `{item_type}` found using `{access_str}`")
         return None
     #print(f"LOCAL ITEMS WITH `{item_type}`: {local_items}")

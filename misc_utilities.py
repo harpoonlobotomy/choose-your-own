@@ -1,4 +1,4 @@
-from mimetypes import init
+
 from env_data import cardinalInstance, placeInstance
 from itemRegistry import itemInstance
 from logger import logging_fn
@@ -20,15 +20,8 @@ accessible_dict = {
     10: "not an instance"
 }
 
-
-cardinal_cols = {
-    "north": "red",
-    "south": "blue",
-    "east": "cyan",
-    "west": "magenta"
-}
-
-cardinals=list(cardinal_cols.keys())
+import config
+cardinals=list(config.cardinal_cols.keys())
 
 MOVE_UP = "\033[A"
 
@@ -109,7 +102,7 @@ def switch_the(text:str|itemInstance|list, replace_with:str="the")->str:
 
     return text
 
-def choose_option(input_text, instance=None):
+def choose_option(input_text:str, instance=None):
     ## for '[[choose.{something}]]' in strings.
     import re
     choose_text = re.search(r"\[.choose.\w+\].", input_text)
@@ -132,7 +125,7 @@ def choose_option(input_text, instance=None):
 
     return input_text.replace(choose_text, replacement_str)
 
-def clean_separation_result(result:list, to_print=False):
+def clean_separation_result(result:list, to_print:bool=False):
     logging_fn()
     if not result:
         print("No result in clean_separation_result")
@@ -188,8 +181,8 @@ def look_around():
     print(f"{loc.currentPlace.overview}\n\nYou're facing {assign_colour(loc.current)}. {loc.current.description}")
 
     applicable_items = []
-    import config
-    if config.print_items_in_area: # will remove this later, it's taken care of nicely by the location descriptions now.
+    from config import print_items_in_area
+    if print_items_in_area: # will remove this later, it's taken care of nicely by the location descriptions now.
         is_items = registry.get_item_by_location() ## Need to merge this with the dict writing to account for missing items.
         if is_items:
             for item in is_items:
@@ -429,10 +422,9 @@ def check_nighttime(current_time, printme=True):
         print_blue("\nThe veil of night has lifted.\n", bg=False)
 
 
-
 ### INVENTORY LIST MANAGEMENT (possible all should be in item_management instead, but keeping here for now.)
 
-def get_inst_list_names(inventory_inst_list) -> list:
+def get_inst_list_names(inventory_inst_list) -> list[str]:
     """Returns a list of all inventory items' names using the inputted inventory list."""
     logging_fn()
     inventory_names_list=list()
@@ -458,7 +450,7 @@ def from_inventory_name(test:str) -> itemInstance:
     print(f"Could not find inst `{test}` in inst_inventory.")
     input()
 
-def is_item_in_container(item):
+def is_item_in_container(item:itemInstance):
     """Just checks if the given `item` is in a container, and returns that `container` or None."""
 
     if hasattr(item, "contained_in") and item.contained_in != None:
@@ -466,7 +458,7 @@ def is_item_in_container(item):
         return container
     return None
 
-def generate_clean_inventory(inventory_inst_list=None, will_print = False, coloured = False, for_children=False):
+def generate_clean_inventory(inventory_inst_list:list[itemInstance]=None, will_print = False, coloured = False, for_children=False):
     """Generates a nice looking inventory list, applying '` (x)` for plural entries' and adds colour and formatting."""
     from env_data import locRegistry as loc
 
@@ -483,12 +475,11 @@ def generate_clean_inventory(inventory_inst_list=None, will_print = False, colou
     checked = set()
 
     inventory_names = []
-    for i, item_name in enumerate(inv_list):
+    for item_name in inv_list:
         if item_name in inventory_names:
             if item_name in checked:
                 continue
             else:
-                print(f"adding {item_name} to checked")
                 checked.add(item_name)
         else: # Removed all the notes about children, because children of inventory items are no longer stored directly in the inventory.
             inventory_names.append(item_name) ## add to inventory if item does not have a parent(container)
@@ -563,7 +554,7 @@ def separate_loot(child_input=None, parent_input=None, inventory=[]): ## should 
 ### COLOUR ASSIGNMENT
 
 from npcRegistry import npcInstance
-def npc_colour(npc:npcInstance, string=None):
+def npc_colour(npc:npcInstance, string:str=None):
     if not string:
         string = npc.name
 
@@ -571,7 +562,7 @@ def npc_colour(npc:npcInstance, string=None):
     npc.colourcode_end
     return f"{npc.colourcode_start}{string}{npc.colourcode_end}"
 
-def get_itemname_from_sqrbrkt(string, noun, colour):
+def get_itemname_from_sqrbrkt(string:str, noun:itemInstance, colour:str):
     """To replace [[item]] with <{noun} with noun.colour applied>."""
 # colour = "event_msg": {"ita":True, "colour": "yellow"}
     parts = string.split("[[")
@@ -593,7 +584,7 @@ def get_itemname_from_sqrbrkt(string, noun, colour):
     return compiled_str
 
 
-def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=False, not_bold=False, caps=False, card_type = None, noun=None, not_inventory=False, is_inventory=False):
+def assign_colour(item, colour:str=None, *, nicename:bool=None, switch=False, no_reset:bool=False, not_bold:bool=False, caps:bool=False, card_type:str = None, noun:itemInstance=None, not_inventory:list[itemInstance]=None, is_inventory:bool=False):
     """Take an item and apply its colour. If the item has .colour, that will be applied (either 'colour' if colour provided, otherwise a selection from the colour list on a rotating basis). If item is an instance or instance.name without associated colour, will assign that colour to item.colour and apply the colour.\n\ncard_type specifies the variation of cardinalInstance name to print, the options are\n
         * "name"
         * "ern_name"
@@ -718,7 +709,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
                         item = item.print_name
             else:
                 colour=cardinals[Colours.colour_counter%len(cardinals)]
-                colour=cardinal_cols[colour] # TODO: is there any reason fo this to be separate? Can't we just use the %len directly against cardinal_cols?
+                colour=config.cardinal_cols[colour] # TODO: is there any reason fo this to be separate? Can't we just use the %len directly against cardinal_cols?
                 Colours.colour_counter += 1
 
                 if isinstance(item, itemInstance|npcInstance):
@@ -737,7 +728,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
             return colour, item, bld
 
     if item in cardinals:
-        colour=cardinal_cols[item]
+        colour=config.cardinal_cols[item]
         bld=True
 
     elif (isinstance(item, str) and not colour) or isinstance(item, itemInstance|npcInstance|placeInstance|cardinalInstance):
@@ -763,7 +754,8 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
                 else:
                     item_instances=registry.instances_by_name(item)
                     if item_instances:
-                        item=item_instances[0]
+                        item = next(iter(item_instances), None)
+                        #item=item_instances[0]
                         colour, item, bld = check_instance_col(item)
                         #colour = item.colour
 
@@ -783,7 +775,7 @@ def assign_colour(item, colour=None, *, nicename=None, switch=False, no_reset=Fa
             colour=int(colour)%len(cardinals)
             colour=cardinals[int(colour)]
 
-            colour=cardinal_cols[colour]
+            colour=config.cardinal_cols[colour]
             bld=True
 
     if switch:

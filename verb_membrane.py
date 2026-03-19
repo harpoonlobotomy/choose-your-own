@@ -73,7 +73,7 @@ def get_noun_instances(dict_from_parser, viable_formats):
                             dict_from_parser[idx][kind] = ({"instance": "assumed_noun", "str_name": entry["str_name"], "text": entry["text"]})
                             error = ("assumed_noun", (idx, kind))
                         else:
-                            noun_inst = noun_inst[0]
+                            noun_inst = next(iter(noun_inst), None)
                             dict_from_parser[idx][kind] = ({"instance": noun_inst, "str_name": name, "text": entry["text"]})
 
                 elif kind == "location":
@@ -206,7 +206,7 @@ def immediate_commands(input_str, print_tokens):
             print("Do you want to print details?")
             if yes_test():
                 print("Arbitrarily printing the first.")
-                print(vars(initial_names[0] if initial_names else alt_names[0]))
+                print(vars(next(iter(initial_names), None) if initial_names else alt_names))
 
 
     elif "current events" in input_str:
@@ -256,7 +256,7 @@ def immediate_commands(input_str, print_tokens):
             if not item:
                 print(f"No item by the name {itemname}, returning.")
                 return
-            if isinstance(item, list):
+            if isinstance(item, set):
                 for inst in item:
                     input_str = input(f"Do you want to move item {inst}?")
                     if input_str in ("y", "yes"):
