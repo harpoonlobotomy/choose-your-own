@@ -189,6 +189,81 @@ class itemInstance:
 
         return self.item_type
 
+    def set_itemtype_attrs(self:"itemInstance", attr:dict): # just here for linting except for container.
+
+        self.is_hidden:bool = attr["is_hidden"] if attr.get("is_hidden") else False
+
+        self.details:dict[str, str]|None = attr.get("details")
+        self.has_datapoint:dict[str, dict[str:str]]|None = attr.get("has_datapoint", False)
+        self.not_in_loc_desc:bool = attr.get("not_in_loc_desc", False)
+
+        if "container" in self.item_type:
+            self.children:set[itemInstance] = set()
+            #self.starting_children:set[itemInstance] = set()
+            if attr.get("starting_children"):
+                self.starting_children:set[itemInstance] = set(attr["starting_children"])
+                registry.new_parents.add(self.id)
+            self.verb_actions.add("is_container")
+            registry.by_container[self] = set()
+
+        if "can_pick_up" in self.item_type:
+            self.contained_in:itemInstance = None
+            self.can_pick_up = attr.get("can_pick_up", False)
+
+        if attr.get("loot_type"):
+             self.loot_type = attr["loot_type"]
+
+        if "key" in self.item_type:
+            self.is_key_to:itemInstance = attr["is_key_to"]
+            self.unlocks:itemInstance = attr.get("unlocks", None)
+
+        if "can_lock" in self.item_type or "container" in self.item_type:
+            self.can_be_locked = attr["can_be_locked"]
+            self.is_locked = attr["is_locked"]
+            self.requires_key = attr["requires_key"]
+
+        if "can_open" in self.item_type or "container" in self.item_type:
+            self.can_be_opened = attr["can_be_opened"]
+            self.is_open = attr["is_open"]
+            self.can_be_closed = attr["can_be_closed"]
+
+        if "electronics" in self.item_type: # still wondering if these should be in a dict or not. This is fine for now.
+            self.requires_powered_location:bool = attr.get("requires_powered_location")
+            self.can_be_charged:bool = attr.get("can_be_charged")
+            self.is_charging:bool = attr.get("is_charging")
+            self.is_charged:bool = attr.get("is_charged")
+            self.takes_batteries:bool = attr.get("takes_batteries")
+            self.has_batteries:itemInstance = attr.get("has_batteries")
+            self.is_on:bool = attr.get("is_on")
+
+        if "battery" in self.item_type:
+            self.can_be_charged:bool = attr.get("can_be_charged")
+            self.is_charged:bool = attr.get("is_charged")
+            self.in_use:itemInstance|bool = attr.get("in_use")
+            if hasattr(self, "can_be_charged"):
+                self.verb_actions.add("can_charge")
+
+        if "charger" in self.item_type:
+            self.requires_powersource: bool = attr.get("requires_powersource")
+            self.in_use:itemInstance|bool = attr.get("in_use")
+
+        if "transition" in self.item_type:
+            self.int_location = attr.get("int_location")
+            self.ext_location = attr.get("ext_location")
+
+        if "is_cluster" in self.item_type:
+            self.has_multiple_instances:str = attr.get("has_multiple_instances")
+            self.single_identifier:str = attr.get("single_identifier")
+            self.plural_identifier:str = attr.get("plural_identifier")
+
+        if "transition" in self.item_type:
+            self.is_transition_obj:bool = attr.get("is_transition_obj")
+            self.int_location:cardinalInstance = attr.get("int_location")
+            self.ext_location:cardinalInstance = attr.get("ext_location")
+
+        #self.is_transition_obj:bool = False
+
+
     def __init__(self, definition_key:str, attr:dict):
         #print(f"\n\n@@@@@@@@@@@@@@@@@ITEM {definition_key} in INIT ITEMINANCE@@@@@@@@@@@@@@@\n\n")
         #print(f"definition_key: {definition_key}, attr: {attr}")
@@ -197,11 +272,28 @@ class itemInstance:
         self.short_id = self.id.split("-")[-1]
         self.material_type:str = "generic"
         self.on_break:str = "generic"
+
+         #     INITIAL FLAG MANAGEMENT
+        #print(f"VARS before attributes are assigned: {vars(self)}")
+        self.verb_actions:set[str] = set()
+        for attribute in ("can_pick_up", "can_be_opened", "print_on_investigate", "can_be_locked"):
+            if attr.get(attribute): # should this apply the value too? For some, it's false.
+                self.verb_actions.add(attribute)
+
+        if "print_on_investigate" in attr:
+            self.verb_actions.add("print_on_investigate")
+
+        self.item_type = self.clean_item_types(attr["item_type"])
+
+        self.set_itemtype_attrs(attr)
         for attribute in attr: # want to remove this and do it intentionally instead.
-            setattr(self, attribute, attr[attribute])
+            if not hasattr(self, attribute):
+                print(f"ATTR MISSING FROM SELF: {attribute}")
+        #    setattr(self, attribute, attr[attribute])
 
         self.name:str = definition_key
         self.print_name = self.name
+        self.nicenames:dict[str, str] = attr.get("nicenames", dict())
         if not attr.get("nicenames"):
             self.nicename = f"a {self.name}"
         else:
@@ -210,16 +302,13 @@ class itemInstance:
                 for entry in attr["nicenames"]:
                     self.nicename = attr["nicenames"][entry]
                     break # entirely arbirary. Need to rejig the description-selection function to do nicenames too.
-        self.is_transition_obj:bool = False
 
-        self.item_type = self.clean_item_types(attr["item_type"])
         self.colour:str = None
         self.descriptions:dict[str, str] = attr.get("descriptions")
 
         self.description:str = attr.get("description") # will be initd shortly, depending on item conditions. Use default if found for simple objects with no alt names.
         #print(f"Name: {self.name} // self.description in init: {self.description}")
         self.starting_location:dict = attr.get("starting_location") # currently is str
-        self.verb_actions = set()
 
         self.location:cardinalInstance = loc.no_place
         from eventRegistry import eventInstance
@@ -236,24 +325,6 @@ class itemInstance:
             self.alt_names = set(i for i in attr.get("alt_names"))
         else:
             self.alt_names = None
-
- #     INITIAL FLAG MANAGEMENT
-        #print(f"VARS before attributes are assigned: {vars(self)}")
-        for attribute in ("can_pick_up", "can_be_opened", "print_on_investigate", "can_be_locked"):
-            if hasattr(self, attribute):
-                    self.verb_actions.add(attribute)
-
-        if hasattr(self, "can_be_charged"):
-            self.verb_actions.add("can_charge")
-
-        if "print_on_investigate" in attr:
-            self.verb_actions.add("print_on_investigate")
-
-        if "container" in self.item_type:
-            self.verb_actions.add("is_container")
-            registry.by_container[self] = set()
-            if hasattr(self, "starting_children"):
-                registry.new_parents.add(self.id)
 
         if hasattr(self, "is_hidden") and self.is_hidden:
             self.set_hidden()
@@ -286,14 +357,14 @@ class itemRegistry:
 
     def __init__(self):
 
-        self.instances = set()
+        self.instances:set[itemInstance] = set()
         self.by_id: dict[str, itemInstance] = {}    # id -> ItemInstance
         self.by_location: dict[cardinalInstance, set[itemInstance]] = {}  # (cardinalInstance) -> set of itemInstances
         self.by_name: dict[str, set[itemInstance]] = {}        # definition_key -> set, of itemInstances Why is this a list but the others are sets?
         self.by_alt_names:dict[str, str] = {}
 
         self.by_category = {}        # category (loot value) -> set of instance IDs
-        self.by_container = {}
+        self.by_container:dict[itemInstance] = {}
 
         self.plural_words = {}
 
@@ -583,7 +654,7 @@ class itemRegistry:
                 if not item:
                     exit(f"Failed to get instance by id in cleaning_loop for instance ({item_id}).")
 
-                if hasattr(item, "requires_key") and not isinstance(getattr(item, "requires_key"), bool):
+                if hasattr(item, "requires_key") and item.requires_key and not isinstance(getattr(item, "requires_key"), bool):
                     if isinstance(item.requires_key, itemInstance):
                         continue
                     key_found = False
@@ -591,7 +662,7 @@ class itemRegistry:
                         if hasattr(maybe_key, "unlocks") and getattr(maybe_key, "unlocks"):
                             continue
 
-                        if maybe_key.name == getattr(item, "requires_key"):
+                        if maybe_key.name == item.requires_key:
                             if hasattr(maybe_key, "is_key_to") and maybe_key.is_key_to == item.name:
 
                                 self.locks_keys[item] = maybe_key
@@ -652,7 +723,7 @@ class itemRegistry:
         if not inst or not isinstance(inst, itemInstance|npcInstance):
             return None, 10, accessible_dict[10]
 
-        if hasattr(inst, "is_hidden") and inst.is_hidden == True:
+        if inst.is_hidden == True:
             if hasattr(inst, "has_multiple_instances") and inst.has_multiple_instances == 0:
                 pass
             else:
@@ -662,9 +733,9 @@ class itemRegistry:
                 print("INST is_hidden in run_check; not a singleton multiple_instances.")
                 return None, 9, accessible_dict[9]
 
-        if "battery" in inst.item_type and hasattr(inst, "in_use"):
-            device_using_battery = inst.in_use
-            if device_using_battery and isinstance(device_using_battery, itemInstance):
+        if "battery" in inst.item_type:
+            #device_using_battery = inst.in_use
+            if inst.in_use and isinstance(inst.in_use, itemInstance):
                 return None, 9, accessible_dict[9] # Originally returned the device inst, but it breaks things later. So we treat as invisible, then check 'if this thing is invisible, is it a battery' afterwards.
 
         container = is_item_in_container(inst)
@@ -728,7 +799,7 @@ class itemRegistry:
         inst.print_name = new_print_name
         self.init_descriptions(inst)
 
-    def get_parent_details(self, inst, old_container, new_container)->tuple[itemInstance, bool, itemInstance]:
+    def get_parent_details(self, inst:itemInstance, old_container:itemInstance, new_container:itemInstance)->tuple[itemInstance, bool, itemInstance]:
         """Gets current parent/container of itemInstance, and prepares the new_container (if given) with .children."""
         was_in_container = False
         parent = None
@@ -848,7 +919,7 @@ class itemRegistry:
         print(f"AT END OF COMBINE_CLUSTERS: Compound_target: {compound_target} // shard: {shard}\n")
         return shard, compound_target
 
-    def separate_cluster(self, compound_inst:itemInstance|placeInstance, origin, origin_type:str):
+    def separate_cluster(self, compound_inst:itemInstance, origin:itemInstance|cardinalInstance, origin_type:str):
         """To select the correct cluster instance to pick up,  and/or separate a single instance from a multiple-value cluster.\n\nEnsures the total value of the cluster is maintained, so a source is not infinite but limited to the starting value of has_multiple_instances of the initial cluster item."""
         ## PICKING UP FROM CLUSTER IN LOCATION/CONTAINER
         logging_fn()
@@ -872,11 +943,12 @@ class itemRegistry:
             shard = None
             if registry.by_location.get(loc.current):
                 local_items = registry.get_item_by_location()
-                singletons = list(i for i in local_items if i.name == noun.name and i.has_multiple_instances == 0)
+                if local_items:
+                    singletons = list(i for i in local_items if i.name == noun.name and i.has_multiple_instances == 0)
 
-                if singletons:
-                    #print(f"SINGLETONS: {singletons}")
-                    shard = singletons[0]
+                    if singletons:
+                        #print(f"SINGLETONS: {singletons}")
+                        shard = singletons[0]
 
             if not shard:
 
@@ -1077,8 +1149,7 @@ class itemRegistry:
     # -------------------------
     def get_instance_from_id(self, inst_id:str)->itemInstance:
         logging_fn()
-
-        return self.instances.get(inst_id)
+        return self.by_id.get(inst_id)
 
 
     def get_item_by_location(self, loc_cardinal:cardinalInstance=None)->set[itemInstance]:
@@ -1123,7 +1194,7 @@ class itemRegistry:
         return [i for i in self.by_container.get(container, list())]
 
 
-    def instances_by_category(self, category):
+    def instances_by_category(self, category:str):
         logging_fn()
         return self.by_category.get(category, set())
 
@@ -1151,7 +1222,7 @@ class itemRegistry:
 
         return random.choice(items)# if items else "No Items (RANDOM_FROM)"
 
-    def describe(self, inst: itemInstance, caps=False)->str:
+    def describe(self, inst: itemInstance, caps:bool=False)->str:
         logging_fn()
         if not hasattr(inst, "description"):
             return "You see nothing special."
@@ -1180,15 +1251,15 @@ class itemRegistry:
         description = None
         starting_children_only = False
 
-        if self.alt_names.get(inst.name) and (not hasattr(inst, "descriptions") or not inst.descriptions):
-            inst.descriptions = self.item_defs.get(self.alt_names.get(inst.name)).get("descriptions")
+        if self.by_alt_names.get(inst.name) and (not hasattr(inst, "descriptions") or not inst.descriptions):
+            inst.descriptions = self.item_defs.get(self.by_alt_names.get(inst.name)).get("descriptions")
 
         if not inst.descriptions and inst.description:
             print(f"Not inst.descriptions. inst.description: {inst.description}")
             return
 
-        if not hasattr(inst, "nicenames"):
-            inst.nicenames = {} # need to properly update nicenames here, not just instances.
+        #if not hasattr(inst, "nicenames"):
+        #    inst.nicenames = {} # need to properly update nicenames here, not just instances.
 
         if inst.descriptions:
             from npcRegistry import npcInstance

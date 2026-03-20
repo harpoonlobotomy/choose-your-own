@@ -238,7 +238,7 @@ class Parser:
 
     def tokenise(self, input_str, membrane):
 
-        current_location = get_current_loc()
+        current_location, _ = get_current_loc()
 
         locations = membrane.locations
         directions = membrane.directions
@@ -312,8 +312,8 @@ class Parser:
                             canonical = word
 
                         if word in loc_options or f"a {word}" in loc_options:
-                            if word in current_location or f"a {word}" in current_location:
-                                canonical = current_location[0]
+                            if word in current_location.name or f"a {word}" in current_location.name:
+                                canonical = current_location.name
                             else:
                                 canonical = word
                             kinds.add("location")

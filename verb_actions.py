@@ -15,7 +15,7 @@ in_container_codes = [3,4]
 interactable_codes = [0,3,4,5,8]
 can_drop_codes = [0, 3, 5]
 
-movable_objects = ["put", "take", "combine", "separate", "throw", "push", "drop", "set", "move"]
+#movable_objects = ["put", "take", "combine", "separate", "throw", "push", "drop", "set", "move"]
 
 in_words = ["in", "inside", "into"]
 to_words = ["into", "to", "towards", "at", "for"] ## these two (< + ^) are v similar but have some exclusive uses, so keeping them separately makes sense here. # 'for' in the sense of 'leave for the graveyard'.
@@ -72,7 +72,7 @@ def print_moved_children(moved_children, noun, reason):
     reason_str = reason_str.replace("[[noun]]", assign_colour(noun))
     print(reason_str)
 
-def set_noun_attr(*values, noun:itemInstance, event_type = None):
+def set_noun_attr(*values, noun:itemInstance, event_type:str = None):
     """Sets the attr/val for each set in `values` to `noun`, while also checking `noun` and `values` in `is_event_trigger`."""
     logging_fn()
     """
@@ -112,19 +112,6 @@ def set_noun_attr(*values, noun:itemInstance, event_type = None):
                 from itemRegistry import registry
                 if hasattr(noun, "descriptions") and noun.descriptions:
                     registry.init_descriptions(noun)
-
-
-def is_loc_current_loc(location=None, cardinal=None):
-    """Checks if the incoming `location` and/or `cardinal` match the current location/cardinal."""
-    logging_fn()
-
-    current_location, current_cardinal = get_current_loc()
-    if location and location == current_location:
-        return 1, current_location, current_cardinal
-    if not location and cardinal: ## so it can check if the facing direction is current without needing location.
-        if cardinal == current_cardinal:
-            return 1, current_location, current_cardinal
-    return 0, current_location, current_cardinal # 0 if not matching. Always returns current.
 
 def get_transition_noun(noun, format_tuple, input_dict, take_first=False, return_if_exterior = False):
     """Finds transition objects from `loc_exterion` nouns, returning the first transition object found."""
@@ -207,6 +194,8 @@ def get_correct_nouns(input_dict, verb=None, access_str=None, access_str2=None, 
     logging_fn
     # Have added but not tested `access_str=None, access_str2=None`, to be able to specify access strings from the outside. This would expand it to basically all usecases.
     noun, noun_str, noun2, noun2_str = get_nouns(input_dict)
+    if not noun and not noun_str and not noun2 and not noun2_str:
+        return None, None, None, None, None, None # so it doesn't claim it can't find instances if there are just no nouns in the dict at all (eg 'look at graveyard')
     from verbRegistry import VerbInstance
     from npcRegistry import npcInstance
     if verb:
@@ -248,7 +237,7 @@ def get_correct_nouns(input_dict, verb=None, access_str=None, access_str2=None, 
 
 
 def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
-    logging_fn()
+    logging_fn() ## REPLACE WITH REGISTRY.MOVE_ITEM()
     print(f"MOVE A TO B IN USE: {a} / {b}")
     location = None
     from itemRegistry import container_limit_sizes
@@ -546,27 +535,6 @@ def get_meta(input_dict:dict) -> str:
             if "meta" in kind:
                 return entry["text"]
 
-def verb_requires_noun(input_dict, verb_name, x_noun=None, local=False):
-    logging_fn()
-    if x_noun:
-        if not isinstance(x_noun, int):
-            x_noun = int(x_noun)
-        noun = get_noun(input_dict, x_noun=x_noun)
-    else:
-        noun = get_noun(input_dict)
-    if not noun and not x_noun:
-        print(f"What do you want to {verb_name}?")
-        return
-    if local and noun:
-        if noun and noun.location == loc.current or noun.location == loc.inv_place:
-            return noun
-        if noun and x_noun:
-            noun = get_noun(input_dict, x_noun=x_noun, get_str=True)
-            print(f"There's no {assign_colour(noun)} around here to {verb_name} anything with.")
-        else:
-            print(f"There's no {assign_colour(noun)} around here to {verb_name}.")
-        return
-    return noun
 
 def item_attributes(format_tuple, input_dict):
     """Prints the vars for the first noun found in the input_dict. Not entirely useful, especially when meta {noun} exists."""
@@ -579,27 +547,6 @@ def item_attributes(format_tuple, input_dict):
 
 ##### Parts Parsing ########
 
-def two_parts_a_b(input_dict):
-    logging_fn()
-    return list(input_dict[1].values())[0]
-
-def three_parts_a_x_b(input_dict):
-    logging_fn()
-    noun_1 = get_noun(input_dict)
-    noun_2 = get_noun(input_dict, 2)
-    sem_or_dir = get_dir_or_sem(input_dict)
-
-    print(f"list(input_dict[2].values())[0]: {list(input_dict[2].values())[0]["str_name"]}")
-    if list(input_dict[2].values())[0]["str_name"] in directions or list(input_dict[2].values())[0]["str_name"] in semantics:
-        a = list(input_dict[1].values())[0]
-        sem_or_dir = list(input_dict[2].values())[0]
-        b = list(input_dict[3].values())[0]
-
-        return a, sem_or_dir, b
-
-    print(f"Cannot process {input_dict} in def three_parts_a_x_b() End of function, unresolved.")
-
-                                  #       0          1       2    3       4        5
 def five_parts_a_x_b_in_c(input_dict): # `drop the paperclip in glass jar in the graveyard`
     logging_fn()
 
@@ -613,6 +560,19 @@ def five_parts_a_x_b_in_c(input_dict): # `drop the paperclip in glass jar in the
         return a, sem_or_dir, b, sem_or_dir_2, c
 
     print(f"Cannot process {input_dict} in def five_parts_a_x_b_in_c() End of function, unresolved.")
+
+def component(format_tuple:tuple, input_dict:dict, kind_str:str, return_str:bool=False, x_val:int=None):
+    if kind_str in format_tuple:
+        idx = format_tuple.index(kind_str)
+        if x_val:
+            idx = format_tuple.index(kind_str, idx) # start looking for index at previous index
+
+        if return_str:
+            return input_dict[idx][kind_str]["str_name"]
+
+        if not input_dict[idx][kind_str]["instance"]:
+            return input_dict[idx][kind_str]["text"]
+        return input_dict[idx][kind_str]["instance"]
 
 def inst_from_idx(dict_entry:dict, kind_str:str, return_str=False) -> itemInstance:
     """Returns `str_name` or `instance` from `dict_entry`, using the `kind_str` provided."""
@@ -645,20 +605,10 @@ def turn_cardinal(prospective_cardinal, turning = True):
                 if test:
                     prospective_cardinal = test
 
-    if isinstance(prospective_cardinal, dict):
-        print(f"PROSPECTIVE CARDINAL IS A DICT: {prospective_cardinal}")
-        traceback_fn()
-        #test = prospective_cardinal.get("cardinal")
-        #if test:
-        #    prospective_cardinal = test.get("instance")
-        #else:
-        #    test = prospective_cardinal.get("instance")
-        #    if test:
-        #        prospective_cardinal = test
-
     if not isinstance(prospective_cardinal, cardinalInstance):
         print("turn_cardinal: prospective_cardinal is not cardinal_inst")
         traceback_fn()
+        exit()
 
     if prospective_cardinal != loc.current:
         relocate(new_cardinal = prospective_cardinal)
@@ -880,7 +830,7 @@ def go(format_tuple, input_dict, no_noun=None): ## move to a location/cardinal/i
                 noun = next(iter(noun), None)
             else:
                 from verb_membrane import membrane
-                for comp_loc in membrane.compound_locations:
+                for comp_loc in membrane.compound_locations: # this should be done in the parser.
                     if location_entry["text"] in membrane.compound_locations[comp_loc]:
                         location_entry["str_name"] = comp_loc
                         location_entry["instance"] = loc.place_by_name(comp_loc)
@@ -934,7 +884,7 @@ def go(format_tuple, input_dict, no_noun=None): ## move to a location/cardinal/i
                 turn_cardinal(direction_entry["str_name"])
                 return
             else:
-                if get_noun(input_dict):
+                if get_noun(input_dict): # if direction == "in" vs "into" needs differentiation.
                     ("Going to enter via get_noun")
                     enter(format_tuple, input_dict, get_noun(input_dict))
                     return
@@ -963,6 +913,7 @@ def look(format_tuple=None, input_dict=None, force_look=False): # force_look - s
     logging_fn()
 
     if not format_tuple or len(format_tuple) == 1 or (format_tuple == tuple(("verb", "semantic")) and (not input_dict or (input_dict and get_dir_or_sem(input_dict) == "around"))):
+        print("first look around")
         from misc_utilities import look_around
         look_around()
         return
@@ -974,6 +925,7 @@ def look(format_tuple=None, input_dict=None, force_look=False): # force_look - s
     verb_entry, noun_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
 
     noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason= get_correct_nouns(input_dict, verb="look")
+
 
     if noun2:
         if not isinstance(noun2, itemInstance):
@@ -990,7 +942,6 @@ def look(format_tuple=None, input_dict=None, force_look=False): # force_look - s
                     else:
                         item_interactions.look_at_item(noun, noun_entry)
                         return
-
             else:
                 print(f"`{assign_colour(noun2, caps=True)}` isn't a container.")
             return
@@ -1004,11 +955,7 @@ def look(format_tuple=None, input_dict=None, force_look=False): # force_look - s
                 print(f"You have both the {assign_colour(noun)} and the {assign_colour(noun2)} to hand, but I'm not sure what you want to do with them.")
                 return
 
-    if len(format_tuple) == 1 or (len(format_tuple) == 2 and semantic_entry != None and input_dict[1]["semantic"]["str_name"] == "around"):
-        from misc_utilities import look_around
-        look_around()
-
-    elif len(format_tuple) == 2:
+    if len(format_tuple) == 2:
         if cardinal_entry != None:
             turn_cardinal(cardinal_entry["instance"], turning = False)
 
@@ -1046,7 +993,7 @@ def look(format_tuple=None, input_dict=None, force_look=False): # force_look - s
         if format_tuple[2] == "location" and format_tuple[1] == "direction":
             noun = registry.by_name.get(location_entry["str_name"])
             if noun:
-                noun = noun[0]
+                noun:itemInstance = iter(next(noun), None)#noun[0] # it's a set now
                 if noun.location.place == loc.current.place:
                     if loc.current != noun.location:
                         turn_cardinal(prospective_cardinal=noun.location, turning = False)
@@ -1055,8 +1002,6 @@ def look(format_tuple=None, input_dict=None, force_look=False): # force_look - s
             else:
                 from misc_utilities import look_around
                 return look_around()
-
-
 
     elif len(format_tuple) == 4:
         if cardinal_entry and location_entry:
@@ -1174,12 +1119,9 @@ def get_timeblocks(input_dict, verb:str, noun:itemInstance=None):
  # ^  make this bit a reusable fn.  v
     if ((sem and sem2 and sem == sem2) or not sem2):
         if sem in ["while", "hour", "hours"]:
-            if not num:
-                timeblock = 1
-            else:
-                timeblock = int(num)
-                if timeblock == 0:
-                    timeblock == 1
+            timeblock = int(num) if num else 1
+            if timeblock == 0:
+                timeblock == 1
             if verb == "read" and timeblock > 5:
                 print("You can't read for that long, but a you sit down to read for a few hours.")
                 timeblock = 4
@@ -1342,13 +1284,13 @@ def eat(format_tuple, input_dict):
 def clean(format_tuple, input_dict):
     logging_fn()
 
+    noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict, verb="use")
     if len(format_tuple) == 2:
         if format_tuple == tuple(("verb", "location")):
         #if "verb" in format_tuple and "location" in format_tuple:
             print(f"You want to clean the {assign_colour(get_location(input_dict))}? Not implemented yet.")
             return
         elif "noun" in format_tuple:
-            noun, noun_str, _, noun2, noun2_str, _ = get_correct_nouns(input_dict)
             if hasattr(noun, "is_dirty") and noun.is_dirty:
                 print(f"You clean the {assign_colour(noun)}. How nice.")
                 noun.is_dirty = False
@@ -1356,8 +1298,6 @@ def clean(format_tuple, input_dict):
             print(f"The {assign_colour(noun)} seems pretty clean already.")
             return
 
-    noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict, verb="use")
-    #noun, noun_str, noun2, noun2_str = get_nouns(input_dict)
     dir_or_sem = get_dir_or_sem(input_dict)
 
     if noun and dir_or_sem and dir_or_sem in ("with", "using"):
@@ -1395,7 +1335,6 @@ def burn(format_tuple, input_dict):
         return
 
     if require_firesource:
-
         if noun2:
             dir_or_sem = get_dir_or_sem(input_dict)
             if dir_or_sem in ("with", "using"):
@@ -1602,7 +1541,7 @@ def simple_open_close(format_tuple, input_dict):
     if get_meta(input_dict) == "inventory":
         meta(format_tuple, input_dict)
 
-    verb_inst = get_verb(input_dict)
+    verb = get_verb(input_dict)
 
     noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict, verb="use")
     #noun, noun_str, noun2, noun2_str = get_nouns(input_dict)
@@ -1643,10 +1582,10 @@ def simple_open_close(format_tuple, input_dict):
             return
 
     if not hasattr(noun, "is_open"):
-        print(f"You can't open the {assign_colour(noun)} (no hasattr(noun, 'is_open')).")
+        print(f"The {assign_colour(noun)} isn't something you can {verb.name}.")#You can't open the {assign_colour(noun)} (no hasattr(noun, 'is_open')).")
         return
 
-    if verb_inst.name == "open":
+    if verb.name == "open":
         if not hasattr(noun, "can_be_opened") or (hasattr(noun, "can_be_opened") and noun.can_be_opened != True):
             print(f"You can't open the {assign_colour(noun)}; it doesn't look like something you can open.")
             return
@@ -2420,7 +2359,8 @@ def set_action(format_tuple, input_dict):
     logging_fn()
     verb = get_verb(input_dict)
     if verb.name == "set":
-        noun = verb_requires_noun(input_dict, "set", local=True)
+        #noun = verb_requires_noun(input_dict, "set", local=True)
+        noun, nounstr, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict, verb="look")
         if noun:
             if len(format_tuple) == 2:
                 if "watch" == noun.name or "watch" in noun.name:
@@ -2787,7 +2727,7 @@ def router(viable_format, inst_dict, input_str=None):
             if not registry.by_name.get(mentioned_loc.name): # currently only loc_exterior nouns share names with locations, so we skip those here.
                 if mentioned_loc != loc.current and mentioned_loc != loc.current.place and mentioned_loc != loc.inv_place.place:
                     if func.__name__ not in can_be_not_local:
-                        print(f"You want to {verb_inst.name} at {assign_colour(mentioned_loc)} but you aren't there...")
+                        print(f"You want to {verb_inst.name} at the {assign_colour(mentioned_loc)} but you aren't there...")
                         return
         response = func(format_tuple = viable_format, input_dict = inst_dict)
         return response

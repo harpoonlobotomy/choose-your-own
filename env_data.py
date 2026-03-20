@@ -6,7 +6,7 @@ import json
 import uuid
 
 with open(loc_data, 'r') as loc_data_file:
-    loc_dict:dict = json.load(loc_data_file)
+    loc_dict:dict[str, dict] = json.load(loc_data_file)
 
 weatherdict = {
 "a heatwave": {"same_weather": "Still... so... hot...", "bad_weather": True, "temp": "hot"},
@@ -35,7 +35,6 @@ class cardinalInstance:
         self.alt_names:list[str]|None = (loc_dict[loc.name].get("alt_names") if loc_dict[loc.name].get("alt_names") else None)
 
         if (self.place_name == config.inv_loc_str or self.place_name == config.no_place_str):
-
             self.items = set() # purely for my own convenience. Maybe a bad idea but going to do it anyway for now.
 
         self.description:str|None = None

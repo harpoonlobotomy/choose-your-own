@@ -652,6 +652,33 @@ Man I kinda want a GUI/TUI for item generation. So you can press buttons for ite
 * have made self.conversation_parts["start"] mandatory; need to add something for it to choose start/ends from a random selection if not given. For now though all will be given. Have added a simple 'hello/goodbye' sample_conversation_parts for now.
 * What the hell is `setattr(self, cardinal, self.cardinal_data)` doing in env_data? I'm adding it /to the cardinalInstance/, why am I adding it to cardinal_instance[cardinal_str]? Especially when cardinal_data is already added to self directly.
 * verb_actions: line 194~  `for item in local_items_list:` makes a dict from a dict, then checks if a key from the dict is in the enw dict and returns it. Totally arbitrary. Gave it a quick fix but it needs more work.
+* can't remember what 'movable_objects' at the top of verb_actions was meant to be for. Clearly it's verbs that require a movable object, but all that's done through get_correct_nouns now.
+* get_current_loc is called by verbRegistry, but it returns placeinstance and cardinstance, and verbreg calls it 'current_location' and then tests if a string is 'in' it. Which it will never be... line 315 verbRegistry, should be if word in loc.current.name or word in loc.current.place.name, no? get_current_loc is only ever called twice and it's used incorrectly by one of those. edit: oh, an the other use is a function that is never called anymore. Fixed it and verbReg so it does what was intended.
+
+* I need to remember 'format_list_neatly(list_to_neaten)' exists so i can use it elsewhere (verb_actions, ln 44)
+* set_noun_attr: Not messing with it today because it's too important, but I need to better formalise what goes into 'reason'. Even if I need to take it apart and make it a dict first: 'attr_str: ""' or 'noun_action: iteminstance', etc etc. Not just `if it's a string then assume it's (type of event trigger)`, `if it's a tuple then dig into it and get the first tuple in the tuple and use the value of it` etc. Need to properly document what goes into 'values*' so I can figure out the best way to do it.
+* get_transition_noun is a terrible mess. Wait, and it's only called by def find()?? See major notes.
+* utilise get_component_parts better. Unless there's a good reason to keep all the separate get_x_thing fns. Oh actually, use it /at all/. Currently I'm not.
+* five_parts_a_x_b_in_c is still used by def put(), it shouldn't be.
+* def put() uses registry.move_item but then also uses move_a_to_b, which does its own printing and item-adding, with different checks in each. Need to take the container_limits section from move_a_to_b and add it to registry.move_item for if container and route everything through that. Though I do like being able to customise the 'you dropped the x down here at the y' message the way this does. Might add that logic to registry.move_item too.
+* now i have get_correct_nouns, do I still need can_interact in lock_unlock() / check_lock_open_state / simple_open_close? get_correct_noun is far more sensitive and specified, especially when get_correct chooses the nouns more precisely and also outputs the reason_val. can_interact just runs run_check and outputs a bool, I can't see value in that separate from get_correct_nouns... ln311 verb_actions
+* check_lock_open_state ln 320 verb_actions is not accessed.
+* do I want get_component /and/ get_component_parts, or just one? _parts always returns (instance, text (str_name|text)), get_component returns instance unless get_str.
+* I still use get_nouns in a couple of places. Useful for error printing where I don't need to try to get the 'correct' nouns but anything else should use get_correct_nouns.
+* why am I using inst_from_idx to get the cardinal for turn_cardinal? Nothing else uses it. Oh, it's basically get_component but with the idx defined. Okay. Avoids the loop. Oh - see major notes.
+* verb_actions line 606 is prospective_cardinal ever a dict? Where/why would it be? check. Can't see anywhere, it's all instances or left/right. Removing.
+* ` if noun.location.visited:` at 680 verb_actions confuses me. Why if it's visited to we get told about the closed door but either way still relocate to noun.location. The noun.location == ext_location doesn't apply here, so we might be outside the closed door and going inside, or not, and it doesn't check. I need to clean that up a lot.
+* move_through_trans_obj is extremely messy and should be able to be cleaned up. Or at least given better direction, right now there are too many exception catches. and it's so breakable, or at least looks like it.
+* def go() needs to be neatened
+* if def look(), need to add options for 'look at x on y'.  But need to add 'x on y' more generally first.
+* ln 1147 verb_actions, why do we pick a random readable noun to read? Well it's alright I guess, but it needs a printline for `You decide to read the {item} for a while.`
+* 1387 in def break_item(), we check if noun2: but don't provide an alternative.
+def break_item doesn't check can_break. Needs to.
+* ln1459, check if accessible_1, _, _ = can_interact(noun) ever gets useful results now that get_correct_nouns is used.
+* ln 1476, I have a function for is_locked and do_open checks but am not using it. Use it here, no?
+* misc_utilities ln 539, why are we adding all children? I assume it's intentional but make sure.
+* itemReg ln 558 / ln196  change instance_children and starting_children to sets instead of lists. Is generated in generate_children_for_parent(self, parent=None) at ln 543.
+* itemreg builts by_alt_names at ln445
 
 # Things fixed:
 * All places now have missing_cardinal added at init, so player_movement doesn't need to check for it and provide an alternative.
@@ -667,6 +694,11 @@ Man I kinda want a GUI/TUI for item generation. So you can press buttons for ite
 * moved the npc.location to be cardinalInstance during init, will only be str if self.location is a string that fails by_cardinal_str. I think it used to do it later because repr failed otherwise, but I think that was just during isolated testing because the location didnt' exist.
 * changed set_up_game to not bother looking for magazine + tentacle instances, but just generate them directly. Otherwise it'll steal them from location if they're ever added to locations at init. This way it generates those items for inv at startup instead of stealing from locs.
 * hopefully fixed cluster selection again, not sure when it broke but it should be more rigourous now.
+* removed is_loc_current_loc as nothing calls it
+* removed verb_requires_noun as it was only used by 'set' (which doesn't work yet) and it did some error printing better left to print_failures.
+* removed two_parts_a_b and three_parts_a_x_b
+* removed if isinstance(prospective_cardinal, dict) from 606 in verb_actions
+* removed a duplicate check for format_tuple len 1 or 2 for look around in def look()
 
 (eventRegistry is over 1k lines. Eep.)
 
@@ -674,6 +706,8 @@ Major notes:
 * is_event_trigger is just a mess and needs some heavy checking/culling.
 * `reason` going into is_event_trigger needs cleaning up. Sometimes it's a str, sometimes it's a tuple, sometimes it's a tuple in a tuple.
 * Important one: currently, triggers either start or end, there are no 'contributes to the event' triggers. I need to add those. An event that needs you to collect 5 orbs, and only ends when you've done it. I don't want to check each time 'are you holding 5 orbs now', I want to know 'ah, you've collected all 5 orbs, now let me check if you're holding them'. so I need contribution-triggers to update event attr without ending the event.
+* get_transition_nouns is used by def find() only. Anything else uses move_through_trans_obj, but it does the work to identify the noun itself in def enter(). Enter should use get_transition_nouns, no?
+* re: avoiding the loop for get_components with inst_from_idx: if it has the format_tuple, it can just get the idx from there for the relevant kind, as well as know if there are multiples. That might be good.
 
 check_triggers only checks start_triggers if there are no end_triggers, whether end_triggers failed or not. And given all events have an end_trigger (and may not have a start_trigger if they `start_current`), that means the 'start_triggers' half of check_triggers just straight up never runs.
 So, 'check_triggers' should actually just be 'check_for_end_triggers' but is poorly named (and holds useless code that never runs).
@@ -809,3 +843,33 @@ oh ffs. now 'go to shed' fails because nonetype has no attr 'place'.
 Okay so it's because it figured that 'shed' meant 'shed door' but it assigned it as 'location'. but with no instance.
 
 Okay. Now it checks compound_locations for the loc_entry text and gets the instance from place_by_name. 'go to shed' was failing occasionally if it found the location before the noun. Still means the parser could use some improvement so it properly gets that location instance, but for now this is a workaround that does the job. It's because it can only have one kind at the end of the parser, so if the sequencer then says 'no, you're a location', it doesn't have the location instance it would have. Thisis just a way of adding it back in.
+
+7.09am 19/3/26
+Adding more to the todo list from yesterday. Thing I was roughly up to verb_actions, I kept getting distracted.
+
+7.32am
+really, I should get the parts for verb_actions fns according to the format_tuple. Would make for more specific routing but also a lot of doubling up, and room for error. Well, different error; failure to include any possible format (or having to account for all variations) vs it making incorrect assumptions. idk. I do use the format tuples in some places, maybe I just need to formalise it. 'does it have 2 nouns', etc. Then only run it through the full get_correct_nouns if so. Though get_correct_nouns already only gets the second if there's a second noun found, so I guess it's not necessary. Idk. Anything that bulk identifies parts still needs me to untangle the parts that come from it so I'm not sure it helps. Probably depends on the fn.
+
+I keep forgetting about `attributes {itemname}`. It's so handy for quick checks. Really need to remember it exists.
+
+8.33am
+Just realised I could rejig get_entries_from_dict to output verb_inst, verb_str, noun_inst, noun_str etc. Would still have to get the nouns separately (so maybe just exclude that from the result) (and it only gets one of each... hmmmmm)
+
+maybe x_val outputs that output. So if x_val=2, outputs noun1 + noun2 instead of just noun2. Less looping.
+
+10.37am
+Note: `go into shed` from north graveyard says 'you're facing the west graveyard', but doesn't acknowlege the 'into'. It should mention that the door is closed.
+Also, 'enter shed' opens the door even if you're in north graveyard when you write it. Surely it should only be if you're in the same cardinal, no? I think I've gone back and forth on that one.
+Oh - maybe it's only if you're in the same cardinal, /unless/ you've observed the shed. So if you've been to west graveyard and left without going in, then 'enter shed' lets you in. If you've not even observed the shed, then it just takes you to the outside. Need to do that later, too braindead today.
+
+11.35am
+`look at graveyard` fails with `[not idx_kind and not (noun and verb)]Sorry, I don't know what to do with `None`.` but then prints what I want it to anyway.
+
+5.50pm
+hm. Recent changes have made the door not-hidden. .. fixed.
+
+6.11pm
+`throw jar at ground` should break the jar if it's weak enough.
+
+6.36pm 'unlock padlock with key'/'use key on padlock' fails if for attribute in attr is off. Not sure what I'm missing.
+
