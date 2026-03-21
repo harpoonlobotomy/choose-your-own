@@ -1621,6 +1621,7 @@ def add_items_to_events(event = None, noun_inst = None):
         for item in event.items:
             if hasattr(item, "requires_key"):
                 if hasattr(item, "key_is_placed_elsewhere"):
+                    print(f"{item} requires key and key_is_placed_elsewhere. {item.key_is_placed_elsewhere}")
                     if isinstance(item.key_is_placed_elsewhere, dict):
                         if item.key_is_placed_elsewhere.get("item_in_event"):
                             event_with_key = item.key_is_placed_elsewhere["item_in_event"]

@@ -35,13 +35,11 @@
     "can_be_locked": true,
     "can_be_opened": true,
     "can_break": false,
-    "can_examine": false,
     "descriptions": {
       "generic": "Heavy wrought iron bars with little decoration, held closed with a padlock on a heavy chain.",
       "is_open": "Heavy wrought iron bars with little decoration, now slightly ajar."
     },
     "event": "graveyard_gate_opens",
-    "event_type": "item_triggered",
     "is_event_key": null,
     "is_locked": true,
     "is_open": false,
@@ -67,7 +65,6 @@
     "can_be_locked": true,
     "can_be_opened": true,
     "can_break": true,
-    "can_examine": false,
     "children": null,
     "children_type_limited": false,
     "container_limits": 4,
@@ -152,7 +149,6 @@
     "smash_defence": 5
   },
   "glass jar": {
-    "print_children_as_list": false,
     "can_be_added_to": true,
     "can_be_closed": false,
     "can_be_locked": false,
@@ -200,7 +196,6 @@
     "descriptions": {
       "generic": "An iron key, handy for a quest or something, probably."
     },
-    "is_key": true,
     "is_key_to": "padlock",
     "item_size": 0,
     "item_type": [
@@ -221,7 +216,6 @@
     "descriptions": {
       "generic": "a bright gold key, quite new-looking"
     },
-    "is_key": true,
     "is_key_to": null,
     "item_size": "small_flat_things",
     "item_type": [
@@ -239,7 +233,6 @@
   },
   "stony ground": {
     "can_break": false,
-    "can_examine": false,
     "descriptions": {
       "generic": "stony ground, a mixture of small pebbles and rough broken rubble"
     },
@@ -259,7 +252,6 @@
   },
   "wood floor": {
     "can_break": false,
-    "can_examine": false,
     "descriptions": {
       "generic": "simple stone flooring, lightly stained but solid enough."
     },
@@ -405,7 +397,6 @@
     "descriptions": {
       "generic": "A slightly rusted pair of wire cutters. They look like they'll still work, though."
     },
-    "is_key": true,
     "is_key_to": null,
     "item_size": "palm_sized",
     "item_type": [
@@ -475,7 +466,6 @@
       "gravestone"
     ],
     "can_break": false,
-    "can_examine": false,
     "descriptions": {
       "generic": "a simple stone headstone, engraved with the name `J.W. Harstott`."
     },
@@ -502,7 +492,6 @@
     "can_be_locked": false,
     "can_be_opened": false,
     "can_break": false,
-    "can_examine": false,
     "children": null,
     "children_type_limited": [
       "DVD"
@@ -718,7 +707,6 @@
     },
     "has_batteries": true,
     "is_charged": true,
-    "is_key": true,
     "is_key_to": "blue car",
     "item_size": "a_few_marbles",
     "item_type": [
@@ -985,7 +973,7 @@
   },
   "5 dollar note": {
     "alt_names": ["money", "5 dollars", "dollars", "notes"],
-    "can_break": false,
+    "can_break": true,
     "can_pick_up": true,
     "descriptions": {
       "generic": "A small amount of legal tender. Could be useful if you find a shop."
@@ -1004,9 +992,9 @@
     "nicenames": {
       "generic": "a 5 dollar note"
     },
-    "slice_attack": 5,
+    "slice_attack": 2,
     "slice_defence": 3,
-    "smash_attack": 5,
+    "smash_attack": 1,
     "smash_defence": 9
   },
   "paper scrap with number": {
@@ -1043,7 +1031,6 @@
   },
   "mobile phone": {
     "alt_names": ["cell phone"],
-    "can_be_added_to": true,
     "can_be_charged": true,
     "can_be_locked": true,
     "can_pick_up": true,
@@ -1166,7 +1153,6 @@
     "can_be_locked": true,
     "can_be_opened": true,
     "can_break": true,
-    "can_examine": true,
     "children": null,
     "children_type_limited": false,
     "container_limits": 4,
@@ -1239,7 +1225,6 @@
     "can_be_locked": false,
     "can_be_opened": true,
     "can_break": false,
-    "can_examine": false,
     "children": null,
     "children_type_limited": false,
     "container_limits": 4,
@@ -1315,7 +1300,6 @@
   },
   "merry-go-round": {
     "can_break": false,
-    "can_examine": false,
     "descriptions": {
       "generic": "a sweet if slightly outdated merry-go-round, horsed in-tact with and with most of its paint."
     },
@@ -1333,7 +1317,6 @@
   },
   "birdbath": {
     "can_break": false,
-    "can_examine": false,
     "descriptions": {
       "generic": "a stone birdbath, dark green algae stuck firm to the basin."
     },
@@ -1351,7 +1334,6 @@
   },
   "comb": {
     "can_break": true,
-    "can_examine": false,
     "descriptions": {
       "generic": "A simple plastic comb, made matte by the environment and time.",
       "is_broken": ""
@@ -1359,8 +1341,7 @@
     "is_broken": false,
     "item_type": [
       "fragile",
-      "standard",
-      "static"
+      "standard"
     ],
     "nicenames": {
       "generic": "a comb"
@@ -1372,7 +1353,6 @@
   },
   "trident": {
     "can_break": false,
-    "can_examine": false,
     "descriptions": {
       "generic": "a rather impressive trident, starp points and a fine filigree on the handle."
     },
@@ -1393,7 +1373,6 @@
     "descriptions": {
       "generic": "an ornate silver key with small `VI` pressed into the head."
     },
-    "is_key": true,
     "is_key_to": null,
     "item_size": 0,
     "item_type": [
@@ -1446,7 +1425,6 @@
     "can_be_locked": true,
     "can_be_opened": true,
     "can_break": false,
-    "can_examine": false,
     "children": null,
     "children_type_limited": false,
     "container_limits": 4,
@@ -1483,7 +1461,6 @@
     "descriptions": {
       "generic": "An old gold key, heavily used."
     },
-    "is_key": true,
     "is_key_to": null,
     "item_size": 0,
     "item_type": [
@@ -1546,7 +1523,6 @@
   },
   "work shed": {
     "can_break": false,
-    "can_examine": false,
     "descriptions": {
       "generic": "a simple shed, with wood panelled walls and a simple wooden door."
     },
@@ -1577,7 +1553,6 @@
     "can_be_closed": true,
     "can_be_opened": true,
     "can_break": false,
-    "can_examine": false,
     "descriptions": {
       "generic": "a closed wooden door, with nail-marks from a cross-bar removed somewhat recently",
       "is_open": "a plain wooden door, sitting slightly ajar"
@@ -1606,7 +1581,6 @@
     "can_be_closed": true,
     "can_be_opened": true,
     "can_break": false,
-    "can_examine": false,
     "descriptions": {
       "generic": null,
       "is_open": ""
@@ -1792,5 +1766,10 @@
     "descriptions": {
         "generic": "a phone charger; it seems to be in pretty good condition."
     }
+  },
+  "cardboard box": {
+    "item_type": ["container"],
+    "print_children_as_list": true,
+    "item_size": 6
   }
 }

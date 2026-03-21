@@ -33,6 +33,10 @@ invert_cardinals = {
     }
 
 #### Fundamental Operations ####
+def in_types(noun:itemInstance, itemtype:str) -> bool:
+    if itemtype in noun.item_type:
+        return True
+    return False
 
 def get_current_loc():
     """Returns `location` and `cardinal` instances as a tuple."""
@@ -236,7 +240,7 @@ def get_correct_nouns(input_dict, verb=None, access_str=None, access_str2=None, 
     return noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason
 
 
-def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
+def move_a_to_b(a:itemInstance, b:placeInstance|itemInstance, action:str=None, direction:str=None, current_loc = None):
     logging_fn() ## REPLACE WITH REGISTRY.MOVE_ITEM()
     print(f"MOVE A TO B IN USE: {a} / {b}")
     location = None
@@ -246,7 +250,10 @@ def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
         if action == "dropping" or action == "you dropped the":
             direction = "at"
         else:
-            direction = "to"
+            if isinstance(b, itemInstance):
+                direction = "in"
+            else:
+                direction = "to"
     if direction == "down":
         direction = "down here at the"
     if not action:
@@ -266,17 +273,30 @@ def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
             return None
 
         else:
-            if hasattr(b, "container_limits"): ## This won't work long term, currently the only option for move noun x noun is if hte second is a container. Not 'move noun towards noun', etc, which I want for later. No idea how to implement it, but for now I'm just noting it here.
-                print(f"{b.name} is a container with capacity {b.container_limits}.")
-                container_size = container_limit_sizes.get(b.container_limits)
-                if isinstance(a, itemInstance):
-                    if hasattr(a, "item_size"):
-                        print(f"{b.name} is an item with size {a.item_size}.")
+            if in_types(b, "container"): ## This won't work long term, currently the only option for move noun x noun is if hte second is a container. Not 'move noun towards noun', etc, which I want for later. No idea how to implement it, but for now I'm just noting it here.
+                if not b.is_open:
+                    print("b is not open")
+                    if b.is_locked:
+                        return f"The {assign_colour(b)} seems to be locked."
+                    return f"The {assign_colour(b)} seems to be closed."
+
+                print(f"{b.name} is a container with size limit of {b.container_limits}.")
+                if isinstance(b.container_limits, str):
+                    container_size = container_limit_sizes.get(b.container_limits)
+                else:
+                    container_size = b.container_limits
+                if isinstance(a, itemInstance) and hasattr(a, "item_size"):
+                    print(f"{a.name} is an item with size {a.item_size}.")
+                    if isinstance(a.item_size, str):
                         item_size = container_limit_sizes.get(a.item_size)
-                        if item_size < container_size:
-                            print(f"{a.name} will fit in {b.name}")
-                            print(f"{action} {a} {direction} {b}")
-                            registry.move_item(a, new_container=b)
+                    else:
+                        item_size = a.item_size
+                    if item_size < container_size:
+                        print(f"{a.name} will fit in {b.name}")
+                        if registry.move_item(a, new_container=b, no_print=True):
+                            return f"You {action} the {assign_colour(a)} {direction} the {assign_colour(b)}."
+                    else:
+                        return f"The {assign_colour(a)} is too big to put inside the {assign_colour(b)}."
 
     elif isinstance(b, tuple):
         print(f"b is a tuple: {b}")
@@ -285,6 +305,7 @@ def move_a_to_b(a, b, action=None, direction=None, current_loc = None):
         if b[0] in current_loc:
             location = b[0]
             print(f"{action} {a.name} {direction} {b}")
+            item_interactions.add_item_to_loc(a, b)
 
         else:
             print("Can only move items to the location you're currently in.")
@@ -844,7 +865,7 @@ def go(format_tuple, input_dict, no_noun=None): ## move to a location/cardinal/i
             noun = registry.instances_by_name(location_entry.get("str_name"))
             noun = next(iter(noun), None)
 
-        if noun and ("transition" in noun.item_type or "loc_exterior" in noun.item_type):
+        if noun and (in_types(noun, "transition") or in_types(noun, "loc_exterior")):
             #if location_entry and location_entry["instance"] == loc.current.place:
             if enter(format_tuple, input_dict, noun):
                 return
@@ -936,7 +957,7 @@ def look(format_tuple=None, input_dict=None, force_look=False): # force_look - s
                 dir1 = direction_entry["text"]
                 dir2 = get_dir_or_sem(input_dict, x_val=2)
             if dir2 and dir2 == "in":
-                if "container" in noun2.item_type:
+                if in_types(noun2, "container"):
                     if not hasattr(noun, "contained_in") or not noun.contained_in or noun.contained_in != noun2:
                         print(f"There's no {assign_colour(noun)} in the {assign_colour(noun2.name)}.")
                     else:
@@ -947,7 +968,7 @@ def look(format_tuple=None, input_dict=None, force_look=False): # force_look - s
             return
 
         else:
-            if "container" in noun2.item_type:
+            if in_types(noun2, "container"):
                 print(f"Idk what to do with this input, honestly {noun2} is a container but I'm confused. {format_tuple} // {input_dict}")
                 return
             outcome = item_interactions.find_local_item_by_name(noun, noun_str)
@@ -1173,9 +1194,9 @@ def read(format_tuple, input_dict):
         dir_or_sem = get_dir_or_sem(input_dict)
         if dir_or_sem and dir_or_sem in ("in", "with"):
             if dir_or_sem == "in":
-                if "container" in noun2.item_type and noun.contained_in == noun2:
+                if in_types(noun2, "container") and noun.contained_in == noun2:
                     pass
-                elif "container" in noun2.item_type:
+                elif in_types(noun2, "container"):
                     print(f"{assign_colour(noun, caps=True)} isn't in the {noun2}.")
                     return
             print(f"I don't know how {assign_colour(noun2, nicename=True)} will help with the reading...\n")# (Add something here for testing. Magnifying glass or something. on_use_for_reading attr, something like that.)")
@@ -1338,7 +1359,7 @@ def burn(format_tuple, input_dict):
         if noun2:
             dir_or_sem = get_dir_or_sem(input_dict)
             if dir_or_sem in ("with", "using"):
-                if "firesource" in noun2.item_type:
+                if in_types(noun2, "firesource"):
                     firesource_found = noun2
                 else:
                     print(f"You can't set a fire with {assign_colour(noun2)}.")
@@ -1362,7 +1383,7 @@ def barricade(format_tuple, input_dict):
     if not noun2:
         print(f"What do you want to use to barricade the {assign_colour(noun)}?")
         return
-    if "door_window" in noun.item_type:
+    if in_types(noun, "door_window"):
         print(f"You want to barricade the window/door {assign_colour(noun)}. A valiant effort, I just haven't coded it yet.")
 
 
@@ -1434,7 +1455,7 @@ def break_item(format_tuple, input_dict):
 def check_key_lock_pairing(noun_1, noun_2):
     """Checks if noun_1 is a key, and if noun_2 is a matching key."""
     logging_fn()
-    if hasattr(noun_1, "is_key") and hasattr(noun_2, "requires_key") and noun_1 == noun_2.requires_key:
+    if in_types(noun_1, "key") and hasattr(noun_2, "requires_key") and noun_1 == noun_2.requires_key:
         return 1
     return 0
 
@@ -1927,6 +1948,7 @@ def take(format_tuple, input_dict):
     noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict=input_dict, verb="take", access_str2="all_local", hold_error_messages=True)
     #print("noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason: ", noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason)
     if not isinstance(noun, itemInstance):
+        print("Does it ever get here? I'd have thought it would print the failure message in parser before now.")
         if noun == None:
             if noun_reason == 9 and hasattr(get_noun(input_dict), "in_use"):
                 noun = get_noun(input_dict)
@@ -1934,7 +1956,8 @@ def take(format_tuple, input_dict):
                 print(f"noun_reason: {noun_reason}")
             else:
                 logging_fn(f"Going to print error from def take `{input_dict}`")
-                print_failure_message(noun=noun_str, verb="take")
+                print("error printing in def take at start because no noun inst")
+                print_failure_message(noun=noun_str,noun2=(noun2 if noun2 else (noun2_str if noun2_str and not noun2_str == "assumed_noun" else None)), verb="take")
                 return
     #get_nouns(input_dict)
 
@@ -2085,8 +2108,10 @@ def take(format_tuple, input_dict):
 def put(format_tuple, input_dict, location=None):
     logging_fn()
     action_word = "You put"
-
-    noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict, verb="look", access_str=None, access_str2=None, hold_error_messages=True)
+    verb = get_verb(input_dict, get_str=True)
+    noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict, verb="put", access_str=None, access_str2=None, hold_error_messages=True)
+    if not noun:
+        noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict, verb="put", access_str=None, access_str2=None, hold_error_messages=True)
     sem_or_dir = get_dir_or_sem(input_dict)
 
     if not sem_or_dir and noun2:
@@ -2151,9 +2176,13 @@ def put(format_tuple, input_dict, location=None):
                 return
 
             if "container" in noun2.item_type:
-                registry.move_item(noun, new_container=noun2, no_print=True)
-
+                direction = get_dir_or_sem(input_dict)
+                success = move_a_to_b(noun, noun2, verb, direction=(direction if direction else "into"))
+                #registry.move_item(noun, new_container=noun2, no_print=True)
+                if success and isinstance(success, str): #hasattr(noun2, "is_open") and not noun2.is_open:
+                    print(success)
                 if noun in loc.inv_place.items or noun in registry.by_location[loc.inv_place]:
+                    print("Outcome: outcome")
                     exit(f"{assign_colour(noun)} still in inventory, something went wrong. Exiting.")
                 else:
                     text = smart_capitalise(f"{action_word} the {assign_colour(noun)} {sem_or_dir} the {assign_colour(noun2)}")
@@ -2481,7 +2510,7 @@ def use_item_w_item(format_tuple, input_dict):
             for noun in (actor_noun, target_noun):
                 if verb_str == "charge" and has_and_true(noun, "can_be_charged") or "charger" in noun.item_type:
                     return charge_electronics(format_tuple, actor_noun, target_noun)
-                if hasattr(noun, "is_key") or hasattr(noun, "requires_key"):
+                if "key" in noun.item_type or hasattr(noun, "requires_key"):
                     lock_unlock(format_tuple, input_dict)
                     return
             if verb.name in ("lock", "unlock"):
@@ -2570,10 +2599,10 @@ def enter(format_tuple, input_dict, noun=None):
             noun = get_noun(input_dict)
 
     if noun:
-        if "transition" in noun.item_type:
+        if in_types(noun, "transition"):
             return move_through_trans_obj(noun, input_dict)
 
-        if "loc_exterior" in noun.item_type:
+        if in_types(noun, "loc_exterior"):
             if noun.transition_objs:
                 for item in noun.transition_objs:
                     return move_through_trans_obj(item, input_dict)

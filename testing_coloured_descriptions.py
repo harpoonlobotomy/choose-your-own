@@ -66,14 +66,14 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                                     import re
                                     long_parts = long_dict[item].split("[[]]")
                                     if "fff" in long_parts[1]:
-                                        if hasattr(inst, "event") and inst.event.state in (0, 1):
+                                        if hasattr(inst, "event") and inst.event.state == 1:
                                             long_parts[1] = long_parts[1].replace("fff", "")
                                         else:
                                             split_parts = re.split("fff.+fff", long_parts[1])
                                             long_parts[1] = split_parts[1]
 
                                     if "<<" in long_parts[1]:
-                                        if hasattr(inst, "event") and inst.event.state == 2:
+                                        if hasattr(inst, "event") and inst.event.state == 0:
                                             long_parts[1] = long_parts[1].replace("<<", "")
                                             long_parts[1] = long_parts[1].replace(">>", "")
                                         else:

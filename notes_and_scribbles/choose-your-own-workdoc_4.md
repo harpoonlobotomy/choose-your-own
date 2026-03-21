@@ -678,7 +678,11 @@ def break_item doesn't check can_break. Needs to.
 * ln 1476, I have a function for is_locked and do_open checks but am not using it. Use it here, no?
 * misc_utilities ln 539, why are we adding all children? I assume it's intentional but make sure.
 * itemReg ln 558 / ln196  change instance_children and starting_children to sets instead of lists. Is generated in generate_children_for_parent(self, parent=None) at ln 543.
-* itemreg builts by_alt_names at ln445
+* itemreg builts by_alt_names at ln445 but also they get built in itemgen and I think elsewhere too. streamline this.
+* 'has_door' never gets used anywhere, we just use transition objects. Remove?
+* I still have the wire cutters referred to as 'keys', because they were used to ""unlock"" the wire that kept a jar closed. I need to do that better, they're not damn keys. 'use x to cut wire' needs to be a thing. #TODO this.
+* rn only statics have 'can_break' by default. Have added it to 'standard' as True
+* 'can_examine' is never used, I have routes in 'descriptions' to deal with items without additional data. Remove this.
 
 # Things fixed:
 * All places now have missing_cardinal added at init, so player_movement doesn't need to check for it and provide an alternative.
@@ -699,6 +703,8 @@ def break_item doesn't check can_break. Needs to.
 * removed two_parts_a_b and three_parts_a_x_b
 * removed if isinstance(prospective_cardinal, dict) from 606 in verb_actions
 * removed a duplicate check for format_tuple len 1 or 2 for look around in def look()
+* removed 'event_type' from 'event' item_type.
+* removed 'print_children_as_list from glass jar def. It was the only instance of that attr and was false anyway.
 
 (eventRegistry is over 1k lines. Eep.)
 
@@ -873,3 +879,64 @@ hm. Recent changes have made the door not-hidden. .. fixed.
 
 6.36pm 'unlock padlock with key'/'use key on padlock' fails if for attribute in attr is off. Not sure what I'm missing.
 
+1.17pm 20/3/26
+
+Ah. 'is_key'. Should really remove that and use the 'key' in itemtype instead...
+Also item_type needs to be 'item_types'. It's very rarely singular.
+
+Okay I think I've removed 'is_key' from everywhere, now it just checks item_type directly.
+
+Added check_itemtypes for this kinda thing.
+
+2.20pm
+'glass jar contains' is messy. Removed 'print_children_as_list: False' from glass jar. It turns out that if you use that, ln 1349 in itemReg prevents it from adding children to the list (unless it only contains starting children) but it still prints the first section, so it just says 'A glass jar, holding .'. And it still lists the contents of the jar afterwards, so it says:
+
+#   You look at the glass jar:
+#
+#      A glass jar, holding a paperclip, and some dried flowers.
+#
+#   The glass jar contains:
+#     a paperclip, dried flowers
+
+[Note that the colouring is wrong for 'A glass jar, holding a paperclip, and some dried flowers.', the text is yellow with item-coloured item names, but the `, and` is white. Need to fix that to allow mid-str colouring to be maintained.]
+
+I want to keep the 'a glass jar, holding ...' text, so I guess I need to prevent it printing the 'The {itemname} contains: \n{list}'. One or  the other.
+
+Also, #TODO: I need to add 'A {itemname}, holding ' as a default string to containers if they don't have any_children descriptions provided.
+
+Alright have fixed it, now it only prints that list if told if print_children_as_list is present and true. So if you don't want to have a line of text describing the children in the container and instead want it to print an item description and then list children after, do not add item descriptions and add print_children_as_list:True in the item def. Also amended item descriptions to not use child-including descriptions.
+
+Added a cardboard box item to item defs and placed it in north graveyard, want to see how little data I have to give it before it errors. Just gave it item defs and the 'print_children_as_list' cause I want to test that too. Failed immediately with `Failed to find the correct function to use for <verbInstance look (7ce94335-93ef-4f54-bf87-770a8f2098fe)>: argument of type 'NoneType' is not iterable`
+Ah. 'cause init_descriptions failed to apply a default if no description was found.
+
+working on that, and realised that you can put things in boxes even if they're closed, apparently it doesn't check.
+
+but print_children_as_list does work properly now. It either prints the children inline (if missing or false) or as a list below, but not both.
+
+Now to fix the 'box is closed but still put stuff in' part. Ties in with what I saw the other day about only 'move a to b' checking item_size.
+
+Error message is wrong for
+`[<  take paperclip from box  >]`:
+
+# There's no paperclip around here to take the cardboard box from.
+
+Also:
+'put battery in box' fails if there's already a battery in the box, even if I'm holding a different battery.
+
+Oh. Padlock doesn't get given a size when it becomes pickupable from the gate event. Good to know.
+
+Also, this description:
+        "padlock": "an old dark-metal [[]] fffon a chain, holding the gate closedfff<< hanging loosely on a chain>>"
+isn't correctly updated at the end of the event.
+
+4.17pm
+Fixed the padlock getting a size, and the description now updates properly. Also you can add multiple batteries, it prioritises inventory items when 'put x' so it only finds the local items if nothing else.
+
+Have this:
+`Inst has a location but isn't in by_location for old_loc. FIX THIS. old_loc: <cardinalInstance north graveyard (f0761966-b2aa-46f0-89f8-439b062b6810)>`
+from picking up the padlock. I assume it didn't remove the item location when picking it up?
+The command was 'take padlock', and the padlock was in a container that I didnt' specify (but that was accessible), so maybe it's because I didn't specify 'this is from a container' in def move() so it assumed the current loc == origin? Not sure. Need to look into it once I've had more sleep.
+
+Also added a few lines in failure printing that checks noun open-ness, so even if it fails in the parser stage, it prints 'The x isn't open' and returns instaed of the messy 'there's no padlock to put the box in'.
+
+fixed the missing origin, it only cleared prior loc if the item was in inv because I didn't account for 'put localitem in container', only 'put invitem in container'.

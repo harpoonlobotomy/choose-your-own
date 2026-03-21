@@ -32,9 +32,9 @@ print("Item registry is being run right now.")
 
 type_defaults = {
     "standard":
-        {f"descriptions": {"generic": None}, "nicenames": {"generic": ""}, "slice_defence": 5, "smash_defence": 5, "slice_attack": 5, "smash_attack": 5,},
+        {f"descriptions": {"generic": None}, "nicenames": {"generic": ""}, "can_break": True, "slice_defence": 5, "smash_defence": 5, "slice_attack": 5, "smash_attack": 5,},
     "static":
-        {"can_examine": False, "can_break": False},
+        {"can_break": False},
     "can_open":
         {"is_open": False, "can_be_opened": True, "can_be_closed": True},
         "descriptions":
@@ -44,7 +44,7 @@ type_defaults = {
     "can_lock":
         {"can_be_locked": True, "is_locked": True, "requires_key": False, "descriptions": {"is_locked": ""}},
     "container":
-        {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": True, "requires_key": False, 'starting_children': None, 'container_limits': 4, "children_type_limited": False, "can_be_added_to": True, "children": None,
+        {"is_open": False, "can_be_opened": True, "can_be_closed": True, "can_be_locked": True, "is_locked": False, "requires_key": False, 'starting_children': None, 'container_limits': 4, "children_type_limited": False, "can_be_added_to": True, "children": None,
          "nicenames": {
             "starting_children_only": "",
             "any_children": "",
@@ -57,11 +57,11 @@ type_defaults = {
             "open_any_children": "",
             "open_no_children": ""}},
     "key":
-        {"is_key": True, "is_key_to": None},
+        {"is_key_to": None},
     "can_pick_up":
         {"can_pick_up": True, "item_size": 1},
     "event":
-        {"event": None, "event_type": "item_triggered", "is_event_key": None},
+        {"event": None, "is_event_key": False},
     "trigger":
         {"trigger_type": "plot_advance", "trigger_target": None, "is_exhausted": False},
     "flooring":
@@ -192,23 +192,46 @@ class itemInstance:
     def set_itemtype_attrs(self:"itemInstance", attr:dict): # just here for linting except for container.
 
         self.is_hidden:bool = attr["is_hidden"] if attr.get("is_hidden") else False
+        self.can_break:bool = attr["can_break"] if attr.get("can_break") else False
+        if self.can_break or attr.get("is_broken"):
+            self.is_broken = attr.get("is_broken", False)
+
+        self.slice_attack = attr.get("slice_attack", 5) ## 11 is entirely unbreakable
+        self.slice_defence = (attr.get("slice_defence", 5) if not self.can_break else 11)
+        self.smash_attack = attr.get("smash_attack", 5)
+        self.smash_defence = (attr.get("smash_defence", 5) if not self.can_break else 11)
 
         self.details:dict[str, str]|None = attr.get("details")
         self.has_datapoint:dict[str, dict[str:str]]|None = attr.get("has_datapoint", False)
         self.not_in_loc_desc:bool = attr.get("not_in_loc_desc", False)
 
+        if "flammable" in self.item_type:
+            self.can_burn = attr.get("can_burn", True,)
+            self.is_burned = attr.get("is_burned", False)
+
         if "container" in self.item_type:
             self.children:set[itemInstance] = set()
             #self.starting_children:set[itemInstance] = set()
-            if attr.get("starting_children"):
-                self.starting_children:set[itemInstance] = set(attr["starting_children"])
+            self.starting_children:set[itemInstance] = (set(attr.get("starting_children")) if attr.get("starting_children") else None)
+            if self.starting_children:
                 registry.new_parents.add(self.id)
+            self.can_be_added_to = attr.get("can_be_added_to", True)
+            self.children_type_limited = attr.get("children_type_limited", False)
+            self.container_limits = attr.get("container_limits", 5)
+            self.print_children_as_list = attr.get("print_children_as_list", False)
             self.verb_actions.add("is_container")
             registry.by_container[self] = set()
 
         if "can_pick_up" in self.item_type:
-            self.contained_in:itemInstance = None
+            self.contained_in:itemInstance = attr.get("contained_in", None)
             self.can_pick_up = attr.get("can_pick_up", False)
+            self.item_size = attr.get("item_size", 1)
+
+        if "books_paper" in self.item_type:
+            self.print_on_investigate = attr.get("print_on_investigate", True)
+            self.flammable = attr.get("flammable", True)
+            self.is_burned = attr.get("is_burned", False)
+            self.can_read = attr.get("can_read", False)
 
         if attr.get("loot_type"):
              self.loot_type = attr["loot_type"]
@@ -221,6 +244,7 @@ class itemInstance:
             self.can_be_locked = attr["can_be_locked"]
             self.is_locked = attr["is_locked"]
             self.requires_key = attr["requires_key"]
+            self.key_is_placed_elsewhere = attr.get("key_is_placed_elsewhere")
 
         if "can_open" in self.item_type or "container" in self.item_type:
             self.can_be_opened = attr["can_be_opened"]
@@ -261,7 +285,20 @@ class itemInstance:
             self.int_location:cardinalInstance = attr.get("int_location")
             self.ext_location:cardinalInstance = attr.get("ext_location")
 
-        #self.is_transition_obj:bool = False
+        if "loc_exterior" in self.item_type:
+            self.is_loc_exterior:bool = attr.get("is_loc_exterior")
+            self.transition_objs:set[itemInstance] = attr.get("transition_objs", set())
+            #self.has_door:bool = attr.get("has_door")
+
+        if "door_window" in self.item_type:
+            self.is_door = attr.get("is_door", False)
+            self.is_window = attr.get("is_window", False)
+            self.is_other = attr.get("is_other", False)
+
+        if "random_loot" in self.item_type or "starting_loot" in self.item_type:
+            self.loot_type = attr.get("loot_type")
+            if not self.loot_type and "starting_loot" in self.item_type:
+                self.loot_type = "starting_loot"
 
 
     def __init__(self, definition_key:str, attr:dict):
@@ -280,28 +317,18 @@ class itemInstance:
             if attr.get(attribute): # should this apply the value too? For some, it's false.
                 self.verb_actions.add(attribute)
 
-        if "print_on_investigate" in attr:
-            self.verb_actions.add("print_on_investigate")
-
         self.item_type = self.clean_item_types(attr["item_type"])
-
         self.set_itemtype_attrs(attr)
-        for attribute in attr: # want to remove this and do it intentionally instead.
-            if not hasattr(self, attribute):
-                print(f"ATTR MISSING FROM SELF: {attribute}")
-        #    setattr(self, attribute, attr[attribute])
 
         self.name:str = definition_key
         self.print_name = self.name
-        self.nicenames:dict[str, str] = attr.get("nicenames", dict())
-        if not attr.get("nicenames"):
-            self.nicename = f"a {self.name}"
-        else:
-            self.nicename:str = attr["nicenames"].get("generic")
-            if not self.nicename:
-                for entry in attr["nicenames"]:
-                    self.nicename = attr["nicenames"][entry]
-                    break # entirely arbirary. Need to rejig the description-selection function to do nicenames too.
+        self.nicenames:dict[str, str] = attr.get("nicenames", dict({"generic": self.name}))
+
+        self.nicename:str = self.nicenames.get("generic")
+        if not self.nicename:
+            for entry in self.nicenames:
+                self.nicename = self.nicenames[entry]
+                break # entirely arbirary. Need to rejig the description-selection function to do nicenames too.
 
         self.colour:str = None
         self.descriptions:dict[str, str] = attr.get("descriptions")
@@ -328,6 +355,15 @@ class itemInstance:
 
         if hasattr(self, "is_hidden") and self.is_hidden:
             self.set_hidden()
+
+        for attribute in attr: # want to remove this and do it intentionally instead.
+            if not hasattr(self, attribute):
+                #if attribute in ["can_read", "can_burn", "is_burned", "item_size", "print_on_investigate", "slice_attack", "slice_defence", "smash_attack", "smash_defence", "flammable", "on_burn", "exceptions"]:
+                #    setattr(self, attribute, attr[attribute])
+                #else:
+                    print(f"ATTR MISSING FROM SELF for {self.name}: {attribute}")
+                    print(f"self.item_type: {self.item_type}")
+
 
 
     def __repr__(self):
@@ -480,7 +516,7 @@ class itemRegistry:
             self.new_parents.add(inst.id)
             registry.generate_children_for_parent(parent=inst)
 
-        if hasattr(inst, "is_key"):
+        if "key" in inst.item_type:
             self.keys.add(inst)
 
         self.instances.add(inst)
@@ -1067,7 +1103,7 @@ class itemRegistry:
         logging_fn()
         from misc_utilities import assign_colour
         updated = set()
-        if isinstance(location, str) and location == "current":
+        if location and isinstance(location, str) and location == "current":
             location = loc.current
 
         if "is_cluster" in inst.item_type and not simple_move: # added 'simple move' for certain event inits where move_cluster_items gets really confused. It's a workaround.
@@ -1111,7 +1147,7 @@ class itemRegistry:
 
                 return_text.append((f"Item `[{inst}]` removed from old container `[{parent}]`", inst, parent))
                 if not no_print:
-                    print(f"You remove the {assign_colour(inst)} from the {assign_colour(parent)}.")
+                    print(f"You remove the {assign_colour(inst)} from the {assign_colour(parent)}.\n")
                 updated.add(parent)
 
             if new_container:
@@ -1122,6 +1158,9 @@ class itemRegistry:
                 return_text.append((f"Added [{inst}] to new container [{new_container}]", inst, new_container))
                 if not no_print:
                     print(f"Added {assign_colour(inst)} to {assign_colour(new_container)}.")
+
+                inst.location = loc.no_place
+
             else:
                 inst.contained_in = None
 
@@ -1227,8 +1266,7 @@ class itemRegistry:
         if not hasattr(inst, "description"):
             return "You see nothing special."
 
-        if isinstance(inst.description, dict):
-            inst.description = registry.init_descriptions(inst)
+        registry.init_descriptions(inst)
         description = inst.description
 
         #print(f"inst: {inst} // description: {description}")
@@ -1247,7 +1285,6 @@ class itemRegistry:
         """Generate or update itemInstance descriptions, as well as nicenames, based on container/child status, plural cluster instances, item state, etc."""
         logging_fn()
         from misc_utilities import has_and_true
-
         description = None
         starting_children_only = False
 
@@ -1257,7 +1294,6 @@ class itemRegistry:
         if not inst.descriptions and inst.description:
             print(f"Not inst.descriptions. inst.description: {inst.description}")
             return
-
         #if not hasattr(inst, "nicenames"):
         #    inst.nicenames = {} # need to properly update nicenames here, not just instances.
 
@@ -1266,8 +1302,7 @@ class itemRegistry:
             if isinstance(inst, npcInstance) and not inst.encountered:
                 description = inst.descriptions.get("npc_introduction")
             else:
-                for entry in inst.descriptions:
-                    val = inst.descriptions[entry]
+                for entry, val in inst.descriptions.items():
                     if val and isinstance(val, str) and "[[choose" in val:
                         from misc_utilities import choose_option
                         inst.descriptions[entry] = choose_option(val, inst)
@@ -1278,12 +1313,23 @@ class itemRegistry:
                             if val and isinstance(val, str) and "[[choose" in val:
                                 from misc_utilities import choose_option
                                 inst.descriptions[entry][detail] = choose_option(val, inst)
+                    #if val and val != "":
+                        #description = inst.descriptions[entry]
 
-        def get_if_open(inst:itemInstance, label:str) ->str:
+            if not description and not inst.descriptions.get("generic"):
+                a_or_an = "a" if not inst.name.lower().startswith("a") else "an"
+                description = f"It's {a_or_an} {inst.name}."
+                inst.descriptions["generic"] = description
 
+        def get_if_open(inst:itemInstance, label:str, do_not_add_children_to_description=False) ->str:
             description = None
             if has_and_true(inst, "is_open"):
                 description = inst.descriptions.get(f"open_{label}")
+                if not description and label != "no_children":
+                    if not do_not_add_children_to_description:
+                        description = f"A {inst.name}, containing "
+                    else:
+                        description = f"A {inst.name}."
             else:
                 description = inst.descriptions.get(label)
             if description and description != "":
@@ -1295,6 +1341,10 @@ class itemRegistry:
                     #description = getattr(inst.descriptions, label)
 
         if "container" in inst.item_type and not "electronics" in inst.item_type:
+            if inst.print_children_as_list:
+                do_not_add_children_to_description = True
+            else:
+                do_not_add_children_to_description = False
             if has_and_true(inst, "children") and has_and_true(inst, "starting_children"):
                 starting_children_only = True
                 if inst.children:
@@ -1304,31 +1354,33 @@ class itemRegistry:
                     if len(inst.starting_children) > len(inst.children):
                         starting_children_only = False
 
-            if starting_children_only:
-                test = get_if_open(inst, "starting_children_only")
-                if test:
-                    description = test
+                if starting_children_only:
+                    test = get_if_open(inst, "starting_children_only", do_not_add_children_to_description)
+                    if test:
+                        description = test
 
             elif hasattr(inst, "children") and inst.children:
+
                 long_desc = []
                 from testing_coloured_descriptions import compile_long_desc
                 from misc_utilities import assign_colour
-                if_open = get_if_open(inst, "any_children")
-                if if_open:
+                if_open = get_if_open(inst, "any_children", do_not_add_children_to_description)
+                if if_open and not do_not_add_children_to_description:
                     long_desc.append(get_if_open(inst, "any_children"))
-                    if not ((hasattr(inst, "print_children_as_list") and inst.print_children_as_list) or not hasattr(inst, "print_children_as_list")):
+                    testing = True
+                    if testing:#not ((hasattr(inst, "print_children_as_list") and inst.print_children_as_list) or not hasattr(inst, "print_children_as_list")):
                         for child in inst.children:
                             long_desc.append(assign_colour(child, nicename=True))
                             #print(f"long_desc with child: {long_desc}")
                     description = compile_long_desc(long_desc)
                 if inst.nicenames.get("any_children"):
-                    inst.nicename = inst.nicenames["any_children"]
+                    inst.nicename = inst.nicenames.get("any_children")
 
             else:
                 if not has_and_true(inst, "children") and get_if_open(inst, "no_children"):
                     description = get_if_open(inst, "no_children")
                 if inst.nicenames.get("no_children"):
-                    inst.nicename = inst.nicenames["no_children"]
+                    inst.nicename = inst.nicenames.get("no_children")
         #print(f"{inst.name}: Description after child check etc: {description}")
 
         if "electronics" in inst.item_type:
@@ -1346,7 +1398,7 @@ class itemRegistry:
             if not hasattr(inst, "descriptions") or not inst.descriptions:
                 inst.descriptions = {}
                 inst.descriptions["generic"] = f"It's a {inst.name}"
-                inst.description = inst.descriptions["generic"]
+                description = inst.descriptions["generic"]
 
             elif has_and_true(inst, "is_broken") and inst.descriptions.get("is_broken"):
                 description = inst.descriptions["is_broken"]
@@ -1369,7 +1421,6 @@ class itemRegistry:
         if inst.descriptions.get("from_inside") and hasattr(inst, "int_location") and loc.by_cardinal_str(inst.int_location) == loc.current:
             description = inst.descriptions["from_inside"]
         ## Update nicenames ##
-
         if hasattr(inst, "has_multiple_instances"):
             if inst.nicenames.get("is_singular") and inst.has_multiple_instances == 1:
                 inst.nicename = inst.nicenames["is_singular"]

@@ -238,21 +238,22 @@ def print_failure_message(input_str=None, message=None, noun=None, noun2=None, v
     if not verb and init_dict:
         verb = get_verb(init_dict)
 
-    if not verb:
+    from verbRegistry import VerbInstance
+    if verb and isinstance(verb, VerbInstance):
+        verb = verb.name
+
+    elif not verb:
         print(f"[not verb] Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
         return
 
     first_noun = second_noun = None
 
-    from verbRegistry import VerbInstance
-    if isinstance(verb, VerbInstance):
-        verb = verb.name
-        if verb == "find":
-            first_noun = get_noun(init_dict)
-            if first_noun and isinstance(first_noun, str) and get_noun(init_dict, get_str=True) != first_noun: # == assumed noun
-                from verb_actions import find
-                if find(format_tuple=format, input_dict=init_dict):
-                    return
+    if verb == "find":
+        first_noun = get_noun(init_dict)
+        if first_noun and isinstance(first_noun, str) and get_noun(init_dict, get_str=True) != first_noun: # == assumed noun
+            from verb_actions import find
+            if find(format_tuple=format, input_dict=init_dict):
+                return
 
     if not idx_kind and not (noun and verb):
         print(f"[not idx_kind and not (noun and verb)]Sorry, I don't know what to do with `{assign_colour(input_str, colour="green")}`.")
@@ -288,7 +289,7 @@ def print_failure_message(input_str=None, message=None, noun=None, noun2=None, v
 
         first_noun = ensure_noun_inst(noun_check, noun_test, input_str)
         second_noun = ensure_noun_inst(noun2_check, noun2_test, input_str)
-        #print(f"First noun {first_noun} / second noun: {second_noun}")
+        print(f"First noun {first_noun} / second noun: {second_noun}")
     """
     if idx_kind:
         print(f"idx_kind: {idx_kind}")
@@ -382,7 +383,10 @@ def print_failure_message(input_str=None, message=None, noun=None, noun2=None, v
             return
         if not isinstance(first_noun, itemInstance):
             if dir_or_sem:
-                if verb == "put":
+                if verb == "put" or verb == "take":
+                    if second_noun and hasattr(second_noun, "is_open") and not second_noun.is_open:
+                        print(f"The {assign_colour(second_noun)} is closed, you can't take anything from it right now.")
+                        return
                     print(f"There's no {assign_colour(first_noun, colour="yellow")} around here to {assign_colour(verb, colour="green")} {dir_or_sem} {a_or_the}{assign_colour(second_noun)}.")
                 else:
                     if verb == "use" and (dir_or_sem == "with" or dir_or_sem == "on"):
@@ -768,7 +772,7 @@ def assign_colour(item, colour:str=None, *, nicename:bool=None, switch=False, no
                 item = held_name
 
             elif isinstance(item, itemInstance|npcInstance):
-                print(f"ITEM INSTANCE PRINT_NAME: {item.print_name}/name: {item.name}")
+                #print(f"ITEM INSTANCE PRINT_NAME: {item.print_name}/name: {item.name}")
                 item = item.print_name
 
         elif isinstance(colour, (int, float)):

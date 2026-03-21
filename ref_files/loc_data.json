@@ -94,15 +94,17 @@
     "north": {
       "item_desc": {
         "generic": "There's a dark fence blocking the horizon, prominently featuring ",
-        "gate": "a heavy wrought-iron [[]] - standing strong but run-down<<, and slightly ajar>>",
+        "gate": "a heavy wrought-iron [[]] - standing strong but run-down<<, slightly ajar>>",
         "padlock": "an old dark-metal [[]] fffon a chain, holding the gate closedfff<< hanging loosely on a chain>>"
       },
       "items": {
         "padlock": {
+          "item_size": 3,
           "is_locked": true,
           "requires_key": "iron key",
           "key_is_placed_elsewhere": true
-        }
+        },
+        "cardboard box": {}
       },
       "short_desc": "The entrance gates are",
       "surfaces": {"wall": true, "flooring": true}
