@@ -1,5 +1,6 @@
 """ Receives format and input_dict from verb.membrane and forwards the data to a verb function, eg `def g`et, `def drop`, `def eat`."""
 
+from interactions.meta_commands import yes_test
 from logger import logging_fn, traceback_fn
 from env_data import cardinalInstance, placeInstance, locRegistry as loc
 from interactions import item_interactions
@@ -239,6 +240,14 @@ def get_correct_nouns(input_dict, verb=None, access_str=None, access_str2=None, 
     _, noun2_reason, _ = registry.run_check(noun2)
     return noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason
 
+def moved_item(item):
+
+    if item and hasattr(item, "event") and item.event:
+        from eventRegistry import events
+        triggered, moved_children = events.is_event_trigger(noun_inst = item, reason = "item_not_in_inv")
+        if moved_children:
+            print_moved_children(moved_children, item, triggered)
+        return triggered
 
 def move_a_to_b(a:itemInstance, b:placeInstance|itemInstance, action:str=None, direction:str=None, current_loc = None):
     logging_fn() ## REPLACE WITH REGISTRY.MOVE_ITEM()
@@ -265,9 +274,10 @@ def move_a_to_b(a:itemInstance, b:placeInstance|itemInstance, action:str=None, d
         if not isinstance(b, itemInstance):
             if isinstance(b, cardinalInstance):
                 if b == loc.current:
-                    text = smart_capitalise(f"{action} {assign_colour(a)} {direction} {assign_colour(b, card_type = "place_name")}")
-                    print(text)
                     item_interactions.add_item_to_loc(a, b)
+                    if not moved_item(a):
+                        text = smart_capitalise(f"{action} {assign_colour(a)} {direction} {assign_colour(b, card_type = "place_name")}")
+                        print(text)
                     return "yes"
             print("B is not an instance. move a to b requires two things: What is the second item? (pass for now.)")
             return None
@@ -294,24 +304,30 @@ def move_a_to_b(a:itemInstance, b:placeInstance|itemInstance, action:str=None, d
                     if item_size < container_size:
                         #print(f"{a.name} will fit in {b.name}")
                         if registry.move_item(a, new_container=b, no_print=True):
-                            return f"You {action} the {assign_colour(a)} {direction} the {assign_colour(b)}."
+                            if not moved_item(a):
+                                return f"You {action} the {assign_colour(a)} {direction} the {assign_colour(b)}."
+                            else:
+                                print("after moved_item success")
+
                     else:
                         return f"The {assign_colour(a)} is too big to put inside the {assign_colour(b)}."
 
     elif isinstance(b, tuple):
-        print(f"b is a tuple: {b}")
+        print(f"b is a tuple: {b} -- DOES THIS EVER HAPPEN? wHERE FROM?")
         if not current_loc:
             current_loc = loc.current.place
         if b[0] in current_loc:
             location = b[0]
             print(f"{action} {a.name} {direction} {b}")
             item_interactions.add_item_to_loc(a, b)
+            moved_item(a)
 
         else:
             print("Can only move items to the location you're currently in.")
 
     elif isinstance(b, cardinalInstance):
-        location = b
+        item_interactions.add_item_to_loc(a, b)
+        moved_item(a)
 
     else:
         print("B is not an instance.")
@@ -327,6 +343,7 @@ def move_a_to_b(a:itemInstance, b:placeInstance|itemInstance, action:str=None, d
 
         if location:
             print(f"{action} {a.name} {direction} {b}")
+            print("LOCATION")
         else:
             print(f"Failed to move `{a}` to `{b}`.")
             print(f"Reason: `{b}` is not the current location.")
@@ -565,6 +582,13 @@ def item_attributes(format_tuple, input_dict):
 
     from pprint import pprint
     pprint(vars(inst_to_print))
+    print(f"Want to print other instances of {input_dict}?")
+    if yes_test(f"Want to print other instances of {inst_to_print.name}?"):
+        for item in registry.instances_by_name(inst_to_print.name):
+            print("\n")
+            pprint(vars(item))
+            print()
+
 
 ##### Parts Parsing ########
 
@@ -1987,10 +2011,10 @@ def take(format_tuple, input_dict):
             if hasattr(noun, "can_pick_up") and noun.can_pick_up:
                 if hasattr(noun, "contained_in"):
                     container = noun.contained_in
-                if reason_val in (3, 4) and container and container.location == loc.current:
+                if reason_val in (3, 4) and container and (container.location == loc.current or container.location == loc.inv_place):
                     outcome = registry.move_from_container_to_inv(noun, parent=container)
                     added_to_inv = outcome
-                    #print("added to inv, returning.")
+                    print("added to inv, returning.")
                     return 0, added_to_inv
                 elif reason_val == 0:
                     outcome = registry.move_item(noun, location = loc.inv_place)
@@ -2087,6 +2111,7 @@ def take(format_tuple, input_dict):
 
             if container and container == noun2 and noun_reason in in_container_codes and noun2_reason in interactable_codes:
                 output_noun = registry.move_from_container_to_inv(noun, parent=container, no_print=False)
+                print(f"OUTPUT NOUN: {output_noun}")
                 if output_noun in loc.inv_place.items:
                     added_to_inv = output_noun
                 else:
@@ -2114,7 +2139,8 @@ def put(format_tuple, input_dict, location=None):
     logging_fn()
     action_word = "You put"
     verb = get_verb(input_dict, get_str=True)
-    noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict, verb="put", access_str=None, access_str2=None, hold_error_messages=True)
+    noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict, verb="drop", access_str=None, access_str2=None, hold_error_messages=True) # to get inv items first
+    print(f"[def put] NOUN : {noun}")
     if not noun:
         noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict, verb="put", access_str=None, access_str2=None, hold_error_messages=True)
     sem_or_dir = get_dir_or_sem(input_dict)
@@ -2147,9 +2173,9 @@ def put(format_tuple, input_dict, location=None):
             if hasattr(device, "has_batteries") and device.has_batteries == battery:
                 #print(f"Device has batteries: {device} // {device.has_batteries}")
                 registry.init_descriptions(device)
-            return
+                moved = battery
 
-        if not hasattr(noun, "can_pick_up") or not noun.can_pick_up or noun_reason not in interactable_codes:
+        elif not hasattr(noun, "can_pick_up") or not noun.can_pick_up or noun_reason not in interactable_codes:
             print(f"You can't move the {assign_colour(noun)}.")
             return
 
@@ -2159,57 +2185,66 @@ def put(format_tuple, input_dict, location=None):
                     if not noun.location == loc.inv_place:
                         noun = item_interactions.find_local_item_by_name(noun, verb="drop", current_loc=loc.current)
                     if noun:
-                        registry.move_item(noun, loc.current)
-                        text = smart_capitalise(f"{action_word} the {assign_colour(noun)} the {noun2.name}.\n")
-                        print(text)
+                        moved = registry.move_item(noun, loc.current)
+                        if not moved_item(moved):
+                            text = smart_capitalise(f"{action_word} the {assign_colour(noun)} {get_dir_or_sem(input_dict)} the {noun2.name}.\n")
+                            print(f"NOUN2: {noun2} / dir(noun2): {dir(noun2)}")
+                            print(text)
                         return
                 else:
                     print(f"The {assign_colour(noun)} is already {sem_or_dir} the {noun2.name}.\n")
                     return
 
-        if noun2_reason not in interactable_codes:
+        elif noun2_reason not in interactable_codes:
             print(f"You can't access the {assign_colour(noun2)} to put the {assign_colour(noun)} {sem_or_dir} it.")
             return
 
-        if hasattr(noun2, "contained_in") and noun == noun2.contained_in:
+        elif hasattr(noun2, "contained_in") and noun == noun2.contained_in:
             print(f"Cannot put {assign_colour(noun)} in {assign_colour(noun2)}, as {assign_colour(noun2)} is already inside {assign_colour(noun)}. You'll need to remove it first.")
             return
 
-        if sem_or_dir in ("in", "to", "into", "inside") and len(format_tuple) == 4 or (len(format_tuple) == 6 and get_location(input_dict) == loc.current.place):
+        elif sem_or_dir in ("in", "to", "into", "inside") and len(format_tuple) == 4 or (len(format_tuple) == 6 and get_location(input_dict) == loc.current.place):
             if hasattr(noun, "contained_in") and noun2 == noun.contained_in:
                 print(f"The {assign_colour(noun)} is already in {assign_colour(noun2)}")
                 return
 
             if "container" in noun2.item_type:
                 direction = get_dir_or_sem(input_dict)
+                #moved = registry.move_item(noun, new_container=noun2, no_print=True)
                 success = move_a_to_b(noun, noun2, verb, direction=(direction if direction else "into"))
                 #registry.move_item(noun, new_container=noun2, no_print=True)
                 if success and isinstance(success, str): #hasattr(noun2, "is_open") and not noun2.is_open:
                     print(success)
+                    return
                 if noun in loc.inv_place.items or noun in registry.by_location[loc.inv_place]:
                     print("Outcome: outcome")
                     exit(f"{assign_colour(noun)} still in inventory, something went wrong. Exiting.")
-                else:
-                    text = smart_capitalise(f"{action_word} the {assign_colour(noun)} {sem_or_dir} the {assign_colour(noun2)}")
-                    if not success:
-                        print(text)
+                #else:
+                if not success:
+                    text = smart_capitalise(f"{action_word} the {assign_colour(noun)} {sem_or_dir} the {assign_colour(noun2)}.")
+                    print(text)
                 return
 
     else:
         if sem_or_dir in down_words:
             print("if sem_or_dir in down_words: USING MOVE_A_TO_B")
-            move_a_to_b(a=noun, b=location, action=action_word, direction = sem_or_dir, current_loc=location)
-            return
+            return move_a_to_b(a=noun, b=location, action=action_word, direction = sem_or_dir, current_loc=location)
+            #moved = noun #return
 
         if len(format_tuple) == 5:
             a, sem_or_dir, b, sem_or_dir_2, c = five_parts_a_x_b_in_c(input_dict)
             if c == location:
                 move_a_to_b(a=a, b=b, action=action_word, direction=sem_or_dir, current_loc=location)
-                return
+                moved = a#return
 
-    print(f"Noun: {noun} / noun2: {noun2}")
-    print_failure_message(init_dict=input_dict, noun=noun, noun2=noun2, verb="put")
-    #print(f"You can't put the {assign_colour(noun)} on the {assign_colour(noun2)}; I just haven't programmed it yet.")
+    if moved:
+        moved_item(moved)
+
+    else:
+
+        print(f"Noun: {noun} / noun2: {noun2}")
+        print_failure_message(init_dict=input_dict, noun=noun, noun2=noun2, verb="put")
+        #print(f"You can't put the {assign_colour(noun)} on the {assign_colour(noun2)}; I just haven't programmed it yet.")
 
 def throw(format_tuple, input_dict):
     logging_fn()

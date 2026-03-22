@@ -80,7 +80,7 @@
             "trigger_item": "moss",
             "trigger_location": null,
             "triggered_by": ["item_not_in_inv"],
-            "exceptions": ["current_loc_is_inside"],
+            "exceptions": ["current_loc_is_inside", "item_in_ext_container"],
             "end_type": "failure",
             "print_description_plain": true}
         },
@@ -103,6 +103,23 @@
         "end_msg": "You realise the moss you picked up a few days ago has dried out. Damn. Or, maybe you wanted some [[dried moss]]...?"
         }
     },
+"wait_one_turn": {
+    "repeats": false,
+    "remove_event_on_run": true,
+    "is_generated_event": true,
+    "end_trigger": {
+        "timed_trigger": {
+            "time_unit": "hour",
+            "full_duration": 1,
+            "required_condition": {"item_is_open": "trigger_item"},
+            "persistent_condition": true,
+            "condition_item_is_start_trigger": true,
+            "exceptions": ["current_loc_is_inside"],
+            "end_type": "success",
+            "effect_on_completion":
+                {"end_event": "trigger_event"}}
+    }
+},
 "scroll_drops_key": {
     "repeats": false,
     "starts_current": false,

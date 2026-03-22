@@ -1036,3 +1036,66 @@ Okay, that seems to be working better now. Set it all up so keys and locks are s
 Still doesn't actually unlock yet  but that's because the verb_action still expects an instance, not a set. Only one pair of wire cutters are generated now. and the iron key still seems to be generated correctly. Will run a test once I've updated the lock fn.
 
 okay, lock fn works again, now it just checks if noun_1 is /in/ requires_key rather than == to it.
+
+Re: set_noun_attr: Just found an example of the 'multiple values'.
+in lock_unlock, we send this:
+# set_noun_attr(("is_locked", False), ("is_open", True), noun=lock)
+and sometimes this:
+# set_noun_attr(("is_locked", False), noun=lock)
+
+I think maybe I need to make it a dict?
+
+It gets tricky because in def drop() I send this
+triggered, moved_children = events.is_event_trigger(noun_inst = noun, reason = "item_not_in_inv")
+directly to is_event_trigger
+which is what set_noun_attr sends to:
+`if hasattr(noun, "event") and getattr(noun, "event") and hasattr(noun, "is_event_key") and noun.is_event_key:`
+    `outcome, moved_children = events.is_event_trigger(noun_inst = noun, reason = values, event_type = event_type)`
+
+Hm. 'leave shed' does work, but it now sends you to east graveyard instead of north. Oh, it's the opposite direction of the shed door - that's correct. oh, good. Okay.
+
+#TODO: I need to change the colour of the event failure text for the moss event. It's ital grn and shouldn't be. Changed my mind on that. The event start text is plain, but the failure text isn't.
+
+Also, just realised that there's no send to attr for 'put'. So if I put the moss somewhere, it likely won't trigger the event.
+Tried to test, and 'put moss on ground' tries to 'put' a moss still on the ground (val 2) instead of the one in the inv. I thought I set the inv to prioritise inv items for def put?
+Apparently not. 'put' is in `loc_w_inv_no_containers`. So maybe I need to do a run with inv only and then try again if nothing's found.
+Really I should be doing that loop internally. For verbs, instead of a single scope, give it an ordered list; 'find one in inventory, if not find one locally' etc, depending on which verb it is.
+
+12.07pm
+Hm.
+How come '{'noun': {'instance': <ItemInst stony ground / (e03d99df72d2) / west graveyard / None / >, 'str_name': 'stony ground', 'text': 'ground'}}}' is becoming
+
+<ItemInst floor / (6577133071a7) / east graveyard / None / >?
+Oh, well for one I suppose we are in east graveyard. Is west graveyard making the wrong one or is it a weird duplicate?
+So only the west has the stone floor, everywhere else just has the default. Oops.
+Have set a new attr to 'place', 'placewide_surfaces'. Here it's just the floor. Basically will overwrite any default 'True' or missing value for that surface-type for that location. If it specifies False or has a specifed surface, then it does't overwrite.
+
+Reminder: You were doing the 'put moss on ground' thing before this. Finish that.
+
+okay, place-wide flooring works.
+
+have added 'moved_item' to check noun events wherever items are moved from inv more flexibly.
+
+Need to decide if putting the moss in a jar outside ends the event. Instinctively, if the jar is open and it's an outside loc then it should end. But you can't turn the jar to prevent it or anything. Idk how to make it clear enough that it's not the jar that ends it, but the exposure. I can't test it based on 'is the container open', because it has to be open to add the item to it. If I put an item in a container and then close it immediately it should count as closed...
+Maybe that's an event. 'moss_in_ext_container', tests to see if the container is_open==False by the next timeblock. If it fails, the moss event fails silently and it just never dries. Maybe.
+So how would I want to do that. Clearly it's an exception, like
+`"exceptions": ["current_loc_is_inside"],`. For now I'll just do a custom one but I'll need to generalise these later probably.
+
+2.40pm
+It's very messy but it does mostly work now. New issue though:
+moss in jar. 'take moss from jar' = 'moss is now in your inventory'.
+'drop moss' - 'you can't drop the moss, you have to get it out of the jar first'.
+But the moss is in the inventory, not the jar. So it's missed an update somewhere.
+
+2.57pm
+specifically:
+ .-                    -.
+[<  take moss from jar  >]
+ '-                    -'
+
+OUTPUT NOUN: <ItemInst moss / (fcb870986ebd) / north inventory_place / moss_dries / ..24fc042bbcc2 / 1>
+
+The moss is now in your inventory.
+This keeps running over and over and the object never leaves the jar, and is only ever in the jar and my inventory once per.
+
+Okay, fixed it. Issue was that the moves done within move_cluster_item didn't clear parent.children, so if you tried to pick up a singular with no competition from inside a jar it didn't leave children, despite successfully leaving. There's a neater way of doing it but this is good for now.

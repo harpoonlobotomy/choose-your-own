@@ -160,12 +160,13 @@
           "not_in_loc_desc": true
         }
       },
-      "surfaces": {"wall": "work shed", "flooring": "stony ground"}
+      "surfaces": {"wall": "work shed"}
     },
     "descrip": "You're in a rather poorly kept PPPgraveyardEEE - smaller than you might have expected given the scale of the gate and fences",
     "inside": false,
     "electricity": false,
-    "nature": true
+    "nature": true,
+    "placewide_surfaces": {"flooring": "stony ground"}
   },
   "shrine": {
     "north": {

@@ -1084,6 +1084,10 @@ class itemRegistry:
         old_loc = inst.location
         parent, was_in_container, new_container = self.get_parent_details(inst, old_container, new_container)
 
+        if was_in_container:
+            inst.contained_in = None
+            parent.children.remove(inst)
+
         is_drop = True
 
         if location == loc.inv_place:
@@ -1148,6 +1152,7 @@ class itemRegistry:
 
         ## REMOVE FROM ORIGINAL LOCATION ##
         old_loc = inst.location
+        print(f"old_loc: {old_loc}")
         if old_loc and old_loc != None:
             if self.by_location.get(old_loc):
                 if inst not in self.by_location[old_loc]:
@@ -1170,11 +1175,12 @@ class itemRegistry:
 
         return_text = []
         if old_container or new_container or hasattr(inst, "contained_in"):
+            print(f"old_container: {old_container} // new_container: {new_container}")
             parent, was_in_container, new_container = self.get_parent_details(inst, old_container, new_container)
             if parent and was_in_container:
-                #print(f"parent.children: {parent.children}")
+                print(f"parent.children: {parent.children}")
                 parent.children.remove(inst)
-                #print(f"parent.children: {parent.children} (should be removed now)")
+                print(f"parent.children: {parent.children} (should be removed now)")
 
                 return_text.append((f"Item `[{inst}]` removed from old container `[{parent}]`", inst, parent))
                 if not no_print:
@@ -1189,8 +1195,9 @@ class itemRegistry:
                 return_text.append((f"Added [{inst}] to new container [{new_container}]", inst, new_container))
                 if not no_print:
                     print(f"Added {assign_colour(inst)} to {assign_colour(new_container)}.")
-
+                print(f"Inst.location: {inst.location}")
                 inst.location = loc.no_place
+                print(f"Inst.location: {inst.location}")
 
             else:
                 inst.contained_in = None
@@ -1782,9 +1789,14 @@ def init_loc_items(place=None, cardinal=None):
                         else:
                             flooring = "floor"
                     else:
-                        flooring = None
+                        flooring = "none_given"
 
                     if flooring:
+                        if flooring in ("floor", "none_given"):
+                            if place.placewide_surfaces and place.placewide_surfaces.get("flooring"):
+                                flooring = place.placewide_surfaces["flooring"]
+                            if flooring == "none_given":
+                                continue # if none given and no global, do nothing.
                         inst = registry.init_single(flooring)
                         all_item_names_generated.append((inst, "init_loc_items flooring"))
                         if hasattr(inst, "location") and inst.location != loc.no_place:

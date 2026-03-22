@@ -102,6 +102,8 @@ class placeInstance:
             else:
                 setattr(self, attr, value)
 
+        self.placewide_surfaces = loc_dict[name].get("placewide_surfaces", None)
+
         for attr in ("inside", "electricity", "nature"):
             value = loc_dict[name].get(attr)
             setattr(self, attr, value)
