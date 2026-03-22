@@ -237,13 +237,13 @@ class itemInstance:
              self.loot_type = attr["loot_type"]
 
         if "key" in self.item_type:
-            self.is_key_to:itemInstance = attr["is_key_to"]
-            self.unlocks:itemInstance = attr.get("unlocks", None)
+            self.is_key_to:set[itemInstance] = set((attr.get("is_key_to"),)) if attr.get("is_key_to") else None
+            self.unlocks:set[itemInstance] = set((attr.get("unlocks"),)) if attr.get("unlocks") else None
 
         if "can_lock" in self.item_type or "container" in self.item_type:
             self.can_be_locked = attr["can_be_locked"]
             self.is_locked = attr["is_locked"]
-            self.requires_key = attr["requires_key"]
+            self.requires_key:set[itemInstance] = set((attr["requires_key"],)) if attr["requires_key"] else None
             self.key_is_placed_elsewhere = attr.get("key_is_placed_elsewhere")
 
         if "can_open" in self.item_type or "container" in self.item_type:
@@ -411,7 +411,7 @@ class itemRegistry:
 
         self.keys:set[itemInstance] = set()
 
-        self.locks_keys:dict[itemInstance,itemInstance] = {}
+        self.locks_keys:dict[itemInstance, set[itemInstance]] = {}
 
         self.item_defs: dict[str: dict] = {}
 
@@ -690,43 +690,72 @@ class itemRegistry:
                 if not item:
                     exit(f"Failed to get instance by id in cleaning_loop for instance ({item_id}).")
 
+                key_found = False
                 if hasattr(item, "requires_key") and item.requires_key and not isinstance(getattr(item, "requires_key"), bool):
+                    print(f"item.requires key at start: {item.requires_key}")
                     if isinstance(item.requires_key, itemInstance):
                         continue
-                    key_found = False
                     for maybe_key in registry.keys:
-                        if hasattr(maybe_key, "unlocks") and getattr(maybe_key, "unlocks"):
-                            continue
+                        print(f"maybe_key in registry.keys: {maybe_key}")
+                        #if hasattr(maybe_key, "unlocks") and getattr(maybe_key, "unlocks"):
+                        #    print(f"maybe_key unlocks: {maybe_key.unlocks}")
+                        #    continue
+                        print(f"item.requires_key: {item.requires_key}")
+                        if maybe_key.name in item.requires_key:
+                            for key in item.requires_key:
+                                print(f"Item in requires_key (instance in set): {key}")
+                            print(f"maybe_key.name == item.requires_key: {maybe_key.name} // {key}")
+                            if (hasattr(maybe_key, "is_key_to") and maybe_key.is_key_to) or not (hasattr(maybe_key, "is_key_to") and maybe_key.is_key_to):
+                                if hasattr(maybe_key, "is_key_to") and maybe_key.is_key_to:
+                                    lock_match = True
+                                    for lock in maybe_key.is_key_to:
+                                         if lock != item.name:
+                                            continue
+                                         lock_match = True
+                                    if not lock_match:
+                                        continue
+                                print("is_key_to etc succeeds")
+                                for a in (maybe_key, item):
+                                    self.locks_keys.setdefault(a, set())
 
-                        if maybe_key.name == item.requires_key:
-                            if hasattr(maybe_key, "is_key_to") and maybe_key.is_key_to == item.name:
-
-                                self.locks_keys[item] = maybe_key
-                                self.locks_keys[maybe_key] = item
-                                item.requires_key = maybe_key
-                                setattr(maybe_key, "unlocks", item)
+                                self.locks_keys[item].add(maybe_key)
+                                self.locks_keys[maybe_key].add(item)
+                                item.requires_key = self.locks_keys[item]#maybe_key
+                                setattr(maybe_key, "unlocks", self.locks_keys[maybe_key])
                                 key_found = True
-
-                    if not key_found:
-                        if self.item_defs.get(getattr(item, "requires_key")):
-                            target_obj = self.init_single(getattr(item, "requires_key"), self.item_defs.get(getattr(item, "requires_key")))
-                            all_item_names_generated.append((item, "generate key from item_defs"))
-                            if not target_obj:
-                                print(f"No target_obj from item defs for {item}, looking for {getattr(item, "requires_key")}")
-                        else:
-                            target_obj = use_generated_items(getattr(item, "requires_key"))
-                            if not target_obj:
-                                print(f"No target_obj from item defs or generated, for {item}, looking for {getattr(item, "requires_key")}")
-                                target_obj = new_item_from_str(item_name=getattr(item, "requires_key"))
-                                all_item_names_generated.append(({getattr(item, "requires_key")}, "generate key from str"))
+                                print(f"key_found True: {maybe_key} // item: {item}")
+                                break
                             else:
-                                print(f"generated key from generated items but no actual instance I think: {target_obj}")
+                                print(f"item {item} failed the is_key_to check with maybe_key: {maybe_key}.")
+                                if hasattr(maybe_key, "is_key_to"):
+                                    print(f"maybe key is_key_to: {maybe_key.is_key_to}")
+                                    if maybe_key.is_key_to:
+                                        print(f"maybe_key.is_key_to is true: {maybe_key.is_key_to}")
+                                        exit()
+                    if not key_found:
+                        for key in item.requires_key:
+                            if not isinstance(key, str):
+                                continue
+                            if self.item_defs.get(key):
+                                print(f"Not key_found, init_single 'requires_key: {item.requires_key}")
+                                target_obj = self.init_single(key, self.item_defs.get(key))
+                                all_item_names_generated.append((target_obj, "generate key from item_defs"))
+                                if not target_obj:
+                                    print(f"No target_obj from item defs for {item}, looking for {getattr(item, "requires_key")}")
+                            else:
+                                target_obj = use_generated_items(getattr(item, "requires_key"))
+                                if not target_obj:
+                                    print(f"No target_obj from item defs or generated, for {item}, looking for {getattr(item, "requires_key")}")
+                                    target_obj = new_item_from_str(item_name=getattr(item, "requires_key"))
+                                    all_item_names_generated.append(({getattr(item, "requires_key")}, "generate key from str"))
+                                else:
+                                    print(f"generated key from generated items but no actual instance I think: {target_obj}")
 
-                        if target_obj:
-                            item.requires_key = target_obj # added this, should make it more bilateral.
-                            setattr(target_obj, "unlocks", item)
-                        else:
-                            exit(f"Failed to find key for {item}'s {item.requires_key}.")
+                            if target_obj:
+                                item.requires_key = target_obj # added this, should make it more bilateral.
+                                setattr(target_obj, "unlocks", item)
+                            else:
+                                exit(f"Failed to find key for {item}'s {item.requires_key}.")
 
         try:
             cleaning_loop()
@@ -1000,6 +1029,8 @@ class itemRegistry:
                         new_def["exceptions"] = {"starting_location": origin}
 
                     shard = registry.init_single(compound_inst.name, new_def)
+                    all_item_names_generated.append((shard, "separate_cluster"))
+
         #print(f"shard:  {shard} //  cluster {compound_inst}")
         if origin_type == "location":
             if compound_inst not in self.by_location[origin] and compound_inst != shard:
@@ -1755,6 +1786,7 @@ def init_loc_items(place=None, cardinal=None):
 
                     if flooring:
                         inst = registry.init_single(flooring)
+                        all_item_names_generated.append((inst, "init_loc_items flooring"))
                         if hasattr(inst, "location") and inst.location != loc.no_place:
                             registry.by_location.get(inst.location).pop(inst) # These scenery items shouldn't show up as local objects. We don't find the wall when looking around, it's just /there/. Not sure if this is how I want to keep doing it but it'll do for now. Maybe not even no_place but just 'None', will see.
                         inst.location = test_cardinal
@@ -1845,8 +1877,6 @@ def init_loc_items(place=None, cardinal=None):
             for place in loc_dict:
                 loc_items_dict[place] = {}
                 get_cardinal_items(place, cardinal)
-
-
         else:
             loc_items_dict[place] = {}
             get_cardinal_items(place, cardinal)

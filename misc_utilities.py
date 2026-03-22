@@ -289,7 +289,7 @@ def print_failure_message(input_str=None, message=None, noun=None, noun2=None, v
 
         first_noun = ensure_noun_inst(noun_check, noun_test, input_str)
         second_noun = ensure_noun_inst(noun2_check, noun2_test, input_str)
-        print(f"First noun {first_noun} / second noun: {second_noun}")
+        #print(f"First noun {first_noun} / second noun: {second_noun}")
     """
     if idx_kind:
         print(f"idx_kind: {idx_kind}")

@@ -137,7 +137,7 @@ def select_noun(noun_name=None):
         else:
             break
 
-    if noun_instances and isinstance(noun_instances, list) and len(noun_instances)>1:
+    if noun_instances and isinstance(noun_instances, set) and len(noun_instances)>1:
         print(f"There are {len(noun_instances)} instances with this name.\n")
         print(noun_instances)
         print("Do you want a specific instance, or will any do?")

@@ -242,7 +242,7 @@ def get_correct_nouns(input_dict, verb=None, access_str=None, access_str2=None, 
 
 def move_a_to_b(a:itemInstance, b:placeInstance|itemInstance, action:str=None, direction:str=None, current_loc = None):
     logging_fn() ## REPLACE WITH REGISTRY.MOVE_ITEM()
-    print(f"MOVE A TO B IN USE: {a} / {b}")
+    #print(f"MOVE A TO B IN USE: {a} / {b}")
     location = None
     from itemRegistry import container_limit_sizes
    ## This is the terminus of any 'move a to b' type action. a must be an item instance, b may be an item instance (container-type) or a location.
@@ -275,24 +275,24 @@ def move_a_to_b(a:itemInstance, b:placeInstance|itemInstance, action:str=None, d
         else:
             if in_types(b, "container"): ## This won't work long term, currently the only option for move noun x noun is if hte second is a container. Not 'move noun towards noun', etc, which I want for later. No idea how to implement it, but for now I'm just noting it here.
                 if not b.is_open:
-                    print("b is not open")
+                    #print("b is not open")
                     if b.is_locked:
                         return f"The {assign_colour(b)} seems to be locked."
                     return f"The {assign_colour(b)} seems to be closed."
 
-                print(f"{b.name} is a container with size limit of {b.container_limits}.")
+                #print(f"{b.name} is a container with size limit of {b.container_limits}.")
                 if isinstance(b.container_limits, str):
                     container_size = container_limit_sizes.get(b.container_limits)
                 else:
                     container_size = b.container_limits
                 if isinstance(a, itemInstance) and hasattr(a, "item_size"):
-                    print(f"{a.name} is an item with size {a.item_size}.")
+                    #print(f"{a.name} is an item with size {a.item_size}.")
                     if isinstance(a.item_size, str):
                         item_size = container_limit_sizes.get(a.item_size)
                     else:
                         item_size = a.item_size
                     if item_size < container_size:
-                        print(f"{a.name} will fit in {b.name}")
+                        #print(f"{a.name} will fit in {b.name}")
                         if registry.move_item(a, new_container=b, no_print=True):
                             return f"You {action} the {assign_colour(a)} {direction} the {assign_colour(b)}."
                     else:
@@ -1452,11 +1452,16 @@ def break_item(format_tuple, input_dict):
     print(f"Cannot process {input_dict} in def break_item() End of function, unresolved. (Function not yet written)")
     return
 
-def check_key_lock_pairing(noun_1, noun_2):
+def check_key_lock_pairing(noun_1:itemInstance, noun_2:itemInstance):
     """Checks if noun_1 is a key, and if noun_2 is a matching key."""
     logging_fn()
-    if in_types(noun_1, "key") and hasattr(noun_2, "requires_key") and noun_1 == noun_2.requires_key:
-        return 1
+    print(f"check key lock pairings for {noun_1}, {noun_2} // noun_1.item_type: {noun_1.item_type} // noun2.requires_key:")
+    if hasattr(noun_2, "requires_key"):
+        print(noun_2.requires_key)
+        if noun_1 in noun_2.requires_key:
+            return 1
+    #if in_types(noun_1, "key") and hasattr(noun_2, "requires_key") and noun_1 == noun_2.requires_key:
+    #    return 1
     return 0
 
 
@@ -1465,7 +1470,7 @@ def lock_unlock(format_tuple, input_dict, do_open=False, noun=None, noun2=None):
 
     key=None
     lock=None
-    verb = get_verb(input_dict)
+    verb = get_verb(input_dict, get_str=True)
     if not noun or not noun2:
         noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict, verb="use")
     #print("lock_unlock: noun, noun_str, noun2, noun2_str: ", noun, noun_str, noun2, noun2_str)
@@ -1480,7 +1485,7 @@ def lock_unlock(format_tuple, input_dict, do_open=False, noun=None, noun2=None):
             accessible_1, _, _ = can_interact(noun)
             accessible_2, _, _ = can_interact(noun2)
             if accessible_1 and accessible_2:
-                #print(f"{noun} and {noun2} are both accessible.")
+                print(f"{noun} and {noun2} are both accessible.")
                 success = check_key_lock_pairing(noun, noun2)
                 if success:
                     key = noun
@@ -1503,7 +1508,7 @@ def lock_unlock(format_tuple, input_dict, do_open=False, noun=None, noun2=None):
                         return
 
                     elif not lock.is_locked:
-                        if verb.name == "lock":
+                        if verb == "lock":
                             print(f"You use the {assign_colour(key)} to lock the {assign_colour(lock)}.")
                             set_noun_attr(("is_open", False), ("is_locked", True), noun=lock)
                             return
@@ -1515,7 +1520,7 @@ def lock_unlock(format_tuple, input_dict, do_open=False, noun=None, noun2=None):
                         print(f"You open {lock} with {key}? This doesn't work yet.")
 
                 else:
-                    print(f"You can't open the {assign_colour(noun)} with {assign_colour(noun2)}")
+                    print(f"You can't {verb} the {assign_colour(noun)} with the {assign_colour(noun2)}.")
                     return
 
             else:
@@ -2130,7 +2135,7 @@ def put(format_tuple, input_dict, location=None):
             return
 
     if noun and noun2:
-        print(f"noun and noun2: {noun}, {noun2}")
+        #print(f"noun and noun2: {noun}, {noun2}")
         if noun == noun2: # moved to the top so we don't bother testing the rest if true.
             print(f"You cannot put the {assign_colour(noun)} in itself.")
             return

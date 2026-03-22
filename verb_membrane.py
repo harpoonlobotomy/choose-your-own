@@ -160,6 +160,8 @@ def add_item(input_str):
 
     if input_str in registry.item_defs:
         created_item = registry.init_single(input_str, registry.item_defs[input_str])
+        from itemRegistry import all_item_names_generated
+        all_item_names_generated.append((created_item, "add_item in verb_membrane"))
     else:
         print(f"No item named `{input_str}`. Do you want to create a new item?")
         new_test = input("y/yes for yes, anything else to return.")
@@ -240,6 +242,8 @@ def immediate_commands(input_str, print_tokens):
                 return # we get input immediately after the return, don't add it here too.
             if itemname in registry.item_defs:
                 created_item = registry.init_single(itemname, registry.item_defs[itemname], apply_location=locRegistry.current)
+                from itemRegistry import all_item_names_generated
+                all_item_names_generated.append((created_item, "godmode add item"))
             else:
                 print(f"No item named `{itemname}`. Do you want to create a new item?")
                 new_test = input("y/yes for yes, anything else to return.")

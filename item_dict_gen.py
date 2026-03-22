@@ -166,8 +166,10 @@ def get_item_data(item_name, incoming_data=None):
 
     item_data = None
     if item_name in generator.item_defs:
+        return
         item_data = generator.item_defs[item_name] # maybe should just return this immediately?
         printing.print_green(f"Item already found in generator: {item_name}.")
+
     if item_name in item_defs:
         item_data = item_defs[item_name]
 

@@ -1,6 +1,5 @@
 {
   "city hotel room": {
-    "alt_names": [],
     "north": {
       "item_desc": {
         "generic": "The bed looks nice enough - nothing fancy, but not a disaster either. Two pillows, a spare blanket at the foot of the bed. There's a small bedside drawer to each side, and a painting above the bed."
@@ -47,7 +46,6 @@
     "nature": false
   },
   "forked tree branch": {
-    "alt_names": [],
     "north": {
       "item_desc": {
         "generic": "This is the north part of a tree. You see ",
@@ -90,7 +88,6 @@
     "nature": true
   },
   "graveyard": {
-    "alt_names": [],
     "north": {
       "item_desc": {
         "generic": "There's a dark fence blocking the horizon, prominently featuring ",
@@ -171,7 +168,6 @@
     "nature": true
   },
   "shrine": {
-    "alt_names": [],
     "north": {
       "item_desc": {
         "generic": "The shrine itself is fragile looking, lit with candles, and on it sits ",
@@ -205,7 +201,6 @@
     "nature": true
   },
   "church": {
-    "alt_names": [],
     "north": {
       "item_desc": {
         "generic": "It's a church, it's quite churchlike. This is the north."
@@ -240,7 +235,6 @@
     "nature": false
   },
   "work shed": {
-    "alt_names": [],
     "missing_cardinal": "There's not much else to see around here. Dusty and largely disused, nothing really catches your eye.",
     "north": {
       "item_desc": {
@@ -272,7 +266,6 @@
     "transition_obj": {"north": "wooden door"}
   },
   "everything": {
-    "alt_names": [],
     "north": {
       "item_desc": {
         "generic": "Everything, just everything. What is it you want? Spread around the bright white empty space, you see "
@@ -283,7 +276,6 @@
     "descrip": "A place with everything, for testing."
   },
   "no_place": {
-    "alt_names": [],
     "north": {
       "item_desc": {
         "generic": "During init, things are placed here. Currently, the things here are ",
@@ -298,7 +290,6 @@
     "nature": true
   },
   "inventory_place": {
-    "alt_names": [],
     "north": {
       "item_desc": {
         "generic": "Current, your inventory holds: ",
@@ -313,11 +304,10 @@
     "nature": false
   },
   "testing grounds": {
-    "alt_names": [],
     "north": {
         "item_desc": {"generic": "A place to test things. Nothing here by default with ", "watch battery": "a [[]]", "no_items": "nothing here now either."},
         "short_desc": "It's a place for testing, with nothing",
-        "items": {"mobile phone": {}, "paper scrap with number":{}, "phone charger": {}, "watch battery":{"generate_multiples":3}, "watch":{}},
+        "items": {"mobile phone": {}, "paper scrap with number":{}, "phone charger": {}, "watch battery":{"generate_multiples":3}, "watch":{}, "ivory pot":{}, "wire cutters":{}},
       "surfaces": {"wall": true, "flooring": true}
     },
     "descrip": "~~TESTING GROUNDS~~.",
