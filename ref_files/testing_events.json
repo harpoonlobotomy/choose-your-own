@@ -1,0 +1,74 @@
+{
+ "moss_dries": {
+    "is_generated_event": true,
+    "remove_event_on_failure": true,
+    "remove_event_on_completion": true,
+    "is_timed_event": true,
+    "repeats": "forever",
+
+    "start_trigger": {
+        "item_trigger": {
+            "match_item_by_name_only": true,
+            "trigger_item": "moss",
+            "trigger_location": null,
+            "triggered_by": ["item_in_inv"],
+            "print_description_plain": true}
+        },
+    "end_trigger": {
+        "timed_trigger": {
+            "time_unit": "day",
+            "full_duration": 3,
+            "required_condition": {"item_in_inv": "moss"},
+            "persistent_condition": true,
+            "condition_item_is_start_trigger": true,
+            "end_type": "success",
+            "effect_on_completion":
+                {"trigger_event": "finding_dried_moss",
+                "init_items": {"item_name": "dried moss", "use_trigger_inst_location": true, "use_trigger_inst_colour": true},
+                "remove_items": {"item_name": "moss", "item_is_trigger_inst": true}}},
+
+        "item_trigger": {
+            "trigger_item": "moss",
+            "trigger_location": null,
+            "triggered_by": ["item_not_in_inv"],
+            "exceptions": ["current_loc_is_inside", "item_in_container_dry"],
+            "end_type": "failure",
+            "print_description_plain": true}
+        },
+    "messages": {
+        "start_msg": "You pick up the [[moss]], and feel it squish a little between your fingers.",
+        "exception_msg": "You put the still-damp [[moss]] down in a nice dry spot.",
+        "failure_msg": "You put down the still-damp [[moss]]."
+        }
+    },
+"finding_dried_moss": {
+    "remove_event_on_run": true,
+    "is_generated_event": true,
+    "triggered_by_event": "moss_dries",
+    "end_trigger": {
+        "item_trigger": {
+            "trigger_item": "dried moss",
+            "triggered_by": ["item_interacted_with", "item_in_inv", "inv_in_current_loc"]}
+        },
+    "messages": {
+        "end_msg": "You realise the moss you picked up a few days ago has dried out. Damn. Or, maybe you wanted some [[dried moss]]...?"
+        }
+    },
+"wait_one_turn": {
+    "repeats": "forever",
+    "remove_event_on_run": true,
+    "is_generated_event": true,
+    "end_trigger": {
+        "timed_trigger": {
+            "time_unit": "hour",
+            "full_duration": 1,
+            "required_condition": {"item_is_open": "trigger_item"},
+            "persistent_condition": true,
+            "condition_item_is_start_trigger": true,
+            "exceptions": ["current_loc_is_inside"],
+            "end_type": "success",
+            "effect_on_completion":
+                {"end_event": "trigger_event"}}
+        }
+    }
+}

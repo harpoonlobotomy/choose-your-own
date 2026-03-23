@@ -463,7 +463,7 @@
   },
   "headstone": {
     "alt_names": [
-      "gravestone"
+      "gravestone", "headstones"
     ],
     "can_break": false,
     "descriptions": {

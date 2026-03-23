@@ -273,14 +273,26 @@ def move_a_to_b(a:itemInstance, b:placeInstance|itemInstance, action:str=None, d
             b = loc.current
         if not isinstance(b, itemInstance):
             if isinstance(b, cardinalInstance):
-                if b == loc.current:
+                if b == loc.current or b == loc.inv_place:
+                    a_origin = (a.location if a.location != loc.no_place and a.location != loc.inv_place else a.contained_in)
                     item_interactions.add_item_to_loc(a, b)
-                    if not moved_item(a):
-                        text = smart_capitalise(f"{action} {assign_colour(a)} {direction} {assign_colour(b, card_type = "place_name")}")
+                    print(f"a.location after move: {a.location}")
+                    if not moved_item(a) or b == loc.inv_place:
+                        if b == loc.inv_place:
+                            origin = ""
+                            if a_origin:
+                                if isinstance(a_origin, itemInstance):
+                                    origin = f"from the {assign_colour(a_origin)} "
+                                else:
+                                    origin = f"from {assign_colour(a_origin, card_type="place_name")} "
+                                text = smart_capitalise(f"{action} {assign_colour(a, nicename=True)} {origin}{direction} your inventory.")
+                        else:
+                            text = smart_capitalise(f"{action} {assign_colour(a)} {direction} {assign_colour(b, card_type = "place_name")}.")
                         print(text)
                     return "yes"
-            print("B is not an instance. move a to b requires two things: What is the second item? (pass for now.)")
-            return None
+            else:
+                print("B is not an instance. move a to b requires two things: What is the second item? (pass for now.)")
+                return None
 
         else:
             if in_types(b, "container"): ## This won't work long term, currently the only option for move noun x noun is if hte second is a container. Not 'move noun towards noun', etc, which I want for later. No idea how to implement it, but for now I'm just noting it here.
@@ -330,7 +342,7 @@ def move_a_to_b(a:itemInstance, b:placeInstance|itemInstance, action:str=None, d
         moved_item(a)
 
     else:
-        print("B is not an instance.")
+        print(f"B is not an instance.. b: {b} type: {type(b)}")
         if not current_loc:
             current_loc = loc.current.place
 
@@ -1723,14 +1735,21 @@ def separate(format_tuple, input_dict):
     def is_one_a_child(parent, child):
         if hasattr(parent, "children") and parent.children != None:
             if child in parent.children:
-                print(f"Removing child {child} from parent {parent}.")
-                registry.move_from_container_to_inv(child, parent=parent) # untested
-                return True
+                return child
+            for other_child in parent.children:
+                if other_child.name == child.name:
+                    return other_child
 
-    if not is_one_a_child(noun, noun2):
-        if not is_one_a_child(noun2, noun):
+    child = is_one_a_child(noun, noun2)
+    if not child:
+        child = is_one_a_child(noun2, noun)
+        if not child:
             print(f"Sorry, I can't figure out how to separate the {assign_colour(noun)} from the {assign_colour(noun2)}.")
             return
+
+    if not move_a_to_b(child, b=loc.inv_place, action="Moved"):
+        print(f"Could not move {child}.")
+
 
 def move(format_tuple, input_dict):
     logging_fn()
@@ -2018,6 +2037,7 @@ def take(format_tuple, input_dict):
                     return 0, added_to_inv
                 elif reason_val == 0:
                     outcome = registry.move_item(noun, location = loc.inv_place)
+                    print(f"OUTCOME: {outcome} / noun: {noun}")
                     if outcome in loc.inv_place.items:
                         #print("Outcome is in inventory. (line 1480)")
                         return 0, outcome
@@ -2107,16 +2127,19 @@ def take(format_tuple, input_dict):
                             print(f"Set noun to {child}; matching name, is child of {noun2}")
                             noun = child # if the container doesn't match the
                             container = noun2
+                            _, noun_reason, _ = registry.run_check(noun)
                             break
 
-            if container and container == noun2 and noun_reason in in_container_codes and noun2_reason in interactable_codes:
-                output_noun = registry.move_from_container_to_inv(noun, parent=container, no_print=False)
-                print(f"OUTPUT NOUN: {output_noun}")
-                if output_noun in loc.inv_place.items:
-                    added_to_inv = output_noun
+            if container and container == noun2 and has_and_true(container, "children") and noun in container.children:
+                if noun_reason in in_container_codes and noun2_reason in interactable_codes:
+                    output_noun = registry.move_from_container_to_inv(noun, parent=container, no_print=False)
+                    if output_noun in loc.inv_place.items:
+                        added_to_inv = output_noun
+                    else:
+                        print(f"Tried to add {assign_colour(noun)} to inventory, but something must have gone wrong.")
+                        traceback_fn()
                 else:
-                    print(f"Tried to add {assign_colour(noun)} to inventory, but something must have gone wrong.")
-                    traceback_fn()
+                    print(f"Noun reason: {noun_reason} / noun2_reason: {noun2_reason}")
 
             else:
                 print(f"The {assign_colour(noun)} {doesnt_dont} seem to be in the {assign_colour(noun2.name, colour="yellow")}.")
@@ -2139,10 +2162,15 @@ def put(format_tuple, input_dict, location=None):
     logging_fn()
     action_word = "You put"
     verb = get_verb(input_dict, get_str=True)
-    noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict, verb="drop", access_str=None, access_str2=None, hold_error_messages=True) # to get inv items first
-    #print(f"[def put] NOUN : {noun}")
+    noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict, verb="drop", access_str="drop_subject", access_str2=None, hold_error_messages=True) # to get inv items first
+    print(f"[def put] NOUN : {noun}")
+    if noun2 and in_types(noun2, "container"):
+        if noun2.children and noun in noun2.children:
+            print(f"Trying to drop something already in that container. {noun}")
+            noun = None
     if not noun:
         noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict, verb="put", access_str=None, access_str2=None, hold_error_messages=True)
+        print(f"New noun: {noun}")
     sem_or_dir = get_dir_or_sem(input_dict)
 
     if not sem_or_dir and noun2:
@@ -2361,9 +2389,9 @@ def drop(format_tuple, input_dict):
             input_dict.pop(2, None)
 
     if len(input_dict) == 2:
+        print(f"reason val: {noun_reason}, for item: {noun}")
         if noun_reason == 5:
         #container, reason_val, meaning = registry.run_check(noun)
-        #print(f"reason val: {reason_val}, meaning: {meaning}, for item: {noun}")
         #if reason_val == 5:
             registry.move_item(noun, location = loc.current)
             #registry.drop(noun)

@@ -1,0 +1,142 @@
+{
+  "graveyard": {
+    "north": {
+      "item_desc": {
+        "generic": "There's a dark fence blocking the horizon, prominently featuring ",
+        "gate": "a heavy wrought-iron [[]] - standing strong but run-down<<, slightly ajar>>",
+        "padlock": "an old dark-metal [[]] fffon a chain, holding the gate closedfff<< hanging loosely on a chain>>"
+      },
+      "items": {
+        "padlock": {
+          "item_size": 3,
+          "is_locked": true,
+          "requires_key": "iron key",
+          "key_is_placed_elsewhere": true
+        },
+        "cardboard box": {}
+      },
+      "short_desc": "The entrance gates are",
+      "surfaces": {"wall": true, "flooring": true}
+    },
+    "east": {
+      "item_desc": {
+        "generic": "You see a variety of headstones, most quite worn, and ",
+        "moss": "decorated by clumps of [[]]",
+        "glass jar": "a [[]] being used as a vase in front of one of the headstones<, with some dried flowers left long ago",
+        "no_items": "not much else. It's quite empty here..."
+      },
+      "short_desc": "sit a variety of headstones",
+      "items": {
+        "desiccated skeleton": {}
+      },
+      "surfaces": {"wall": true, "flooring": true}
+    },
+    "south": {
+      "item_desc": {
+        "generic": "There's a locked mausoleum here; graffiti that looks years-old and weeds sprouting at every crevice of the marble. ",
+        "matchbox": "Amongst the weeds, you see a weather-worn [[]]"
+      },
+      "short_desc": "stands a mausoleum",
+      "items": {
+        "god hammer": {},
+        "ivory pot": {}
+      },
+      "surfaces": {"wall": true, "flooring": true}
+    },
+    "west": {
+      "item_desc": {
+        "generic": "Standing in unkempt long grass, you see what looks like ",
+        "work shed": "a [[]] of some kind, with a wooden door that looks like it was barricaded until recently"
+      },
+      "short_desc": "is what looks like a work shed of some kind",
+      "items": {
+        "work shed": {
+          "item_type": [
+            "loc_exterior",
+            "wall",
+            "static"
+          ]
+        },
+        "wooden door": {
+          "int_location": "north work shed",
+          "ext_location": "west graveyard",
+          "item_type": [
+            "wall",
+            "can_open",
+            "static",
+            "transition",
+            "door_window"
+          ],
+          "descriptions": {"from_inside": "It seems like there's something scrawled on the inside of the door, here. It's hard to make out but if you squint, maybe...?", "details": {"from_inside": "There is something written here on the back of the shed door - it's a number. `0288`. I wonder what it means."}},
+          "has_datapoint": {"on_read": {"mobile_passcode": "0288"}},
+          "not_in_loc_desc": true
+        }
+      },
+      "surfaces": {"wall": "work shed"}
+    },
+    "descrip": "You're in a rather poorly kept PPPgraveyardEEE - smaller than you might have expected given the scale of the gate and fences",
+    "inside": false,
+    "electricity": false,
+    "nature": true,
+    "placewide_surfaces": {"flooring": "stony ground"}
+  },
+  "work shed": {
+    "missing_cardinal": "There's not much else to see around here. Dusty and largely disused, nothing really catches your eye.",
+    "north": {
+      "item_desc": {
+        "generic": "The work shed is simple structure, with a dusty window in one wall over a cluttered desk. On the desk, there's ",
+        "local map": "a yellowed [[]] showing the region surrounding the graveyard",
+        "iron key": "an old [[]], mottled with age",
+        "no_items": "not much of any real interest."
+      },
+      "short_desc": "There's a simple desk, hazily lit by the window over it",
+      "items": {
+        "secateurs": {
+          "description": "Slightly rusted secateurs, still likely sharp enough to do their job.",
+          "is_hidden": false
+        },
+        "iron key": {
+          "description": "An old iron key, pitted on the surface but still appears functional.",
+          "is_key_to": "padlock",
+          "lock_in_same_event": true,
+          "is_hidden": true,
+          "event": "graveyard_gate_opens"
+        }
+      },
+      "surfaces": {"wall": true, "flooring": "wood floor"}
+    },
+    "descrip": "Around you, you see the interior of a rather run-down looking PPPwork shedEEE, previously boarded up but seemingly, not anymore.",
+    "inside": true,
+    "electricity": false,
+    "nature": false,
+    "transition_obj": {"north": "wooden door"}
+  },
+  "no_place": {
+    "north": {
+      "item_desc": {
+        "generic": "During init, things are placed here. Currently, the things here are ",
+        "no_items": "During init, things are placed here. Currently, there are no items here."
+      },
+      "short_desc": "Everything starts here.",
+      "items": {}
+    },
+    "descrip": "Where all things start, and where no things should stay. Also where things inside containers live.",
+    "inside": true,
+    "electricity": true,
+    "nature": true
+  },
+  "inventory_place": {
+    "north": {
+      "item_desc": {
+        "generic": "Current, your inventory holds: ",
+        "no_items": "Your inventory is empty."
+      },
+      "short_desc": "An inventory.",
+      "items": {}
+    },
+    "descrip": "Player Inventory [not actually a location].",
+    "inside": false,
+    "electricity": false,
+    "nature": false
+  }
+}

@@ -359,10 +359,10 @@ class itemInstance:
         for attribute in attr: # want to remove this and do it intentionally instead.
             if not hasattr(self, attribute):
                 #if attribute in ["can_read", "can_burn", "is_burned", "item_size", "print_on_investigate", "slice_attack", "slice_defence", "smash_attack", "smash_defence", "flammable", "on_burn", "exceptions"]:
-                #    setattr(self, attribute, attr[attribute])
+                setattr(self, attribute, attr[attribute])
                 #else:
-                    print(f"ATTR MISSING FROM SELF for {self.name}: {attribute}")
-                    print(f"self.item_type: {self.item_type}")
+                    #print(f"ATTR MISSING FROM SELF for {self.name}: {attribute}")
+                    #print(f"self.item_type: {self.item_type}")
 
 
 
@@ -373,7 +373,7 @@ class itemInstance:
         event = self.event if hasattr(self, "event") else ''
         if event:
             event = f"{event.name} / ..{event.short_id}"
-        text = f"<ItemInst {self.name} / ({self.short_id}) / {self.location.place_name} / {event} / {(self.has_multiple_instances if hasattr(self, 'has_multiple_instances') else '')}>"
+        text = f"<ItemInst {self.name} / ({self.short_id}) / {(self.location.place_name if self.location else '')} / {event} / {(self.has_multiple_instances if hasattr(self, 'has_multiple_instances') else '')}>"
         if self.colour and config.coloured_repr:
             if not hasattr(self, "code"):
                 from tui.colours import Colours
@@ -457,7 +457,7 @@ class itemRegistry:
             setattr(ext_location, "location_entered", False)
             inst.is_transition_obj = True
 
-    def init_single(self, item_name:str, item_entry:dict = None, apply_location:bool = None) -> itemInstance:
+    def init_single(self, item_name:str, item_entry:dict = None, apply_location:bool = False) -> itemInstance:
         """Generate an ItemInstance from `item_name`. If no item_entry is provided, it will use `item_defs[item_name]`.\n\n `apply_location` if given should be a `cardinalInstance` object, or a string suitable for `by_cardinal_str`. This is use to place the new item directly in a given location."""
         #print(f"\n\n[init_single] ITEM NAME: {item_name}")
         #print(f"[init_single] ITEM ENTRY: {item_entry}\n\n")
@@ -493,16 +493,18 @@ class itemRegistry:
 
         if not hasattr(inst, "is_scenery"): # exclude floors/walls
             if location:
-                if isinstance(location, cardinalInstance):
-                    inst.location = location
-                    self.by_location.setdefault(location, set()).add(inst)
-
-                elif not hasattr(inst, "contained_in") or inst.contained_in == None:
-                    cardinal_inst = loc.by_cardinal_str(location)
+                if not hasattr(inst, "contained_in") or inst.contained_in == None:
+                    if isinstance(location, cardinalInstance):
+                        cardinal_inst = location
+                    else:
+                        cardinal_inst = loc.by_cardinal_str(location)
                     self.by_location.setdefault(cardinal_inst, set()).add(inst)
                     inst.location = cardinal_inst
+                    print(f"item added to by_location: {cardinal_inst}: {inst}")
+                    print(self.by_location[cardinal_inst])
 
             if apply_location:
+                #basically just for godmode add item
                 if not isinstance(apply_location, cardinalInstance):
                     apply_location = loc.by_cardinal_str(apply_location)
                 self.by_location.setdefault(apply_location, set()).add(inst)
@@ -545,10 +547,10 @@ class itemRegistry:
              * and finally, from itemRegistry.instances"""
         if inst.location and inst.location in self.by_location and inst in self.by_location[inst.location]:
             self.by_location[inst.location].remove(inst)
-            print("inst.location")
-
+            print(f"remove from inst.location: {inst.location}")
             if inst.location == loc.inv_place:
                 loc.inv_place.items.remove(inst)
+
 
         inst.location = loc.no_place
         if hasattr(inst, "contained_in"):
@@ -693,19 +695,19 @@ class itemRegistry:
 
                 key_found = False
                 if hasattr(item, "requires_key") and item.requires_key and not isinstance(getattr(item, "requires_key"), bool):
-                    print(f"item.requires key at start: {item.requires_key}")
+                    #print(f"item.requires key at start: {item.requires_key}")
                     if isinstance(item.requires_key, itemInstance):
                         continue
                     for maybe_key in registry.keys:
-                        print(f"maybe_key in registry.keys: {maybe_key}")
+                        #print(f"maybe_key in registry.keys: {maybe_key}")
                         #if hasattr(maybe_key, "unlocks") and getattr(maybe_key, "unlocks"):
                         #    print(f"maybe_key unlocks: {maybe_key.unlocks}")
                         #    continue
-                        print(f"item.requires_key: {item.requires_key}")
+                        #print(f"item.requires_key: {item.requires_key}")
                         if maybe_key.name in item.requires_key:
-                            for key in item.requires_key:
-                                print(f"Item in requires_key (instance in set): {key}")
-                            print(f"maybe_key.name == item.requires_key: {maybe_key.name} // {key}")
+                            #for key in item.requires_key:
+                                #print(f"Item in requires_key (instance in set): {key}")
+                            #print(f"maybe_key.name == item.requires_key: {maybe_key.name} // {key}")
                             if (hasattr(maybe_key, "is_key_to") and maybe_key.is_key_to) or not (hasattr(maybe_key, "is_key_to") and maybe_key.is_key_to):
                                 if hasattr(maybe_key, "is_key_to") and maybe_key.is_key_to:
                                     lock_match = True
@@ -715,7 +717,7 @@ class itemRegistry:
                                          lock_match = True
                                     if not lock_match:
                                         continue
-                                print("is_key_to etc succeeds")
+                                #print("is_key_to etc succeeds")
                                 for a in (maybe_key, item):
                                     self.locks_keys.setdefault(a, set())
 
@@ -724,10 +726,10 @@ class itemRegistry:
                                 item.requires_key = self.locks_keys[item]#maybe_key
                                 setattr(maybe_key, "unlocks", self.locks_keys[maybe_key])
                                 key_found = True
-                                print(f"key_found True: {maybe_key} // item: {item}")
+                                #print(f"key_found True: {maybe_key} // item: {item}")
                                 break
                             else:
-                                print(f"item {item} failed the is_key_to check with maybe_key: {maybe_key}.")
+                                #print(f"item {item} failed the is_key_to check with maybe_key: {maybe_key}.")
                                 if hasattr(maybe_key, "is_key_to"):
                                     print(f"maybe key is_key_to: {maybe_key.is_key_to}")
                                     if maybe_key.is_key_to:
@@ -812,7 +814,7 @@ class itemRegistry:
             return None, reason, meaning
 
         if container:
-            #print(f"container: {container}")
+            print(f"container: {container}")
             if container.location == loc.inv_place:
                 confirmed_container = container
                 if hasattr(confirmed_container, "is_open") and confirmed_container.is_open == False:
@@ -936,20 +938,27 @@ class itemRegistry:
         if isinstance(target, cardinalInstance):
             target_is_location = True
 
-        if shard.location != loc.inv_place:
-            ## Actually not always bad - dried moss is just instantiated in no_place, so it's allowed to start elsewhere.
-            if shard.location != loc.no_place:
+        #actually the below isn't always bad, if we're in a location we can say 'put moss in jar' without picking it up first and then this will trigger.
+        if shard.location != loc.inv_place and shard.location != loc.no_place:
+            if not target_is_location:
+                if target.location == loc.current:
+                    print("moving from compound to a container, that's okay.")
+            else:
                 print(f"\n{shard} is not in inv_place OR NO_PLACE. This is bad, how are we combining if not removing from inventory?\n\n\n")
         #print(f"Start of combine_clusters: shard: {shard} // target: {target}")
-        if not target_is_location:
+        if not target_is_location and shard.has_multiple_instances == 1:
+            print("shard has multiple instances of 1")
             return shard, "no_local_compound" # returning so it can be added to the container. No merging in containers. Not sure if I want to combine multiples inside containers or not, but for now we just treat them the same way as inventory.
         compound_target = None
+        print(f"TARGET: {target}")
         from interactions.item_interactions import get_correct_cluster_inst
         if isinstance(target, itemInstance):
             compound_target = get_correct_cluster_inst(shard, shard.name, local_items=None, local_only = True, access_str = "drop_target", allow_hidden=False, priority="plural")
+            print(f"Compound target first try: {compound_target}")
 
         if not compound_target:
             compound_target = get_correct_cluster_inst(shard, shard.name, local_items=None, local_only = True, access_str = "drop_target", allow_hidden=True, priority="plural")
+            print(f"Compound target second try: {compound_target}\n")
 
         if not compound_target:
             from printing import print_yellow
@@ -957,7 +966,21 @@ class itemRegistry:
             return shard, "no_local_compound"
 
         if compound_target == shard:
-            return shard, "no_local_compound"
+            if shard.has_multiple_instances > 1:
+                shard_loc = str(shard.location.place_name)
+                shard, compound_target = self.separate_cluster(shard, origin=loc.current, origin_type="location")
+                print(f"compound_target: {compound_target} // shard: {shard}")
+                if not target_is_location:
+                    if shard_loc != loc.inv_place.place_name and shard_loc != loc.no_place.place_name:
+                        compound_target.location = loc.by_cardinal_str(shard_loc)
+                        if compound_target in loc.inv_place.items:
+                            loc.inv_place.items.remove(compound_target)
+                        if compound_target in self.by_location[loc.inv_place]:
+                            self.by_location[loc.inv_place].remove(compound_target)
+                        self.by_location[compound_target.location].add(compound_target)
+                return shard, compound_target
+            else:
+                return shard, "no_local_compound"
         print(f"Compound target: {compound_target} // shard: {shard}")
 
         if not hasattr(shard, "has_multiple_instances") or not hasattr(compound_target, "has_multiple_instances") or shard.name != compound_target.name:
@@ -966,17 +989,20 @@ class itemRegistry:
         total_instances = shard.has_multiple_instances + compound_target.has_multiple_instances
         compound_target.has_multiple_instances = total_instances
         shard.has_multiple_instances = 0
+        #if self.by_location.get(shard.location):
+            #f shard in self.by_location[shard.location]:
+                #self.by_location[shard.location].remove(shard)
         shard.location = target
         registry.by_location[target].add(shard)
         setattr(shard, "is_hidden", True) # switching these up, so we do drop the shard, but leave it invisible at the target location.
-        if shard in self.by_location[loc.inv_place]:
-            self.by_location[loc.inv_place].remove(shard)
-        else:
-            print(f"{shard} was not in by_location[loc.inv_place].")
-        if shard in loc.inv_place.items:
-            loc.inv_place.items.remove(shard)
-        else:
-            print(f"{shard} was not in by_location[loc.inv_place].")
+        #if shard in self.by_location[loc.inv_place]:
+            #self.by_location[loc.inv_place].remove(shard)
+        #else:
+            #print(f"{shard} was not in by_location[loc.inv_place].")
+        #if shard in loc.inv_place.items:
+            #loc.inv_place.items.remove(shard)
+        #else:
+            #print(f"{shard} was not in by_location[loc.inv_place].")
 
         total_instances = shard.has_multiple_instances + compound_target.has_multiple_instances
         #print("total_instances: ", total_instances, "inst.has_multiple_instances: ", shard.has_multiple_instances, "+ inst_at_target: ", compound_target.has_multiple_instances)
@@ -1107,9 +1133,9 @@ class itemRegistry:
             # The following only applies if move to location. Need to also get the logic in for containers.
             #printing.print_yellow(f"going to combine_clusters. Shard: {inst}, target: {target}")
             shard, compound_target = self.combine_clusters(inst, target)
-            #printing.print_yellow(f"After combine_clusters: Shard: {shard} // compound target: {compound_target}")
+            printing.print_yellow(f"After combine_clusters: Shard: {shard} // compound target: {compound_target}")
             if compound_target == "no_local_compound":
-                #print("no local compound, returning shard from move_cluster_item")
+                print("no local compound, returning shard from move_cluster_item")
                 return shard, "process_as_normal"
             if compound_target.has_multiple_instances == 0: # This'll never happen in is_drop... #DETELEME later.
                 print(f"Compound_target {compound_target} is exhausted, removing from everywhere. compound_target.has_multiple_instances == 0 in itemReg.")
@@ -1137,7 +1163,7 @@ class itemRegistry:
 
         return shard, None
 
-    def clear_parent_and_old_loc(self, inst:itemInstance, old_container:itemInstance, new_container:itemInstance, new_location:cardinalInstance, old_loc:cardinalInstance,  updated:set=None):
+    def clear_parent_and_old_loc(self, inst:itemInstance, old_container:itemInstance, new_container:itemInstance, new_location:cardinalInstance, old_loc:cardinalInstance,  updated:set=set()):
         print(f"old_container: {old_container} / new_container: {new_container} / location: {new_location}")
         if old_container:
             # moved from old_container to location
@@ -1147,7 +1173,6 @@ class itemRegistry:
                 inst.contained_in = new_container
             if old_container and has_and_true(old_container, "children") and inst in old_container.children:
                 old_container.children.remove(inst)
-
 
         if old_loc and old_loc != loc.no_place:
             if self.by_location.get(old_loc):
@@ -1173,8 +1198,9 @@ class itemRegistry:
         old_loc = inst.location
 
         if "is_cluster" in inst.item_type and not simple_move: # added 'simple move' for certain event inits where move_cluster_items gets really confused. It's a workaround.
-
+            print(f"INST going to move_cluster_item: {inst}")
             outcome, other = self.move_cluster_item(inst, location, new_container, old_container)
+            print(f"inst: {inst}, outcome: {outcome} // other: {other}")
             updated.add(outcome)
             updated.add(inst)
             if other != "process_as_normal":
@@ -1182,11 +1208,13 @@ class itemRegistry:
                 for item in updated:
                     self.init_descriptions(item)
                 return outcome
+            inst = outcome
+            old_loc = inst.location
 
         was_in_container = False # using this as a check to see if the cluster should use old_loc or parent.
 
         ## REMOVE FROM ORIGINAL LOCATION ##
-        if old_loc and old_loc != None:
+        """if old_loc and old_loc != None:
             if self.by_location.get(old_loc):
                 if inst not in self.by_location[old_loc]:
                     print(f"Inst has a location but isn't in by_location for old_loc. FIX THIS. old_loc: {old_loc}")
@@ -1196,22 +1224,22 @@ class itemRegistry:
             if old_loc == loc.inv_place:
                 if inst in loc.inv_place.items:
                     loc.inv_place.items.remove(inst)
-                inst.location = loc.no_place ## We don't add items to by_location for no_place, this is purely so the location data can be printed in print lines.
+                inst.location = loc.no_place ## We don't add items to by_location for no_place, this is purely so the location data can be printed in print lines."""
+        updated = self.clear_parent_and_old_loc(inst, old_container, new_container, location, old_loc, updated)
 
         ## MOVE TO NEW LOCATION IF PROVIDED
         if location != None:
             if not self.by_location.get(location):
                 self.by_location[location] = set()
-
             inst.location = location
             self.by_location[location].add(inst)
 
         return_text = []
         if old_container or new_container or hasattr(inst, "contained_in"):
             #print(f"old_container: {old_container} // new_container: {new_container}")
+            #updated = self.clear_parent_and_old_loc(inst, old_container, new_container, location, old_loc, updated)
             parent, was_in_container, new_container = self.get_parent_details(inst, old_container, new_container)
             if parent and was_in_container:
-                updated = self.clear_parent_and_old_loc(inst, old_container, new_container, location, old_loc, updated)
                 return_text.append((f"Item `[{inst}]` removed from old container `[{parent}]`", inst, parent))
                 if not no_print:
                     print(f"You remove the {assign_colour(inst)} from the {assign_colour(parent)}.\n")
@@ -1272,6 +1300,8 @@ class itemRegistry:
             return
 
         if isinstance(loc_cardinal, cardinalInstance):
+            #items = set(i for i in self.instances if i.location == loc_cardinal)
+            #return items
             items_at_cardinal = self.by_location.get(loc_cardinal)
             if items_at_cardinal:
                 items = set(i for i in items_at_cardinal) # so adding to it in local_items doesn't add to the actual by_location entry
@@ -1723,6 +1753,8 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal:cardinalIn
     all_item_names_generated.append((inst, "new_item_from_str"))
     registry.temp_items.add(inst)
 
+    print(f"inst: {inst} / inst.location: {inst.location}")
+
     if in_container:
         setattr(inst, "in_container", in_container)
         inst.location = loc.no_place
@@ -1823,7 +1855,7 @@ def init_loc_items(place=None, cardinal=None):
                                 flooring = place.placewide_surfaces["flooring"]
                             if flooring == "none_given":
                                 continue # if none given and no global, do nothing.
-                        inst = registry.init_single(flooring)
+                        inst = registry.init_single(flooring, apply_location=False)
                         all_item_names_generated.append((inst, "init_loc_items flooring"))
                         if hasattr(inst, "location") and inst.location != loc.no_place:
                             registry.by_location.get(inst.location).pop(inst) # These scenery items shouldn't show up as local objects. We don't find the wall when looking around, it's just /there/. Not sure if this is how I want to keep doing it but it'll do for now. Maybe not even no_place but just 'None', will see.

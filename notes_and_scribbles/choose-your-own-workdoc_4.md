@@ -1147,5 +1147,172 @@ After wait_one_turn, moss_dries applies its rules as per normal:
             else:
                 moss dries continues.
 So that works, but I still need to track the container. Because what if I take the moss from container and put it directly outside without it ever being added to inventory? Or move it to a different location?
-So... We need to track the contained_in, I suppose? 
+So... We need to track the contained_in, I suppose?
 
+Added testing_locs and testing_events so I can try things out in a more limited environment.
+
+Ah, note:
+I have this error again:
+`Inst has a location but isn't in by_location for old_loc. FIX THIS. old_loc: <cardinalInstance east graveyard (68b66c58-3692-4621-8327-b8a1393b2970)>` but I think it may only be happening when cluster objs are created. They're not added to the location on generation because they imediately go to inventory, but they inherit their parent's location. I think that's okay.
+
+Oh. Interesting.
+
+put moss in jar and wait 2 days, wait_one_turn runs as it should. But if I wait another 2 days, it still hasn't ended the moss_drying event - the turn taken for wait_one_turn doesn't always apply to moss_dries.
+If I wait 3 days then it dries correctly, but wait_one_turn /doesn't/ trigger. It triggers on the /next/ wait.
+So... Hm.
+wait_one_turn /has/ to run on the next timeblock cycle, regardless of any other factor or trigger. And it has to run first (so the time can't pass if the obj is in an open container outside etc).
+If there is also another trigger, it needs to run depending on the outcome of wait_one_turn.
+If wait_one_turn... wait, succeeds or fails?
+I think 'succeeds' means it is able to end the trigger event. Yes.
+So, wait 3 days.
+the timeblock change triggers wait_one_turn, which runs its tests. If it succeeds, moss_dries is ended, regardless of the time passed. So moss_dries is ended and no future triggers are enabled.
+If wait_one_turn ends ends without succeeding, the timeblock is applied to moss_dries.
+
+Honestly I'm thinking of just having a separate script where I can specify exactly how these events are handled. It's stupid, because I have the JSON for that, but neither the JSON or the eventReg are set up to handle sending/recieving detailed instructions.
+
+Huh. So if I pick up moss again after it fails, and put it in the jar (placed outside), moss_dries ends immediately even though wait_event exists. But the first time it runs, that doesn't happen.
+
+Oh hell no.
+
+Compound target: <ItemInst moss / (22a5a1d82132) / north no_place / None / 0> // shard: <ItemInst moss / (0d0746c4a3d4) / north inventory_place / moss_dries / ..a8fff92676a6 / 1>
+AT END OF COMBINE_CLUSTERS: Compound_target: <ItemInst moss / (22a5a1d82132) / north no_place / None / 1> // shard: <ItemInst moss / (0d0746c4a3d4) / east graveyard / moss_dries / ..a8fff92676a6 / 0>
+it chose a compound target inside of a container without me specifying. Goddamn it.
+
+take moss
+put jar down
+put moss in jar
+take moss
+put moss down
+
+Okay so something's gone wrong here.
+was in container: True / parent; <ItemInst glass jar / (a410c2f20e68) / east graveyard / wait_one_turn / ..fec01940a72a / > / parent.children: {<ItemInst dried flowers / (4506260348a3) / north no_place / None / >, <ItemInst moss / (0d0746c4a3d4) / north no_place / moss_dries / ..a8fff92676a6 / 1>, <ItemInst moss / (22a5a1d82132) / east graveyard / None / 1>}
+that moss 2132 never got picked up, it's still in the graveyard. So why is it in children? 76a6 is correct (and no_place, but I never picked up another singleton moss.)
+And then when I get compound_target to put the mosds down, it is:
+Compound target: <ItemInst moss / (22a5a1d82132) / north no_place / None / 0> // shard: <ItemInst moss / (0d0746c4a3d4) / north inventory_place / moss_dries / ..a8fff92676a6 / 1>
+So the moss that was in graveyard is now in inventory
+
+But it's not listed in inventory, nor in the jar.
+Well, the jar says it's there:
+`A glass jar, holding some dried flowers, and a clump of moss.`
+but the print return is
+`The moss don't seem to be in the glass jar.`. Even though it's identified the correct moss.
+Goddamn it...
+
+Okay. So you pick up the jar, put down the jar, put the moss in the jar.
+At that moment, moss_dries is still running.
+But by the time wait_an_hour is in intake (`Added to eventIntake:`), moss_dries is already ended:
+
+# is_event_trigger: noun event: <eventInst moss_dries ..d58a7da2f141 // state: 1>
+# Noun <ItemInst moss / (3987b7859433) / north no_place / moss_dries / ..d58a7da2f141 / 1> is an event trigger for <eventInst moss_dries ..d58a7da2f141 // state: 1>
+# trig is timed_trigger: `<[timedTrigger]] 88c9964a-7844-49c1-b88e-c43d67acfb0a for event moss_dries, event state: current/ongoing, Trigger item: moss/3987b7859433>` `<---- still running`
+# reason in trig.triggers: item_not_in_inv /// {'item_not_in_inv'}
+# trig.exceptions: {'current_loc_is_inside', 'item_in_container_dry'}
+# noun.contained_in: <ItemInst glass jar / (ab5d53bd6d33) / east graveyard / None / > // item in ext container
+# container: <ItemInst glass jar / (ab5d53bd6d33) / east graveyard / None / > // location: <cardinalInstance east graveyard (8bc9a040-ff3b-48ea-bc9b-dced3e808612)> // inside?: False
+# Added to eventIntake: <eventIntake wait_one_turn (start_trigger: None), (end_trigger: {'timed_trigger': {'time_unit': 'hour', 'full_duration': 1, 'required_condition': {'item_is_open': 'trigger_item'}, 'persistent_condition': True, 'condition_item_is_start_trigger': True, 'exceptions': ['current_loc_is_inside'], 'end_type': 'success', 'effect_on_completion': {'end_event': <eventInst moss_dries ..49d494c751f7 // state: 0>}}})>
+
+OH, it's because that's the wrong event.
+
+ <eventInst moss_dries ..d58a7da2f141 // state: 1>
+ hasn't ended.
+<eventInst moss_dries ..49d494c751f7 // state: 0> has.
+and it has <eventInst moss_dries ..49d494c751f7 // state: 0> as the end_event event for wait_an_hour. Okay.
+
+Okay so part of the broader issue is that the moss isn't actually getting put down when it fails the event:
+
+Trigger: <[Trigger]] f739f787-ed85-4662-bb1a-394225db040e for event moss_dries, event state: current/ongoing, Trigger item: moss/5cf3cc80091e> // End_type: failure
+You put down the still-damp moss.
+Remove event on end and/or failure: <eventInst moss_dries ..5b55a436fe66 // state: 0>
+Event ended for noun <ItemInst moss / (5cf3cc80091e) / north no_place / None / 0>
+End of event <eventInst moss_dries ..5b55a436fe66 // state: 0> complete.
+
+Which is weird because it's in no_place, which shouldn't fail it. Both because no_place is (or should be) an excluded location, and because even if not, no_place == inside. So it shouldn't fail regardless.
+
+And regardless of all that -
+
+You're facing east. You see a variety of headstones, most quite worn, and decorated by clumps of moss.
+
+# [<  take moss  >]
+
+# Not new noun: [<ItemInst moss / (5cf3cc80091e) / north no_place / None / 0>, <ItemInst moss / (34f5dfc7555e) / east graveyard / None / 2>]
+# There's no moss around here to take.
+
+There is clearly moss there. It's failing to find 091e which is annoying and I'll deal w/ that, but it should take from the compound if that's all that's found.
+
+slight diversion to fix this:
+# Set noun to <ItemInst moss / (469503f92919) / north no_place / moss_dries / ..dbf9daf412b1 / 1>; matching name, is child of <ItemInst glass jar / (59ca8478ace8) / north inventory_place / wait_one_turn / ..195d81dd5b13 / >
+# The moss don't seem to be in the glass jar.
+
+OH, the noun_reason is wrong because the autoselect picked the wrong moss. Right.
+
+Okay, so with that resolved, next:
+`<ItemInst moss / (5b2ba42a78e1) / east graveyard / None / 1> is not in inv_place OR NO_PLACE. This is bad, how are we combining if not removing from inventory?`
+in contrast to what I said earlier today, this error is actually bad; in this case, we've picked up random moss and added it to jar instead of putting the moss in the jar from inventory.
+
+Why did we not take from inventory first? I thought I decided already that was the intention.
+
+Not sure why it's failing, but for now, have added a quick check above get_correct_cluster_inst in find_local_item_by_name, where if access_str == "drop_subject" it explicitly looks for items in inventory with that name instead of sending to get_correct_cluster_inst
+
+Hm.
+
+'put moss in jar'
+'take jar'
+'put moss in jar' - moss already in jar
+'take moss from jar' - removes blue moss
+'put moss in jar' - adds blue moss to jar
+'put moss in jar' - adds new singleton pink to jar
+
+So...... why the difference? I assume just random chance, if it picks the inv item or not first changes the routing.
+
+Also, 'put moss in jar' breaks the cluster selection in a weird way:
+
+New noun: <ItemInst moss / (b916a477556e) / east graveyard / None / 2>
+You put the moss in the glass jar.
+it lets you pick up plural parts, which should never be allowed.
+
+okay, so move_cluster_item output 'process_as_normal', which should only ever happen if it's a singleton.
+Hm. It's returning no_local_compound...
+Oh, because I'm putting it directly into a jar. It's not looking for a local compound because containers never compound, but also means that it returns a plural because it never hits that check. Okay.
+
+2.48pm
+fixed the cluster issue and updated def separate().
+
+3.04pm
+Fixed some more but clusters are still weird.
+
+So, I have this:
+{<ItemInst moss / (87d14169f2a5) / north no_place / moss_dries / ..46b6aed57105 / 1>, <ItemInst moss / (30ab6ae0d898) / east graveyard / None / 2>}
+
+which is correct. 2a5 is in the jar.
+Then if I 'put moss in jar':
+`compound_target: <ItemInst moss / (6e307df9fe8f) / north inventory_place / None / 1> // shard: <ItemInst moss / (30ab6ae0d898) / east graveyard / None / 1>`
+
+and the result is
+`{<ItemInst moss / (87d14169f2a5) / north no_place / moss_dries / ..46b6aed57105 / 1>, <ItemInst moss / (30ab6ae0d898) / east graveyard / None / 1>, <ItemInst moss / (6e307df9fe8f) / east graveyard / None / 1>}`
+
+which is fine.
+
+but then you do 'put moss in jar' again, and:
+`{<ItemInst moss / (87d14169f2a5) / north no_place / moss_dries / ..46b6aed57105 / 1>, <ItemInst moss / (30ab6ae0d898) / east graveyard / None / 1>, <ItemInst moss / (6e307df9fe8f) / north no_place / None / 1>}`
+so two successfully moved, but the last one is still in graveyard.
+except if you look around:
+`You're facing east. You see a variety of headstones, most quite worn, and not much else. It's quite empty here...`
+
+I really need to formalise the 'set locations properly' part. I imagine I've routed around it in the changes to get_cluster.
+
+Also the jar isn't applying the x3 again. God fucking dammit.
+
+okay. So: add new singletons to by_location.
+# alt: have changed by_location to just get items by their .location instead of a separate set. Not sure how I feel about it yet.
+
+Oh, damn. I was excluding scenery items from by_location.
+
+Okay so I need the separate by_location set for that least that reason, though I could work around it elsewhere if I need to. For now that's fine.
+
+Alright so the 'this thing is not in by_location' was because I was running clear_parent after the manual loc clearing. Fixed that now.
+
+hmph.  Now 'drop moss' no longer adds it to current loc. God I just keep going in circles....
+
+Fixed that I think. We'll see.
+Next:
+events broke again. Dropping the moss fails if it's already dropped one. I think it's just a selection issue.

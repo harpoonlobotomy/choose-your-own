@@ -345,8 +345,8 @@ class eventRegistry:
 
         self.events: set[eventInstance] = set()
         self.by_id: dict[str, eventInstance] = {}
-        self.by_name: dict[str, eventInstance] = {}
-        self.by_state: dict[int, set[set: eventInstance]] = {}
+        self.by_name: dict[str, set[eventInstance]] = {}
+        self.by_state: dict[int, set[eventInstance]] = {}
         #self.trigger_items = {}
         self.travel_is_limited = False
         #self.triggers = set([Trigger])
@@ -961,7 +961,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                 #print(f"NO EVENT MESSAGES FOR EVENT: {event}")
                 return
             if not event.msgs.get(f"{state_type}_msg"):
-                print(f"state type not found in event.msgs: {state_type}, viable event.msgs: {list(event.msgs)}")
+                print(f"state type not found in event.msgs for event {event}: {state_type}, viable event.msgs: {list(event.msgs)}")
                 #if state_type == "end":
                     #state_type = "failure" # it gets switched around somewhere, idk why. it should have state_type of failure already. Need to look into why it doesn't.
 
@@ -1338,10 +1338,13 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                     for item in remove_items:
                         event_to_end.items.remove(item)
                         item.event = None
+                events.by_name.pop(event_to_end.name)
                 events.events.remove(event_to_end)
                 if noun:
                     self.event_print(f"Event ended for noun {noun}")
         else:
+            if event_to_end.state == 0:
+                print(f"Event {event_to_end} is already ended.")
             print(f"Cannot set event {event_name} as ended event, because it is not present in current_events: {self.event_by_state(1)} (type: { type(self.event_by_state(1))})")
             exit()
         if event_to_end.state != 0:
@@ -1358,6 +1361,15 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                     allowed_locations_by_loc.setdefault(loc, set()).add(event)
 
         return allowed_locations_by_loc
+
+    def current_loc_inside(self, trig, event, noun):
+        if "current_loc_is_inside" in trig.exceptions:
+            from env_data import locRegistry
+            #print(f"locRegistry.current.place: {locRegistry.current.place}")
+            #print(f"inside: {locRegistry.current.place.inside}")
+            if locRegistry.current.place.inside:
+                self.play_event_msg(msg_type="exception", event=event, print_txt=True, noun=noun)
+                return 1
 
     def check_reason_tuple(self, reason, event:eventInstance, trig:Trigger|timedTrigger, noun_inst:itemInstance=None):
         self.event_print(f"CHECK REASON TUPLE: `{reason}`, len: `{len(reason)}` // event: `{event}` / trig: `{trig}` / noun_inst: `{noun_inst}`") # will it always need to go to inner? Not sure.
@@ -1385,6 +1397,10 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
             self.event_print(f"reason in trig.triggers: {reason} /// {trig.triggers}")
             #if not trig.start_trigger:
                 #print(f"This trigger [{trig}] is not a start trigger.")
+            from env_data import locRegistry
+            if reason == "item_not_in_inv": # run this check here to prevent false positives when moving from container.
+                if noun and noun.location == locRegistry.inv_place:
+                    return 0
             if reason in requires_end_trigger_loc:
                 if hasattr(trig, "item_inst_loc") and getattr(trig, "item_inst_loc") != None and trig.item_inst_loc != noun.location:
                     return 0
@@ -1394,11 +1410,14 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                 self.event_print(f"trig.exceptions: {trig.exceptions}")
                 container = noun.contained_in if hasattr(noun, "contained_in") and noun.contained_in and isinstance(noun.contained_in, itemInstance) else None
 
-                if container and "item_in_ext_container" in trig.exceptions:
-                    self.event_print(f"noun.contained_in: {noun.contained_in} // item in ext container")
-                    self.event_print(f"container: {container} // location: {container.location} // inside?: {container.location.place.inside}")
-                    from env_data import locRegistry
-                    if not container.location.place.inside:
+                if container and "item_in_container_dry" in trig.exceptions:
+                    if (container.location.place.inside or container.location == locRegistry.inv_place or container.is_open==False):
+                        print("Container is inside or in inventory")
+                        return 1, None
+                    else:
+                        self.event_print(f"noun.contained_in: {noun.contained_in} // item in ext container")
+                        self.event_print(f"container: {container} // location: {container.location} // inside?: {container.location.place.inside}")
+
                         #print("Here we arbitrarily start the 'wait one turn' event, though this is not prescribed in the event_defs at all.")
                         event = register_generated_event("wait_one_turn", container)
                         self.event_print(f"event from registry_intake_event: {event}")
@@ -1406,7 +1425,8 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                         self.event_print(f"WAIT EVENT: {event}")
                         if event:
                             for trigger in event.triggers:
-                                if hasattr(trigger, "effect_on_completion") and trigger.effect_on_completion.get("end_event"):
+                                if hasattr(trigger, "effect_on_completion") and trigger.effect_on_completion.get("end_event"):#
+                                    print(f"TRIG EVENT: {trig.event}")
                                     if trigger.effect_on_completion["end_event"] == "trigger_event":
                                         trigger.effect_on_completion["end_event"] = trig.event # original trigger event
                                     events.event_print(f"SELF.EFFECT_ON_COMPLETION: {trigger.effect_on_completion}")
@@ -1415,13 +1435,9 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                         else:
                             print("no wait event, exiting.")
                             exit()
-                elif "current_loc_is_inside" in trig.exceptions:
-                    from env_data import locRegistry
-                    #print(f"locRegistry.current.place: {locRegistry.current.place}")
-                    #print(f"inside: {locRegistry.current.place.inside}")
-                    if locRegistry.current.place.inside:
-                        self.play_event_msg( msg_type="exception", event=event, print_txt=True, noun=noun)
-                        return 1
+
+                elif self.current_loc_inside(trig, event, noun):
+                    return 1
 
             self.event_print(f"Ending event from test_str_triggers: `{event}`, trig: `{trig}`, noun: `{noun}`.")
             self.end_event(event, trig, noun)
@@ -1702,8 +1718,8 @@ def add_items_to_events(event = None, noun_inst = None):
     def assign_event_keys(event):
 
         for item in event.items:
-            if hasattr(item, "requires_key") and item.requires_key:
-                if hasattr(item, "key_is_placed_elsewhere"):
+            if has_and_true(item, "requires_key"):
+                if has_and_true(item, "key_is_placed_elsewhere"):
                     print(f"{item} requires key and key_is_placed_elsewhere. {item.key_is_placed_elsewhere}")
                     if isinstance(item.key_is_placed_elsewhere, dict):
                         if item.key_is_placed_elsewhere.get("item_in_event"):

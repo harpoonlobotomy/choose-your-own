@@ -80,7 +80,7 @@
             "trigger_item": "moss",
             "trigger_location": null,
             "triggered_by": ["item_not_in_inv"],
-            "exceptions": ["current_loc_is_inside", "item_in_ext_container"],
+            "exceptions": ["current_loc_is_inside", "item_in_container_dry"],
             "end_type": "failure",
             "print_description_plain": true}
         },

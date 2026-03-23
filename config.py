@@ -10,7 +10,8 @@ cardinal_cols = {
 enable_tui: bool = False
 
 run_tests = True
-test_location = True
+test_location = False
+use_test_defs = False#True
 parse_test = False#True #turns off events + location item generation, generates every item placed at Everywhere North instead.
 parser_tests_output_to_json = False#True
 
@@ -24,8 +25,8 @@ show_map = False
 map_file = r"archived\map.png" # it keeps getting corrupted, and I wonder if it's because it's not part of a commit yet. Putting it here for now.
 
 item_data = r"ref_files\items_main.json"
-loc_data = r"ref_files\loc_data.json"
-event_data = r"ref_files\event_defs.json"
+loc_data = r"ref_files\testing_locs.json" if use_test_defs else r"ref_files\loc_data.json"
+event_data = r"ref_files\testing_events.json" if use_test_defs else r"ref_files\event_defs.json"
 npc_data = r"ref_files\NPC_defs.json"
 conversation_data = r"ref_files\conversations.json"
 

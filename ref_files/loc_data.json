@@ -115,7 +115,7 @@
       },
       "short_desc": "sit a variety of headstones",
       "items": {
-        "desiccated skeleton": {}
+        "desiccated skeleton": {}, "headstone": {"not_in_loc_desc": true}
       },
       "surfaces": {"wall": true, "flooring": true}
     },

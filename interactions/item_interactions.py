@@ -112,7 +112,7 @@ def add_item_to_loc(item_instance, location=None):
     if location == None:
         location = loc.current
     if isinstance(location, cardinalInstance):
-        if location != loc.current:
+        if location != loc.current and location != loc.inv_place:
             print(f"You're currently at {loc.current.place_name}. You can't leave the {item_instance.name} at {location.name} unless you move there first.")
             return
         registry.move_item(inst=item_instance, location=location)
@@ -134,7 +134,7 @@ def is_loc_ext(noun:itemInstance, return_trans_obj=False) -> str|None:
     return None
 
 
-def get_correct_cluster_inst(noun:itemInstance, noun_text=None, priority="single", local_only=False, access_str = None, allow_hidden=False, local_items:set=None) -> itemInstance: ## Not implemented yet. Moving from verb_
+def get_correct_cluster_inst(noun:itemInstance, noun_text=None, priority="single", local_only=False, access_str = None, allow_hidden=False, local_items:set=None, take_from_container=False) -> itemInstance: ## Not implemented yet. Moving from verb_
     """For determining the correct ItemInstance to select when interacting with cluster-type items. Will prioritise 0-val cluster items when picking up, will prioritise multiple-val cluster items when looking for a drop target to merge with, etc. Can allow hidden objects to be selected.\n\nIf no local items are provided, will generate with find_local_item_by_name using the criteria it was given."""
     logging_fn()
 
@@ -156,10 +156,14 @@ def get_correct_cluster_inst(noun:itemInstance, noun_text=None, priority="single
 
     if local_items:
         local_clusters = list((i for i in local_items if i.name == noun.name))
+        if not take_from_container:
+            local_clusters = list(i for i in local_clusters if i.location != loc.no_place)
         if local_clusters and len(local_clusters) == 1:
             #print("Only one item in local_clusters, returning.")
             return local_clusters[0]
     else:
+        if noun.location != loc.inv_place:
+            print(f"Noun.location is not inv_place but also there was no local_items. Something is wrong? {noun}")
         return noun # must be an inventory item, just return it
 
     if local_clusters and (not noun_text or (noun_text and (plural_id in noun_text or single_id in noun_text))):
@@ -374,8 +378,15 @@ def find_local_item_by_name(noun:itemInstance|npcInstance=None, noun_text = None
                 if access_str == "drop_target":
                     priority = "plural"
                 if noun.location == loc.inv_place and access_str == "drop_subject":
-                    #print(f"ACCESS STR for noun in inv_place: {access_str}\nnoun is in inventory and we want a noun to drop, skip get_correct_cluster_inst")
+                    print(f"ACCESS STR for noun in inv_place: {access_str}\nnoun is in inventory and we want a noun to drop, skip get_correct_cluster_inst")
                     return noun
+                if access_str == "drop_subject":
+                    print(f"access_str == drop_subject for {noun}")
+                    quick_clusters = list(i for i in final_items if i.name == noun.name and i.location == loc.inv_place)
+                    if quick_clusters:
+                        print(f"quick clusters: {quick_clusters}")
+                        for item in quick_clusters:
+                            return item
 
                 #print(f"Sending {noun} to get_correct_cluster_inst. Access str: {access_str}")
                 test = get_correct_cluster_inst(noun, noun_text, local_items=final_items, local_only = True if single_and_local else False, access_str = access_str, allow_hidden=hidden_cluster, priority=priority if priority else "single")
