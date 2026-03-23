@@ -543,8 +543,9 @@ class itemRegistry:
              * from any container it's in
              * membrane.plural_words_dict if applicable
              * and finally, from itemRegistry.instances"""
-        if inst.location and inst.location in self.by_location:
+        if inst.location and inst.location in self.by_location and inst in self.by_location[inst.location]:
             self.by_location[inst.location].remove(inst)
+            print("inst.location")
 
             if inst.location == loc.inv_place:
                 loc.inv_place.items.remove(inst)
@@ -1085,8 +1086,10 @@ class itemRegistry:
         parent, was_in_container, new_container = self.get_parent_details(inst, old_container, new_container)
 
         if was_in_container:
+            print(f"was in container: {was_in_container} / parent; {parent} / parent.children: {parent.children}")
             inst.contained_in = None
             parent.children.remove(inst)
+            print(f"parent.children: {parent.children}")
 
         is_drop = True
 
@@ -1120,6 +1123,7 @@ class itemRegistry:
 
         origin = (parent if was_in_container else old_loc)
         success, shard = self.separate_cluster(inst, origin=origin, origin_type="container" if was_in_container else "location")
+        print(f"origin: {origin} // shard: {shard}")
         if not success:
             print(f"separate cluster failed. Reported shard: {shard}, original inst: {inst}, origin: {origin}")
             exit()
@@ -1133,6 +1137,31 @@ class itemRegistry:
 
         return shard, None
 
+    def clear_parent_and_old_loc(self, inst:itemInstance, old_container:itemInstance, new_container:itemInstance, new_location:cardinalInstance, old_loc:cardinalInstance,  updated:set=None):
+        print(f"old_container: {old_container} / new_container: {new_container} / location: {new_location}")
+        if old_container:
+            # moved from old_container to location
+            updated.add(old_container)
+            from misc_utilities import has_and_true
+            if has_and_true(inst, "contained_in") and inst.contained_in == old_container:
+                inst.contained_in = new_container
+            if old_container and has_and_true(old_container, "children") and inst in old_container.children:
+                old_container.children.remove(inst)
+
+
+        if old_loc and old_loc != loc.no_place:
+            if self.by_location.get(old_loc):
+                if inst not in self.by_location[old_loc]:
+                    print(f"Inst has a location but isn't in by_location for old_loc. FIX THIS. old_loc: {old_loc}")
+                else:
+                    self.by_location[old_loc].discard(inst)
+
+            if old_loc == loc.inv_place:
+                if inst in loc.inv_place.items:
+                    loc.inv_place.items.remove(inst)
+                inst.location = loc.no_place ## We don't add items to by_location for no_place, this is purely so the location data can be printed in print lines.
+        return updated
+
     def move_item(self, inst:itemInstance, location:cardinalInstance=None, new_container:itemInstance=None, old_container:itemInstance=None, no_print=False, simple_move = False)->itemInstance:
         """Moves an itemInstance from its current location to a new 'location'. The new location can be the player inventory, a cardinalInstance or a container object. Updates item descriptions when complete."""
         logging_fn()
@@ -1141,18 +1170,22 @@ class itemRegistry:
         if location and isinstance(location, str) and location == "current":
             location = loc.current
 
+        old_loc = inst.location
+
         if "is_cluster" in inst.item_type and not simple_move: # added 'simple move' for certain event inits where move_cluster_items gets really confused. It's a workaround.
+
             outcome, other = self.move_cluster_item(inst, location, new_container, old_container)
             updated.add(outcome)
             updated.add(inst)
             if other != "process_as_normal":
+                updated = self.clear_parent_and_old_loc(outcome, old_container, new_container, location, old_loc, updated)
+                for item in updated:
+                    self.init_descriptions(item)
                 return outcome
 
         was_in_container = False # using this as a check to see if the cluster should use old_loc or parent.
 
         ## REMOVE FROM ORIGINAL LOCATION ##
-        old_loc = inst.location
-        print(f"old_loc: {old_loc}")
         if old_loc and old_loc != None:
             if self.by_location.get(old_loc):
                 if inst not in self.by_location[old_loc]:
@@ -1175,17 +1208,13 @@ class itemRegistry:
 
         return_text = []
         if old_container or new_container or hasattr(inst, "contained_in"):
-            print(f"old_container: {old_container} // new_container: {new_container}")
+            #print(f"old_container: {old_container} // new_container: {new_container}")
             parent, was_in_container, new_container = self.get_parent_details(inst, old_container, new_container)
             if parent and was_in_container:
-                print(f"parent.children: {parent.children}")
-                parent.children.remove(inst)
-                print(f"parent.children: {parent.children} (should be removed now)")
-
+                updated = self.clear_parent_and_old_loc(inst, old_container, new_container, location, old_loc, updated)
                 return_text.append((f"Item `[{inst}]` removed from old container `[{parent}]`", inst, parent))
                 if not no_print:
                     print(f"You remove the {assign_colour(inst)} from the {assign_colour(parent)}.\n")
-                updated.add(parent)
 
             if new_container:
                 new_container.children.add(inst) # Added this, it wasn't adding items as children to containers.
@@ -1195,9 +1224,8 @@ class itemRegistry:
                 return_text.append((f"Added [{inst}] to new container [{new_container}]", inst, new_container))
                 if not no_print:
                     print(f"Added {assign_colour(inst)} to {assign_colour(new_container)}.")
-                print(f"Inst.location: {inst.location}")
+
                 inst.location = loc.no_place
-                print(f"Inst.location: {inst.location}")
 
             else:
                 inst.contained_in = None
@@ -1383,36 +1411,34 @@ class itemRegistry:
                 do_not_add_children_to_description = True
             else:
                 do_not_add_children_to_description = False
-            if has_and_true(inst, "children") and has_and_true(inst, "starting_children"):
-                starting_children_only = True
-                if inst.children:
+            if has_and_true(inst, "children") and inst.children:
+                test = None
+                if has_and_true(inst, "starting_children"):
+                    starting_children_only = True
                     for child in inst.children:
                         if not child in inst.starting_children or has_and_true(child, "hidden"):
                             starting_children_only = False
                     if len(inst.starting_children) > len(inst.children):
                         starting_children_only = False
-
-                if starting_children_only:
-                    test = get_if_open(inst, "starting_children_only", do_not_add_children_to_description)
-                    if test:
-                        description = test
-
-            elif hasattr(inst, "children") and inst.children:
-
-                long_desc = []
-                from testing_coloured_descriptions import compile_long_desc
-                from misc_utilities import assign_colour
-                if_open = get_if_open(inst, "any_children", do_not_add_children_to_description)
-                if if_open and not do_not_add_children_to_description:
-                    long_desc.append(get_if_open(inst, "any_children"))
-                    testing = True
-                    if testing:#not ((hasattr(inst, "print_children_as_list") and inst.print_children_as_list) or not hasattr(inst, "print_children_as_list")):
-                        for child in inst.children:
-                            long_desc.append(assign_colour(child, nicename=True))
-                            #print(f"long_desc with child: {long_desc}")
-                    description = compile_long_desc(long_desc)
-                if inst.nicenames.get("any_children"):
-                    inst.nicename = inst.nicenames.get("any_children")
+                    if starting_children_only:
+                        test = get_if_open(inst, "starting_children_only", do_not_add_children_to_description)
+                        if test:
+                            description = test
+                if not test:
+                    long_desc = []
+                    from testing_coloured_descriptions import compile_long_desc
+                    from misc_utilities import assign_colour
+                    if_open = get_if_open(inst, "any_children", do_not_add_children_to_description)
+                    if if_open and not do_not_add_children_to_description:
+                        long_desc.append(get_if_open(inst, "any_children"))
+                        testing = True
+                        if testing:#not ((hasattr(inst, "print_children_as_list") and inst.print_children_as_list) or not hasattr(inst, "print_children_as_list")):
+                            for child in inst.children:
+                                long_desc.append(assign_colour(child, nicename=True))
+                                #print(f"long_desc with child: {long_desc}")
+                        description = compile_long_desc(long_desc)
+                    if inst.nicenames.get("any_children"):
+                        inst.nicename = inst.nicenames.get("any_children")
 
             else:
                 if not has_and_true(inst, "children") and get_if_open(inst, "no_children"):

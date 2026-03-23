@@ -1099,3 +1099,53 @@ The moss is now in your inventory.
 This keeps running over and over and the object never leaves the jar, and is only ever in the jar and my inventory once per.
 
 Okay, fixed it. Issue was that the moves done within move_cluster_item didn't clear parent.children, so if you tried to pick up a singular with no competition from inside a jar it didn't leave children, despite successfully leaving. There's a neater way of doing it but this is good for now.
+
+5.10pm
+The glass jar's description doesn't work again. Now it just says 'It's a glass jar' always.
+
+Ah, because of the routing for inst.children in init descriptions. Will fix.
+
+5.33pm
+Well it sort of was, but really move_cluster_item just wasn't removing the child from the parent correctly. I'm not sure why. Going to make a reusable 'clear from parent/old_loc' fn I can use as I need to call it a couple of times, though I really shouldn't need to. Too tired today though.
+
+Is better now. Still could be improved, but better.
+
+5.51pm
+Hmph. Now wait_one_turn isn't ending properly. How'd I manage to do that?
+
+Okay. so I found it and it makes sense, but does draw attention to flaw in this little event. What happens if I now go outside again? If the event has ended, then the countdown continues. If it hasn't ended, then what, it tracks the inside/outside of the jar forever?
+
+11.07am 23/3/26
+Alright. Need to figure out what I'm doing with wait_one_turn.
+I think what I need to do is make it flexible itself. So any event can call wait_one_turn and provide its own requirements, instead of wait_one_turn itself declaring 'I care if this container is still open'.
+
+Secondarily, the concept's still kinda bad as described above; if I put a thing in an open container, then take it inside within one turn, wait_one_turn ends. But if I put the thing down in an open container while outside, it doesn't end the event. so:
+ - put moss in jar, wait outside, moss doesn't dry
+ - put moss in jar, take moss inside, will continue drying
+ - put moss in jar, go inside, go back outside, put jar w/ moss down outside, moss still dries.
+I think I just need explicit rules for moss_dries as to how it deals w/ being in a container.
+I think wait_an_hour is good because it lets you put it in a container, but how do I manage it after that.
+Maybe... maybe it tracks the container if it has one? So if in container, then if the container is open in an outside loc it fails (after that initial one hour)? God this is so messy. I need to draw it out.
+
+Okay. So.
+initial pickup: run wait_one_turn.
+If at end of wait_one_turn, item still in container:
+    if container in inv, end with no effect.
+    if container not in inv and inside, end with no effect.
+    if container not in inv and outside and closed, end with no effect
+    if container not in inv and outside and open, end by ending moss_dries
+After wait_one_turn, moss_dries applies its rules as per normal:
+    if moss not in inv:
+        if moss in container:
+            if (container in inv or (container outside and closed) or container inside):
+                moss_dries continues
+            else:
+                moss dries ends
+        else:
+            if moss.loc outside:
+                moss dries ends
+            else:
+                moss dries continues.
+So that works, but I still need to track the container. Because what if I take the moss from container and put it directly outside without it ever being added to inventory? Or move it to a different location?
+So... We need to track the contained_in, I suppose? 
+

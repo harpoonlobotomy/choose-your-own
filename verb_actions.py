@@ -2014,7 +2014,7 @@ def take(format_tuple, input_dict):
                 if reason_val in (3, 4) and container and (container.location == loc.current or container.location == loc.inv_place):
                     outcome = registry.move_from_container_to_inv(noun, parent=container)
                     added_to_inv = outcome
-                    print("added to inv, returning.")
+                    #print("added to inv, returning.")
                     return 0, added_to_inv
                 elif reason_val == 0:
                     outcome = registry.move_item(noun, location = loc.inv_place)
@@ -2140,7 +2140,7 @@ def put(format_tuple, input_dict, location=None):
     action_word = "You put"
     verb = get_verb(input_dict, get_str=True)
     noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict, verb="drop", access_str=None, access_str2=None, hold_error_messages=True) # to get inv items first
-    print(f"[def put] NOUN : {noun}")
+    #print(f"[def put] NOUN : {noun}")
     if not noun:
         noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict, verb="put", access_str=None, access_str2=None, hold_error_messages=True)
     sem_or_dir = get_dir_or_sem(input_dict)
