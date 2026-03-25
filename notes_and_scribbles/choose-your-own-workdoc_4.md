@@ -1423,3 +1423,33 @@ Okay. so the duplication was because of the for loop, I was doing 'if x in trig_
 also, if you wait 3 days and it picks the wait_an_hour trigger first, moss_dries never triggers.
 
 I think I need to add priority. So it checks high priority events first, then anything else.
+
+Oh - the meta 'print events by name' is being weird because it'll list 'events.by_name' as including moss_dries, but then get("moss_dries") would fail. Just realised it's 'cause there's no events in that name. Need to remove the name from the dict if the last entry is removed so it's less confusing.
+
+Hm.
+So, trigger_dict is still doing the same weird thing.
+
+Trigger_dict after initial generation: {'event': <eventInst [moss_dries] [ID:034eb] [state: 2]>, 'end_type': 'end', 'trigger_model': 'item_trigger', 'trigger_type': 'end_trigger', 'trigger_item': <ItemInst [moss ID:de8f3845e760] [loc:north inventory_place] [event:'moss_dries' ID:034eb state: 2] [clusters: 1]>, 'trigger_item_loc': <cardinalInstance north inventory_place (da8fa984-1787-454e-8eed-9b6235653768)>, 'trigger_actions': ['item_not_in_inv'], 'item_flags_on_start': None, 'item_flags_on_end': None, 'trigger_exceptions': ['current_loc_is_inside', 'item_in_container_dry'], 'timed_trigger': {'time_unit': 'day', 'full_duration': 3, 'required_condition': {'item_in_inv': 'moss'}, 'persistent_condition': True, 'condition_item_is_start_trigger': True, 'end_type': 'success', 'effect_on_completion': {'trigger_event': 'finding_dried_moss', 'init_items': {'item_name': 'dried moss', 'use_trigger_inst_location': True, 'use_trigger_inst_colour': True}, 'remove_items': {'item_name': 'moss', 'item_is_trigger_inst': True}}}}
+
+Trigger_dict after initial generation: {'event': <eventInst [moss_dries] [ID:034eb] [state: 2]>, 'end_type': 'end', 'trigger_model': 'timed_trigger', 'trigger_type': 'end_trigger', 'trigger_item': <ItemInst [moss ID:de8f3845e760] [loc:north inventory_place] [event:'moss_dries' ID:034eb state: 2] [clusters: 1]>, 'trigger_item_loc': <cardinalInstance north inventory_place (da8fa984-1787-454e-8eed-9b6235653768)>, 'trigger_actions': None, 'item_flags_on_start': None, 'item_flags_on_end': None, 'trigger_exceptions': None, 'timed_trigger': {'time_unit': 'day', 'full_duration': 3, 'required_condition': {'item_in_inv': 'moss'}, 'persistent_condition': True, 'condition_item_is_start_trigger': True, 'end_type': 'success', 'effect_on_completion': {'trigger_event': 'finding_dried_moss', 'init_items': {'item_name': 'dried moss', 'use_trigger_inst_location': True, 'use_trigger_inst_colour': True}, 'remove_items': {'item_name': 'moss', 'item_is_trigger_inst': True}}}}
+
+The second one (which I don't know why it exists) is missing data for:
+'trigger_actions': None,
+'trigger_exceptions': None,
+
+Okay. So it's making two dicts, one for timed_trigger and one for event_trigger. But they're merging their dicts. The event_trigger shouldn't have the timed_trigger data in the dict, surely.
+
+3.02pm
+Hm.
+The priority kind of works but not completely.
+
+If you immediately wait three days, it does check wait_ first, but then immediately moss_dries succeeds (and then errors because it already ended before succeeding)
+
+End of event <eventInst [moss_dries] [ID:ab8b3] [state: 0]> complete.
+^ moss dries is successfully ended by wait_one_turn
+
+3.31pm
+Bit more, improved a bit. But -
+Now, if you ptu the moss in the jar, and then take the moss from jar, and put the jar down outside, it still fails moss_dries because the jar isn't in inv. So I need a child_obj check, to confirm that the child is still present before checking anything else.
+
+Adding `Required_condition not known: child_obj_is_child // [value (child_item])` to eventReg trigger_actions breaks the jar event, I assume because it's expecting only one item in required_condition.

@@ -80,7 +80,7 @@
             "trigger_item": "moss",
             "trigger_location": null,
             "triggered_by": ["item_not_in_inv"],
-            "exceptions": ["current_loc_is_inside", "item_in_container_dry"],
+            "exceptions": ["trigger_item_is_inside", "item_in_container_dry"],
             "end_type": "failure",
             "print_description_plain": true}
         },
@@ -113,10 +113,10 @@
         "timed_trigger": {
             "time_unit": "hour",
             "full_duration": 1,
-            "required_condition": {"item_is_open": "trigger_item"},
+            "required_condition": {"item_is_open": "trigger_item", "child_obj_is_child": "child_item"},
             "persistent_condition": true,
             "condition_item_is_start_trigger": true,
-            "exceptions": ["current_loc_is_inside"],
+            "exceptions": ["trigger_item_is_inside"],
             "end_type": "success",
             "effect_on_completion":
                 {"end_event": "trigger_event"}},

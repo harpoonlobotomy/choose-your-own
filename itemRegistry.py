@@ -383,7 +383,7 @@ class itemInstance:
             item = f"{self.name} ID:{self.short_id}"
 
 
-        text = f"<ItemInst [{item}] [loc:{(self.location.place_name if self.location else '')}] [event:{event}] {(f"[clusters: {self.has_multiple_instances}]" if hasattr(self, 'has_multiple_instances') else '')}>"
+        text = f"<ItemInst [{item}] [{(f'\033[32mContainer: {self.contained_in}\033[0m') if hasattr(self, 'contained_in') and self.contained_in else (f'loc: {self.location.place_name}') if self.location else ''}] [event:{event}] {(f"[clusters: {self.has_multiple_instances}]" if hasattr(self, 'has_multiple_instances') else '')}>"
         #if self.colour and config.coloured_repr:
             #if not hasattr(self, "code"):
                 #from tui.colours import Colours

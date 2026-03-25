@@ -53,7 +53,13 @@ def select_event():
     if not event:
         print("No event found. Returning.")
         return
-    event = list(event)[0]
+    test = input("Which event do you want to look at? Enter index, starting at 0: ")
+    try:
+        test = int(test)
+    except:
+        print("Not a suitable response. Defaulting to 0.")
+        test = 0
+    event = list(event)[test]
     event:eventInstance
     print(f"\nEvent found: {event}\n")
     print(f"What do you want to view for `{event.name}`?\n")
@@ -66,7 +72,7 @@ def select_event():
     }
     event_options = []
     for key, value in options.items():
-        event_options.append(f"* {str(key)}: {value}\n")
+        event_options.append(f"* {key}: {value}\n")
 
     event_options = "".join(event_options)
     print(event_options)
@@ -76,11 +82,11 @@ def select_event():
         print("Returning to menu.")
         return
     if len(test) == 1:
-        result = options.get(test)
+        result = options.get(test, None)
         if not result:
             print(f"Could not find option for {test}.")
             return
-        print(f"Getting `{result}`")
+        print(f"Getting `{result}`...")
 
     outcome = []
     if test == "1":
@@ -100,17 +106,14 @@ def select_event():
             for trigger in event.timed_triggers:
                 outcome.append(f"Timed trigger: {trigger} // time unit: {trigger.time_unit} full duration: {trigger.full_duration} // current duration: {trigger.current_duration} // \n")
 
+    elif test == "5":
+        print("There are no other options available yet. Returning.")
     else:
         print("No other options present. Returning.")
         return
     if outcome:
         outcome = "".join(outcome)
     print(outcome)
-
-
-
-
-
 
 
 def select_noun(noun_name=None):
@@ -126,7 +129,6 @@ def select_noun(noun_name=None):
 
     print(f"Finding instance for `{noun_name}`...")
 
-
     while True:
         noun_instances = registry.instances_by_name(noun_name)
         if not noun_instances:
@@ -141,7 +143,7 @@ def select_noun(noun_name=None):
         print(f"There are {len(noun_instances)} instances with this name.\n")
         print(noun_instances)
         print("Do you want a specific instance, or will any do?")
-        test = input("Press enter to default to the first option, or enter 'loc' to choose by item location, or 'inv' to choose from inventory items.\n")
+        test = input("Press enter to default to the first option, enter 'loc' to choose by item location, 'inv' to choose from inventory items, or a digit to use index (starting at 0)\n")
         if test == "":
             noun_instance = noun_instances[0]
         if "loc" in test:
@@ -159,7 +161,7 @@ def select_noun(noun_name=None):
                 #     if cardinal_inst:
                 #             if noun.location ==
                 # noun in
-        if "inv" in test:
+        elif "inv" in test:
             from misc_utilities import from_inventory_name
             inv_instance = from_inventory_name(noun_name)
             if inv_instance and inv_instance in noun_instances:
@@ -167,9 +169,9 @@ def select_noun(noun_name=None):
             else:
                 print(f"Could not find {noun_name} in the inventory.")
 
-        if len(test) == 1 and test in ("1", "2", "3", "4", "5", "6", "7", "8", "9"):
-            if int(test) <= len(noun_instances):
-                noun_instance = noun_instances[int(test)-1]
+        if len(test) == 1 and test in ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9"):
+            if int(test) <= (len(noun_instances)-1):
+                noun_instance = noun_instances[int(test)]
 
     elif isinstance(noun_instances, list):
         noun_instance = noun_instances[0]

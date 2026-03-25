@@ -45,4 +45,4 @@ def moss_dries_handling(event, moss:itemInstance):
 
     if event_state == "ends":
         from eventRegistry import events
-        #events.end_event(event.name, e)
+        events.end_event(event, e)
