@@ -370,18 +370,29 @@ class itemInstance:
         #print("self.colour: ", self.colour)
 
         #item = f"\033[30;44m<eventInst {self.name} ..{self.short_id}>\033[0m"
-        event = self.event if hasattr(self, "event") else ''
+        event = self.event if hasattr(self, "event") else None
         if event:
-            event = f"{event.name} / ..{event.short_id}"
-        text = f"<ItemInst {self.name} / ({self.short_id}) / {(self.location.place_name if self.location else '')} / {event} / {(self.has_multiple_instances if hasattr(self, 'has_multiple_instances') else '')}>"
-        if self.colour and config.coloured_repr:
+            event = f"'{event.name}' ID:{event.short_id} state: {event.state}"
+        if self.colour:
             if not hasattr(self, "code"):
                 from tui.colours import Colours
                 self.code = getattr(Colours, self.colour.upper())
-            coloured_text = f"\033[{self.code + 10}m{text}"
+        if hasattr(self, "code"):
+            item = f"\033[{self.code + 10}m{self.name} ID:{self.short_id}\033[0m"
         else:
-            coloured_text=text
-        return coloured_text + "\033[0m"
+            item = f"{self.name} ID:{self.short_id}"
+
+
+        text = f"<ItemInst [{item}] [loc:{(self.location.place_name if self.location else '')}] [event:{event}] {(f"[clusters: {self.has_multiple_instances}]" if hasattr(self, 'has_multiple_instances') else '')}>"
+        #if self.colour and config.coloured_repr:
+            #if not hasattr(self, "code"):
+                #from tui.colours import Colours
+                #self.code = getattr(Colours, self.colour.upper())
+            #coloured_text = f"\033[{self.code + 10}m{text}"
+        #else:
+            #coloured_text=text
+        #return coloured_text + "\033[0m"
+        return text + "\033[0m"
         #return f"<ItemInstance {self.name} / ({self.id}) / {self.location.place_name} / {self.event if hasattr(self, "event") else ''}/ {(self.has_multiple_instances if hasattr(self, 'has_multiple_instances') else '')}>"
 
 
@@ -500,8 +511,6 @@ class itemRegistry:
                         cardinal_inst = loc.by_cardinal_str(location)
                     self.by_location.setdefault(cardinal_inst, set()).add(inst)
                     inst.location = cardinal_inst
-                    print(f"item added to by_location: {cardinal_inst}: {inst}")
-                    print(self.by_location[cardinal_inst])
 
             if apply_location:
                 #basically just for godmode add item
@@ -1199,13 +1208,13 @@ class itemRegistry:
         old_loc = inst.location
 
         if "is_cluster" in inst.item_type and not simple_move: # added 'simple move' for certain event inits where move_cluster_items gets really confused. It's a workaround.
-            print(f"INST going to move_cluster_item: {inst}")
+            #print(f"INST going to move_cluster_item: {inst}")
             outcome, other = self.move_cluster_item(inst, location, new_container, old_container)
-            print(f"inst: {inst}, outcome: {outcome} // other: {other}")
+            #print(f"inst: {inst}, outcome: {outcome} // other: {other}")
             updated.add(outcome)
             updated.add(inst)
             if other != "process_as_normal":
-                print("outcome, old_container, new_container, location, old_loc, updated: ", outcome, old_container, new_container, location, old_loc, updated)
+                #print("outcome, old_container, new_container, location, old_loc, updated: ", outcome, old_container, new_container, location, old_loc, updated)
                 updated = self.clear_parent_and_old_loc(outcome, old_container, new_container, location, old_loc, updated)
                 for item in updated:
                     self.init_descriptions(item)

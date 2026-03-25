@@ -76,12 +76,14 @@ class eventInstance:
         import uuid
         self.name = name
         self.id = str(uuid.uuid4())
-        self.short_id = self.id.split("-")[-1]
+        self.short_id = self.id[-5:]#self.id.split("-")[-1]
         if attr.get("starts_current"):
             self.state:int = 1
             #print(f"Event {self.name} starts current: {self.state}")
         else:
             self.state:int = 2
+        self.priority = attr.get("priority", 0)
+
         self.triggers:set[Trigger|timedTrigger] = set() #all triggers, delineate start/end after this point.
         self.start_triggers:set[Trigger] = set() # just to make sure these are here so other things can be more solid.
         self.end_triggers:set[Trigger|timedTrigger] = set()
@@ -96,9 +98,9 @@ class eventInstance:
         #print(f"\n{name} ATTR@ ::: {attr} \n\n")
         #print(f"STATE: {self.state}")
         self.init_items = {}
-        self.held_items = (attr.get("held_items") if attr.get("held_items") else set())
-        self.hidden_items = (attr.get("hidden_items") if attr.get("hidden_items") else set()) # These were dicts with item: item_loc. I can't see where/why I'm using the location though, that should be done with in item inst identification. Changing (back?) to sets.
-        self.locked_items = (attr.get("locked_items") if attr.get("locked_items") else set())
+        self.held_items = (attr["held_items"] if attr.get("held_items") else set())
+        self.hidden_items = (attr["hidden_items"] if attr.get("hidden_items") else set()) # These were dicts with item: item_loc. I can't see where/why I'm using the location though, that should be done with in item inst identification. Changing (back?) to sets.
+        self.locked_items = (attr["locked_items"] if attr.get("locked_items") else set())
         #print(f'attr.get("hidden_items"): {attr.get("hidden_items")}')
         #print(f'self.hidden_items: {self.hidden_items}')
         self.remove_items = set() # for short-term storage of item instances to be removed by events.
@@ -124,7 +126,7 @@ class eventInstance:
         if attr.get("triggered_by_event"):
             trig_event = self.triggered_by_event
             if isinstance(trig_event, str):
-                if trigger_event and (trigger_event.name == trig_event or trig_event == "trigger_event"):
+                if trigger_event and (isinstance(trigger_event, eventInstance) and trigger_event.name == trig_event or trig_event == "trigger_event"):
                     self.triggered_by_event = trigger_event
 
                 else:
@@ -142,7 +144,7 @@ class eventInstance:
     def __repr__(self):
         from config import coloured_repr
         if coloured_repr:
-            event = f"\033[30;44m<eventInst {self.name} ..{self.short_id} // state: {self.state}>\033[0m"
+            event = f"\033[30;44m<eventInst [{self.name}] [ID:{self.short_id}] [state: {self.state}]>\033[0m"
             return event
         else:
             return f"<eventInst {self.name} ..{self.short_id} // state: {self.state}>"#, event state: {self.state}>"#, all attributes: {self.attr})>"
@@ -155,11 +157,12 @@ class timedTrigger:
             self.full_duration = self.full_duration * 24
         return self
 
-    trigger_coloured = "[\033[42mtimedTrigger\033[0m]]"
+    trigger_coloured = "[\033[32mtimedTrigger\033[0m]"
 
     def __init__(self, trigger_dict, event:eventInstance):
         import uuid
         self.id = str(uuid.uuid4())
+        self.short_id = self.id[-5:]#self.id.split("-")[-1]
         self.event = event#trigger_dict["event"]
         self.state = event.state
         self.is_item_trigger = False
@@ -257,15 +260,16 @@ class timedTrigger:
             coloured_text = f"\033[{self.item_inst.code + 10}m{item}\033[0m"
         else:
             coloured_text = item
-        return f"<{timedTrigger.trigger_coloured} {self.id} for event {self.event.name}, event state: {event_state_by_int[self.state]}, {((coloured_text if isinstance(self.item_inst, itemInstance) else f'Trigger item: {self.item_inst}') if self.is_item_trigger else None)}>"
+        return f"<{timedTrigger.trigger_coloured} [ID:{self.short_id}] [event: {self.event.name} / state: {self.state}] [{coloured_text if isinstance(self.item_inst, itemInstance) else f'Trigger item: {self.item_inst}'}]>"
 
 class Trigger:
 
-    trigger_coloured = "[\033[41mTrigger\033[0m]]"
+    trigger_coloured = "[\033[31mTrigger\033[0m]"
 
     def __init__(self, trigger_dict, event:eventInstance):
         import uuid
         self.id = str(uuid.uuid4())
+        self.short_id = self.id[-5:]
         self.event = event
         self.state = event.state
         self.triggers = set() #item_broken, 'item_in_inv', etc.
@@ -340,7 +344,9 @@ class Trigger:
         event.triggers.add(self)
 
     def __repr__(self):
-        return f"<{Trigger.trigger_coloured} {self.id} for event {self.event.name}, event state: {event_state_by_int[self.state]}, {((f'Trigger item: {self.item_inst.name}/{self.item_inst.short_id}' if isinstance(self.item_inst, itemInstance) else f'Trigger item: {self.item_inst}') if self.is_item_trigger else None)}>"
+        #return f"<{Trigger.trigger_coloured} {self.id} for event {self.event.name}, event state: {event_state_by_int[self.state]}, {((f'Trigger item: {self.item_inst.name}/{self.item_inst.short_id}' if isinstance(self.item_inst, itemInstance) else f'Trigger item: {self.item_inst}') if self.is_item_trigger else None)}>"
+        return f"<{Trigger.trigger_coloured} [ID:{self.short_id}] [event: {self.event.name} / state: {self.state}] [{((f'Trigger item: {self.item_inst.name}/{self.item_inst.short_id}' if isinstance(self.item_inst, itemInstance) else f'Trigger item: {self.item_inst}') if self.is_item_trigger else None)}]>"
+
 
 class eventRegistry:
 
@@ -382,11 +388,11 @@ class eventRegistry:
             self.by_state[previous_state].remove(event)
         self.by_state[state].add(event)
         event.state = state
-        self.event_print(f"Set event state: {event.state}")
+        self.event_print(f"[Set event state for [{event.name}, ID:{event.short_id}]: {event.state}]")
 
     def add_event(self, event_name, event_attr, trigger_event=None):
 
-        event = eventInstance(event_name, event_attr, trigger_event=None)
+        event = eventInstance(event_name, event_attr, trigger_event=trigger_event)
         self.events.add(event)
         self.by_id[event.id] = event
         if not self.by_name.get(event.name):
@@ -401,7 +407,7 @@ class eventRegistry:
         else:
             self.set_state(event, 2)
 
-        if self.timed_triggers:
+        if event.timed_triggers:
             events.timed_triggers.add(self)
 
         self.event_print(f"Added event: {event}")
@@ -661,9 +667,10 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                                     print(f"Trigger exceptions for trigger {trigger}: {trigger.exceptions}")
                                     if "current_loc_is_inside" in trigger.exceptions:
                                         if trigger.item_inst:
-                                            self.current_loc_inside(self, trigger, event, noun=trigger.item_inst)
-
-                                        self.current_loc_inside(self, trigger, event, noun)
+                                            print("testing trigger.item_inst")
+                                            self.current_loc_inside(trigger, event, noun=trigger.item_inst)
+                                        else:
+                                            self.current_loc_inside(trigger, event, noun)
                                         from env_data import locRegistry
                                         if trigger.item_inst:
                                             location = trigger.item_inst.location
@@ -673,16 +680,12 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                                                 #return 1
 
                                         elif new_location:
-                                            print(f"new_location.place: {new_location.place}")
-                                            print(f"new_location.place.inside: {new_location.place.inside}")
-                                            #print(f"locRegistry.current.place: {locRegistry.current.place}")
-                                            #print(f"inside: {locRegistry.current.place.inside}")
+                                            print(f"new_location.place: {new_location.place} // new_location.place.inside: {new_location.place.inside}")
+
                                             if new_location.place.inside:
                                                 exception_met = True
                                                 #print("Current place is inside, exception met")
                                                 #return 1
-
-
 
                                         #print(f"locRegistry.current.place: {locRegistry.current.place}")
                                         #print(f"inside: {locRegistry.current.place.inside}")
@@ -732,12 +735,10 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
             trig_data = {}
             trigger_item = None
             trigger_actions = None
-            self.event_print(f"Trigger type: {trigger}")
             if hasattr(event, trigger) and getattr(event, trigger):
-                self.event_print(f"event {event} has trigger type: {trigger}")
+                self.event_print(f"event {event} has trigger type: `{trigger}`")
                 for entry in getattr(event, trigger):
                     trig_data[entry] = getattr(event, trigger)[entry]
-                print(f"trig_data: {trig_data}")
                 self.event_print(f"trig_data: {trig_data}")
                 trigger_exceptions = set()
                 item_flags_on_start = item_flags_on_end = None
@@ -824,11 +825,11 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                             "trigger_exceptions": trigger_exceptions
                             })
                         print(f"Trigger_dict after initial generation: {trigger_dict}")
-                        if trig_data.get("item_trigger") or trig_data.get("attribute_trigger"):
+                        if item == "item_trigger" or item == "attribute_trigger":
                             event.event_keys.add(trigger_item)
                             event.triggers.add(Trigger(trigger_dict, event))
 
-                        if trig_data.get("timed_trigger"):
+                        elif item == "timed_trigger":
                             #print("trig data timed trigger")
                             if event.is_generated_event:
                                 #print("event is generated event")
@@ -847,7 +848,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                             event.triggers.add(timedTrigger(trigger_dict, event))
                             #print(f"EVENT TRIGGERS: {event.triggers}")
 
-                        if trig_data.get("event_trigger"):
+                        elif item == "event_trigger":
                             trigger_dict["trigger_model"] = "event_trigger"
                             trigger_dict["trigger_item"] = trig_data["event_trigger"].get("trigger_item", None)
                             trigger_dict["trigger_actions"] = trig_data["event_trigger"].get("triggered_by", None)
@@ -903,12 +904,14 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
     def get_event_item_names(self, event):
         logging_fn()
 
-        self.event_print(f"Get event item names: EVENT:: {event}, type: {type(event)}")
+        self.event_print(f"get_event_item_names for {event}:")
 
         def get_items_inner(event):
+            if not event.items:
+                return
 
             for item in event.items:
-                #print(f"ITEM IN EVENT ITEMS: {item}")
+                print(f"ITEM IN EVENT ITEMS: {item}")
                 if isinstance(item, itemInstance):
                     events.item_names[item.name] = item
                     setattr(item, "event", event) # TODO: Doing this way too often, need to find the single choke point they all pass through no matter where they're added from.
@@ -1188,7 +1191,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
 
     def start_event(self, event_name:str, event:eventInstance=None, noun=None):
         logging_fn()
-        self.event_print(f"Starting event --  name: {event_name} / event: {event}")
+        self.event_print(f"[Starting event: {event}]")
         if not event:
             to_be_current = self.event_by_name(event_name) # assumes all events already init, does not support dynamic event generation.
             #TODO: change event_by_name only supporting one instance per name.
@@ -1388,7 +1391,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
 
         return allowed_locations_by_loc
 
-    def current_loc_inside(self, trig, event, noun):
+    def current_loc_inside(self, trig=None, event=None, noun=None):
         if "current_loc_is_inside" in trig.exceptions:
             from env_data import locRegistry
             print(f"locRegistry.current.place inside check for: {locRegistry.current.place}")
@@ -1479,7 +1482,10 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
             moved_children = None
             # surely it should be: `if event.state == 1 and event.end_triggers:` and then `if event.state == 2 and event.start_triggers`:
             if event.end_triggers:
-                print(f"event.end_triggers: {event.end_triggers}")
+                self.event_print(f"\nend_triggers for {event}:")
+                for trig in event.end_triggers:
+                    self.event_print(f"   {trig}")
+                    print(f"dir: {vars(trig)}\n")
                 #end_triggers = list(i for i in event.end_triggers)
                 for trig in event.end_triggers:
                     if isinstance(trig, timedTrigger):
@@ -1738,10 +1744,9 @@ class eventIntake:
         self.messages = attr.get("messages")
         """
         Basically I think this should be the base 'structure' of each event. No item instances, no triggerInst, no locInst, just the raw data but processed to be exactly what eventRegistry expects for init.
-        Hell, maybe we use this for /all/ events during setup, but only stick around for the generated ones. Can just delete the old ones if we really care that much.
-        """
+        Hell, maybe we use this for /all/ events during setup, but only stick around for the generated ones. Can just delete the old ones if we really care that much."""
     def __repr__(self):
-        return f"<eventIntake {self.name} (start_trigger: {self.start_trigger}), (end_trigger: {self.end_trigger})>"
+        return f"<[\033[35meventIntake {self.name}\033[0m] {(f'start_trigger: {self.start_trigger}' if self.start_trigger else '')} [end_trigger: {self.end_trigger}]>"
 
 
 def add_items_to_events(event = None, noun_inst = None):
@@ -1833,7 +1838,7 @@ class eventRegistrar:
             self.start_trigger_is_attr[event] = event.attr_triggers
 
         self.by_name[event.name] = event
-        events.event_print(f"Added to eventIntake: {event}")
+        #events.event_print(f"Added to eventIntake: {event}")
         return event, attr
 
 registrar = eventRegistrar()

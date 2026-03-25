@@ -1359,3 +1359,67 @@ That second trigger should have the originating event as trigger_item (moss_drie
 
 11.57am
 Oh. It seems to work now. Will need more testing this afternoon, but apparently when I indented for-item_in_trig_types I hadn't included timed_trigger in the list of 'for', so it didn't hit that part. Will test more later, support now.
+
+10.49am 25/3/26
+Today:
+Working on events again. Currently if you pick up moss and put it in the jar, that triggers wait_an_hour. If you then put the jar down and wait 3 days, it immediately succeeds moss_dries, as that is checked first before wait_an_hour can run, and wait_an_hour doesn't run again until the next timeblock.
+
+Issues:
+ - wait_an_hour isn't given the trigger_event as trigger_item, so the event ending doesn't end wait_an_hour (eg if you put moss down outside, moss_dries ends immediately, so wait_an_hour should end along with it)
+ - wait_an_hour is not given priority, so 'wait 3 days' should be checking wait_an_hour first in case that fails moss_dries, but currently it's the other way around (probably just random chance which comes first).
+
+ - Also, currently (though this won't happen if I fix the above, I should still fix it fundamendally) if you wait an hour after waiting 3 days (so moss_dries is already ended), I get this:
+ `Trigger exceptions for trigger <[timedTrigger]] f1aea358-bb1f-44f5-b8c0-9ee21790e43d for event wait_one_turn, event state: current/ongoing, Trigger item: glass jar/7494173e2065>: {'current_loc_is_inside'}`
+ `Failed to find the correct function to use for <verbInstance time (c2c32ba7-6573-4eb3-9c89-9a5f2239f141)>: eventRegistry.current_loc_inside() got multiple values for argument 'noun'`
+
+ - also also: 'wait an hour' only starts sometimes. I need to figure out why. Might do that first.
+
+# why does `wait_one_turn` only run sometimes??
+ when it does run:
+    pick up moss (moss_dries starts)
+    put moss in jar (item_not_in_inv triggers the exception in moss_dries and wait_one_turn is started after this:
+        `trig is timed_trigger: <[timedTrigger]] 9a38b91b-08bb-4f4c-b4c3-3208aaa1c4b9 for event moss_dries, event state: current/ongoing, Trigger item: moss/03bfcc9731e4>`
+        `trig.item_inst == noun: <ItemInst moss / (03bfcc9731e4) / north no_place / moss_dries / ..18be97fae117 / 1> / event: <eventInst moss_dries ..18be97fae117 // state: 1>`)
+    with `self.current_loc_inside(self, trigger, event, noun)`
+    if I remove the 'self' here, it breaks. Not sure why it needs it but apparently it does?
+
+When it doesn't run:
+    Exact same commands.
+    pick up moss (moss_dries starts)
+    put moss in jar (item_not_in_inv triggers), but this end trigger doesn't trigger:
+    `event.end_triggers: {<[Trigger]] a1281dca-1131-4fdf-afaa-e5975f3cc256 for event moss_dries, event state: current/ongoing, None>, <[timedTrigger]] a53bdb4a-a5fb-4766-b814-1c0f70de245f for event moss_dries, event state: current/ongoing, Trigger item: moss/d840be8728d2>, <[timedTrigger]] e8342743-433c-4853-81b2-163ccdb7fca7 for event moss_dries, event state: current/ongoing, Trigger item: moss/d840be8728d2>, <[Trigger]] d714511a-2043-4e61-9f03-d84c035f7d2d for event moss_dries, event state: current/ongoing, Trigger item: moss/d840be8728d2>}`
+  in the version where it works, the end_triggers print is:
+    `event.end_triggers: {<[timedTrigger]] 3d099f45-4244-4165-ad26-70a5556d0368 for event moss_dries, event state: current/ongoing, Trigger item: moss/279ce495f820>, <[Trigger]] ada9bb2a-388e-44a5-a78e-25440036a34c for event moss_dries, event state: current/ongoing, Trigger item: moss/279ce495f820>, <[timedTrigger]] 78069a65-3f6b-4e4c-aad1-310986d9d517 for event moss_dries, event state: current/ongoing, Trigger item: moss/279ce495f820>, <[Trigger]] d2ac3d41-506b-487d-a3c2-8b0f7013ec14 for event moss_dries, event state: current/ongoing, None>}`
+Thoughts:
+    Well I've just realised moss_dries has 2 triggers each for timed and standard. So maybe I just fix that first.
+These are the triggers for moss_dries:
+* <[Trigger]] 388fbcb0-65be-4d6d-be23-963da639799c for event moss_dries, event state: current/ongoing, Trigger item: moss/279ce495f820>
+* <[timedTrigger]] 3d099f45-4244-4165-ad26-70a5556d0368 for event moss_dries, event state: current/ongoing, Trigger item: moss/279ce495f820>
+* <[Trigger]] ada9bb2a-388e-44a5-a78e-25440036a34c for event moss_dries, event state: current/ongoing, Trigger item: moss/279ce495f820>
+* <[timedTrigger]] 78069a65-3f6b-4e4c-aad1-310986d9d517 for event moss_dries, event state: current/ongoing, Trigger item: moss/279ce495f820>
+* <[Trigger]] d2ac3d41-506b-487d-a3c2-8b0f7013ec14 for event moss_dries, event state: current/ongoing, None>
+There should only be 2.
+
+This is the 'added_to_intake' data for moss_dries:
+ADDED TO INTAKE:
+eventIntake moss_dries (
+    start_trigger: {
+        'item_trigger': {'match_item_by_name_only': True, 'trigger_item': 'moss', 'trigger_location': None, 'triggered_by': ['item_in_inv'], 'print_description_plain': True}}),
+    (end_trigger: {
+        'timed_trigger': {'time_unit': 'day', 'full_duration': 3, 'required_condition': {'item_in_inv': 'moss'}, 'persistent_condition': True, 'condition_item_is_start_trigger': True, 'end_type': 'success', 'effect_on_completion': {'trigger_event': 'finding_dried_moss', 'init_items': {'item_name': 'dried moss', 'use_trigger_inst_location': True, 'use_trigger_inst_colour': True}, 'remove_items': {'item_name': 'moss', 'item_is_trigger_inst': True}}},
+
+        'item_trigger': {'trigger_item': 'moss', 'trigger_location': None, 'triggered_by': ['item_not_in_inv'], 'exceptions': ['current_loc_is_inside', 'item_in_container_dry'], 'end_type': 'failure', 'print_description_plain': True}})
+
+So I'd be expecting a total of three triggers
+
+I'm changing the trigger reprs to give a little more data.
+
+Okay. So one of the wait_one_turn triggers has the exceptions, and the other doesn't.
+And it's the same for the timedTrigger(s): there should only be one, but two are aded, with the second missing the exceptions and having an empty set.
+For moss_dries it's the same thing; two triggers for each, with the second lacking trigger item, 'triggers' (eg 'item_not_in_inv') and exceptions.
+
+Okay. so the duplication was because of the for loop, I was doing 'if x in trig_data', so each one found each other one regardless of which they were themselves. That part was written before the loop maybe? I'm not sure.
+
+also, if you wait 3 days and it picks the wait_an_hour trigger first, moss_dries never triggers.
+
+I think I need to add priority. So it checks high priority events first, then anything else.

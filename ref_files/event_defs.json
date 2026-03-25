@@ -104,6 +104,7 @@
         }
     },
 "wait_one_turn": {
+    "priority": 1,
     "repeats": false,
     "remove_event_on_completion": true,
     "remove_event_on_failure": true,
