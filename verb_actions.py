@@ -319,6 +319,8 @@ def move_a_to_b(a:itemInstance, b:placeInstance|itemInstance, action:str=None, d
                             if not moved_item(a):
                                 return f"You {action} the {assign_colour(a)} {direction} the {assign_colour(b)}."
                             else:
+                                if a in b.children:
+                                    return "success"
                                 print("after moved_item success")
 
                     else:
@@ -2231,12 +2233,35 @@ def put(format_tuple, input_dict, location=None):
             print(f"Cannot put {assign_colour(noun)} in {assign_colour(noun2)}, as {assign_colour(noun2)} is already inside {assign_colour(noun)}. You'll need to remove it first.")
             return
 
+
         elif sem_or_dir in ("in", "to", "into", "inside") and len(format_tuple) == 4 or (len(format_tuple) == 6 and get_location(input_dict) == loc.current.place):
-            if hasattr(noun, "contained_in") and noun2 == noun.contained_in:
-                print(f"The {assign_colour(noun)} is already in {assign_colour(noun2)}")
-                return
 
             if "container" in noun2.item_type:
+
+                #print(f"The {assign_colour(noun)} is already in the {assign_colour(noun2)}")#print(f"Cannot put {assign_colour(noun)} in {assign_colour(noun2)}, as {assign_colour(noun)} is already inside {assign_colour(noun2)}. You'll need to remove it first.")
+                if hasattr(noun, "contained_in") and noun2 == noun.contained_in:
+                    if noun2 and "container" in noun2.item_type:
+                        done=False
+                        inv_items = registry.get_item_by_location(loc.inv_place)
+                        if inv_items:
+                            for item in inv_items:
+                                if item.name == noun.name:
+                                    print(f"Item in loc.inv_place to use instead of noun: {item}")
+                                    done=item
+                                    break
+                        if not done:
+                            inv_items = registry.get_item_by_location(loc.current)
+                            if inv_items:
+                                for item in inv_items:
+                                    if item.name == noun.name:
+                                        print(f"Item in loc.current to use instead of noun: {item}")
+                                        done=item
+                                        break
+                        if not done:
+                            print(f"The {assign_colour(noun)} is already in {assign_colour(noun2)}")
+                            return
+                        else:
+                            noun = item
                 direction = get_dir_or_sem(input_dict)
                 #moved = registry.move_item(noun, new_container=noun2, no_print=True)
                 success = move_a_to_b(noun, noun2, verb, direction=(direction if direction else "into"))
@@ -2245,7 +2270,7 @@ def put(format_tuple, input_dict, location=None):
                     print(success)
                     return
                 if noun in loc.inv_place.items or noun in registry.by_location[loc.inv_place]:
-                    print("Outcome: outcome")
+                    print(f"Outcome from move_a_to_b: {success} noun: {noun} / container: {noun2}")
                     exit(f"{assign_colour(noun)} still in inventory, something went wrong. Exiting.")
                 #else:
                 if not success:

@@ -1453,3 +1453,176 @@ Bit more, improved a bit. But -
 Now, if you ptu the moss in the jar, and then take the moss from jar, and put the jar down outside, it still fails moss_dries because the jar isn't in inv. So I need a child_obj check, to confirm that the child is still present before checking anything else.
 
 Adding `Required_condition not known: child_obj_is_child // [value (child_item])` to eventReg trigger_actions breaks the jar event, I assume because it's expecting only one item in required_condition.
+
+Okay. So, eventHandling is being used now, I'm just dictating exactly how the item interactions should work there. Far simpler. I'll remove some of the data from wait_one_turn later so make it more flexible, and just base its specific function on which exception it uses.
+
+For now: I still need to solve the mystery of the disappearing moss.
+take moss (blue)
+put moss in jar (blue)
+take jar
+put moss in jar (magenta (591))
+put moss in jar (magenta2 (7df))
+wait 3 days:
+    container in inv so continues then ends for the jar and one of the mosses. So one moss is dry, but... then if you print all 'moss' items, there are only two.
+
+Though, if you look for 'dried moss' it exists in no_place - but isn't shown when you print the jar contents.
+
+It seems like maybe the dried moss just isn't properly added as an item for some reason. meta control gives me this:
+`Finding instance for `dried moss`...`
+`Instance found for dried moss: None`
+So it sort of exists. Maybe the moss isn't disappearing then.
+Though, it needs to repeat the end_event for each item, not just one per timeblock.
+
+Also it seems like there's more moss than there should be?
+We take 588 from 4db to inv
+we take --oh, we take 4db from inv to jar which triggers wait_one_turn.
+then we take jar
+then put moss 4db in jar, leave moss cea behind
+then put cea in jar
+but then put 4db in the jar again
+
+but then no, they disappear again:
+(diff run so diff ids)
+<ItemInst [moss ID:2fe49da7e33e] [Container: <ItemInst [glass jar ID:de623b208258] [loc: north inventory_place] [event:'wait_one_turn' ID:4e7ec state: 1] >] [event:None] [clusters: 1]>,
+<ItemInst [moss ID:b0da84acf064] [Container: <ItemInst [glass jar ID:de623b208258] [loc: north inventory_place] [event:'wait_one_turn' ID:4e7ec state: 1] >] [event:None] [clusters: 1]>,
+<ItemInst [moss ID:957f5545a99b] [Container: <ItemInst [glass jar ID:de623b208258] [loc: north inventory_place] [event:'wait_one_turn' ID:4e7ec state: 1] >] [event:'wait_one_turn' ID:4e7ec state: 1] [clusters: 1]>
+
+^^ put all the mosses into the jar.
+Then I do 'take moss from jar' x3, and end up with:
+{<ItemInst [moss ID:2fe49da7e33e] [loc: north inventory_place] [event:'moss_dries' ID:a4a6a state: 1] [clusters: 1]>,
+<ItemInst [moss ID:b0da84acf064] [loc: north inventory_place] [event:'moss_dries' ID:a426c state: 1] [clusters: 1]>}
+
+On the first 'take moss from jar', this is the children of the jar:
+parent.children:
+{<ItemInst [dried flowers ID:96083db251f9] [Container: <ItemInst [glass jar ID:de623b208258] [loc: north inventory_place] [event:'wait_one_turn' ID:4e7ec state: 1] >] [event:None] >,
+<ItemInst [moss ID:b0da84acf064] [Container: <ItemInst [glass jar ID:de623b208258] [loc: north inventory_place] [event:'wait_one_turn' ID:4e7ec state: 1] >] [event:None] [clusters: 1]>,
+<ItemInst [moss ID:957f5545a99b] [Container: <ItemInst [glass jar ID:de623b208258] [loc: north inventory_place] [event:'wait_one_turn' ID:4e7ec state: 1] >] [event:'wait_one_turn' ID:4e7ec state: 1] [clusters: 1]>,
+<ItemInst [moss ID:2fe49da7e33e] [Container: <ItemInst [glass jar ID:de623b208258] [loc: north inventory_place] [event:'wait_one_turn' ID:4e7ec state: 1] >] [event:None] [clusters: 1]>}
+
+moss ID:b0da84acf064 is moved and added to inventory.
+But then when I do `take moss from jar` a second time:
+parent.children:
+{<ItemInst [dried flowers ID:96083db251f9] [Container: <ItemInst [glass jar ID:de623b208258] [loc: north inventory_place] [event:'wait_one_turn' ID:4e7ec state: 1] >] [event:None] >,
+<ItemInst [moss ID:2fe49da7e33e] [Container: <ItemInst [glass jar ID:de623b208258] [loc: north inventory_place] [event:'wait_one_turn' ID:4e7ec state: 1] >] [event:None] [clusters: 1]>}
+
+Two are gone, not one.
+The 'parent.children' list above is the last time that ID is printed, and it's just gone.
+
+
+Also, the 'trigger_item' only being a single item breaks when it's the event, because the jar can have multiple to-dry mosses in it, and it only has
+
+dir: {'id': '2a5407a3-5ee1-4b28-97a0-f3429f8e0484', 'short_id': 'e0484', 'event': <eventInst [wait_one_turn] [ID:4e7ec] [state: 1]>, 'state': 1, 'triggers': {'event_ended'}, 'exceptions': set(), 'end_type': 'end', 'start_trigger': False, 'end_trigger': True, 'trigger_item': <eventInst [moss_dries] [ID:496f1] [state: 1]>, 'is_item_trigger': False}
+
+Moss 99b still exists as a trigger item, and that event apparently is still going:
+Getting `Event triggers`...
+* <[Trigger] [ID:a1b92] [event: moss_dries / state: 1 / ID:a1b92] [Trigger item: moss/957f5545a99b]>
+* <[Trigger] [ID:2f2df] [event: moss_dries / state: 1 / ID:2f2df] [Trigger item: moss/957f5545a99b]>
+* <[timedTrigger] [ID:25842] [event: moss_dries / state: 1] [Trigger item: moss/957f5545a99b]>
+
+* <ItemInst [moss ID:957f5545a99b] [loc: north no_place] [event:'wait_one_turn' ID:4e7ec state: 1] [clusters: 0]>
+99b is apparently still in the jar, but looking at the jar's attr it only holds the flowers (which matches the printed description).
+So I guess something in the event management is breaking the location/not updating it properly? No errors printed which is kind of the bad version of this happening but I'll sort it.
+
+So, what needs doing:
+    - more than one item_inst for events, or better event item management in general (eg a global 'event_items' dict with event[item:role]) or smth
+    - clarify how/when items are moved and make sure the relevant loc set is updated. Maybe just set it to print when it moves something for now. Route it through a 'set loc' fn so I can manage that print more readily.
+
+Oh, maybe a direction to figuring out the weird moss duplication(?):
+
+The first 'put moss in jar' prints this:
+After combine_clusters: Shard: <ItemInst [moss ID:ddcc314cb965] [loc: east graveyard] [event:None] [clusters: 1]> // compound target: <ItemInst [moss ID:6aeefec14714] [loc: east graveyard] [event:None] [clusters: 1]>
+old_container: None / new_container: <ItemInst [glass jar ID:edcffdcfe8c9] [loc: north inventory_place] [event:'wait_one_turn' ID:739dd state: 1] > / location: None
+You put the moss in the glass jar.
+
+But thereafter it prints this:
+After combine_clusters: Shard: <ItemInst [moss ID:6aeefec14714] [loc: east graveyard] [event:None] [clusters: 1]> // compound target: no_local_compound
+no local compound, returning shard from move_cluster_item
+old_container: None / new_container: <ItemInst [glass jar ID:edcffdcfe8c9] [loc: north inventory_place] [event:'wait_one_turn' ID:739dd state: 1] > / location: None
+Added <ItemInst [moss ID:6aeefec14714] [Container: <ItemInst [glass jar ID:edcffdcfe8c9] [loc: north inventory_place] [event:'wait_one_turn' ID:739dd state: 1] >] [event:None] [clusters: 1]> to new container. Is it in any locations?
+You put the moss in the glass jar.
+
+Well, that's the first to put moss in jar after picking it up. But I put moss in the jar the firs time, and it went through the whole event check rigamarole for wait_one_turn because that moss had been in my hand previously. Putting moss directly in the jar without picking it up doesn't trigger moss_dries to generate, though it probably should.
+
+But yeah. Don't know why, but removing one moss from the jar removes two.
+Maybe something about how the moss sets its event to wait_one_turn?
+
+Okay. Have stopped it adding the child_item as event_inst, which for now is very specific to wait_one_turn and will need a better route (that dict described earlier, probably) but will do for testing this.
+
+Okay so it really does seem that when it prints
+
+After combine_clusters: Shard: <ItemInst [moss ID:c2831d660f5e] [loc: east graveyard] [event:None] [clusters: 1]> // compound target: <ItemInst [moss ID:0387635721a0] [loc: east graveyard] [event:None] [clusters: 1]>
+old_container: None / new_container: <ItemInst [glass jar ID:b86aca4e8c71] [loc: north inventory_place] [event:'wait_one_turn' ID:d213c state: 1] > / location: None
+You put the moss in the glass jar.
+
+it's actually failed.
+Because after that, this is what we have:
+{<ItemInst [moss ID:c2831d660f5e] [loc: east graveyard] [event:None] [clusters: 1]>,
+<ItemInst [moss ID:0387635721a0] [loc: east graveyard] [event:None] [clusters: 1]>,
+<ItemInst [moss ID:c1623aeb9ef7] [Container: <ItemInst [glass jar ID:b86aca4e8c71] [loc: north inventory_place] [event:'wait_one_turn' ID:d213c state: 1] >] [event:'wait_one_turn' ID:d213c state: 1] [clusters: 1]>}
+
+and these are the local items:
+{<ItemInst [headstone ID:514e44b68f52] [loc: east graveyard] [event:None] >, <ItemInst [desiccated skeleton ID:3b69fd7af88b] [loc: east graveyard] [event:None] >, <ItemInst [moss ID:0387635721a0] [loc: east graveyard] [event:None] [clusters: 1]>}
+
+so c2831d660f5e, that was apparently added to jar, is just gone.
+Alright. Now I know. Will fix.
+
+Okay, this makes sense now:
+Removed <ItemInst [moss ID:306a3733d589] [loc: east graveyard] [event:None] [clusters: 1]> from <cardinalInstance east graveyard (c82da0f2-b44b-4d49-a4a3-8b710b1f9e8d)>. Current location for inst is <cardinalInstance east graveyard (c82da0f2-b44b-4d49-a4a3-8b710b1f9e8d)>
+
+alright so specifically:
+if compound_target == "no_local_compound", then the move gets done after the cluster section, and it works properly.
+
+Hm.
+You still loose a moss when taking from jar. But you do only add a total of 3 now, so that's an improvement ish.
+
+Yeah. So it starts with
+
+<ItemInst [moss ID:874951abb31b] [Container: <ItemInst [glass jar ID:ddc35155a44f] [loc: north inventory_place] [event:'wait_one_turn' ID:303b0 state: 1] >] [event:'moss_dries' ID:16375 state: 1] [clusters: 1]>,
+<ItemInst [moss ID:6383e8f99ddd] [Container: <ItemInst [glass jar ID:ddc35155a44f] [loc: north inventory_place] [event:'wait_one_turn' ID:303b0 state: 1] >] [event:None] [clusters: 1]>,
+<ItemInst [moss ID:45a70b6b5a6a] [Container: <ItemInst [glass jar ID:ddc35155a44f] [loc: north inventory_place] [event:'wait_one_turn' ID:303b0 state: 1] >] [event:None] [clusters: 1]>}
+
+in the jar. You take `moss ID:874951abb31b`
+and immediately after that the jar contains
+parent.children: {
+<ItemInst [dried flowers ID:89c373d2ef35] [Container: <ItemInst [glass jar ID:ddc35155a44f] [loc:
+north inventory_place] [event:'wait_one_turn' ID:303b0 state: 1] >] [event:None] >,
+<ItemInst [moss ID:45a70b6b5a6a] [Container: <ItemInst [glass jar ID:ddc35155a44f] [loc: north inventory_place] [event:'wait_one_turn' ID:303b0 state: 1] >] [event:None] [clusters: 1]>}
+
+So 6383e8f99ddd is just gone.
+Named items:
+{<ItemInst [moss ID:45a70b6b5a6a] [loc: north inventory_place] [event:'moss_dries' ID:aabc2 state: 1] [clusters: 1]>, <ItemInst [moss ID:874951abb31b] [loc: north inventory_place] [event:'moss_dries' ID:16375 state: 1] [clusters: 1]>}
+
+Okay, so it's  this:
+Success (<ItemInst [moss ID:19cf61e2bddc] [Container: <ItemInst [glass jar ID:c31a4f9a53f1] [loc: north inventory_place] [event:'wait_one_turn' ID:11688 state: 1] >] [event:None] [clusters: 0]>) has multiple instances of 0 and will be removed.
+Ah, it's the compound test. It tries to find local by name instead of using the container data.
+
+Oddly I've made it so it's merging the moss in the inventory. Need to fix that. And only some of them, so twice as odd.
+
+`A glass jar, holding a few moss clumps, some dried flowers, and a clump of moss.`
+
+8.55pm
+Okay. So what it's doing now is adding the first moss fine, but then it's combining the next two mosses to a cluster, so when you take the second moss from the jar, it takes a cluster of val 2.
+
+Bleeeeeh. Everything just breaks something else, goddamn.
+I've tried to be generalist about it but I think it's just making it worse. Maybe I just need a clearly defined route for 'move cluster items from a to b', moreso than I do now. It's the cluster obj selection that's broken, it's trying to find a cluster item for 'put moss in jar' but it's finding items already in the jar, or multiples that it doesn't break down correctly. goddamn.
+
+9.14pm
+{<ItemInst [moss ID:dbd67c7dfafd] [loc: north inventory_place] [event:'moss_dries' ID:2f667 state: 1] [clusters: 1]>, <ItemInst [moss ID:55007b892fa8] [loc: north inventory_place] [event:'moss_dries' ID:89e12 state: 1] [clusters: 1]>, <ItemInst [moss ID:fe07dc435fb9] [loc: north inventory_place] [event:'moss_dries' ID:a2709 state: 1] [clusters: 1]>}
+
+Okay. Took me all afternoon and then some but it's right again now. Can add mosses to the jar either directly or by picking the mup then adding to the jar. Still need to sort out the specifics of the events; if I put the jar down, only one event for wait_one_turn is generated.
+
+Also, when I put the moss down, it moves
+{<ItemInst [moss ID:fe07dc435fb9] [loc: north inventory_place] [event:'moss_dries' ID:a2709 state: 1] [clusters: 1]>,
+with it, despite the moss still claiming to be in inv.
+
+Hm.
+So, with testing: seems that 'put moss in jar' only works if there's more than one cluster val on the ground? 'pick up moss' works fine, but 'put moss in jar' reverts to the existing jarred mosses and refuses to pick up more.
+
+Odd.
+Item in loc.inv_place to use instead of noun: <ItemInst [moss ID:fda3d8a17cb5] [Container: <ItemInst [glass jar ID:663497173420] [loc: north inventory_place] [event:'wait_one_turn' ID:a43f8 state: 1] >] [event:'moss_dries' ID:c80e2 state: 1] [clusters: 1]>
+explicitly took items from loc.inv_place, seems they're not always being cleared properly when added to containers.
+
+Have hit another wall, this time it's with the trigger check returning success when nothing's happened.
+
+Failed to find the correct function to use for <verbInstance put (6a98e4fe-2af0-4969-885b-2be38f3bde72)>: 'NoneType' object has no attribute 'location'
+this is hitting again. Need to fix it properly. I'm so much too tired for this. I need to gut all of it tbh. The three scripts I'm working on today are 7k lines alone, surely it doesn't need to be. Need to rest for a while.

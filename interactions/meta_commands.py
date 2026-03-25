@@ -53,7 +53,7 @@ def select_event():
     if not event:
         print("No event found. Returning.")
         return
-    test = input("Which event do you want to look at? Enter index, starting at 0: ")
+    test = input(f"Which event do you want to look at? Enter index, starting at 0. There are {len(event)} options. --  ")
     try:
         test = int(test)
     except:

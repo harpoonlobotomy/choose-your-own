@@ -388,6 +388,19 @@ def find_local_item_by_name(noun:itemInstance|npcInstance=None, noun_text = None
                         print(f"quick clusters: {quick_clusters}")
                         for item in quick_clusters:
                             return item
+                    else:
+                        quick_clusters = list(i for i in final_items if i.name == noun.name and not i.contained_in and i.has_multiple_instances == 0)
+                        if quick_clusters:
+                            print(f"quick clusters: {quick_clusters}")
+                            for item in quick_clusters:
+                                return item
+                        else:
+                            quick_clusters = list(i for i in final_items if i.name == noun.name and not i.contained_in and i.has_multiple_instances == 1)
+                            if quick_clusters:
+                                print(f"quick clusters: {quick_clusters}")
+                                for item in quick_clusters:
+                                    return item
+
 
                 #print(f"Sending {noun} to get_correct_cluster_inst. Access str: {access_str}")
                 test = get_correct_cluster_inst(noun, noun_text, local_items=final_items, local_only = True if single_and_local else False, access_str = access_str, allow_hidden=hidden_cluster, priority=priority if priority else "single")

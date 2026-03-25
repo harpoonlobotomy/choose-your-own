@@ -826,7 +826,7 @@ class itemRegistry:
             print(f"container: {container}")
             if container.location == loc.inv_place:
                 confirmed_container = container
-                if hasattr(confirmed_container, "is_open") and confirmed_container.is_open == False:
+                if hasattr(confirmed_container, "is_open") and not confirmed_container.is_open:
                     #print(f"confirmed_container {confirmed_container} is_closed, apparently.")
                     reason = 1
                 elif (hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked")):
@@ -835,7 +835,7 @@ class itemRegistry:
                     reason = 3
             elif container.location == loc.current:
                 confirmed_container = container
-                if hasattr(confirmed_container, "is_open") and confirmed_container.is_open == False:
+                if hasattr(confirmed_container, "is_open") and not confirmed_container.is_open:
                     #print(f"[run_check] Container {confirmed_container.name} is closed by is_open flag.")
                     reason = 1
                 elif hasattr(confirmed_container, "is_locked") and getattr(confirmed_container, "is_locked"):
@@ -958,6 +958,14 @@ class itemRegistry:
         if not target_is_location and shard.has_multiple_instances == 1:
             print("shard has multiple instances of 1")
             return shard, "no_local_compound" # returning so it can be added to the container. No merging in containers. Not sure if I want to combine multiples inside containers or not, but for now we just treat them the same way as inventory.
+        print("TARGET: {target}")
+        if target_is_location and target == loc.inv_place:
+            if hasattr(shard, "contained_in") and shard.contained_in:
+                print(f"moving {shard} from container to inv")
+                return shard, "no_local_compound"
+
+
+
         compound_target = None
         print(f"TARGET: {target}")
         from interactions.item_interactions import get_correct_cluster_inst
@@ -1037,6 +1045,8 @@ class itemRegistry:
         if hasattr(noun, "has_multiple_instances") and noun.has_multiple_instances in (0, 1):
             shard = noun ## we assume it's correct and don't check again.
             ## but we do need compound_noun to say where it 'came' from.
+            if isinstance(origin, itemInstance) and not "is_cluster" in origin.item_type and "container" in origin.item_type:
+                print("Taking from a container. Don't need to find compound_inst if we're taking from a container.")
             compound_test = find_local_item_by_name(noun=noun, verb="take", access_str = "pick_up", current_loc = loc.current, priority = "plural")
             if compound_test:
                 compound_inst = compound_test
@@ -1120,11 +1130,24 @@ class itemRegistry:
         old_loc = inst.location
         parent, was_in_container, new_container = self.get_parent_details(inst, old_container, new_container)
 
-        if was_in_container:
-            print(f"was in container: {was_in_container} / parent; {parent} / parent.children: {parent.children}")
+        if new_container and isinstance(new_container, itemInstance) and inst.has_multiple_instances in (0, 1):
+            inst.location = loc.no_place
+            loc.no_place.items.add(inst)
+            new_container.children.add(inst)
+            inst.contained_in = new_container
+            if was_in_container:
+                print(f"was in container: {was_in_container} / parent; {parent} / parent.children: {parent.children}")
+                inst.contained_in = None
+                parent.children.remove(inst)
+                return inst, None
+
+        if hasattr(inst, "contained_in") and inst.contained_in and location and location == loc.inv_place:
+            print(f"Was contained in and going to inv_place: {inst}")
+            return inst, "process_as_normal"
+
+        from misc_utilities import has_and_true
+        if has_and_true(inst, "contained_in"):
             inst.contained_in = None
-            parent.children.remove(inst)
-            print(f"parent.children: {parent.children}")
 
         is_drop = True
 
@@ -1140,7 +1163,7 @@ class itemRegistry:
             if not target:
                 print(f"No target: in move_cluster_items for {inst}, but no location or new_container was given.")
             # The following only applies if move to location. Need to also get the logic in for containers.
-            #printing.print_yellow(f"going to combine_clusters. Shard: {inst}, target: {target}")
+            printing.print_yellow(f"going to combine_clusters. Shard: {inst}, target: {target}")
             shard, compound_target = self.combine_clusters(inst, target)
             printing.print_yellow(f"After combine_clusters: Shard: {shard} // compound target: {compound_target}")
             if compound_target == "no_local_compound":
@@ -1157,6 +1180,7 @@ class itemRegistry:
             return shard, None
 
         origin = (parent if was_in_container else old_loc)
+        #if isinstance(origin, itemInstance) and not "is_cluster" in origin.item_type and "container" in origin.item_type:
         success, shard = self.separate_cluster(inst, origin=origin, origin_type="container" if was_in_container else "location")
         print(f"origin: {origin} // shard: {shard}")
         if not success:
@@ -1165,6 +1189,7 @@ class itemRegistry:
         if success and isinstance(success, itemInstance):
             if hasattr(success, "has_multiple_instances"):
                 if success.has_multiple_instances == 0:
+                    print(f"Success ({success}) has multiple instances of 0 and will be removed.")
                     self.delete_instance(success)
                 self.init_descriptions(success)
                 from testing_coloured_descriptions import init_loc_descriptions
@@ -1178,10 +1203,15 @@ class itemRegistry:
             # moved from old_container to location
             updated.add(old_container)
             from misc_utilities import has_and_true
-            if has_and_true(inst, "contained_in") and inst.contained_in == old_container:
+            if new_container and (has_and_true(inst, "contained_in") and inst.contained_in != new_container) or not has_and_true(inst, "contained_in"):
                 inst.contained_in = new_container
+                if inst not in new_container.children:
+                    new_container.children.add(inst)
+                updated.add(new_container)
             if old_container and has_and_true(old_container, "children") and inst in old_container.children:
                 old_container.children.remove(inst)
+                updated.add(old_container)
+
 
         if old_loc and old_loc != loc.no_place:
             if self.by_location.get(old_loc):
@@ -1189,9 +1219,19 @@ class itemRegistry:
                     print(f"Inst has a location but isn't in by_location for old_loc. FIX THIS. old_loc: {old_loc}")
                 else:
                     self.by_location[old_loc].discard(inst)
+                #f old_loc == inst.location:
+                if new_location:
+                    inst.location = new_location
+                elif new_container:
+                    inst.location = loc.no_place
+                    inst.contained_in = new_container
+                    new_container.children.add(inst)
+                print(f"Removed {inst} from {old_loc}. Current location for inst is {inst.location}")
 
             if old_loc == loc.inv_place:
                 if inst in loc.inv_place.items:
+                    if self.by_location.get("inv_place") and inst in self.by_location.get(loc.inv_place):
+                        self.by_location[loc.inv_place].remove(inst)
                     loc.inv_place.items.remove(inst)
                 if inst.location == loc.inv_place:
                     inst.location = loc.no_place ## We don't add items to by_location for no_place, this is purely so the location data can be printed in print lines.
@@ -1215,6 +1255,7 @@ class itemRegistry:
             updated.add(inst)
             if other != "process_as_normal":
                 #print("outcome, old_container, new_container, location, old_loc, updated: ", outcome, old_container, new_container, location, old_loc, updated)
+                print("Not process as normal. All moves need to be done already.")
                 updated = self.clear_parent_and_old_loc(outcome, old_container, new_container, location, old_loc, updated)
                 for item in updated:
                     self.init_descriptions(item)
@@ -1236,6 +1277,9 @@ class itemRegistry:
                 if inst in loc.inv_place.items:
                     loc.inv_place.items.remove(inst)
                 inst.location = loc.no_place ## We don't add items to by_location for no_place, this is purely so the location data can be printed in print lines."""
+        if not old_container:
+            if hasattr(inst, "contained_in") and inst.contained_in and (not new_container or not new_container == inst.contained_in):
+                old_container = inst.contained_in
         updated = self.clear_parent_and_old_loc(inst, old_container, new_container, location, old_loc, updated)
 
         ## MOVE TO NEW LOCATION IF PROVIDED
@@ -1263,7 +1307,10 @@ class itemRegistry:
                 return_text.append((f"Added [{inst}] to new container [{new_container}]", inst, new_container))
                 if not no_print:
                     print(f"Added {assign_colour(inst)} to {assign_colour(new_container)}.")
-
+                print(f"Added {inst} to new container. Is it in any locations?")
+                for location in registry.by_location:
+                    if inst in registry.by_location[location]:
+                        print(f"INST IS IN {location}")
                 inst.location = loc.no_place
 
             else:
