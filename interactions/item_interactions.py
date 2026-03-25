@@ -155,9 +155,10 @@ def get_correct_cluster_inst(noun:itemInstance, noun_text=None, priority="single
         local_items = find_local_item_by_name(current_loc=loc.current, hidden_cluster=allow_hidden, access_str=access_str)
 
     if local_items:
-        local_clusters = list((i for i in local_items if i.name == noun.name))
         if not take_from_container:
-            local_clusters = list(i for i in local_clusters if i.location != loc.no_place)
+            local_clusters = list(i for i in local_items if i.name == noun.name and i.location != loc.no_place)
+        if take_from_container or not local_clusters:
+            local_clusters = list((i for i in local_items if i.name == noun.name))
         if local_clusters and len(local_clusters) == 1:
             #print("Only one item in local_clusters, returning.")
             return local_clusters[0]

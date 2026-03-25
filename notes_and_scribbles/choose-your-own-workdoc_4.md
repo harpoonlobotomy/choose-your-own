@@ -1316,3 +1316,46 @@ hmph.  Now 'drop moss' no longer adds it to current loc. God I just keep going i
 Fixed that I think. We'll see.
 Next:
 events broke again. Dropping the moss fails if it's already dropped one. I think it's just a selection issue.
+
+------
+8.39pm
+have to add the originating event to the event_trigger but I think it'll work after that.
+I fixed the issue from above already, I'd missed a place where it still expected events.by_name to be singular instead of a set.
+
+10.33am 24/3/26
+Need to remember now what was broken.
+
+Cant' remember. Just running it to find errors. Events are pretty broken. Specifically, wait_an_hour no longer triggers at all; it doesn't add the moss obj to the trigger, though it does add it to the event and the timedTrigger.
+
+11.33am
+fixed that.
+
+okay, next issue: It's not adding the exceptions to wait_an_hour, so it never checks the location/state of the event item.
+
+okay so it's
+
+god i don't know. i can't think.
+
+bleh.
+take from compound moss 9c52, pick up shard  051.
+moss dries starts  f147e1157639 with shard 051.
+put moss in jar, wait_one_turn starts for noun `glass jar`
+take jar
+wait_one_turn still going
+moss_dries still going
+wait 1 hr
+wait_one_turn ends moss_dries because 'effect_on_completion' after finding no exceptions (emptry set)
+then wait_one_turn ends itself because it's done.
+
+
+(trig_data includes all triggers in that category:
+trig_data: {'timed_trigger': {'time_unit': 'hour', 'full_duration': 1, 'required_condition': {'item_is_open': 'trigger_item'}, 'persistent_condition': True, 'condition_item_is_start_trigger': True, 'exceptions': ['current_loc_is_inside'], 'end_type': 'success',
+'effect_on_completion': {'end_event': 'trigger_event'}}, 'event_trigger': {'trigger_item': 'trigger_event', 'triggered_by': ['event_ended'], 'end_type': 'failure'}}
+make sure that's accounted for.)
+wait event 6667 exists but,
+`Trigger: <[timedTrigger]] 8fef884c-57ba-4896-89b1-40d21e34de7b for event wait_one_turn, event state: current/ongoing, Trigger item: glass jar/38024c57f6e5>`
+`Trigger: <[Trigger]] 0dc22a68-dcf9-4006-be43-f1b7f5db444f for event wait_one_turn, event state: current/ongoing, None>`
+That second trigger should have the originating event as trigger_item (moss_dries), so if moss_dries fails the event ends.
+
+11.57am
+Oh. It seems to work now. Will need more testing this afternoon, but apparently when I indented for-item_in_trig_types I hadn't included timed_trigger in the list of 'for', so it didn't hit that part. Will test more later, support now.

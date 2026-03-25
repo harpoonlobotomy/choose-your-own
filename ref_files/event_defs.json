@@ -93,7 +93,7 @@
 "finding_dried_moss": {
     "remove_event_on_run": true,
     "is_generated_event": true,
-    "triggered_by_event": "moss_dries",
+    "triggered_by_event": "trigger_event",
     "end_trigger": {
         "item_trigger": {
             "trigger_item": "dried moss",
@@ -105,7 +105,8 @@
     },
 "wait_one_turn": {
     "repeats": false,
-    "remove_event_on_run": true,
+    "remove_event_on_completion": true,
+    "remove_event_on_failure": true,
     "is_generated_event": true,
     "end_trigger": {
         "timed_trigger": {
@@ -117,7 +118,13 @@
             "exceptions": ["current_loc_is_inside"],
             "end_type": "success",
             "effect_on_completion":
-                {"end_event": "trigger_event"}}
+                {"end_event": "trigger_event"}},
+
+        "event_trigger": {
+            "trigger_item": "trigger_event",
+            "triggered_by": ["event_ended"],
+            "end_type": "failure"
+        }
     }
 },
 "scroll_drops_key": {

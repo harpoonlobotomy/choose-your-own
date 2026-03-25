@@ -276,7 +276,7 @@ def move_a_to_b(a:itemInstance, b:placeInstance|itemInstance, action:str=None, d
                 if b == loc.current or b == loc.inv_place:
                     a_origin = (a.location if a.location != loc.no_place and a.location != loc.inv_place else a.contained_in)
                     item_interactions.add_item_to_loc(a, b)
-                    print(f"a.location after move: {a.location}")
+                    print(f"a.location after move: {a.location}, location should be {b}")
                     if not moved_item(a) or b == loc.inv_place:
                         if b == loc.inv_place:
                             origin = ""
@@ -2368,7 +2368,7 @@ def drop(format_tuple, input_dict):
     location = get_location(input_dict)
     if not noun and noun_str: # assume error printed in get_correct_nouns
         return
-
+    print(f"Noun: {noun}")
     #noun, noun_str, noun2, _ = get_nouns(input_dict)
     #noun = verb_requires_noun(input_dict, "drop", local=True)
     if isinstance(noun, str):
@@ -2390,12 +2390,20 @@ def drop(format_tuple, input_dict):
 
     if len(input_dict) == 2:
         print(f"reason val: {noun_reason}, for item: {noun}")
+        if noun_reason == 6:
+            loc_named = registry.get_item_by_location(loc.inv_place)
+            loc_named = list((i for i in loc_named if i.name == noun.name) if loc_named else None)
+            if loc_named:
+                noun = loc_named[0]
+                test = move_a_to_b(noun, loc.current, "drop")
+                if test:
+                    print(f"TEST: {test}")
         if noun_reason == 5:
         #container, reason_val, meaning = registry.run_check(noun)
         #if reason_val == 5:
-            registry.move_item(noun, location = loc.current)
+            return move_a_to_b(noun, loc.current, "drop")
+            #registry.move_item(noun, location = loc.current)
             #registry.drop(noun)
-
         elif noun_reason == 3:
             print(f"You can't drop the {assign_colour(noun)}; you'd need to get it out of the {assign_colour(noun.contained_in)} first.")
             return

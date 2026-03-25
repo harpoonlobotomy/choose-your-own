@@ -1184,7 +1184,8 @@ class itemRegistry:
             if old_loc == loc.inv_place:
                 if inst in loc.inv_place.items:
                     loc.inv_place.items.remove(inst)
-                inst.location = loc.no_place ## We don't add items to by_location for no_place, this is purely so the location data can be printed in print lines.
+                if inst.location == loc.inv_place:
+                    inst.location = loc.no_place ## We don't add items to by_location for no_place, this is purely so the location data can be printed in print lines.
         return updated
 
     def move_item(self, inst:itemInstance, location:cardinalInstance=None, new_container:itemInstance=None, old_container:itemInstance=None, no_print=False, simple_move = False)->itemInstance:
@@ -1204,6 +1205,7 @@ class itemRegistry:
             updated.add(outcome)
             updated.add(inst)
             if other != "process_as_normal":
+                print("outcome, old_container, new_container, location, old_loc, updated: ", outcome, old_container, new_container, location, old_loc, updated)
                 updated = self.clear_parent_and_old_loc(outcome, old_container, new_container, location, old_loc, updated)
                 for item in updated:
                     self.init_descriptions(item)
