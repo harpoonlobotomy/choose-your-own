@@ -1676,3 +1676,101 @@ Failed to find the correct function to use for <verbInstance break (cb28e8a8-efe
 So because the jar is already broken it doesn't have children anymore, I'm assuming. Will look into it after support.
 
 Okay, fixed now. It wasn't about the jar being broken, I had a log error in itemReg so it was allowing the new_container branch even if no new_container. Now if you break the glass jar the moss re-compounds properly as intended.
+
+2.45pm 26/3/26
+So. For break_item. For some reason, item_is_broken is generated for the paperclip but never starts, and the 'paperclip' item doesn't actually break. It does have the is_broken flag, but nothing happens to it.
+
+So. item_is_broken should be initing a new item and removing the old one. But it's simply never starting.
+
+Gradually progressing. Fixed the route a little and now it at least tries to get to the part where it generates the broken item. Now it's struggling because it's getting a target itemname from 'noun.on_break', which is giving it 'generic' (the material name). So I need to manage where it's applying that. on break/on_burn should really only apply when it's something like 'broken glass shards', not just material type.
+
+3.31pm
+Okay, broken paperclip works now. Figurd it out.
+
+So, next: fix the 'x3' in container contents.
+
+Also, I need to fix the colour printing.
+eg for this:
+A glass jar, holding some dried flowers, a clump of moss, a clump of moss, and a clump of moss.
+it's yellow (intended) until 'some dried flowers' where it goes cyan for the item.col,  and the same for other items, but the ',' and ', and' are just white. I assume its because the items have formatting end codes. So perhaps I do a  str replace w/ the col code from the start of the msg for all but the last closing col code.
+as in take:
+`yel(cyan/end, blue/end, magenta/end, magenta/end)/end`
+and make it
+`yel(cyan/yel, blue/yel, magenta/yel, magenta/yel)/end`
+
+
+Hm. Testing this out, and... why does
+
+"The glass jar is now in your inventory.", with one colour in it, print
+        `print("If cls.END in text more than once:")`
+        `return f"{start}{text}{end}"`
+
+some 40 times?
+
+`If cls.END in text more than once:`
+`If cls.END in text more than once:`
+`You put the moss in the glass jar.`
+prints it twice.
+
+Is it checking every character in "The glass jar is now in your inventory."?
+Here it prints 3 times:
+If cls.END in text more than once:
+If cls.END in text more than once:
+If cls.END in text more than once:
+You pick up the moss, and feel it squish a little between your fingers.
+The command is coming from
+`print(f"{assign_colour(msg, colour=state_type, noun=noun)}")` ln 1031 in eventReg
+
+And this:
+`Not process as normal. All moves need to be done already.`
+with no colour at all is also printing it, and it's even more lines.
+that one's after
+`Inst <ItemInst [moss ID:13fa9baf9326] [loc: east graveyard] [event:None] [clusters: 3]> is not multiple instance val of 1 and/or does not have a target location of inv_place or no_place.`
+`origin: <cardinalInstance east graveyard (e07279ec-07e9-40b7-bfb0-ccc733a60bdd)> // shard: <ItemInst [moss ID:44bc4c113d62] [loc: north inventory_place] [event:None] [clusters: 1]>`
+
+I guess it's perhaps for all the coloured reprs and the lines are just out of order, that's reasonable. Will assume that for now.
+
+Oh, it's the cardinals, being updated for loc_desc changes. Right.
+I don't know why it's checking cardinal colours so many times, though. It gets 'graveyard', but then it gets 'north' ten times.
+
+just before get_loc_descriptions
+If cls.END in text more than once: text: graveyard
+If cls.END in text more than once: text: north
+[... 42 lines here for the cardinals.]
+in loc_descriptions after init_loc_descriptions for place <placeInstance graveyard (276e65c9-a950-42f5-b2e1-ddba7d7648dc)> and card_inst: <cardinalInstance east graveyard (fbe9f48a-16ed-4f14-a383-654514aa0c38)>
+
+Okay, well now it has a little cardinals dict that gets the colours, so it's only
+
+If cls.END in text more than once: text: graveyard
+If cls.END in text more than once: text: north
+If cls.END in text more than once: text: east
+If cls.END in text more than once: text: south
+If cls.END in text more than once: text: west
+If cls.END in text more than once: text: west
+If cls.END in text more than once: text: gate
+If cls.END in text more than once: text: padlock
+If cls.END in text more than once: text: cardboard box
+
+instead. Better.
+It takes west twice because... or some reason. Idk.But the printed description is the same as it was previously. I think it's because of the variations dict (desc_print_dict), where each one had assign_colour(cardinal). Now each just calls that dict so it doesn't have to repeat the pull.
+
+So, anyway:
+
+`You put the moss in the glass jar.`
+
+For this, if it's meant to yellow, it's something I can't do within assign_colour, because assign_colour is only being used internally (`f"You put the {assign_colour(noun)} in the {assign_colour(noun2)}."`). So it needs an intermediate print step between print() and assign_colour() for it to reformat print lines if they start with a non-neutral colourcode.
+
+Also, my silly correction attempt didn't exactly fix it:
+
+ORIGINAL TEXT: A glass jar, holding some dried flowers, and a clump of moss.
+Corrected text: A glass jar, holding some dried flowers33, and a clump of moss33.
+
+Because the 'text' it's correcting doesn't actually have the overall colour applied yet when it runs. The yellow is applied later, perhaps?
+
+![colour sections in str](image-5.png)
+
+Oh, I fixed it. I just needed to add the escape code to the fg_code. That was easy.
+Oh it looks awful though. That's unfortunate.
+
+![working but looks awful](image-6.png)
+Well I'm glad it works, but yeah. Might have to rethink the yellow.

@@ -110,7 +110,7 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
                             if key == count:
                                 val = val.strip("\x1b[0m")
                                 val = val.strip("a ")
-                                long_desc.append(val + f" x{count}\x1b[0m")
+                                long_desc.append(f"{val} x{count}\x1b[0m")
 
             if local_items:
                 local_items = list(i for i in local_items if isinstance(i, itemRegistry.itemInstance) and not long_dict.get(i.name))
@@ -187,7 +187,7 @@ def init_loc_descriptions(place:placeInstance=None, card:cardinalInstance=None):
             if location != place:
                 continue
 
-        area_descrip = (format_descrip(d_type="area_descrip", description=loc.loc_data[location]["descrip"], location=location))
+        area_descrip = (format_descrip(d_type="area_descrip", description=loc.loc_data[location]["descrip"], location=location, cardinal=card))
         output = []
         desc_dict[location] = {}
         compiled_cardinals[location] = {}
@@ -196,6 +196,14 @@ def init_loc_descriptions(place:placeInstance=None, card:cardinalInstance=None):
             if loc.loc_data[location].get(cardinal) != None:
                 active_cardinals.add(cardinal)
 
+        coloured = {
+            "north": assign_colour("north"),
+            "east": assign_colour("east"),
+            "south": assign_colour("south"),
+            "west": assign_colour("west")
+            }
+        assign_colour(cardinal)
+
         for i, cardinal in enumerate(("north", "east", "south", "west")):
             if cardinal in active_cardinals:
                 desc_dict[location][cardinal] = {}
@@ -203,22 +211,22 @@ def init_loc_descriptions(place:placeInstance=None, card:cardinalInstance=None):
 
                 desc_print_dict ={
                     "len_1": {
-                        0: f"{short_desc} to the {assign_colour(cardinal)}."
+                        0: f"{short_desc} to the {coloured[cardinal]}."
                     },
                     "len_2": {
-                        0: f"{short_desc} to the {assign_colour(cardinal)},",
-                        1: f"and to the {assign_colour(cardinal)} {short_desc}."
+                        0: f"{short_desc} to the {coloured[cardinal]},",
+                        1: f"and to the {coloured[cardinal]} {short_desc}."
                     },
                     "len_3": {
-                        0: f"{short_desc} to the {assign_colour(cardinal)}.",
-                        1: f"To the {assign_colour(cardinal)} {short_desc},",
-                        2: f"and to the {assign_colour(cardinal)} {short_desc}."
+                        0: f"{short_desc} to the {coloured[cardinal]}.",
+                        1: f"To the {coloured[cardinal]} {short_desc},",
+                        2: f"and to the {coloured[cardinal]} {short_desc}."
                     },
                     "len_4": {
-                        0: f"{short_desc} to the {assign_colour(cardinal)}.",
-                        1: f"To the {assign_colour(cardinal)} {short_desc},",
-                        2: f"to the {assign_colour(cardinal)} {short_desc},",
-                        3: f"and to the {assign_colour(cardinal)} {short_desc}."},
+                        0: f"{short_desc} to the {coloured[cardinal]}.",
+                        1: f"To the {coloured[cardinal]} {short_desc},",
+                        2: f"to the {coloured[cardinal]} {short_desc},",
+                        3: f"and to the {coloured[cardinal]} {short_desc}."},
                     }
 
                 if short_desc and short_desc != None:
@@ -250,7 +258,9 @@ def loc_descriptions(place:placeInstance=None, card_inst:cardinalInstance=None):
     from env_data import locRegistry as loc
     if place and place == loc.current.place:
         card_inst = loc.current
+    print("just before get_loc_descriptions")
     location_description, cardinal_descriptions = init_loc_descriptions(place, card=card_inst)
+    print(f"in loc_descriptions after init_loc_descriptions for place {place} and card_inst: {card_inst}")
     combined_dict = {}
 
     for location, overview in location_description.items():

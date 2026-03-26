@@ -308,7 +308,7 @@ class itemInstance:
         self.id = str(uuid.uuid4())  # unique per instance
         self.short_id = self.id.split("-")[-1]
         self.material_type:str = "generic"
-        self.on_break:str = "generic"
+        self.on_break:str = None#"generic"
 
          #     INITIAL FLAG MANAGEMENT
         #print(f"VARS before attributes are assigned: {vars(self)}")
@@ -1180,9 +1180,6 @@ class itemRegistry:
                 print(f"Compound_target {compound_target} is exhausted, removing from everywhere. compound_target.has_multiple_instances == 0 in itemReg.")
                 exit()
 
-            from testing_coloured_descriptions import init_loc_descriptions
-            init_loc_descriptions(loc.current.place, loc.current)
-
             self.init_descriptions(compound_target)
             return shard, None
 
@@ -1199,8 +1196,6 @@ class itemRegistry:
                     print(f"Success ({success}) has multiple instances of 0 and will be removed.")
                     self.delete_instance(success)
                 self.init_descriptions(success)
-                from testing_coloured_descriptions import init_loc_descriptions
-                init_loc_descriptions(loc.current.place, loc.current)
 
         return shard, None
 
@@ -1251,16 +1246,16 @@ class itemRegistry:
         to_inv = True if target_location and target_location == loc.inv_place else False
         to_container = True if new_container and isinstance(new_container, itemInstance) else False
 
-        print(f"prev_container: {prev_container}\nprev_location: {prev_location}\nto_inv: {to_inv}\nto_container: {to_container}")
+        #print(f"prev_container: {prev_container}\nprev_location: {prev_location}\nto_inv: {to_inv}\nto_container: {to_container}")
 
         if prev_container:
-            print(f"Prev container {prev_container} for {inst.name}")
+            #print(f"Prev container {prev_container} for {inst.name}")
             prev_container.children.remove(inst)
             inst.contained_in = None
             update.add(prev_container)
 
         if prev_location:
-            print(f"prev_location {prev_location} for {inst.name}")
+            #print(f"prev_location {prev_location} for {inst.name}")
             if prev_location == loc.inv_place and inst in loc.inv_place.items:
                 loc.inv_place.items.remove(inst)
             if registry.by_location.get(prev_location) and inst in registry.by_location[prev_location]:
@@ -1305,7 +1300,10 @@ class itemRegistry:
                 updated = self.clear_parent_and_old_loc(outcome, old_container, new_container, location, old_loc, updated)
                 for item in updated:
                     self.init_descriptions(item)
+                from testing_coloured_descriptions import init_loc_descriptions
+                init_loc_descriptions(loc.current.place, loc.current)
                 return outcome
+
             inst = outcome
             old_loc = inst.location
 
@@ -1361,7 +1359,7 @@ class itemRegistry:
 
             else:
                 inst.contained_in = None"""
-        print(f"About to hit do_move for {inst} with vals:\nlocation: {location}\nnew_container: {new_container}\n")
+        #print(f"About to hit do_move for {inst} with vals:\nlocation: {location}\nnew_container: {new_container}\n")
         updated = self.do_move(inst, location, new_container, updated)
 
         for item in updated:

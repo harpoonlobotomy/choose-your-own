@@ -1699,12 +1699,11 @@ def combine(format_tuple, input_dict):
     noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict, verb="use")
     #noun, _, noun2, _ = get_nouns(input_dict)
 
-    get_correct_nouns(input_dict)
     if not noun2:
-        print(f"What do you want to combine with the {assign_colour(noun)}")
+        print(f"What do you want to combine with the {assign_colour(noun)}?")
         return
 
-    if "container" in noun2.item_type:
+    if noun2 and "container" in noun2.item_type:
         #check relative sizes here; haven't implemente that anywhere yet.
         #assuming the sizes are suitable:
         put(format_tuple, input_dict) # might be a fair guess if b is a container?
@@ -2039,7 +2038,7 @@ def take(format_tuple, input_dict):
                     return 0, added_to_inv
                 elif reason_val == 0:
                     outcome = registry.move_item(noun, location = loc.inv_place)
-                    print(f"OUTCOME: {outcome} / noun: {noun}")
+                    #print(f"OUTCOME: {outcome} / noun: {noun}")
                     if outcome in loc.inv_place.items:
                         #print("Outcome is in inventory. (line 1480)")
                         return 0, outcome
@@ -2164,7 +2163,8 @@ def put(format_tuple, input_dict, location=None):
     logging_fn()
     action_word = "You put"
     verb = get_verb(input_dict, get_str=True)
-    noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict, verb="drop", access_str="drop_subject", access_str2=None, hold_error_messages=True) # to get inv items first
+    print("about to get_correct_nouns in def put")
+    noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict, verb="drop", access_str="drop_subject", access_str2="drop_target", hold_error_messages=True) # to get inv items first
     print(f"[def put] NOUN : {noun}")
     if noun2 and in_types(noun2, "container"):
         if noun2.children and noun in noun2.children:

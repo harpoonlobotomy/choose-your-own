@@ -66,6 +66,11 @@ class Colours:
             bg_code = getattr(cls, bg, cls.BLACK) + 10
             codes.append(str(bg_code))
 
+        if cls.END in text and text.count(cls.END):
+            #print(f"ORIGINAL TEXT: {text}")
+            text = text.replace(cls.END, f"\033[{str(fg_code)}m")
+            #print(f"Corrected text: {text}")
+
         start = f"\033[{';'.join(codes)}m"
         end = "" if no_reset else cls.END
         return f"{start}{text}{end}"

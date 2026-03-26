@@ -56,7 +56,7 @@ def look_at_item(item_inst, entry): ## this is just using everything from regist
             if item_inst.descriptions.get("from_inside") and hasattr(item_inst, "int_location") and loc.by_cardinal_str(item_inst.int_location) == loc.current: # this is hyper specific for now, but need to check for things that change when I'm not paying attention, so to speak. I don't want to redo the descriptions for every item in an area, but in cases like writing on the door that only appears from the inside, I need a way to set that.
                 registry.init_descriptions(item_inst)
 
-            if isinstance(item_inst, npcInstance):
+            elif isinstance(item_inst, npcInstance):
                 registry.init_descriptions(item_inst)
 
             print(f"\n   {assign_colour(registry.describe(item_inst, caps=True), colour="description")}")
@@ -263,9 +263,9 @@ def build_relevant_items_set(verb=None, noun=None, access_str=None, current_loc=
             if verb in values:
                 access_str = kind
                 break
-        if not access_str:
-            print(f"Verb `{verb}` could not find a match in verb allocation.\nExpected one of:\n{list(scope_to_verb)}. Cannot continue.")
-            exit()
+        #if not access_str:
+            #print(f"Verb `{verb}` could not find a match in verb allocation.\nExpected one of:\n{list(scope_to_verb)}. Cannot continue.")
+            #exit()
 
     elif access_str:
         if not scope_to_verb.get(access_str) and not access_str in simple_assignments:
