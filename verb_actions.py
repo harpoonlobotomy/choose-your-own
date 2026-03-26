@@ -2245,7 +2245,7 @@ def put(format_tuple, input_dict, location=None):
                         inv_items = registry.get_item_by_location(loc.inv_place)
                         if inv_items:
                             for item in inv_items:
-                                if item.name == noun.name:
+                                if item.name == noun.name and item != noun:
                                     print(f"Item in loc.inv_place to use instead of noun: {item}")
                                     done=item
                                     break
@@ -2253,7 +2253,7 @@ def put(format_tuple, input_dict, location=None):
                             inv_items = registry.get_item_by_location(loc.current)
                             if inv_items:
                                 for item in inv_items:
-                                    if item.name == noun.name:
+                                    if item.name == noun.name and item != noun:
                                         print(f"Item in loc.current to use instead of noun: {item}")
                                         done=item
                                         break

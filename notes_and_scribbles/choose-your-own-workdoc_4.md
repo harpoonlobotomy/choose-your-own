@@ -1626,3 +1626,53 @@ Have hit another wall, this time it's with the trigger check returning success w
 
 Failed to find the correct function to use for <verbInstance put (6a98e4fe-2af0-4969-885b-2be38f3bde72)>: 'NoneType' object has no attribute 'location'
 this is hitting again. Need to fix it properly. I'm so much too tired for this. I need to gut all of it tbh. The three scripts I'm working on today are 7k lines alone, surely it doesn't need to be. Need to rest for a while.
+
+11.13am 26/3/26
+Okay. I imagine the nonetype location error perhaps is because it's trying to add items to the container that are already in them. In trying to avoid it picking the wrong moss it's picking the wrong one from inside the container instead (in this case there was no other option, but it keeps finding items in inv_place when they're actually in the jar.)
+
+So, I think the key issue is that things being added to containers are being added to inv_place for some reason. Idk why.
+
+I do think I need to remove the set for inv_place.items and just to a generator to build each time. idk.
+
+11.41am
+wrote a new item-movement fn just for the actual moving part. Mosses seem to work now but will need to test some more.
+
+Also, 'break items' is a little broken, I assume with the changes I made to trigger returns. 'break jar with paperclip' breaks the paperclip instead of the glass which is hilarious, but the event doesn't trigger properly; it recognises the trigger
+# ELIF EVENT.START_TRIGGERS FOR <eventInst [item_is_broken] [ID:0d8da] [state: 2]>
+# start trigger: {'id': 'ee88dacb-2e55-4f0e-a67e-aea127298cc7', 'short_id': '98cc7', 'event': <eventInst [item_is_broken] [ID:0d8da] [state: 2]>, 'state': 2, 'triggers': {'item_broken'}, 'exceptions': set(), 'end_type': 'start', 'start_trigger': True, 'end_trigger': False, 'is_item_trigger': False}
+# end of check_triggers
+# After is_event_trigger: 0, None
+
+but then nothing happens; the paperclip is still in inventory and unbroken.
+I think I'll move the break_item details to the eventHandling script so I can just detail it as much as I want.
+
+break paperclip with jar works fine (to break the jar)
+
+Hm.
+Except, when it breaks the jar and the contents fall out, 2 of the mosses merge but the third is standalone (despite all the items being correctly located).
+
+Hm. So the glass jar when being moved is intersting:
+
+* Inst has single instance val and not a physical target location, sending  for regular processing.
+* About to hit do_move for <ItemInst [moss ID:c9e998bf814c] [Container: <ItemInst [glass jar ID:2c08270464e8] [loc: north inventory_place] [event:'wait_one_turn' ID:66252 state: 1] >] [event:'moss_dries' ID:6fb82 state: 1] [clusters: 1]> with vals:
+* location: <cardinalInstance east graveyard (c2aae1a5-9bf5-411c-b5d3-23b3c0f9a4c5)>
+* new_container: None
+
+That's the last bit of moss that was the standalone that didn't merge.
+
+
+It /does/ have a physical location though. So why is it returning there?
+
+Somehow it's hitting this:
+# if inst.has_multiple_instances in (0, 1) and (not location or location == loc.inv_place or loc.no_place)
+Oh, right. Because I'm not asking if location == loc.no_place, I'm just asking is loc.no_place exists. Okie.
+
+Oh, okay, so fixed that and now I have:
+
+Not process as normal. All moves need to be done already.
+old_container: <ItemInst [glass jar ID:2054106f87e3] [loc: north inventory_place] [event:'wait_one_turn' ID:d1ddb state: 1] > / new_container: None / location: <cardinalInstance east graveyard (d58508a3-b2f6-4036-9f52-c635506eb10b)>
+Failed to find the correct function to use for <verbInstance break (cb28e8a8-efe5-4983-84b8-2c72e8b663b6)>: 'NoneType' object has no attribute 'children'
+
+So because the jar is already broken it doesn't have children anymore, I'm assuming. Will look into it after support.
+
+Okay, fixed now. It wasn't about the jar being broken, I had a log error in itemReg so it was allowing the new_container branch even if no new_container. Now if you break the glass jar the moss re-compounds properly as intended.

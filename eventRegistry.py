@@ -374,7 +374,7 @@ class eventRegistry:
 
     def event_print(self, text):
         """Just so I can turn on/off detailed event prints for testing without having to do proper logging."""
-        print_event_text = False#True
+        print_event_text = True
         if print_event_text == True:
             print(text)
 
@@ -566,7 +566,7 @@ class eventRegistry:
                         if item_name == "on_break_item" and noun:
         Basically, strip out all the parts that make it possible for a thing to be broken. Also those things should be /far/ better defined than they are. Jeez.
         """
-        #print(f"clean atered state def \n item name: {item_name} / item entry:\n{item_entry}")
+        print(f"clean atered state def \n item name: {item_name} / item entry:\n{item_entry}")
         """
 Dict of broken glass as it arrives:
 {'alt_names': ['broken glass shards', 'glass shards', 'shards of glass', 'shard of glass', 'shard', 'shards'], 'can_pick_up': True, 'descriptions': {'is_singular': 'a shard of broken glass.', 'is_plural':

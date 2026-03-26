@@ -1130,16 +1130,23 @@ class itemRegistry:
         old_loc = inst.location
         parent, was_in_container, new_container = self.get_parent_details(inst, old_container, new_container)
 
+        if inst.has_multiple_instances in (0, 1) and (not location or location == loc.inv_place or location == loc.no_place):
+            print("Inst has single instance val and not a physical target location, sending  for regular processing.")
+            return inst, "process_as_normal"
+        print(f"Inst {inst} is not multiple instance val of 1 and/or does not have a target location of inv_place or no_place.")
+
+        if was_in_container:
+            print(f"was in container: {was_in_container} / parent; {parent} / parent.children: {parent.children}")
+            inst.contained_in = None
+            parent.children.remove(inst)
+
         if new_container and isinstance(new_container, itemInstance) and inst.has_multiple_instances in (0, 1):
+            return inst, "process_as_normal"
             inst.location = loc.no_place
             loc.no_place.items.add(inst)
             new_container.children.add(inst)
             inst.contained_in = new_container
-            if was_in_container:
-                print(f"was in container: {was_in_container} / parent; {parent} / parent.children: {parent.children}")
-                inst.contained_in = None
-                parent.children.remove(inst)
-                return inst, None
+            return inst, None
 
         if hasattr(inst, "contained_in") and inst.contained_in and location and location == loc.inv_place:
             print(f"Was contained in and going to inv_place: {inst}")
@@ -1203,7 +1210,7 @@ class itemRegistry:
             # moved from old_container to location
             updated.add(old_container)
             from misc_utilities import has_and_true
-            if new_container and (has_and_true(inst, "contained_in") and inst.contained_in != new_container) or not has_and_true(inst, "contained_in"):
+            if new_container and (has_and_true(inst, "contained_in") and inst.contained_in != new_container or not has_and_true(inst, "contained_in")):
                 inst.contained_in = new_container
                 if inst not in new_container.children:
                     new_container.children.add(inst)
@@ -1236,6 +1243,45 @@ class itemRegistry:
                 if inst.location == loc.inv_place:
                     inst.location = loc.no_place ## We don't add items to by_location for no_place, this is purely so the location data can be printed in print lines.
         return updated
+
+    def do_move(self, inst:itemInstance, target_location:cardinalInstance, new_container:itemInstance, update:set = set()) -> set:
+        ## For compounds of val > 1, separate them first. This is just for the moving, no selection. We assume selections are good by this point.
+        prev_container = inst.contained_in if hasattr(inst, "contained_in") else None
+        prev_location = inst.location
+        to_inv = True if target_location and target_location == loc.inv_place else False
+        to_container = True if new_container and isinstance(new_container, itemInstance) else False
+
+        print(f"prev_container: {prev_container}\nprev_location: {prev_location}\nto_inv: {to_inv}\nto_container: {to_container}")
+
+        if prev_container:
+            print(f"Prev container {prev_container} for {inst.name}")
+            prev_container.children.remove(inst)
+            inst.contained_in = None
+            update.add(prev_container)
+
+        if prev_location:
+            print(f"prev_location {prev_location} for {inst.name}")
+            if prev_location == loc.inv_place and inst in loc.inv_place.items:
+                loc.inv_place.items.remove(inst)
+            if registry.by_location.get(prev_location) and inst in registry.by_location[prev_location]:
+                registry.by_location[prev_location].remove(inst)
+            inst.location = loc.no_place
+
+        if to_container:
+            inst.contained_in = new_container
+            new_container.children.add(inst)
+            inst.location = loc.no_place
+            update.add(new_container)
+
+        elif target_location:
+            if to_inv:
+                loc.inv_place.items.add(inst)
+
+            inst.location = target_location
+            registry.by_location.setdefault(target_location, set()).add(inst)
+
+        return update
+
 
     def move_item(self, inst:itemInstance, location:cardinalInstance=None, new_container:itemInstance=None, old_container:itemInstance=None, no_print=False, simple_move = False)->itemInstance:
         """Moves an itemInstance from its current location to a new 'location'. The new location can be the player inventory, a cardinalInstance or a container object. Updates item descriptions when complete."""
@@ -1277,7 +1323,7 @@ class itemRegistry:
                 if inst in loc.inv_place.items:
                     loc.inv_place.items.remove(inst)
                 inst.location = loc.no_place ## We don't add items to by_location for no_place, this is purely so the location data can be printed in print lines."""
-        if not old_container:
+        """if not old_container:
             if hasattr(inst, "contained_in") and inst.contained_in and (not new_container or not new_container == inst.contained_in):
                 old_container = inst.contained_in
         updated = self.clear_parent_and_old_loc(inst, old_container, new_container, location, old_loc, updated)
@@ -1314,13 +1360,12 @@ class itemRegistry:
                 inst.location = loc.no_place
 
             else:
-                inst.contained_in = None
+                inst.contained_in = None"""
+        print(f"About to hit do_move for {inst} with vals:\nlocation: {location}\nnew_container: {new_container}\n")
+        updated = self.do_move(inst, location, new_container, updated)
 
         for item in updated:
             self.init_descriptions(item)
-
-        if location == loc.inv_place:
-            location.items.add(inst)
 
         from testing_coloured_descriptions import init_loc_descriptions
         init_loc_descriptions(loc.current.place, loc.current) # update even if moving to inv, so it can update the removal. Though it seemed to already...?

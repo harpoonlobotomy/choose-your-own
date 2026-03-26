@@ -1,9 +1,5 @@
 # eventHandling.py for specific event management beyond what hte JSON offers.
 
-
-
-
-
 def moss_dries_handling(event, trigger, moss):
     container = None
     if hasattr(event, "child_item"):
@@ -51,3 +47,16 @@ def moss_dries_handling(event, trigger, moss):
         event_state = "continues"
 
     return event_state
+
+def break_item_handling(event, trigger, item):
+    print("Here we break an item if breakable, remove it and replace it with an appropriate broken version.")
+    from itemRegistry import itemInstance
+    item:itemInstance = item
+    if not hasattr(item, "can_break") or not item.can_break:
+        print(f"Item {item} cannot be broken. Returning.")
+        return None # if succesful, return the new broken obj, else return None if nothing happened and the old obj remains.
+
+    if hasattr(item, "material_type") and item.material_type:
+        mat_type = item.material_type
+        print(f"Item `{item.name}` has material type {mat_type}")
+
