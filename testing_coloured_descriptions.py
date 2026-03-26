@@ -157,6 +157,7 @@ def generate_overview(location):
     format_descrip(d_type="area_descrip", description="", location = location, cardinal = None)
 
 def compile_long_desc(long_desc:list):
+
     if len(long_desc) == 1:
         item_description = long_desc[0]
     elif len(long_desc) == 2:
@@ -258,9 +259,7 @@ def loc_descriptions(place:placeInstance=None, card_inst:cardinalInstance=None):
     from env_data import locRegistry as loc
     if place and place == loc.current.place:
         card_inst = loc.current
-    print("just before get_loc_descriptions")
     location_description, cardinal_descriptions = init_loc_descriptions(place, card=card_inst)
-    print(f"in loc_descriptions after init_loc_descriptions for place {place} and card_inst: {card_inst}")
     combined_dict = {}
 
     for location, overview in location_description.items():

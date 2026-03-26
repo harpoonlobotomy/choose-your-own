@@ -1774,3 +1774,24 @@ Oh it looks awful though. That's unfortunate.
 
 ![working but looks awful](image-6.png)
 Well I'm glad it works, but yeah. Might have to rethink the yellow.
+
+Okay - x3 is working for container contents now:
+    `A glass jar, holding moss x3, and some dried flowers.`
+
+5.28pm
+and a little more improved, now it maintains the bold that items should have. And the order is switched, so it's
+    `A glass jar, holding 3x moss, and some dried flowers.`
+
+Just feels more natural that way. Locations + inventory will still print x3.
+
+Oh damn. I just rewrote the x3 fn and now I remember I already wrote it for the inventory. Damn. Oh well.
+For future reference, it was here:
+    `generate_clean_inventory(inventory_inst_list:list[itemInstance]=None, will_print = False, coloured = False, for_children=False)`
+
+Hm.
+Putting the moss in the jar from inventory doesn't have a print line. It does succeed but it doesn't print.
+So it's because move_a_to_b just returned "success"
+So that 'success' is because it triggered '1' when it went through is_event_triggered. Theoretically that was a way to pass through if an event printed something, so it would't print an event printline and then also the default move line. But apparently no.
+
+6.00pm
+Okay, fixed. I was returning a tuple at one point which meant that a later check failed. Done now.

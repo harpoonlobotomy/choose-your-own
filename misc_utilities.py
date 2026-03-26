@@ -431,7 +431,7 @@ def check_nighttime(current_time, printme=True):
 def get_inst_list_names(inventory_inst_list) -> list[str]:
     """Returns a list of all inventory items' names using the inputted inventory list."""
     logging_fn()
-    inventory_names_list=list()
+    inventory_names_list=[]#set(i.name for i in inventory_inst_list)
     for item in inventory_inst_list:
         inventory_names_list.append(item.name)
 
@@ -461,6 +461,29 @@ def is_item_in_container(item:itemInstance):
         container = item.contained_in
         return container
     return None
+
+def combine_container_contents(inst:itemInstance, itemlist:list):
+    if not "container" in inst.item_type or not inst.children:
+        return None, itemlist
+    kids = list(i.name for i in inst.children)
+    samenames = list(i for i in inst.children if kids.count(i.name) > 1)
+
+    if not samenames:
+        return None, itemlist
+
+    samedict = {}
+    for noun in samenames:
+        if samedict.get(noun.name):
+            continue
+        samedict[noun.name] = {kids.count(noun.name): noun}
+
+    for name, val in samedict.items():
+        count, noun = next(iter(samedict[name].items()), None)
+        val = assign_colour(item=f"{count}x {noun.name}", noun = noun)
+        val = val.strip("a ")
+        itemlist.append(val)
+
+    return samenames, itemlist
 
 def generate_clean_inventory(inventory_inst_list:list[itemInstance]=None, will_print = False, coloured = False, for_children=False):
     """Generates a nice looking inventory list, applying '` (x)` for plural entries' and adds colour and formatting."""
@@ -740,28 +763,32 @@ def assign_colour(item, colour:str=None, *, nicename:bool=None, switch=False, no
 
         if isinstance(item, str):
             item_instance = None
-            if is_inventory:
-                item_instance = from_inventory_name(item)
-                colour, _, bld = check_instance_col(item_instance)
-
-            if not item_instance:
-                plain_name, val = check_name(item)
-                if val > 0:
-                    if not_inventory:
-                        for inst in not_inventory:
-                            if inst.name == plain_name:
-                                item_instance = inst
-                                break
-                    else:
-                        item_instance = from_inventory_name(plain_name)
+            if noun:
+                colour, _, bld = check_instance_col(noun)
+                print("colour", colour, "bold: ", bld, f"from noun {noun} and item str {item}")
+            else:
+                if is_inventory:
+                    item_instance = from_inventory_name(item)
                     colour, _, bld = check_instance_col(item_instance)
-                else:
-                    item_instances=registry.instances_by_name(item)
-                    if item_instances:
-                        item = next(iter(item_instances), None)
-                        #item=item_instances[0]
-                        colour, item, bld = check_instance_col(item)
-                        #colour = item.colour
+
+                if not item_instance:
+                    plain_name, val = check_name(item)
+                    if val > 0:
+                        if not_inventory:
+                            for inst in not_inventory:
+                                if inst.name == plain_name:
+                                    item_instance = inst
+                                    break
+                        else:
+                            item_instance = from_inventory_name(plain_name)
+                        colour, _, bld = check_instance_col(item_instance)
+                    else:
+                        item_instances=registry.instances_by_name(item)
+                        if item_instances:
+                            item = next(iter(item_instances), None)
+                            #item=item_instances[0]
+                            colour, item, bld = check_instance_col(item)
+                            #colour = item.colour
 
         if isinstance(item, itemInstance|npcInstance|placeInstance|cardinalInstance):
             if nicename:
@@ -829,13 +856,13 @@ def col_list(print_list:list=[], colour:str=None, nicename=False, not_inv=False)
         coloured_list.append(coloured_text)
     return coloured_list
 
+### END COLOUR ASSIGNMENT
 
 def in_loc_facing_card(cardinal:cardinalInstance):
     """Returns `the {assign_colour(cardinal.place,)}, facing {assign_colour(cardinal)}` using the provided `cardinalInstance`."""
     text = f"the {assign_colour(cardinal.place,)}, facing {assign_colour(cardinal)}."
     return text
 
-### END COLOUR ASSIGNMENT
 
 ### SHORTHAND FNs
 

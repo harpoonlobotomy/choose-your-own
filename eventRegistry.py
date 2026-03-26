@@ -130,7 +130,7 @@ class eventInstance:
                 if trigger_event and (isinstance(trigger_event, eventInstance) and trigger_event.name == trig_event or trig_event == "trigger_event"):
                     self.triggered_by_event = trigger_event
                 else:
-                    print(f"Triggered_by_event {self.triggered_by_event} // trigger_event: {trigger_event} // for event {self}")
+                    events.event_print(f"Triggered_by_event {self.triggered_by_event} // trigger_event: {trigger_event} // for event {self}")
                 """if events.by_name.get(trig_event):
                     self.triggered_by_event = events.by_name[trig_event]
                     if isinstance(self.triggered_by_event, set|list) and len(self.triggered_by_event) == 1:
@@ -141,8 +141,8 @@ class eventInstance:
                                 self.triggered_by_event = t_event #this'll do for now."""
 
         if attr.get("end_trigger") and attr["end_trigger"].get("event_trigger") and attr["end_trigger"]["event_trigger"].get("trigger_item"):
-            print(f"SELF.trigger_event for event {self}: {attr['end_trigger']['event_trigger']}")
-            print(f"Trigger event: {trigger_event}")
+            events.event_print(f"SELF.trigger_event for event {self}: {attr['end_trigger']['event_trigger']}")
+            events.event_print(f"Trigger event: {trigger_event}")
             self.trigger_event:eventInstance = trigger_event
 
     def __repr__(self):
@@ -220,15 +220,15 @@ class timedTrigger:
                 condition_item = self.required_condition[condition]
                 if trigger_dict.get("trigger_item") and isinstance(trigger_dict["trigger_item"], itemInstance) and not isinstance(condition_item, bool):
                     self.is_item_trigger = True
-                    print(f"condition: {condition} / Condition_item: {condition_item} // trigger_dict['trigger_item'].name: {trigger_dict['trigger_item'].name}")
+                    events.event_print(f"condition: {condition} / Condition_item: {condition_item} // trigger_dict['trigger_item'].name: {trigger_dict['trigger_item'].name}")
                     if trigger_dict["trigger_item"].name == condition_item or condition_item == "trigger_item":
                         events.event_print(f"Trigger dict['trigger_item']: {trigger_dict['trigger_item']}")
                         self.item_inst = trigger_dict["trigger_item"]
                         setattr(self, self.required_condition[condition], trigger_dict["trigger_item"])
                     elif condition_item == "child_item":
-                        print(f"Condition_iem == child item: {condition_item} / ")
+                        events.event_print(f"Condition_iem == child item: {condition_item} / ")
                         if hasattr(event, "child_item"):
-                            print("Event has child!")
+                            events.event_print("Event has child!")
                             setattr(self, self.required_condition[condition], event.child_item)
                             event.condition_items.add(event.child_item)
                             event.items.add(event.child_item)
@@ -338,14 +338,14 @@ class Trigger:
 
         else:
             if trigger_dict["trigger_model"] == "event_trigger":
-                print(f"Trigger_dict[trigger_model] == 'event_trigger': {trigger_dict['trigger_model']}")
+                events.event_print(f"Trigger_dict[trigger_model] == 'event_trigger': {trigger_dict['trigger_model']}")
                 self.trigger_item = trigger_dict["trigger_item"]
-                print(f"SELF.TRIGGER_ITEM: {self.trigger_item}")
+                events.event_print(f"SELF.TRIGGER_ITEM: {self.trigger_item}")
                 if self.trigger_item == "trigger_event":
                     if hasattr(event, "trigger_event"):
-                        print(f"event jas trigger event:: {event} / {event.trigger_event}")
+                        events.event_print(f"event has trigger event:: {event} / {event.trigger_event}")
                     else:
-                        print(f"Event {event.name} does not have trigger_event.")
+                        events.event_print(f"Event {event.name} does not have trigger_event.")
 
                     self.trigger_item = event.trigger_event
 
@@ -456,7 +456,7 @@ class eventRegistry:
 
     def get_all_item_instances(self, event:eventInstance, event_entry, noun=None, trigger_event=None):
         # trigger_event == the event that prompted the generation of this event if there is one.
-        print("get_all_item_instances")
+        self.event_print("start of get_all_item_instances")
         from itemRegistry import registry
         event.item_name_to_inst = {}
 
@@ -777,7 +777,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
 
             for item in trig_data:
                     #for item in trig_types:
-                print_green(f"[ITEM in trig_data: {item}]")
+                self.event_print(f"[ITEM in trig_data: {item}]")
                 end_type = trig_data[item].get("end_type") if item == "item_trigger" and trig_data[item].get("end_type") else ("end" if "start" not in trigger else "start")
                 if item == "item_trigger":
                     trigger_item = trig_data[item]["trigger_item"]
@@ -822,13 +822,13 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                     "trigger_exceptions": trigger_exceptions
                     })
 
-                print(f"Trigger_dict after initial generation for [{item}]: {trigger_dict}")
+                self.event_print(f"Trigger_dict after initial generation for [{item}]: {trigger_dict}")
                 if item in ("item_trigger", "attribute_trigger", "event_trigger"):
                     if item == "event_trigger":
                         trigger_dict["trigger_item"] = trig_data[item].get("trigger_item", None)
-                        print(f"Event trigger trigger item: {trigger_dict["trigger_item"]} ---- ADD THE EVENT TO THIS.")
+                        self.event_print(f"Event trigger trigger item: {trigger_dict["trigger_item"]} ---- ADD THE EVENT TO THIS.")
                         if originating_event:
-                            print(f"Originating event: {originating_event}")
+                            self.event_print(f"Originating event: {originating_event}")
                             trigger_dict["trigger_item"] = originating_event
                         #trigger_dict["end_type"] = trig_data["event_trigger"].get("end_type")
                     event.event_keys.add(trigger_item)
@@ -1472,13 +1472,12 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
             from env_data import locRegistry
             if reason == "item_not_in_inv": # run this check here to prevent false positives when moving from container.
                 if noun and noun.location == locRegistry.inv_place:
-                    return 0, None
+                    return 0
                 if hasattr(noun, "contained_in") and noun.contained_in and noun.contained_in.location.place.inside or noun.contained_in.location == locRegistry.inv_place:
-                    return 0, None # assuming here that being in an obj that is in inv == being in inv.
+                    return 0 # assuming here that being in an obj that is in inv == being in inv.
             if reason in requires_end_trigger_loc:
                 if hasattr(trig, "item_inst_loc") and getattr(trig, "item_inst_loc") != None and trig.item_inst_loc != noun.location:
-                    return 0, None
-            print("After the quick returns")
+                    return 0
             if hasattr(trig, "exceptions") and trig.exceptions:
                 #for exception in trig.exceptions:
                 self.event_print(f"trig.exceptions: {trig.exceptions}")
@@ -1501,7 +1500,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                         if event:
                             for trigger in event.triggers:
                                 if hasattr(trigger, "effect_on_completion") and trigger.effect_on_completion.get("end_event"):#
-                                    print(f"TRIG EVENT: {trig.event}")
+                                    #print(f"TRIG EVENT: {trig.event}")
                                     if trigger.effect_on_completion["end_event"] == "trigger_event":
                                         trigger.effect_on_completion["end_event"] = trig.event # original trigger event
                                     events.event_print(f"SELF.EFFECT_ON_COMPLETION: {trigger.effect_on_completion}")
@@ -1906,20 +1905,20 @@ def register_generated_event(event_name, noun, trigger_event=None):
 
     intake_event, _ = registrar.add_to_intake(event_name, event_dict[event_name])
     if event_name == "wait_one_turn" and trigger_event:
-        print(f"wait one turn trigger event: {trigger_event}")
+        events.event_print(f"wait one turn trigger event: {trigger_event}")
         if trigger_event.items and len(trigger_event.items) == 1:
             child_item = list(trigger_event.items)[0]
             setattr(intake_event, "child_item", child_item)#intake_event["child_item"] = child_item
-            print(f"CHILD ITEM in wait_one_turn: {child_item}")
-    print(f"NOUN in register_generated_event: {noun} ")
+            events.event_print(f"CHILD ITEM in wait_one_turn: {child_item}")
+    events.event_print(f"NOUN in register_generated_event: {noun} ")
 
-    print(f"ADDED TO INTAKE: {intake_event}")
+    events.event_print(f"ADDED TO INTAKE: {intake_event}")
     event_inst, event_entry = events.add_event(intake_event.name, vars(intake_event), trigger_event=trigger_event)
     events.event_print(f"Generated event: {event_inst} // for noun: {noun}")
     events.get_all_item_instances(event_inst, event_entry, noun)
-    print("get_all_item_instnaces")
+    events.event_print("get_all_item_instnaces")
     add_items_to_events(event_inst, noun, prev_event=trigger_event)
-    print("add items to events")
+    events.event_print("add items to events")
     return event_inst
 
 

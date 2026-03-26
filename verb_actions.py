@@ -271,60 +271,57 @@ def move_a_to_b(a:itemInstance, b:placeInstance|itemInstance, action:str=None, d
     if isinstance(a, itemInstance):
         if not b:
             b = loc.current
-        if not isinstance(b, itemInstance):
-            if isinstance(b, cardinalInstance):
-                if b == loc.current or b == loc.inv_place:
-                    a_origin = (a.location if a.location != loc.no_place and a.location != loc.inv_place else a.contained_in)
-                    item_interactions.add_item_to_loc(a, b)
-                    print(f"a.location after move: {a.location}, location should be {b}")
-                    if not moved_item(a) or b == loc.inv_place:
-                        if b == loc.inv_place:
-                            origin = ""
-                            if a_origin:
-                                if isinstance(a_origin, itemInstance):
-                                    origin = f"from the {assign_colour(a_origin)} "
-                                else:
-                                    origin = f"from {assign_colour(a_origin, card_type="place_name")} "
-                                text = smart_capitalise(f"{action} {assign_colour(a, nicename=True)} {origin}{direction} your inventory.")
-                        else:
-                            text = smart_capitalise(f"{action} {assign_colour(a)} {direction} {assign_colour(b, card_type = "place_name")}.")
-                        print(text)
-                    return "yes"
-            else:
-                print("B is not an instance. move a to b requires two things: What is the second item? (pass for now.)")
-                return None
-
-        else:
-            if in_types(b, "container"): ## This won't work long term, currently the only option for move noun x noun is if hte second is a container. Not 'move noun towards noun', etc, which I want for later. No idea how to implement it, but for now I'm just noting it here.
-                if not b.is_open:
-                    #print("b is not open")
-                    if b.is_locked:
-                        return f"The {assign_colour(b)} seems to be locked."
-                    return f"The {assign_colour(b)} seems to be closed."
-
-                #print(f"{b.name} is a container with size limit of {b.container_limits}.")
-                if isinstance(b.container_limits, str):
-                    container_size = container_limit_sizes.get(b.container_limits)
-                else:
-                    container_size = b.container_limits
-                if isinstance(a, itemInstance) and hasattr(a, "item_size"):
-                    #print(f"{a.name} is an item with size {a.item_size}.")
-                    if isinstance(a.item_size, str):
-                        item_size = container_limit_sizes.get(a.item_size)
-                    else:
-                        item_size = a.item_size
-                    if item_size < container_size:
-                        #print(f"{a.name} will fit in {b.name}")
-                        if registry.move_item(a, new_container=b, no_print=True):
-                            if not moved_item(a):
-                                return f"You {action} the {assign_colour(a)} {direction} the {assign_colour(b)}."
+        if isinstance(b, cardinalInstance):
+            if b == loc.current or b == loc.inv_place:
+                a_origin = (a.location if a.location != loc.no_place and a.location != loc.inv_place else a.contained_in)
+                item_interactions.add_item_to_loc(a, b)
+                print(f"a.location after move: {a.location}, location should be {b}")
+                if not moved_item(a) or b == loc.inv_place:
+                    if b == loc.inv_place:
+                        origin = ""
+                        if a_origin:
+                            if isinstance(a_origin, itemInstance):
+                                origin = f"from the {assign_colour(a_origin)} "
                             else:
-                                if a in b.children:
-                                    return "success"
-                                print("after moved_item success")
-
+                                origin = f"from {assign_colour(a_origin, card_type="place_name")} "
+                            text = smart_capitalise(f"{action} {assign_colour(a, nicename=True)} {origin}{direction} your inventory.")
                     else:
-                        return f"The {assign_colour(a)} is too big to put inside the {assign_colour(b)}."
+                        text = smart_capitalise(f"{action} {assign_colour(a)} {direction} {assign_colour(b, card_type = "place_name")}.")
+                    print(text)
+                return "yes"
+
+        elif in_types(b, "container"): ## This won't work long term, currently the only option for move noun x noun is if hte second is a container. Not 'move noun towards noun', etc, which I want for later. No idea how to implement it, but for now I'm just noting it here.
+            if not b.is_open:
+                #print("b is not open")
+                if b.is_locked:
+                    return f"The {assign_colour(b)} seems to be locked."
+                return f"The {assign_colour(b)} seems to be closed."
+
+            #print(f"{b.name} is a container with size limit of {b.container_limits}.")
+            if isinstance(b.container_limits, str):
+                container_size = container_limit_sizes.get(b.container_limits)
+            else:
+                container_size = b.container_limits
+            if isinstance(a, itemInstance) and hasattr(a, "item_size"):
+                #print(f"{a.name} is an item with size {a.item_size}.")
+                if isinstance(a.item_size, str):
+                    item_size = container_limit_sizes.get(a.item_size)
+                else:
+                    item_size = a.item_size
+                if item_size < container_size:
+                    #print(f"{a.name} will fit in {b.name}")
+                    if registry.move_item(a, new_container=b, no_print=True):
+                        #print("After registry.move_item")
+                        success = moved_item(a)
+                        if not success:
+                            return f"You {action} the {assign_colour(a)} {direction} the {assign_colour(b)}."
+                        else:
+                            if a in b.children:
+                                return f"success: {success}"
+                            print("after moved_item success, a not in b.children")
+
+                else:
+                    return f"The {assign_colour(a)} is too big to put inside the {assign_colour(b)}."
 
     elif isinstance(b, tuple):
         print(f"b is a tuple: {b} -- DOES THIS EVER HAPPEN? wHERE FROM?")
@@ -2163,16 +2160,15 @@ def put(format_tuple, input_dict, location=None):
     logging_fn()
     action_word = "You put"
     verb = get_verb(input_dict, get_str=True)
-    print("about to get_correct_nouns in def put")
     noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict, verb="drop", access_str="drop_subject", access_str2="drop_target", hold_error_messages=True) # to get inv items first
-    print(f"[def put] NOUN : {noun}")
+    #print(f"[def put] NOUN : {noun}")
     if noun2 and in_types(noun2, "container"):
         if noun2.children and noun in noun2.children:
-            print(f"Trying to drop something already in that container. {noun}")
+            #print(f"Trying to drop something already in that container. {noun}")
             noun = None
     if not noun:
         noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict, verb="put", access_str=None, access_str2=None, hold_error_messages=True)
-        print(f"New noun: {noun}")
+        #print(f"New noun: {noun}")
     sem_or_dir = get_dir_or_sem(input_dict)
 
     if not sem_or_dir and noun2:
@@ -2237,7 +2233,6 @@ def put(format_tuple, input_dict, location=None):
         elif sem_or_dir in ("in", "to", "into", "inside") and len(format_tuple) == 4 or (len(format_tuple) == 6 and get_location(input_dict) == loc.current.place):
 
             if "container" in noun2.item_type:
-
                 #print(f"The {assign_colour(noun)} is already in the {assign_colour(noun2)}")#print(f"Cannot put {assign_colour(noun)} in {assign_colour(noun2)}, as {assign_colour(noun)} is already inside {assign_colour(noun2)}. You'll need to remove it first.")
                 if hasattr(noun, "contained_in") and noun2 == noun.contained_in:
                     if noun2 and "container" in noun2.item_type:

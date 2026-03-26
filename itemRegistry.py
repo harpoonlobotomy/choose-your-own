@@ -1131,9 +1131,9 @@ class itemRegistry:
         parent, was_in_container, new_container = self.get_parent_details(inst, old_container, new_container)
 
         if inst.has_multiple_instances in (0, 1) and (not location or location == loc.inv_place or location == loc.no_place):
-            print("Inst has single instance val and not a physical target location, sending  for regular processing.")
+            #print("Inst has single instance val and not a physical target location, sending  for regular processing.")
             return inst, "process_as_normal"
-        print(f"Inst {inst} is not multiple instance val of 1 and/or does not have a target location of inv_place or no_place.")
+        #print(f"Inst {inst} is not multiple instance val of 1 and/or does not have a target location of inv_place or no_place.")
 
         if was_in_container:
             print(f"was in container: {was_in_container} / parent; {parent} / parent.children: {parent.children}")
@@ -1186,7 +1186,6 @@ class itemRegistry:
         origin = (parent if was_in_container else old_loc)
         #if isinstance(origin, itemInstance) and not "is_cluster" in origin.item_type and "container" in origin.item_type:
         success, shard = self.separate_cluster(inst, origin=origin, origin_type="container" if was_in_container else "location")
-        print(f"origin: {origin} // shard: {shard}")
         if not success:
             print(f"separate cluster failed. Reported shard: {shard}, original inst: {inst}, origin: {origin}")
             exit()
@@ -1200,7 +1199,7 @@ class itemRegistry:
         return shard, None
 
     def clear_parent_and_old_loc(self, inst:itemInstance, old_container:itemInstance, new_container:itemInstance, new_location:cardinalInstance, old_loc:cardinalInstance,  updated:set=set()):
-        print(f"old_container: {old_container} / new_container: {new_container} / location: {new_location}")
+        #print(f"old_container: {old_container} / new_container: {new_container} / location: {new_location}")
         if old_container:
             # moved from old_container to location
             updated.add(old_container)
@@ -1217,7 +1216,7 @@ class itemRegistry:
 
         if old_loc and old_loc != loc.no_place:
             if self.by_location.get(old_loc):
-                if inst not in self.by_location[old_loc]:
+                if inst not in self.by_location[old_loc] and "is_cluster" not in inst.item_type:
                     print(f"Inst has a location but isn't in by_location for old_loc. FIX THIS. old_loc: {old_loc}")
                 else:
                     self.by_location[old_loc].discard(inst)
@@ -1228,7 +1227,7 @@ class itemRegistry:
                     inst.location = loc.no_place
                     inst.contained_in = new_container
                     new_container.children.add(inst)
-                print(f"Removed {inst} from {old_loc}. Current location for inst is {inst.location}")
+                #print(f"Removed {inst} from {old_loc}. Current location for inst is {inst.location}")
 
             if old_loc == loc.inv_place:
                 if inst in loc.inv_place.items:
@@ -1296,7 +1295,7 @@ class itemRegistry:
             updated.add(inst)
             if other != "process_as_normal":
                 #print("outcome, old_container, new_container, location, old_loc, updated: ", outcome, old_container, new_container, location, old_loc, updated)
-                print("Not process as normal. All moves need to be done already.")
+                #print("Not process as normal. All moves need to be done already.")
                 updated = self.clear_parent_and_old_loc(outcome, old_container, new_container, location, old_loc, updated)
                 for item in updated:
                     self.init_descriptions(item)
@@ -1306,8 +1305,6 @@ class itemRegistry:
 
             inst = outcome
             old_loc = inst.location
-
-        was_in_container = False # using this as a check to see if the cluster should use old_loc or parent.
 
         ## REMOVE FROM ORIGINAL LOCATION ##
         """if old_loc and old_loc != None:
@@ -1564,7 +1561,12 @@ class itemRegistry:
                         long_desc.append(get_if_open(inst, "any_children"))
                         testing = True
                         if testing:#not ((hasattr(inst, "print_children_as_list") and inst.print_children_as_list) or not hasattr(inst, "print_children_as_list")):
+                            from misc_utilities import combine_container_contents
+                            exclude_me, long_desc = combine_container_contents(inst, long_desc)
                             for child in inst.children:
+                                if exclude_me and child in exclude_me:
+                                        print(f"child excluded: {child}")
+                                        continue
                                 long_desc.append(assign_colour(child, nicename=True))
                                 #print(f"long_desc with child: {long_desc}")
                         description = compile_long_desc(long_desc)
