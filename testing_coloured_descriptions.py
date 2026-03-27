@@ -7,7 +7,7 @@ from printing import print_green, print_red, print_yellow
 
 print_test_descriptions = False
 
-def format_descrip(d_type="area_descrip", description="", location = None, cardinal = None):
+def format_descrip(d_type="area_descrip", description="", location=None, cardinal=None, encounter_items=False):
 
     long_desc = []
     from env_data import locRegistry as loc
@@ -43,8 +43,12 @@ def format_descrip(d_type="area_descrip", description="", location = None, cardi
             long_dict = loc.loc_data[location][cardinal]["item_desc"]
             local_items = itemRegistry.registry.get_item_by_location(f"{location} {cardinal}")
             if local_items:
-                local_items = list(i for i in local_items if not (hasattr(i, "is_hidden") and getattr(i, "is_hidden")))
-                local_items = list(i for i in local_items if not (hasattr(i, "not_in_loc_desc") and getattr(i, "not_in_loc_desc")))
+                local_items = list(i for i in local_items if not (hasattr(i, "is_hidden") and getattr(i, "is_hidden")) and not (hasattr(i, "not_in_loc_desc") and getattr(i, "not_in_loc_desc")))
+                new_items = list(i for i in local_items if not i.encountered and isinstance(i, itemRegistry.itemInstance))
+                if new_items:
+                    print(f"Unencountered items: {new_items}")
+                    for i in new_items:
+                        i.encountered = True
                 #for thing in local_items:
                 #    print(f"{thing}: {(thing.is_hidden if hasattr(thing, "is_hidden") else "No is_hidden attr.")} ")
             multiples = None
@@ -238,7 +242,9 @@ def init_loc_descriptions(place:placeInstance=None, card:cardinalInstance=None):
 
                 if card:
                     if cardinal == card.name:
-                        long_desc = format_descrip(d_type="item_desc", location=location, cardinal=cardinal)
+                        print(f"cardinal == card.name {card} (about to go to format_descrip)")
+                        print(f"[[current loc: {loc.current}]]")
+                        long_desc = format_descrip(d_type="item_desc", location=location, cardinal=cardinal, encounter_items=True)
                     else:
                         long_desc = None
 

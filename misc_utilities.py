@@ -176,24 +176,29 @@ def look_around():
     """Generates and prints `loc.currentPlace.overview` and `loc.current.description`."""
     from env_data import locRegistry as loc, get_loc_descriptions
     from itemRegistry import registry
-    get_loc_descriptions(place=loc.currentPlace) # Is this still needed? Aren't we updating this on item change?
+    get_loc_descriptions(place=loc.currentPlace, cardinal=loc.current) # Is this still needed? Aren't we updating this on item change?
 
     print(f"{loc.currentPlace.overview}\n\nYou're facing {assign_colour(loc.current)}. {loc.current.description}")
 
     applicable_items = []
-    from config import print_items_in_area
-    if print_items_in_area: # will remove this later, it's taken care of nicely by the location descriptions now.
-        is_items = registry.get_item_by_location() ## Need to merge this with the dict writing to account for missing items.
-        if is_items:
-            for item in is_items:
-                _, reason_val, _ = registry.run_check(item)
-                if reason_val == 0:
-                    applicable_items.append(item)
-            if applicable_items:
-                print(assign_colour("\nYou see a few scattered objects in this area:", "b_white"))
-                is_items = ", ".join(col_list(applicable_items))
-                print(f"   {is_items}")
 
+    if registry.by_location.get(loc.current):
+        is_items = list(i for i in registry.by_location[loc.current] if not i.is_hidden and "is_scenery" not in i.item_type)
+    if is_items:
+        print("IS_ITEMS:")
+        for item in is_items:
+            print(item, f"encountered: {item.encountered}")
+            item.encountered = True
+
+
+#            _, reason_val, _ = registry.run_check(item)
+#            if reason_val == 0:
+#                applicable_items.append(item)
+#        if applicable_items:
+#            print(assign_colour("\nYou see a few scattered objects in this area:", "b_white"))
+#            is_items = ", ".join(col_list(applicable_items))
+#            print(f"   {is_items}")
+#
 def print_input_str(input_str):
     from verb_actions import make_foreline
     print(f"{MOVE_UP}" + len(input_str) * " ")#+"\033[0m")

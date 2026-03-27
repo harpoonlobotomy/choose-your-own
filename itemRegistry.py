@@ -342,6 +342,8 @@ class itemInstance:
         self.event:eventInstance = None
         self.is_event_key = False
 
+        self.encountered = False
+
         if attr.get("exceptions"):
             if attr["exceptions"].get("starting_location"):
                 if isinstance(attr["exceptions"]["starting_location"], cardinalInstance):
@@ -702,48 +704,32 @@ class itemRegistry:
                 if not item:
                     exit(f"Failed to get instance by id in cleaning_loop for instance ({item_id}).")
 
-                key_found = False
+                key_found = set()
                 if hasattr(item, "requires_key") and item.requires_key and not isinstance(getattr(item, "requires_key"), bool):
-                    #print(f"item.requires key at start: {item.requires_key}")
-                    if isinstance(item.requires_key, itemInstance):
-                        continue
-                    for maybe_key in registry.keys:
-                        #print(f"maybe_key in registry.keys: {maybe_key}")
-                        #if hasattr(maybe_key, "unlocks") and getattr(maybe_key, "unlocks"):
-                        #    print(f"maybe_key unlocks: {maybe_key.unlocks}")
-                        #    continue
-                        #print(f"item.requires_key: {item.requires_key}")
-                        if maybe_key.name in item.requires_key:
-                            #for key in item.requires_key:
-                                #print(f"Item in requires_key (instance in set): {key}")
+                    #print(f"item {item} requires key at start: {item.requires_key}")
+                    for key in item.requires_key:
+                        potential_keys = (i for i in registry.keys if i.name == key)
+                        for maybe_key in potential_keys:
+                            #print(f"maybe_key name matches a required key: {maybe_key}")
                             #print(f"maybe_key.name == item.requires_key: {maybe_key.name} // {key}")
                             if (hasattr(maybe_key, "is_key_to") and maybe_key.is_key_to) or not (hasattr(maybe_key, "is_key_to") and maybe_key.is_key_to):
-                                if hasattr(maybe_key, "is_key_to") and maybe_key.is_key_to:
+                                if hasattr(maybe_key, "is_key_to") and maybe_key.is_key_to: # I can't see how this part is contributing. Come back here later. #TODO
                                     lock_match = True
                                     for lock in maybe_key.is_key_to:
-                                         if lock != item.name:
+                                        if lock != item.name:
                                             continue
-                                         lock_match = True
+                                        lock_match = True
                                     if not lock_match:
                                         continue
                                 #print("is_key_to etc succeeds")
-                                for a in (maybe_key, item):
-                                    self.locks_keys.setdefault(a, set())
 
-                                self.locks_keys[item].add(maybe_key)
-                                self.locks_keys[maybe_key].add(item)
-                                item.requires_key = self.locks_keys[item]#maybe_key
+                                self.locks_keys.setdefault(item, set()).add(maybe_key)
+                                self.locks_keys.setdefault(maybe_key, set()).add(item)
+                                key_found.add(maybe_key)#maybe_key
                                 setattr(maybe_key, "unlocks", self.locks_keys[maybe_key])
-                                key_found = True
                                 #print(f"key_found True: {maybe_key} // item: {item}")
                                 break
-                            else:
-                                #print(f"item {item} failed the is_key_to check with maybe_key: {maybe_key}.")
-                                if hasattr(maybe_key, "is_key_to"):
-                                    print(f"maybe key is_key_to: {maybe_key.is_key_to}")
-                                    if maybe_key.is_key_to:
-                                        print(f"maybe_key.is_key_to is true: {maybe_key.is_key_to}")
-                                        exit()
+
                     if not key_found:
                         for key in item.requires_key:
                             if not isinstance(key, str):
@@ -764,10 +750,20 @@ class itemRegistry:
                                     print(f"generated key from generated items but no actual instance I think: {target_obj}")
 
                             if target_obj:
-                                item.requires_key = target_obj # added this, should make it more bilateral.
+                                key_found.add(target_obj)
+                                #item.requires_key.add(target_obj) # added this, should make it more bilateral.
+                                self.locks_keys.setdefault(maybe_key, set()).add(item)
+                                setattr(maybe_key, "unlocks", self.locks_keys[maybe_key])
                                 setattr(target_obj, "unlocks", item)
                             else:
                                 exit(f"Failed to find key for {item}'s {item.requires_key}.")
+
+                    if key_found:
+                        for key in key_found:
+                            if key.name in item.requires_key:
+                                item.requires_key.remove(key.name)
+                            item.requires_key.add(key)
+                    print(f"ITEM.REQUIRES_KEY at end of cleaning loop: `{item}` // `{item.requires_key}`, requires_key type: {type(item.requires_key)}")
 
         try:
             cleaning_loop()
@@ -1855,8 +1851,6 @@ def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal:cardinalIn
     inst = registry.init_single(item_name, new_item_dict)
     all_item_names_generated.append((inst, "new_item_from_str"))
     registry.temp_items.add(inst)
-
-    print(f"inst: {inst} / inst.location: {inst.location}")
 
     if in_container:
         setattr(inst, "in_container", in_container)

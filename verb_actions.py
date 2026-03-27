@@ -379,10 +379,11 @@ def check_lock_open_state(noun_inst):
         is_closed = True
     if hasattr(noun_inst, "is_locked") and noun_inst.is_locked:
         is_locked = True
-        if hasattr(noun_inst, "needs_key"):
-            interactable, _, _ = can_interact(noun_inst.requires_key)
-            if interactable:
-                locked_have_key = True
+        if hasattr(noun_inst, "requires_key") and noun_inst.requires_key:
+            for key in noun_inst.requires_key:
+                interactable, _, _ = can_interact(key)
+                if interactable:
+                    locked_have_key = key
 
     return is_closed, is_locked, locked_have_key
 
@@ -1492,7 +1493,7 @@ def check_key_lock_pairing(noun_1:itemInstance, noun_2:itemInstance):
     logging_fn()
     print(f"check key lock pairings for {noun_1}, {noun_2} // noun_1.item_type: {noun_1.item_type} // noun2.requires_key:")
     if hasattr(noun_2, "requires_key"):
-        print(noun_2.requires_key)
+        print("noun_2.requires_key: ", noun_2.requires_key)
         if noun_1 in noun_2.requires_key:
             return 1
     #if in_types(noun_1, "key") and hasattr(noun_2, "requires_key") and noun_1 == noun_2.requires_key:
@@ -1715,6 +1716,7 @@ def separate(format_tuple, input_dict):
     logging_fn()
 
     noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict, verb="use")
+    verb = get_verb(input_dict, get_str=True)
     #noun, _, noun2, _ = get_nouns(input_dict)
     if not noun:
         return
@@ -1742,11 +1744,15 @@ def separate(format_tuple, input_dict):
     if not child:
         child = is_one_a_child(noun2, noun)
         if not child:
-            print(f"Sorry, I can't figure out how to separate the {assign_colour(noun)} from the {assign_colour(noun2)}.")
+            print(f"Sorry, I can't figure out how to {verb} the {assign_colour(noun)} from the {assign_colour(noun2)}.")
             return
 
+    if noun2 != child:
+        parent = noun2
+    else:
+        parent = noun
     if not move_a_to_b(child, b=loc.inv_place, action="Moved"):
-        print(f"Could not move {child}.")
+        print(f"Could not {verb} {assign_colour(child)} from {assign_colour(parent)}.")
 
 
 def move(format_tuple, input_dict):

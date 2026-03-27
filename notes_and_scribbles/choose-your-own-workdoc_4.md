@@ -1795,3 +1795,57 @@ So that 'success' is because it triggered '1' when it went through is_event_trig
 
 6.00pm
 Okay, fixed. I was returning a tuple at one point which meant that a later check failed. Done now.
+
+2.50pm 27/3/26
+Next, I want to add usage of the 'encountered' tag. Currently it's checked in a couple of places but it's never applied.
+So where do I need to add it?
+* when items are included in location descriptions (and that description is printed, so not inside of loc_desc which is in some circumstances generated in advance of printing) - so, 'look around', and 'relocate' I believe should cover those. Then you choose to look around and when you arrive.
+* when items are listed as contents in containers
+* when a singleton is generated from a cluster
+* when an item is picked up/interacted with (maybe use set_noun_attr as the throughpoint)
+* when an item is unhidden
+
+Hmm. Okay, so - not quite. There's the headstone in graveyard east, that isn't in the description per se so I don't want it 'encountered' until it's been read.
+
+Well aside from the initial generation, it seems like all the loc_descs are only done for the current loc. So I will do that instead of relocate.
+
+[Also, item_is_broken is not removed from the paperclip after it's broken.] #TODO
+
+I think I'm going to exclude npcs from the 'automatically encountered' setup; you have to talk to them/otherwise interact for it to count.
+
+Also, this warning:
+`No event found with this attr trigger reason: item_in_inv. Cannot generate event. (Not a problem if it wasn't expected. Tailor this later.)`
+is printing now every time I pick something up. Which is good, in a manner, because it is accurate. It just means I need to clean the routing so only things that should end up there, do. It's an expected failure, just means it's messy. though I knew that already. Carrying on.
+
+Hm. 'use key on padlock' failed, apparently it tried to iterate on an itemInstance.
+I'm guessing this:
+    `if noun_1 in noun_2.requires_key:`
+is what it hit.
+noun_2.requires_key is meant to be a set, I'm assuming I haven't updated that somewhere.
+
+I don't use `self.locks_keys` anywher outside of itemReg. Really should use it in verb_actions. I have far too many places where I'm registering keys and locks.
+
+Hm.
+So at some point, the lock is changing requires_key from a set to an instance. I can't see where.
+Oh, I bet it's eventReg.
+
+Ah, yeah. This is the one. It does a separate pass for event.items to make sure they have keys if needed.
+
+Hm. Okay.
+So:
+At the end of item reg, we have this:
+`ITEM.REQUIRES_KEY at end of cleaning loop: `<ItemInst [padlock ID:198ce2c6456d] [loc: north graveyard] [event:None] >` // `{<ItemInst [iron key ID:1958cfa8abdc] [loc: north work shed] [event:None] >}`, requires_key type: <class 'set'>`
+
+Great.
+But when the padlock is initialised in eventReg, we have this:
+padlock requires key and key_is_placed_elsewhere. {'item_in_event': 'reveal_iron_key'}
+item.requires_key: iron key / type: <class 'str'>
+
+OH. I bet it's because 'requires_key': 'iron key' is an item_flags_on_start for the padlock.
+
+Okay, fixed that. Now it runs a check if requires_key is flagged and if a key instance already exists that meets those qualifications, it doesn't overwrite it with the str. Currently it only works though if the event item does already exist.
+God this is so redundant. I'm doing this so it doesn't error but it still runs the 'assign_event_keys' fn later which does this same check but on the item in events as opposed to the item on the trigger (which is same item). Goddamn.
+
+I need to add held_by to can_pick_up items so NPCs can carry inventory. (That makes me want to add pickpocketing)
+
+Adding a danger zone so I can run code from within the game without having to write a meta section for it each time.

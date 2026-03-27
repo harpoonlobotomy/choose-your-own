@@ -27,9 +27,14 @@
             "trigger_location": "north graveyard",
             "triggered_by": ["item_broken", "item_unlocked"],
             "on_event_start": {
-                "requires_key": "iron key",
-                "key_is_placed_elsewhere": {
-                    "item_in_event": "reveal_iron_key"}}}
+                "requires_key": {
+                    "iron key": {
+                        "key_is_placed_elsewhere": {
+                            "item_in_event": "reveal_iron_key"}
+                        }
+                    }
+                }
+            }
         },
     "effects":
         {"held_items": {

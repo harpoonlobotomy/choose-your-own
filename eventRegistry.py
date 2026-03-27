@@ -71,6 +71,37 @@ effect_attrs = {
 }
 
 
+def check_if_correct_key_exists_already(item_inst, flag, val):
+    print(f"check_if_correct_key_exists_already. Flag: {flag} / val: {val}")
+    if hasattr(item_inst, flag) and getattr(item_inst, flag):
+        existing_keys = getattr(item_inst, flag)
+        print(f"Existing key(s): {existing_keys}")
+
+        for key in existing_keys:
+            print("key in existing keys")
+            if val.get(key.name) and isinstance(val[key.name], dict):
+                print(f"val[key.name]: {val[key.name]}")
+                for a, b in val[key.name].items():
+                    if a == "key_is_placed_elsewhere":
+                        for criteria, point in b.items():
+                            if criteria == "item_in_event":
+                                if key.event and key.event.name == point:
+                                    print(f"Existing key instance is in the named event: {key.event} // {key}")
+                                    return True
+                            elif criteria == "item_in_location":
+                                if key.location.name == point or key.location.place_name == point:
+                                    return True
+
+        #if isinstance(getattr(item_inst, flag), itemInstance): and isinstance(flag, str):
+            #if getattr(item_inst, flag).name == flag:
+        print("Currently `check_if_correct_key_exists_already` only checks for items in events and untested for items in locations/cardinals by str. Update this fn if that need changes. Will now exit.")
+        from logger import traceback_fn
+        traceback_fn()
+        exit()
+        return False
+
+
+
 class eventInstance:
 
     def __init__(self, name:str, attr:dict, trigger_event=None):
@@ -88,7 +119,7 @@ class eventInstance:
         self.triggers:set[Trigger|timedTrigger] = set() #all triggers, delineate start/end after this point.
         self.start_triggers:set[Trigger] = set() # just to make sure these are here so other things can be more solid.
         self.end_triggers:set[Trigger|timedTrigger] = set()
-        self.items = set()
+        self.items:set[itemInstance] = set()
         self.event_keys = set()
         self.generate_on_start = set() # set of item names to generate on start, for events that have items 'appear' when they run (eg scroll has key, key 'falls out of scroll' at current loc.) Except not that example, becaues that's now an immediate event. Instead, for something like 'a gem is created, then the rest of the quest carries on'. So, rare but potentially will exist one day.
         self.effects_on_start = {}
@@ -331,10 +362,11 @@ class Trigger:
 
                 if isinstance(self.item_inst, itemInstance):
                     setattr(self.item_inst, "event", event)
-                    if self.state == 1:
-                        if self.item_flags_on_start:
-                            for flag in self.item_flags_on_start:
-                                setattr(self.item_inst, flag, self.item_flags_on_start[flag])
+                    if self.state == 1 and self.item_flags_on_start:
+                        for flag, val in self.item_flags_on_start.items():
+                            if flag == "requires_key" and check_if_correct_key_exists_already(self.item_inst, flag, val):
+                                continue
+                            setattr(self.item_inst, flag, self.item_flags_on_start[flag])
 
         else:
             if trigger_dict["trigger_model"] == "event_trigger":
@@ -478,7 +510,7 @@ class eventRegistry:
                         noun = list(trigg_event.items)[0]
 
             if event.item_name_to_inst.get(item) and not noun:
-                print(f"get item and not noun: {item} / noun: {noun}")
+                self.event_print(f"get item and not noun: {item} / noun: {noun}")
                 continue
             instance = None
             if not noun:
@@ -1756,14 +1788,14 @@ class eventIntake:
                             for item in val["triggered_by"]:
                                 self.print_description_plain.add(item)
                     elif trig == "attribute_trigger":
-                        print("TRIG IS ATTR TRIGGER")
+                        events.event_print("TRIG IS ATTR TRIGGER")
                         self.start_trigger_is_attr = True
                         if trigger_type == "immediate_action":
-                            print("TRIGGER = IMMEDIATE ACTION")
+                            events.event_print("TRIGGER = IMMEDIATE ACTION")
                             if not self.start_trigger:
                                 self.start_trigger = (attr.get("immediate_action"))
                         if val.get("triggered_by"):
-                            print(f"VAL TRIGGERED BY: {val["triggered_by"]}")
+                            events.event_print(f"VAL TRIGGERED BY: {val["triggered_by"]}")
                             for item in val["triggered_by"]:
                                 self.attr_triggers.add(item)
 
@@ -1812,25 +1844,43 @@ def add_items_to_events(event:eventInstance = None, noun_inst:itemInstance = Non
         for item in event.items:
             if has_and_true(item, "requires_key"):
                 if has_and_true(item, "key_is_placed_elsewhere"):
-                    print(f"{item} requires key and key_is_placed_elsewhere. {item.key_is_placed_elsewhere}")
+                    print(f"{item.name} requires key and key_is_placed_elsewhere. {item.key_is_placed_elsewhere}\nitem.requires_key: {item.requires_key} / type: {type(item.requires_key)}")
+                    #events.event_print(f"{item} requires key and key_is_placed_elsewhere. {item.key_is_placed_elsewhere}")
                     if isinstance(item.key_is_placed_elsewhere, dict):
                         if item.key_is_placed_elsewhere.get("item_in_event"):
                             event_with_key = item.key_is_placed_elsewhere["item_in_event"]
                             key_event = events.event_by_name(event_with_key)
+                            if key_event and key_event.items:
+                                key_item_names = {}
+                                for found_key in item.requires_key:
+                                    if found_key in key_event.items:
+                                        continue
+                                    if isinstance(found_key, str):
+                                        for potential_key in key_event.items:
+                                            if isinstance(potential_key, itemInstance):
+                                                key_item_names.setdefault(potential_key.name, set()).add(potential_key)
 
-                            key_item_names = {}
+                                if key_item_names:
+                                    for name, instances in key_item_names.items():
+                                        if name in item.requires_key:
+                                            item.requires_key.remove(name)
+                                        for key in instances:
+                                            item.requires_key.add(key)
 
-                            for potential_key in key_event.items:
-                                if isinstance(potential_key, itemInstance):
-                                    key_item_names[potential_key.name] = potential_key
-
-                            if key_item_names.get(item.requires_key):
-                                item.requires_key = key_item_names[item.requires_key]
                         else:
                             print("Later, can add item locations to the event dict and find them through this. For now it only does event-held keys though.")
                 else:
-                    if events.item_names.get(item.requires_key):
-                        item.requires_key = events.item_names[events.item_names[item.requires_key]]
+                    str_keys = set(i for i in item.requires_key)
+                    for key in str_keys:
+                        if isinstance(key, str) and events.item_names.get(key):
+                            print(f"Removing str key {key} and adding {event.item_names[key]}")
+                            item.requires_key.add(events.item_names[key])
+                            item.requires_key.remove(key)
+                        elif isinstance(key, str):
+                            print(f"Item {item} requires the key {key} but it wasn't found in events.item_names.")
+                        elif isinstance(key, itemInstance):
+                            print(f"key is already itemInstance {key}")
+
 
     if noun_inst:
         noun = noun_inst
