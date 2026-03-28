@@ -14,10 +14,41 @@ card_completion = {
 }
 
 nulls = ("", None)
+
 def yes_test(string=""):
     test = input(string)
     if test in ("y", "yes"):
         return 1
+
+def custom_commands():
+    print("idk how to do this yet. I want to be able to just type it out and have it work... eg 'for item in itemRegistry.instances: print item.name // item.encountered")
+
+    #from itemRegistry import all_items_generated
+    #for item in all_items_generated:
+        #print(f"item.name: {item.name}, item.encountered: {item.encountered}")
+    while True:
+        lines = []
+        while True:
+            test = input()
+            if test == '' or test == "done":
+                break
+            else:
+                lines.append(test + "\n")
+        lines = ''.join(lines)
+        lines = lines[:-1]
+        try:
+            exec(''.join(lines))
+        except Exception as e:
+            print(f"Could not exec `{lines}`: {e}")
+            try:
+                eval(''.join(lines))
+            except Exception as e:
+                print(f"Could not eval `{lines}`.: {e}")
+        if not yes_test("Do you want to continue:  "):
+            break
+
+
+
 
 def select_event():
 
@@ -580,6 +611,8 @@ def edit_location(location):
 
 def do_other():
 
+    if yes_test("Do you want to run custom commands?"):
+        custom_commands()
     print("Do you want to print all cardinals?")
     if yes_test():
 

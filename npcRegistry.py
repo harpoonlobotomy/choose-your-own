@@ -15,14 +15,17 @@ class conversationInstance:
         self.parts_said = []
         self.by_part:dict[str, dict] = {}
         self.keywords: dict[str, str] = {} # keyword: part_idx
+        self.reverse_keywords: dict[str, str] = {}
         self.autoplay_parts:set[str] = set()
         for idx in data["conversation"]:
             if data["conversation"][idx].get("keywords"):
                 for keyword in data["conversation"][idx]["keywords"]:
                     self.keywords[keyword] = idx
+                    self.reverse_keywords[idx] = keyword
             self.by_part.setdefault(idx, data["conversation"][idx])
             if data["conversation"][idx].get("autoplay"):
                 self.autoplay_parts.add(idx)
+        print(f"REVERSE KEYWORDS: {self.reverse_keywords}")
         self.language:str = data.get("language")
 
     def __repr__(self):
@@ -61,6 +64,7 @@ class npcInstance:
     def __init__(self, name:str, data:dict):
 
         self.name = name
+        self.is_hidden = False
         self.print_name = data.get("print_name") if data.get("print_name") else name
         self.text_styling = data.get("text_styling")
         self.colour:str = None
@@ -130,6 +134,7 @@ class npcInstance:
         self.approval = responses.get("approval")
         self.disapproval = responses.get("disapproval")
         self.unsure = responses.get("unsure")
+        self.nothing_else = responses.get("nothing_else")
 
         for item in data:
             if not hasattr(self, item) and item != "responses":
@@ -293,6 +298,7 @@ class npcRegistry:
             print(f"No convo found for `{topic}`.")
             return
         npc.conversations[convo] = {"parts_said": set()}
+        npc.conversations[convo] = {"autoplay_failed": set()}
         if convo.keywords:
             for kw in convo.keywords:
                 npc.keywords[kw] = {convo:convo.keywords[kw]}

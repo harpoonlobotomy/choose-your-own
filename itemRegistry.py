@@ -559,8 +559,8 @@ class itemRegistry:
         if inst.location and inst.location in self.by_location and inst in self.by_location[inst.location]:
             self.by_location[inst.location].remove(inst)
             print(f"remove from inst.location: {inst.location}")
-            if inst.location == loc.inv_place:
-                loc.inv_place.items.remove(inst)
+        if inst in loc.inv_place.items:
+            loc.inv_place.items.remove(inst)
 
 
         inst.location = loc.no_place

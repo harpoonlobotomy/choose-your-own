@@ -25,7 +25,7 @@ def set_inventory():
         item_dict = generator.item_defs.get("severed tentacle")
         instance = new_item_from_str(item_name="severed tentacle", loc_cardinal=(loc.inv_place), partial_dict=item_dict)
         if instance:
-            loc.inv_place.items.add(instance)
+            registry.move_item(instance, location=loc.inv_place)
 
         game.weirdness = True
 
@@ -44,7 +44,7 @@ def loadout():
     item_dict = generator.item_defs.get(mag_choice)
     instance = new_item_from_str(item_name=mag_choice, loc_cardinal=(loc.inv_place), partial_dict=item_dict)
     if instance:
-        loc.inv_place.items.add(instance)
+        registry.move_item(instance, location=loc.inv_place)
 
     starting_items = registry.instances_by_category("starting") ## starting items ==
 

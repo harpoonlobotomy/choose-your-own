@@ -33,7 +33,7 @@
                 "autoplay": false,
                 "keywords": ["mother"],
                 "speech": "Mm. I do miss having her around the place, I suppose. But, needs must, `greater good` and all of that. I suppose I'll see her again someday. Have you seen her around?",
-                "can_be_answered": {"if_yes": "seen_mother", "requirements": {"datapoint": "mother_seen", "if_requirement_not_met": "Really? That is surprising."}}
+                "can_be_answered": {"if_yes": {"send_keyword":"seen_mother", "requirements": {"datapoint": "mother_seen", "if_requirement_not_met": "Really? That is surprising."}}}
                 },
             "5": {
                  "has_requirements": false,
@@ -54,7 +54,18 @@
                 "autoplay": true,
                 "keywords": ["missing book"],
                 "speech": "There's a book, and it's missing. And this missing book is holy."
-                }
+                },
+            "1": {
+                "has_requirements": {"item": "holy book"},
+                "autoplay": true,
+                "speech": "Oh, you have it. Wonderful. I don't suppose you'd give it to me, would you? It does belong here, after all.",
+                "can_be_answered": {"if_yes": {"send_keyword": "give_book"}, "if_no": "Are you sure? Well... Alright."}}
+                },
+            "2": {
+                "has_requirements": {"item": "holy book"},
+                "autoplay": false,
+                "keywords": ["give_book"],
+                "speech": "Oh how generous. Thankyou, this will be remembered."
             },
         "language": "common"
     },

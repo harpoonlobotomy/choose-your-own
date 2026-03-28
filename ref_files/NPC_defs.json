@@ -39,7 +39,8 @@
         "acceptance": ["Very good.", "Understood."],
         "approval": ["Yes, good.", "Indeed so."],
         "disapproval": ["... Really?", "I wouldn't think so."],
-        "unsure": ["I'm not really sure what you're talking about, to be honest.", "I'm not sure I know what you mean."]
+        "unsure": ["I'm not really sure what you're talking about, to be honest.", "I'm not sure I know what you mean."],
+        "nothing_else": ["I have nothing futher on that topic.", "I have nothing else to say on that.", "I think that's all there is of interest to you on this."]
     }
   }
 }

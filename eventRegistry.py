@@ -737,6 +737,8 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
     def update_timed_events(self, new_location, timeblocks=1):
         logging_fn()
         current_events = set(events.by_state[1])
+        if not current_events:
+            return
         timed_events = list((i for i in current_events if i.timed_triggers) if current_events else None)
         if timed_events:
             print(f"Events with timers: {timed_events}")

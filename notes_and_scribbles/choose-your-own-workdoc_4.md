@@ -1849,3 +1849,79 @@ God this is so redundant. I'm doing this so it doesn't error but it still runs t
 I need to add held_by to can_pick_up items so NPCs can carry inventory. (That makes me want to add pickpocketing)
 
 Adding a danger zone so I can run code from within the game without having to write a meta section for it each time.
+
+Took me a little bit to figure it out but it works now. It's basic but means if I want to check 'how many items are currently encountered=True' I can just type out the commands directly. Which is v nice.
+
+8.18pm
+I think some of the inconsistency in how conversations is treating the requirements is because it depends if you have the requirements to /have/ the dialogue, or if you failed a check. Perhaps.
+
+autoplay_in_said at start: []
+autoplay_failed: set()
+are not filling properly. They should be holding the existing conversation data, but on repeat it just starts anew.
+
+Also, it only properly checks the requirements speech part in `holy book` about half the time, and I don't know why.
+
+8.33pm
+okay fixed that part.
+Now, need to fix that it's started playing parts even if they're not autoplay just because they have no requirements. Need to differentiate between no requirements vs succeeded, because autoplay applies in the former.
+
+Hm.
+Why is it reporting the failed check as '0'?
+0 is already in parts_said, it's already been done.
+
+Goddamn. Now the inner loop is broken again:
+
+`    I think that's all there is of interest to you on this.`
+
+
+`   Yes, good... Let's discuss the missing holy book.`
+
+I need to work on this tomorrow, put some proper time into it.
+
+Why does it do this half the time?
+
+#   ... missing book
+#   getting autoplay in said
+#   autoplay_in_said at start: []
+#   autoplay_failed: set()
+#   len(conversation.autoplay_parts): 2
+#   Keyword part: 0
+#   no parts_said: None
+#   parts_said from npc.conversations: None
+#   Adding 0 to parts_said
+#
+#       There's a book, and it's missing... And this missing book is holy.
+#
+#   ...
+#   failed checks: set()
+#   Parts said: {'0'}
+#   conversation.autoplay_parts: {'1', '0'}
+#   AUTIOPKAY IN SAID: ['0']
+#       What do you want to talk about?
+#
+#         - the history of the Church
+#         - the missing holy book
+
+
+Ooooh.
+I think maybe half the time I'm writing 'holy book' and the other half, 'missing book'. The latter goes via the keyword route, while the former goes the conversation route.
+
+Okay, kinda fixed it I think.
+
+But now: why does completing the currently availble content of 'history' trigger the 'discuss missing holy book' again? I assume it's not returning properly or something?
+
+Okay. So it seems to be when it returns after saying no to 'discuss it again'.
+it returns
+return "end_topic"
+
+It has to be because of the form of def conversation_loop(). There are three different entry points to discuss_topic (which is also recursive)
+
+Hm. Okay. So:
+ask about holy book, 'not found after first discuss topic' so ut gies ti the second discuss topic loop because test was in label.lower of convo_dict.
+It prints the available line, then comes to the 'after second discuss topic with user_input 'end_topic', going immediately back to 'what do you want to talk about'. I say 'history', but history isn't found in keywords so it goes right back to the second discuss_topic. It loops through and prints the available content. I then say 'history' again, but it skips right through and doesn't print anything or give me the option to start over.
+0, 1 and 2 are all autoplay, with 2 checking for a paperclip in inv.
+`failed checks in advance` didn't pick it up.
+
+1.23am
+Fixed a few more little things. working properly with keyword-only speech parts again and responds a bit better to keywords. Still needs work but it's something.
+I think I fixed that loop where it would duck back out of the conversation and try to resume a previous one but I need to do more  testing.

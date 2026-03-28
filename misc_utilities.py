@@ -183,7 +183,7 @@ def look_around():
     applicable_items = []
 
     if registry.by_location.get(loc.current):
-        is_items = list(i for i in registry.by_location[loc.current] if not i.is_hidden and "is_scenery" not in i.item_type)
+        is_items = list(i for i in registry.by_location[loc.current] if not i.is_hidden and "is_scenery" not in i.item_type and isinstance(i, itemInstance) and not i.encountered)
     if is_items:
         print("IS_ITEMS:")
         for item in is_items:
@@ -456,8 +456,7 @@ def from_inventory_name(test:str) -> itemInstance:
             return inst
 
     logging_fn()
-    print(f"Could not find inst `{test}` in inst_inventory.")
-    input()
+    print(f"[Could not find inst `{test}` in inst_inventory].")
 
 def is_item_in_container(item:itemInstance):
     """Just checks if the given `item` is in a container, and returns that `container` or None."""

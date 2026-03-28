@@ -242,8 +242,6 @@ def init_loc_descriptions(place:placeInstance=None, card:cardinalInstance=None):
 
                 if card:
                     if cardinal == card.name:
-                        print(f"cardinal == card.name {card} (about to go to format_descrip)")
-                        print(f"[[current loc: {loc.current}]]")
                         long_desc = format_descrip(d_type="item_desc", location=location, cardinal=cardinal, encounter_items=True)
                     else:
                         long_desc = None
