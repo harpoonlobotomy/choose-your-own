@@ -54,3 +54,9 @@ coloured_repr = True
 record_event_starts_ends = True
 
 print_tokens = False
+
+### print_lines ###
+# basically a poor man's logger so I can track things in high detail when I want for specific elements.
+print_conversation_lines = True
+print_event_lines = False
+print_npc_lines = False

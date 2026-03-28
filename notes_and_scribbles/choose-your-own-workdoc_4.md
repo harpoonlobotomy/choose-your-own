@@ -1873,7 +1873,6 @@ Goddamn. Now the inner loop is broken again:
 
 `    I think that's all there is of interest to you on this.`
 
-
 `   Yes, good... Let's discuss the missing holy book.`
 
 I need to work on this tomorrow, put some proper time into it.
@@ -1924,4 +1923,21 @@ It prints the available line, then comes to the 'after second discuss topic with
 
 1.23am
 Fixed a few more little things. working properly with keyword-only speech parts again and responds a bit better to keywords. Still needs work but it's something.
-I think I fixed that loop where it would duck back out of the conversation and try to resume a previous one but I need to do more  testing.
+
+11.01am 28.3/26
+I think I fixed that loop where it would duck back out of the conversation and try to resume a previous one but I need to do more testing.
+
+I want to add a depth gauge to the convo print to make it more apparent what level we're in.
+
+11.33
+Added toggleable prints to conversations.py. Largely worked. Having an error now:
+if I run 'history', then 'holy book' and say 'missing book', I get
+`Failed to find the correct function to use for <verbInstance talk (b76c29a7-0af3-406d-aeac-310c193f9be3)>: 'parts_said'`
+trying to figure out where the error is.
+12.30pm
+took me way too long, I left a variable out of the call for check_data in one case so it mixed up the idx and failed_items.
+
+if asking about the cult during 'history', 'enter' after the cult line exits the conversation entirely.
+Changed test == end_topic return to "end_topic" instead of None.
+
+I need to get rid of the inner loop in check_data. It was only meant to be a check, not a response evaluation.
