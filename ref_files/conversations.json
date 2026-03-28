@@ -29,7 +29,7 @@
                 "event": {"starts_event": "learn_about_cult"}
                 },
             "4": {
-                "has_requirements": {"event": "learn_about_cult"},
+                "has_requirements": {"event": "learn_about_cult", "keyword": "mother"},
                 "autoplay": false,
                 "keywords": ["mother"],
                 "speech": "Mm. I do miss having her around the place, I suppose. But, needs must, `greater good` and all of that. I suppose I'll see her again someday. Have you seen her around?",
