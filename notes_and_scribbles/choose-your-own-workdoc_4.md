@@ -1976,3 +1976,35 @@ So perhaps... I have a 'conversation_ended' flag on the conversation instance it
 
 Also:
 Maybe I should check from the outset if a conversation part (either by idx or keyword)
+
+1.13pm
+Hm.
+'mother' within 'cult' fails.
+
+'mother' from main menu works fine, but then after printing the 'mother' line, prints
+
+# if keyword_part, after check test = can_be_answered
+# ...
+# ...
+# Keyword part over:
+where each '...' is an 'input', before returning to menu.
+
+Okay, so it's not about 'mother' specifically, there's a bump in the loop when doing keywords within keywords I believe.
+
+Redoing the loops.
+So, if an input is in npc.keywords, it's the keyword route. If an input is a convo label, it's the idx route.
+
+1.54pm
+Getting somewhere I think. Properly breaking up the keyword route from the idx was a good call.
+I need to add the "..." call/response to keywords as it is for conversations, so you have an immediate opportunity to respond.
+
+Oh damn. If you just type 'cult' outside of any conversations as the first command it does this:
+** deleted 'cause I fixed it. Still need to add the call/response though.
+
+tries to unpack Nonetype after 'no' is given after `next_keyword line 537 after ask_questions`
+
+4.09pm
+Okay, the conversation loop is far nicer now. Far cleaner delimit between the idx loop and keywords, and lets you switch from idx to keyword as needed without (at least as tested so far) it breaking, doubling printlines, etc.
+
+6.27pm
+looking over the convo loop again and with a couple of extra minor tweaks, I'm pretty happy with it for the moment.

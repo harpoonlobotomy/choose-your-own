@@ -33,7 +33,7 @@
                 "autoplay": false,
                 "keywords": ["mother"],
                 "speech": "Mm. I do miss having her around the place, I suppose. But, needs must, `greater good` and all of that. I suppose I'll see her again someday. Have you seen her around?",
-                "can_be_answered": {"if_yes": {"send_keyword":"seen_mother", "requirements": {"datapoint": "mother_seen", "if_requirement_not_met": "Really? That is surprising."}}}
+                "can_be_answered": {"if_yes": {"send_keyword":"seen_mother", "requirements": {"datapoint": "mother_seen", "if_requirement_not_met": "Really? That is surprising."}}, "if_no": {"response": "Well, to be expected."}}
                 },
             "5": {
                  "has_requirements": false,

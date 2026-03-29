@@ -16,7 +16,7 @@ class conversationInstance:
         self.parts_said = []
         self.by_part:dict[str, dict] = {}
         self.keywords: dict[str, str] = {} # keyword: part_idx
-        self.reverse_keywords: dict[str, str] = {}
+        self.reverse_keywords: dict[str, str] = {} # part_idx:  keyword
         self.autoplay_parts:set[str] = set()
         for idx in data["conversation"]:
             if data["conversation"][idx].get("keywords"):
@@ -43,7 +43,7 @@ class conversationsRegistry:
         self.by_character:dict[npcInstance, set[conversationInstance]] = {} # for storing which character has spoken about what
         self.by_language:dict[str, set[conversationInstance]] = {}
 
-        self.current_convos:set[conversationInstance] = set()
+        self.current:set[conversationInstance] = set()
 
     def init_conversations(self, convo_defs:dict):
         """Init all NPCs from NPC_defs and add to npcRegistry"""

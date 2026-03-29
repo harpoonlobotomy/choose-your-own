@@ -52,8 +52,7 @@ def format_descrip(d_type="area_descrip", description="", location=None, cardina
                         if hasattr(i, "contents_encountered_with_container") and i.contents_encountered_with_container and i.children:
                             for child in i.children:
                                 child.encountered=True
-                #for thing in local_items:
-                #    print(f"{thing}: {(thing.is_hidden if hasattr(thing, "is_hidden") else "No is_hidden attr.")} ")
+
             multiples = None
             for item in long_dict:
                 if item == "generic":
