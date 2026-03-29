@@ -62,7 +62,9 @@ def look_at_item(item_inst, entry): ## this is just using everything from regist
             print(f"\n   {assign_colour(registry.describe(item_inst, caps=True), colour="description")}")
             if "container" in item_inst.item_type and item_inst.is_open and item_inst.print_children_as_list:
                 verb_actions.print_children_in_container(item_inst)
-
+            if hasattr(item_inst, "has_datapoint") and item_inst.has_datapoint and isinstance(item_inst.datapoint, dict) and item_inst.has_datapoint.get("on_look"):
+                from set_up_game import game
+                game.datapoints.update(item_inst.has_datapoint["on_look"])
             if hasattr(item_inst, "is_map"):
                 show_map(item_inst)
 

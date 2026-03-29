@@ -11,6 +11,7 @@ class conversationInstance:
     def __init__(self, topic:str, data:dict):
         self.topic = topic
         self.topic_label:str = data["topic_label"]
+        self.alt_labels:list[str] = data.get("alt_labels")
         self.relevant_items:list = data.get("relevant_items")
         self.parts_said = []
         self.by_part:dict[str, dict] = {}
@@ -41,6 +42,8 @@ class conversationsRegistry:
         self.by_item:dict[str, set] = {} # for finding topics related to items
         self.by_character:dict[npcInstance, set[conversationInstance]] = {} # for storing which character has spoken about what
         self.by_language:dict[str, set[conversationInstance]] = {}
+
+        self.current_convos:set[conversationInstance] = set()
 
     def init_conversations(self, convo_defs:dict):
         """Init all NPCs from NPC_defs and add to npcRegistry"""

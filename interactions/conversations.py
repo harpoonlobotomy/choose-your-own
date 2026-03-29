@@ -1,5 +1,6 @@
 from typing import Literal
 
+from interactions.meta_commands import yes_test, no_test
 from itemRegistry import itemInstance
 from misc_utilities import npc_colour
 from npcRegistry import npcInstance, npc_Registry, conversationInstance, conversing
@@ -28,7 +29,7 @@ def convo_print(*input_str):
 
 affect = npc_Registry.alter_speech
 
-leave_convo = ["leave conversation", "end conversation", "end convo", "leave convo", "leave", "end", "nothing"]
+leave_convo = ["leave conversation", "end conversation", "end convo", "leave convo", "leave", "end", "nothing", "goodbye", "bye"]
 
 def manage_events(npc, event_data):
 
@@ -129,9 +130,9 @@ def if_can_be_answered(data):
 
     return requirement_met, failure
 
-def test_response(test, data, npc, conversation, failed_checks=set(), parts_said=set()):
+def test_response(test, data, npc, conversation, failed_checks=set(), parts_said=set(), keyword_part=None, answering_question=False):
 
-    if test:
+    if test and test != "failed" or answering_question:
         skip = False
         if data.get("can_be_answered"):
             if data["can_be_answered"].get("if_yes"):
@@ -151,8 +152,8 @@ def test_response(test, data, npc, conversation, failed_checks=set(), parts_said
         else:
             convo_print("cannot be answered, confirming use of data")
             confirm_use_of_data(npc, data)
-
-        if test.lower() in ("y", "yes"):
+        print(f"[[test: {test}]]")
+        if test and test.lower() in ("y", "yes"):
             print("What do you want to say?")
             test = input("\n... ")
 
@@ -193,6 +194,14 @@ def test_response(test, data, npc, conversation, failed_checks=set(), parts_said
                 import random
                 print(f"    {npc_colour(npc, f'`{test}`?')}", affect(npc, f"{random.choice(npc.unsure)}"), "\n")
                 return "was_input", failed_checks, parts_said
+
+    elif test and test == "failed":# and keyword_part:
+        if len(keyword_part) == 1 and conversation.reverse_keywords.get(keyword_part):
+            keyword_part = conversation.reverse_keywords.get(keyword_part)
+        import random
+        print(f"    {npc_colour(npc, f'`{keyword_part}`?')}", affect(npc, f"{random.choice(npc.unsure)}"), "\n")
+        return "was_input", failed_checks, parts_said
+
     else:
         convo_print("no test, confirming use of data")
         confirm_use_of_data(npc, data)
@@ -222,6 +231,8 @@ def check_data(npc:npcInstance, idx:str, conversation:conversationInstance, data
             return "failed", failed_checks, parts_said
         else:
             print(f"NOT REQUIREMENTS: {not_requirements}")
+            if not failed_checks:
+                failed_checks = set()
             failed_checks.add(idx)
             return "failed", failed_checks, parts_said
             """if not data.get("autoplay") and not is_keyword:
@@ -278,11 +289,14 @@ def check_data(npc:npcInstance, idx:str, conversation:conversationInstance, data
         print("\n   ", affect(npc, data["speech"]), "\n")
     #print(f"parts_said: {parts_said}")
 
+    returning = None
     confirm_use_of_data(npc, data)
     if keyword_met == True:
-        return "keyword_met", failed_checks, parts_said
+        returning = "keyword_met"
+    if data.get("can_be_answered"):
+        returning = "can_be_answered"
 
-    return None, failed_checks, parts_said
+    return returning, failed_checks, parts_said
 
 def check_for_keywords(keyword_part, conversation, npc, failed_checks) -> None | Literal['failed']:
     print(f"CHeck for keywords: {keyword_part}")
@@ -332,9 +346,12 @@ def discuss_topic(npc:npcInstance, conversation:conversationInstance, keyword_pa
             print(f"if keyword_part, after check test = {test}")
 
             if test and not test == "was_input":
+                convo_print(f"test and not test == was_input: {test}")
                 if test == "keyword_met":
                     test = None
-                test, _, _ = test_response(test, data, npc, conversation)
+                if test == "can_be_answered":
+                    test = input("...")
+                test, _, _ = test_response(test, data, npc, conversation, keyword_part=keyword_part, answering_question=True if test == "can_be_answered" else False)
                 test = input("...")
 
             #test, failed_checks, parts_said = check_for_keywords(keyword_part, conversation, npc,failed_checks)
@@ -348,6 +365,8 @@ def discuss_topic(npc:npcInstance, conversation:conversationInstance, keyword_pa
                     convo_print(f"[with keyword] [keyword_part: {keyword_part}] returning inner loop")
                     return "inner_loop"
         print(f"Keyword part over: {test}")
+        if test and (yes_test(test) or no_test(test)):
+            return test
         return "keyword_done"
 
     play_again = True
@@ -397,7 +416,7 @@ def discuss_topic(npc:npcInstance, conversation:conversationInstance, keyword_pa
         if idx in autoplay_in_said:
             print(f"idx in autoplay: {idx}")
             if not resumed:
-                print("\n   ", affect(npc, f'I was saying...'), "\n")
+                print("\n   ", affect(npc, f'As I was saying...'), "\n")
                 resumed=True
             parts_said.add(idx)
             continue
@@ -445,9 +464,13 @@ def conversation_loop(npc:npcInstance):
         return
     print("   ", npc_colour(npc, "What do you want to talk about?\n"))
     convo_dict = {}
+    alt_dict = {}
     for convo in new_conversations:
         print("   ", npc_colour(npc, f"  - {convo.topic_label}"))
         convo_dict[convo.topic_label] = convo
+        if convo.alt_labels:
+            for label in convo.alt_labels:
+                alt_dict[label] = convo.topic_label
 
     test = input("\n... ")
     if test and test != "":
@@ -468,7 +491,9 @@ def conversation_loop(npc:npcInstance):
         if not found:
             convo_print(f"`not_found` after first discuss_topic loop for test [ `{test}` ]")
             for label in convo_dict:
-                if test.lower() in label.lower():
+                if test and (test.lower() in label.lower() or (convo.alt_labels and test.lower() in convo.alt_labels)):
+                    if (convo.alt_labels and test in convo.alt_labels):
+                        label = alt_dict[test]
                     found=True
                     user_input = discuss_topic(npc, convo_dict[label])
                     convo_print(f"PRINTGREEN AFTER THE second DISCUSS_TOPIC IN CONVERSATION_LOOP: {user_input} / label: {label}")

@@ -7,7 +7,7 @@
                 "has_requirements": false,
                 "autoplay": true,
                 "keywords": [],
-                "speech": "The church has a long and contraversial history. How much of it is true, who knows, really. I think it's an interesting thing."
+                "speech": "The church has a long and controversial history. How much of it is true, who knows, really. I think it's an interesting thing."
                 },
             "1": {
                 "has_requirements": false,
@@ -47,12 +47,13 @@
         },
     "holy_book": {
         "topic_label": "the missing holy book",
+        "alt_labels": ["missing book"],
         "relevant_items": [],
         "conversation": {
             "0": {
                 "has_requirements": false,
                 "autoplay": true,
-                "keywords": ["missing book"],
+                "keywords": [],
                 "speech": "There's a book, and it's missing. And this missing book is holy."
                 },
             "1": {

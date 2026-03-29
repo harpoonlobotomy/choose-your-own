@@ -17,7 +17,13 @@ nulls = ("", None)
 
 def yes_test(string=""):
     test = input(string)
-    if test in ("y", "yes"):
+    if test.lower() in ("y", "yes"):
+        return 1
+
+def no_test(string=""):
+    if not string:
+        string = input()
+    if string.lower() in ("n", "no"):
         return 1
 
 def custom_commands():
@@ -168,6 +174,7 @@ def select_noun(noun_name=None):
             if noun_name == 'cancel' or noun_name == "":
                 break
         else:
+            print(f"NOUN INSTANCES FOUND: {noun_instances}")
             break
 
     if noun_instances and isinstance(noun_instances, set) and len(noun_instances)>1:
@@ -204,8 +211,8 @@ def select_noun(noun_name=None):
             if int(test) <= (len(noun_instances)-1):
                 noun_instance = noun_instances[int(test)]
 
-    elif isinstance(noun_instances, list):
-        noun_instance = noun_instances[0]
+    elif isinstance(noun_instances, set):
+        noun_instance = next(iter(noun_instances), None)
 
     print_blue(f"Instance found for {noun_name}: {noun_instance}", invert=True)
     if yes_test("Do you want to print details for this item?"):

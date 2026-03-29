@@ -88,6 +88,7 @@
       "standard",
       "static"
     ],
+    "has_datapoint": {"on_look": {"mother_seen": true}},
     "nicenames": {
       "generic": "a desiccated skeleton"
     },
@@ -157,6 +158,7 @@
     "children": null,
     "children_type_limited": false,
     "container_limits": "smaller_than_apple",
+    "contents_encountered_with_container":true,
     "descriptions": {
       "starting_children_only": "",
       "any_children": "",

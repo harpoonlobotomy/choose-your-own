@@ -1941,3 +1941,38 @@ if asking about the cult during 'history', 'enter' after the cult line exits the
 Changed test == end_topic return to "end_topic" instead of None.
 
 I need to get rid of the inner loop in check_data. It was only meant to be a check, not a response evaluation.
+
+Added alt_labels for conversations so I can have alternate options for referring to them. Specifically for 'missing holy book', so that 'missing book' also works without having to direct to a specific speech part when really it should access the full convo just like 'holy book' or the full string does.
+
+Adding on_interaction for get_datapoints but I just realised I shouldn't need to; if you encounter the thing we can just use the 'encountered' tag. But I guess it's nice to be able to do it only if you intentionally look at something vs if it's just apparent to you.
+
+Changed the convo loop again slightly and it seems a little more reliable now. I'm still not stress-testing it that hard though. Fragile little thing.
+
+9.09pm
+Made another little change to the loop because it was breaking if you called a keyword but failed the test. Think it's fixed now.
+
+12.11pm 29/3/26
+I need to make specific routes for the conversatins and make them far clearer. The fact that sometimes I need to return 'end_topic' as 'inner_loop' to make it work is ridiculous.
+
+I do think a conversationsReg class var of 'topic ended' is necessary, I don't think there's a way around it. So when any conversation is started, it has a defined end point, regardless of how many parts are said or whether it was keyword or idx routed. But it also needs to account for inner loops, so it can't just be 'start/finish' in general, because if the convo started inside another convo, it needs to either route differently to continue that previous convo or, as it does now, it ends all convos when it ends itself.
+
+So maybe just a set that holds current convos, and when any of those conversations resolves it ends all of them and returns to 'menu'.
+
+What other data does it need?
+
+* It needs to know if all available parts are said, so it can print the 'that's all there is to say about this' line.
+* it needs to know if the keyword just failed entirely. (If mid conversation, do we resume the conversation after a bad keyword or just return to menu? I think probably the latter...?)
+
+Okay so it seems I'm trending away from branches like
+|D
+|D
+where they loop back in on themselves, and more like
+|
+ /
+|
+where they branch off and then return to base, instead of looping back to the branch point.
+
+So perhaps... I have a 'conversation_ended' flag on the conversation instance itself, that starts as False but can be marked True at any point if the conversation resolves. So instead of having to pass back strings, I can check after the check_data calls (which are what hold the internal discuss_topic loops) to see if the conversation is over and route appropriately.
+
+Also:
+Maybe I should check from the outset if a conversation part (either by idx or keyword)
