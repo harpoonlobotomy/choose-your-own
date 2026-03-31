@@ -68,6 +68,10 @@ def get_noun_instances(dict_from_parser, viable_formats):
                         noun_inst = registry.instances_by_name(name) ## NOTE: This won't hold for long. Different instances may have different attr.
                         if not noun_inst:
                             noun_inst = registry.instances_by_name(entry["text"])
+                            if not noun_inst:
+                                from npcRegistry import npc_Registry
+                                noun_inst = npc_Registry.npc_by_name(entry["str_name"])
+
                         if not noun_inst:
                             print(f"Not noun_inst for {name}\n")
                             dict_from_parser[idx][kind] = ({"instance": "assumed_noun", "str_name": entry["str_name"], "text": entry["text"]})
@@ -110,6 +114,11 @@ class Membrane:
 
         from itemRegistry import registry
         self.plural_words_dict = registry.plural_words
+        from npcRegistry import npc_Registry
+        plural_names = list(i.name.lower() for i in npc_Registry.npcs if " " in i.name)
+        if plural_names:
+            for name in plural_names:
+                self.plural_words_dict[name] = tuple(name.split())
 
         compound_locs = {}
         for word in self.locations:

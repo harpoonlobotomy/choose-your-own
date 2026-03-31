@@ -896,6 +896,25 @@ class Parser:
             print(f"No tokens for input `{input_str}`")
             return None, None
         verbReg_Reciever(f"Tokens after tokenise: {tokens}")
+
+        from itemRegistry import itemInstance
+        from npcRegistry import npcInstance
+
+        token_to_remove = token_to_change = None
+        for i, token in enumerate(tokens):
+            if "location" in token.kind and len(tokens) > i+1 and "noun" in tokens[i+1].kind:
+                if tokens[i+1].canonical and token.canonical in tokens[i+1].canonical:
+                    print(f"TOKEN: {token} // tokens[i+1]: {tokens[i+1]}")
+                    token_to_remove = token ## removes location 'bridge' from 'look at bridge troll'
+                    token_to_change = tokens[i+1]
+                    break
+
+        if token_to_remove and token_to_change:
+            #print(f"Tokens before rearranging: {tokens}")
+            token_to_change.idx = token_to_remove.idx
+            tokens.remove(token_to_remove)
+            #print(f"Tokens after rearranging: {tokens}")
+
         #print(f"Tokens: {tokens}")
         if isinstance(tokens, tuple):
             word_str, part2 = tokens

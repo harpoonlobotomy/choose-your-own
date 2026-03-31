@@ -47,7 +47,7 @@
 "Bridge Troll": {
     "colour":"green",
     "text_styling": ["green"],
-    "alt_names": ["bridge troll", "troll"],
+    "alt_names": [],
     "can_die": "True",
     "can_speak": "True",
     "descriptions": {
@@ -81,7 +81,7 @@
     "speaks_common": "True",
     "speech_traits": [
       "no_pronouns",
-      "well_umm"
+      "hic"
     ],
     "responses": {
         "acceptance": ["Eh, yea.", "M'kay."],

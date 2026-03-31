@@ -2011,3 +2011,21 @@ looking over the convo loop again and with a couple of extra minor tweaks, I'm p
 
 6.11pm 31/3/26
 Spent a couple of hours writing the start of a basic trade system. Currently untested. note: check if I added npcs to plural_nouns or not.
+
+6.34pm
+things to fix:
+    'drop paperclip' prints
+    `Drop paperclip to north bridge.`. That's awful, why?
+    'put down' gives me
+    `You put paperclip down here at the north bridge.`, at least.
+Check if npcs are included in plural nouns, currently can only talk to the troll by using 'troll', using 'bridge troll' doesn't work. Assuming it's the plural noun.
+similarly, 'look at bridge troll' returns literally nothing, just blank. 'look at troll' works fine. So I assume that is the issue, will check in a bit.
+
+Oh, it's because it takes 'bridge' as the location, not as part of 'bridge troll'. I had this issue earlier didn't I, with the shed door. Hm.
+I thought I'd fixed it, if the second was a perfect match it would remove the former. Oh but maybe that didn't apply if one was a noun and one a location. hm.
+
+fixed the 'bridge' + 'bridge troll' thing but it's hacky. Will revisit later.
+Note for tomorrow: the moss/dried moss conversation doesn't trigger properly, it doesn't hit ask_question as far as I can see. Need to check why not.
+
+note: npc trade items are not yet replaced with instances, they're still just strings.
+11pm now trade items are instances on init, so that's fine. The buy/sell process is still just a scaffold, will do tomorrow.

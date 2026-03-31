@@ -93,9 +93,13 @@ class npcInstance:
             from itemRegistry import itemInstance, registry
             self.trade_items:set[itemInstance] = set(data["trade_items"]) if data.get("trade_items") else set()
             if self.trade_items:
+                new_items = set()
                 for item in self.trade_items:
                     inst = registry.init_single(item, apply_location="north no_place")
                     setattr(inst, "trade_item", self)
+                    new_items.add(inst)
+                if len(new_items) == len(self.trade_items):
+                    self.trade_items = new_items
 
             self.thief_awareness:int = data.get("thief_awareness", 5)
             self.trade_start:str = data["conversation_parts"].get("trade_start", "Let's see here...")
@@ -210,6 +214,31 @@ class npcRegistry:
                 npc.colourcode_start = code_parts[0]
                 npc.colourcode_end = code_parts[1]
                 #print(f"npc.colourcode: {npc.colourcode_start} This is this NPC's text formatting. {npc.colourcode_end}")
+
+    def npc_by_name(self, string):
+
+        if not string or not isinstance(string, str):
+            print(f"No string or string is not str type in npc_by_name: {string}")
+            return
+        npc = self.by_name.get(string)
+        if not npc:
+            npc = self.by_altname.get(string)
+        print(f"NPC: {npc}")
+
+        if not npc:
+            lowernames = list(i for i in self.by_name if i.lower() == string)
+            if not lowernames:
+                lowernames = list(i for i in self.by_altname if i.lower() == string)
+            if lowernames:
+                npc = lowernames[0]
+        if npc:
+            if isinstance(npc, str):
+                npc = self.by_name.get(npc)
+            npc = set((npc,))
+            return npc
+        else:
+            print(f"No NPC found for `{string}`")
+
 
     def alter_speech(self, npc:npcInstance, speech_str:str, styling=True):
         """Here we edit the speech str in accordance with npc.speech_traits"""

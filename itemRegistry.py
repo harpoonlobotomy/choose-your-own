@@ -797,6 +797,7 @@ class itemRegistry:
         meaning = "other error, investigate"
         from npcRegistry import npcInstance
         if not inst or not isinstance(inst, itemInstance|npcInstance):
+            logging_fn(f"returning 10 for {inst}")
             return None, 10, accessible_dict[10]
 
         if inst.is_hidden == True:
@@ -807,11 +808,13 @@ class itemRegistry:
                     print(f"hidden inst multiple instance count: {inst.has_multiple_instances}")
 
                 print("INST is_hidden in run_check; not a singleton multiple_instances.")
+                logging_fn(f"returning 9 for {inst}, is hidden")
                 return None, 9, accessible_dict[9]
 
         if "battery" in inst.item_type:
             #device_using_battery = inst.in_use
             if inst.in_use and isinstance(inst.in_use, itemInstance):
+                logging_fn(f"returning 9 for {inst}, is a battery in use")
                 return None, 9, accessible_dict[9] # Originally returned the device inst, but it breaks things later. So we treat as invisible, then check 'if this thing is invisible, is it a battery' afterwards.
 
         container = is_item_in_container(inst)
@@ -819,6 +822,7 @@ class itemRegistry:
         if inst.location == loc.inv_place and not container:
             reason = 5
             meaning = accessible_dict[reason]
+            logging_fn(f"returning 5 for {inst}, is in inventory")
             return None, reason, meaning
 
         if container:
@@ -865,7 +869,7 @@ class itemRegistry:
                         reason = 6
 
         meaning = accessible_dict[reason]
-
+        logging_fn(f"returning {reason} for {inst} because {meaning}")
         return confirmed_container, reason, meaning
 
 

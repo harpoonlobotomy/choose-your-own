@@ -976,17 +976,17 @@ def look(format_tuple=None, input_dict=None, force_look=False): # force_look - s
         look_around()
         return
 
-    if get_meta(input_dict) == "inventory":
+    if "meta" in format_tuple and get_meta(input_dict) == "inventory":
         meta(format_tuple, input_dict)
         return
 
     verb_entry, noun_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
 
     noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason= get_correct_nouns(input_dict, verb="look")
-
+    logging_fn(f"reason for {noun}: {noun_reason}")
 
     if noun2:
-        if not isinstance(noun2, itemInstance):
+        if not isinstance(noun2, itemInstance|npcInstance):
             print(f"Sorry, there's no `{noun2_str}` around here.")
             return
         if noun_reason in interactable_codes and noun2_reason in interactable_codes:
@@ -1037,9 +1037,9 @@ def look(format_tuple=None, input_dict=None, force_look=False): # force_look - s
             return
 
     elif len(format_tuple) == 3:
-        #print("len(format_tuple) == 3")
+        print("len(format_tuple) == 3")
         if noun and format_tuple[1] == "direction":
-            #print(f"NOUN before look_at_item: {noun}")
+            logging_fn(f"NOUN before look_at_item: {noun}")
             return item_interactions.look_at_item(noun, noun_entry)
 
         if format_tuple[2] == "cardinal" and format_tuple[1] == "direction":
@@ -2747,7 +2747,7 @@ def trade(format_tuple=None, input_dict=None, npc:npcInstance=None):
         if isinstance(noun, itemInstance):
             print(f"The {assign_colour(noun)} doesn't seem like something you can trade with.")
         elif isinstance(noun, npcInstance):
-            print(f"Trading with {npc.name}")
+            print(f"Trading with {noun.name}")
             import interactions.trade
             interactions.trade.trade_with(noun)
             look_around()

@@ -93,8 +93,8 @@ def trade_with(npc:npcInstance):
 
         else:
             print("What do you want to look at?.\n")
-            printlist = list(f"  - {i.name}\n" for i in items_to_trade)
-            print(printlist, "\n")
+            printlist = list(f"  - {i if isinstance(i, str) else i.name}\n" for i in items_to_trade)
+            print(''.join(printlist), "\n")
 
         test = input("\n")
         if test and items_to_trade:
