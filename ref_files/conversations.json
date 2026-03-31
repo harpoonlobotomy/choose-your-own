@@ -16,7 +16,7 @@
                 "speech": "Things things things"
                 },
             "2": {
-                "has_requirements": {"item": "paperclip"},
+                "has_requirements": {"item": {"paperclip": "in_inv"}},
                 "autoplay": true,
                 "keywords": ["things"],
                 "speech": "Things things stuff"
@@ -79,6 +79,55 @@
                 "autoplay": true,
                 "keywords": [],
                 "speech": "Blah blah talk about mummy"
+            }
+        }
+    },
+    "moss": {
+        "topic_label": "Moss",
+        "relevant_items": ["moss"],
+        "conversation": {
+            "0": {
+                "has_requirements": false,
+                "autoplay": true,
+                "keywords": [],
+                "speech": "Mmmhmm... hmmm... mmmhmm mmm... *hic*"
+            },
+            "1": {
+                "has_requirements": {"item": {"moss": "encountered"}},
+                "autoplay": true,
+                "keywords": [],
+                "speech": "Oh, got moss. Ye-- No, no. Too squelchy, bad to touch. No trade."
+            },
+            "2": {
+                "has_requirements": {"item": {"dried moss": "in_inv"}},
+                "autoplay": true,
+                "keywords": [],
+                "speech": "Oh, moss-moss. Yes, good moss! Good, soft-furry nice. You give. Give? Trade.",
+                "can_be_answered": {"if_yes": {"send_keyword":"trade"}},
+                "if_not_requirements": {
+                    "speech": "Have no moss-moss. Nope."}
+            }
+        }
+    },
+    "dried moss": {
+        "topic_label": "Dried moss",
+        "relevant_items": ["dried moss"],
+        "conversation": {
+            "0": {
+                "has_requirements": {"item":{"dried moss":"encountered"}},
+                "autoplay": true,
+                "keywords": [],
+                "speech": "*hic* You have nice-moss? So soft, so nice. Mmm.",
+                "if_not_requirements": {"speech": "Bah, it doesn't even know what is the good moss."}
+            },
+            "1": {
+                "has_requirements": {"item": {"dried moss": "in_inv"}},
+                "autoplay": true,
+                "keywords": ["dried moss"],
+                "speech": "Oh, moss-moss. Yes, good moss! Good, soft-furry nice. You give. Give? Trade.",
+                "can_be_answered": {"if_yes": {"send_keyword":"trade"}},
+                "if_not_requirements": {
+                    "speech": "Have no moss-moss. Nope."}
             }
         }
     }

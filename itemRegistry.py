@@ -82,6 +82,8 @@ type_defaults = {
     "living": {"can_die": True, "age": "average"},
     "can_speak" :
         {'can_speak': True, 'speaks_common': True, "knows_about": None, "speech_traits": [], "languages_spoken": ["common"], "test_styling": []},
+    "can_trade":
+        {"trade_items": [], "thief_awareness": 2},
     "transition":
         {"is_transition_obj": True, "int_location": None, "ext_location": None},
     "loc_exterior":
@@ -299,6 +301,7 @@ class itemInstance:
             self.loot_type = attr.get("loot_type")
             if not self.loot_type and "starting_loot" in self.item_type:
                 self.loot_type = "starting_loot"
+
 
 
     def __init__(self, definition_key:str, attr:dict):
@@ -1578,7 +1581,7 @@ class itemRegistry:
 
         if "electronics" in inst.item_type:
             if inst.is_charged:
-                if inst.is_locked:
+                if hasattr(inst, "is_locked") and inst.is_locked:
                     if inst.descriptions.get("is_locked") and inst.descriptions["is_locked"] != "":
                             description = inst.descriptions["is_locked"]
                 elif inst.descriptions.get("is_charged") and inst.descriptions["is_charged"] != "":

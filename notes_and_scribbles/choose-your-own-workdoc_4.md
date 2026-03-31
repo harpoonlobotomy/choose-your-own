@@ -2008,3 +2008,6 @@ Okay, the conversation loop is far nicer now. Far cleaner delimit between the id
 
 6.27pm
 looking over the convo loop again and with a couple of extra minor tweaks, I'm pretty happy with it for the moment.
+
+6.11pm 31/3/26
+Spent a couple of hours writing the start of a basic trade system. Currently untested. note: check if I added npcs to plural_nouns or not.

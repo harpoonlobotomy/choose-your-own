@@ -7,6 +7,7 @@ from interactions import item_interactions
 from interactions.player_movement import relocate
 from itemRegistry import itemInstance, registry
 from misc_utilities import assign_colour, col_list, generate_clean_inventory, has_and_true, is_plural_noun, look_around, smart_capitalise, print_failure_message
+from npcRegistry import npcInstance
 from printing import print_yellow
 from verb_definitions import directions, semantics
 
@@ -2734,6 +2735,27 @@ def talk(format_tuple, input_dict):
         else:
             print_failure_message(init_dict=input_dict)
 
+def trade(format_tuple=None, input_dict=None, npc:npcInstance=None):
+    """fn for trading items with npcs. Added 'npc' here in case it's called from the conversation loop and not from the parser."""
+    if input_dict:
+        noun, noun_str, reason, _, _, _ = get_correct_nouns(input_dict)
+    elif npc:
+        noun = npc
+    else:
+        print("No input_dict or npc given for def trade()")
+    if noun:
+        if isinstance(noun, itemInstance):
+            print(f"The {assign_colour(noun)} doesn't seem like something you can trade with.")
+        elif isinstance(noun, npcInstance):
+            print(f"Trading with {npc.name}")
+            import interactions.trade
+            interactions.trade.trade_with(noun)
+            look_around()
+            return
+        else:
+            print_failure_message(init_dict=input_dict)
+
+
 MOVE_UP = "\033[A"
 print_extra_decorations = True
 
@@ -2833,6 +2855,7 @@ def router(viable_format, inst_dict, input_str=None):
         "push": push,
         "drop": drop,
         "set": set_action,
+        "trade": trade,
 
         "time": wait
     }

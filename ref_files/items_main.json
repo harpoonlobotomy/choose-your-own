@@ -1762,6 +1762,11 @@
   "floor": {
     "item_type": ["static", "flooring"]
   },
+  "mud": {
+    "item_type": ["static", "flooring"],
+    "descriptions": {"generic": "Muddy ground, sloppy and slippery."},
+    "is_horizontal_surface": true
+  },
   "phone charger": {
     "item_type": ["can_pick_up", "electronics", "charger"],
     "item_size": "smaller_than_basketball",

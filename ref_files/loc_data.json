@@ -315,6 +315,18 @@
     "inside": true,
     "electricity": false,
     "nature": false
+    },
+  "bridge": {
+    "north": {
+        "item_desc": {"generic": "A bridge, a little decrepit but it does cross water. There's a bit of a smell"},
+        "short_desc": "A bridge for a troll",
+        "items": {},
+      "surfaces": {"wall": false, "flooring": "mud"}
+    },
+    "descrip": "An old wooden bridge, surrounded by swamp.",
+    "inside": false,
+    "electricity": false,
+    "nature": true
     }
 
 }

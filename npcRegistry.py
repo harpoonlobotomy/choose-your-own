@@ -4,7 +4,7 @@ from env_data import cardinalInstance
 
 filler_words = ["well", "umm", "ah", "well, uh", "I guess", "I think"]
 sample_convo_parts = {"start": "Hello.", "end": "Goodbye."}
-sample_responses = {"acceptance": "Alright", "approval": "Indeed", "disapproval": "I doubt that.", "unsure": "What?"}
+sample_responses = {"acceptance": ["Alright", "Okay"], "approval": ["Indeed"], "disapproval": ["... Really?", "I wouldn't think so.", "I doubt that."], "unsure": ["What?"], "nothing_else": ["I've got nothing else to say on that."]}
 
 class conversationInstance:
 
@@ -88,6 +88,19 @@ class npcInstance:
         self.item_type:list[str] = data.get("item_type")
         self.knows_about:list[str] = data.get("knows_about")
         self.conversations:dict[conversationInstance, str] = {}
+
+        if "can_trade" in self.item_type:
+            from itemRegistry import itemInstance, registry
+            self.trade_items:set[itemInstance] = set(data["trade_items"]) if data.get("trade_items") else set()
+            if self.trade_items:
+                for item in self.trade_items:
+                    inst = registry.init_single(item, apply_location="north no_place")
+                    setattr(inst, "trade_item", self)
+
+            self.thief_awareness:int = data.get("thief_awareness", 5)
+            self.trade_start:str = data["conversation_parts"].get("trade_start", "Let's see here...")
+            self.trade_end:str = data["conversation_parts"].get("trade_end", "Please come again.")
+            self.trade_intake:dict = data.get("trade_intake") # eg 'named_only: ["dried moss"]'. Some may trade any, some may trade only a certain random pool value.
 
         self.location = data.get("location")
         from env_data import locRegistry, cardinalInstance
@@ -206,6 +219,8 @@ class npcRegistry:
 # "no_pronouns": not techinically accurate, still allows 'you', but does not refer to self directly.
 # "it_not_i": replaces 'I' with 'it'.
 # "well_umm": Adds filler words, drawn at random from a list.
+# "hic": adds `*hic*` now and then. Not implemented yet but I want it.
+
         if not npc.speech_traits:
             if styling and npc.text_styling:
                 speech_str = npc.colourcode_start + speech_str + npc.colourcode_end

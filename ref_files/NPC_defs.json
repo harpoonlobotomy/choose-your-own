@@ -1,5 +1,6 @@
 {
   "Father": {
+    "colour": "blue",
     "text_styling": ["italics", "blue"],
     "alt_names": [
       "pastor", "father"
@@ -41,6 +42,53 @@
         "disapproval": ["... Really?", "I wouldn't think so."],
         "unsure": ["I'm not really sure what you're talking about, to be honest.", "I'm not sure I know what you mean."],
         "nothing_else": ["I have nothing futher on that topic.", "I have nothing else to say on that.", "I think that's all there is of interest to you on this."]
+    }
+  },
+"Bridge Troll": {
+    "colour":"green",
+    "text_styling": ["green"],
+    "alt_names": ["bridge troll", "troll"],
+    "can_die": "True",
+    "can_speak": "True",
+    "descriptions": {
+      "generic": "a bridge troll, green of skin and weathered, wearing a satchel over its shoulder and a loincloth protecting its dignity",
+      "npc_introduction": "Stooped over and seemingly staring at a dandelion growing from the ground, you see a bridge troll. A patched leather satchel hangs loose over one shoulder, its weathered bare skin showing everywhere except for where it was covered by a thin, worn loincloth."
+    },
+    "conversation_parts": {"start": "*sniff* Eh, what you want?", "end": "Get away then.", "trade_start": "You got nice-soft moss, mm? *hic*", "trade_end": "Bah, no more soft-moss? Beh-crz ih."},
+    "item_type": [
+      "can_speak",
+      "living",
+      "standard",
+      "can_trade"
+    ],
+    "trade_items": ["mummified mouse", "scroll", "car keys", "fish food jar"],
+    "trade_intake": {"named_only": ["dried moss"]},
+    "knows_about": [
+      "moss",
+      "dried_moss"
+    ],
+    "languages_spoken": [
+      "common", "Trollish"
+    ],
+    "location": "bridge north",
+    "nicenames": {
+      "generic": ""
+    },
+    "slice_attack": "5",
+    "slice_defence": "5",
+    "smash_attack": "5",
+    "smash_defence": "5",
+    "speaks_common": "True",
+    "speech_traits": [
+      "no_pronouns",
+      "well_umm"
+    ],
+    "responses": {
+        "acceptance": ["Eh, yea.", "M'kay."],
+        "approval": ["Eh, guess so."],
+        "disapproval": ["Hah, jokin'.", "Nope."],
+        "unsure": ["What?"],
+        "nothing_else": ["'s all there is.", "'s all to say."]
     }
   }
 }

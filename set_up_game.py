@@ -146,6 +146,8 @@ class game:
     luck=1
     loop=True
 
+    gold = 0
+
     checks = {
         "inventory_asked":False,
         "inventory_on": False,

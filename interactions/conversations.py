@@ -55,7 +55,7 @@ def manage_events(npc, event_data):
             #print(f"Event found from conversation trigger: {event}")
 
 
-def check_requirements(data, keyword, conversation):
+def check_requirements(data, keyword, conversation, npc):
     """True or "no_check" if the requirements were not met ("no check" means there were no requirements), False means requirements existed but were not met."""
     requirement_not_met = True
 
@@ -63,11 +63,20 @@ def check_requirements(data, keyword, conversation):
         for kind, name in data["has_requirements"].items():
             requirement_not_met = tuple((kind, name))
             if kind == "item":
+                specification = "in_inv"
+                if isinstance(name, dict):
+                    name, specification = next(iter(name.items()), None)
                 from itemRegistry import registry
-                from env_data import locRegistry
-                named_in_inv = list(i for i in registry.by_location.get(locRegistry.inv_place) if i.name == name)
-                if named_in_inv:
-                    requirement_not_met = False
+                if specification == "in_inv":
+                    from env_data import locRegistry
+                    named_in_inv = list(i for i in registry.by_location.get(locRegistry.inv_place) if i.name == name)
+                    if named_in_inv:
+                        requirement_not_met = False
+                elif specification == "encountered":
+                    named = set(i for i in registry.instances_by_name(name) if i.encountered)
+                    if named:
+                        requirement_not_met = False
+
                 #from misc_utilities import from_inventory_name
                 #item = from_inventory_name(name)
                 #if item and isinstance(item, itemInstance):
@@ -92,6 +101,8 @@ def check_requirements(data, keyword, conversation):
                     requirement_not_met=False
 
             if requirement_not_met:
+                if data.get("if_not_requirements"):
+                    print("\n   ", affect(npc, data["if_not_requirements"]["speech"]), "\n")
                 return requirement_not_met # return per-item if it fails. So if any of the required items fail, they all fail.  I think that's the simplest way to deal with the comment below.
 
         return requirement_not_met # currently can only deal with one at a time. If you need to check both a current event + an item, this won't cut it.
@@ -143,74 +154,24 @@ def if_can_be_answered(data):
 
     return requirement_met, failure
 
-def test_response(test, data, npc, conversation, failed_checks=set(), parts_said=set(), keyword_part=None, answering_question=False):
+def test_response(test:str, data:dict, npc:npcInstance, conversation:conversationInstance, failed_checks:set=set(), parts_said=set(), keyword_part:str=None, answering_question:bool=False):
 
     if (test and test != "failed") or answering_question:
-        skip = False
-
         if data.get("can_be_answered") or answering_question:
             next_keyword = ask_question(npc, data)
             print("next_keyword line 151 after ask_questions")
             if next_keyword and next_keyword != "end_topic":
                 next_keyword = "KEYWORD" + next_keyword
             return next_keyword, failed_checks, parts_said
-            """if data["can_be_answered"].get("if_yes"):
-                if test and test.lower() in ("y", "yes"):
-                    requirement_met, failure = if_can_be_answered(data["can_be_answered"]["if_yes"])
-                    if requirement_met:
-                        convo_print("requirements_met if_can_be_answered")
-                        confirm_use_of_data(npc, data)
-                        test = data["can_be_answered"]["if_yes"].get("send_keyword")
-                    elif failure:
-                        print("\n   ", affect(npc, failure), "\n")
-                        return "was_input", failed_checks, parts_said
-
-                import random
-                print("\n   ", affect(npc,random.choice(npc.acceptance)), "\n")
-                return "was_input", failed_checks, parts_said"""
         else:
             convo_print(f"cannot be answered, confirming use of data. test is : `{test}`")
             confirm_use_of_data(npc, data)
-        """print(f"[[test: {test}]]")
-        if test and test.lower() in ("y", "yes"):
-            print("What do you want to say?")
-            test = input("\n... ")"""
 
     if test:
-        convo_print(f"[TEST in test_response: `{test}`]\n")
         is_keyword = False
-        convo_print(f"about npc.keywords.get({test}): ")
+        convo_print(f"test_response going to run_keyword: ({test})")
         outcome, is_keyword = run_keyword(npc, conversation, idx=None, test=test)
-        """if npc.keywords.get(test):# = {convo:convo.keywords[kw]}
-            print("npc.keywords.get(test): ", npc.keywords.get(test))
-            print(f"parts_said: {parts_said} / type: {type(parts_said)}")
-            if parts_said:
-                convo_print(f"parts_said: {parts_said} // npc.conversations[conversation]['parts_said']:")
-                print(f"npc conversatins parts said: {npc.conversations[conversation].get('parts_said')}")
-                print(f"parts_said will be updated")#: {npc.conversations[conversation]['parts_said']}")
-                npc.conversations[conversation]["parts_said"] = parts_said
-                print(f"parts_said is now updated")#: {npc.conversations[conversation]['parts_said']}")
-            else:
-                convo_print(f"No parts_said for test {test}")
 
-            if failed_checks:
-                npc.conversations[conversation]["autoplay_failed"] = failed_checks
-
-            for convo, entry in npc.keywords[test].items():
-                convo_print(f"[sending convo and entry `{entry}` / type: {type(entry)} to discuss_topic from if test in check_data]")
-                outcome = discuss_topic(npc, convo, entry, skip=skip)
-                skip = True
-                convo_print(f"discuss_topic outcome for {test}: {outcome}")
-                if outcome == "end_topic":
-                    convo_print(f"[outcome for discuss_topic inside check_data: {outcome} for keyword_test {test}], returning end_topic\n--------------\n\n")
-                    return "end_topic", failed_checks, parts_said
-                if outcome == "inner_loop":
-                    convo_print(f"[outcome for discuss_topic inside check_data: {outcome} for keyword_test {test}], returning end_topic\n--------------\n\n")
-                    return "end_topic", failed_checks, parts_said
-                    return "inner_loop"
-                if outcome == "keyword_done":
-                    return "end_topic", failed_checks, parts_said
-                print(f"outcome is not end_topic or inner_loop: {outcome}")"""
         if is_keyword and not is_keyword == "skip_printing":
             convo_print(f"is_keyword after run_keyword, about to return outcome ({outcome}), failed_checks ({failed_checks}) and parts_said ({parts_said}) from ln 216")
             outcome = "KEYWORD" + outcome
@@ -248,7 +209,7 @@ def check_data(npc:npcInstance, idx:str, conversation:conversationInstance, data
 
     keyword_met = False
     convo_print(f"[in check_data] checking data for {idx}, failed_checks: {failed_checks}, is_keyword: {is_keyword}\n")
-    not_requirements = check_requirements(data, is_keyword, conversation)
+    not_requirements = check_requirements(data, is_keyword, conversation, npc)
     if not_requirements:
         if not_requirements == "no_check":
             if not data.get("autoplay") and is_keyword:
@@ -377,7 +338,7 @@ def discuss_topic(npc:npcInstance, conversation:conversationInstance, keyword_pa
     for idx, data in conversation.by_part.items():
         if data.get("autoplay"):
             convo_print(f"Getting the precheck for failed requirements for {idx}. Data:\n{data}\n")
-            failed_requirements = check_requirements(data, keyword_part, conversation)
+            failed_requirements = check_requirements(data, keyword_part, conversation, npc)
             if failed_requirements and failed_requirements != "no_check":
                 convo_print(f"--------------\nFailed requirements for idx {idx}: {failed_requirements}\n--------------")
                 failed_checks.add(idx)
@@ -512,6 +473,13 @@ def run_keyword(npc:npcInstance, conversation:conversationInstance, idx:str, tes
     """For keyword sections, instead of reusing discuss_topic"""
     convo_print(f"[run_keyword for conversation {conversation.topic_label} // {idx}]")
     outcome = "unknown"
+
+    if test == "trade":
+        print("TEST == TRADE. Sending to trade.")
+        from trade import trade_with
+        trade_with(npc)
+        return "end_topic"
+
     if not idx and conversation.keywords.get(test):
         idx = conversation.keywords[test]
         if not idx:
@@ -530,7 +498,7 @@ def run_keyword(npc:npcInstance, conversation:conversationInstance, idx:str, tes
         data = conversation.by_part[idx]
         #idx = idx if len(idx) == 1 else conversation.keywords[idx]
         #convo_print(f"idx == keyword part if keyword_part len 1: {idx}\nData: {data}")
-        failed_requirements = check_requirements(data, test, conversation)
+        failed_requirements = check_requirements(data, test, conversation, npc)
         if (failed_requirements and not failed_requirements == "no_check") or not data["speech"]:
             convo_print("[[failed requirements (except no_check) and/or no 'speech'.]]")
             return "unknown", None
