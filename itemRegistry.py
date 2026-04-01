@@ -1277,6 +1277,9 @@ class itemRegistry:
             inst.location = target_location
             registry.by_location.setdefault(target_location, set()).add(inst)
 
+        if not inst.encountered:
+            inst.encountered = True
+
         return update
 
 
@@ -1297,6 +1300,8 @@ class itemRegistry:
             updated.add(outcome)
             updated.add(inst)
             if other != "process_as_normal":
+                if not outcome.encountered:
+                    outcome.encountered = True
                 #print("outcome, old_container, new_container, location, old_loc, updated: ", outcome, old_container, new_container, location, old_loc, updated)
                 #print("Not process as normal. All moves need to be done already.")
                 updated = self.clear_parent_and_old_loc(outcome, old_container, new_container, location, old_loc, updated)

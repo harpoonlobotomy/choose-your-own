@@ -33,7 +33,7 @@ def smart_capitalise(s: str) -> str:
 
 def is_plural_noun(noun_inst, singular = None, plural = None, bool_test=False):
     """Checks if the given noun_inst is a plural noun.name. If so, returns `'are'`, `1` if bool_test, or `plural` if given, and similarly for singular. `singular` and `plural` can be specified as anything and will be appled in the same fashion."""
-    plural_nouns = set(("dried flowers", "bedsheets",))
+    plural_nouns = set(("dried flowers", "bedsheets", "car keys",))
     if noun_inst.name in plural_nouns:
         if bool_test:
             return 1
@@ -769,7 +769,7 @@ def assign_colour(item, colour:str=None, *, nicename:bool=None, switch=False, no
             item_instance = None
             if noun:
                 colour, _, bld = check_instance_col(noun)
-                print("colour", colour, "bold: ", bld, f"from noun {noun} and item str {item}")
+                #print("colour", colour, "bold: ", bld, f"from noun {noun} and item str {item}")
             else:
                 if is_inventory:
                     item_instance = from_inventory_name(item)

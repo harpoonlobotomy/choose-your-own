@@ -89,6 +89,9 @@ class npcInstance:
         self.knows_about:list[str] = data.get("knows_about")
         self.conversations:dict[conversationInstance, str] = {}
 
+        self.gold = data.get("gold", 5) # default 5 so npcs have money on them
+        self.inventory:set = set() # separate from can_trade, as not all held items are sellable and not only traders hold items.
+
         if "can_trade" in self.item_type:
             from itemRegistry import itemInstance, registry
             self.trade_items:set[itemInstance] = set(data["trade_items"]) if data.get("trade_items") else set()
@@ -98,9 +101,13 @@ class npcInstance:
                     inst = registry.init_single(item, apply_location="north no_place")
                     setattr(inst, "trade_item", self)
                     new_items.add(inst)
+                    self.inventory.add(inst)
                 if len(new_items) == len(self.trade_items):
                     self.trade_items = new_items
+                else:
+                    print(f"Not all trade_items for {self.name} were generated:\n{self.trade_items}\nvs:\nnew_items\ninvestigate this failure.\n\n")
 
+            self.will_not_sell:list = data.get("will_not_sell")
             self.thief_awareness:int = data.get("thief_awareness", 5)
             self.trade_start:str = data["conversation_parts"].get("trade_start", "Let's see here...")
             self.trade_end:str = data["conversation_parts"].get("trade_end", "Please come again.")
@@ -332,6 +339,9 @@ class npcRegistry:
 
             reformed = reformed.replace("**", "...")
             reformed = reformed[0].upper() + reformed[1:]
+
+            if reformed[-2:] == "?.":
+                reformed = reformed[:-1]
 
             if styling and npc.text_styling:
                 reformed = npc.colourcode_start + reformed + npc.colourcode_end

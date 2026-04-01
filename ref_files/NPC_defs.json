@@ -61,11 +61,12 @@
       "standard",
       "can_trade"
     ],
-    "trade_items": ["mummified mouse", "scroll", "car keys", "fish food jar"],
+    "trade_items": ["mummified mouse", "scroll", "car keys", "fish food jar", "goat excrement"],
     "trade_intake": {"named_only": ["dried moss"]},
+    "will_not_sell": ["dried moss"],
     "knows_about": [
       "moss",
-      "dried_moss"
+      "dried moss"
     ],
     "languages_spoken": [
       "common", "Trollish"

@@ -59,7 +59,7 @@ def check_requirements(data, keyword, conversation, npc):
     """True or "no_check" if the requirements were not met ("no check" means there were no requirements), False means requirements existed but were not met."""
     requirement_not_met = True
 
-    if data["has_requirements"]:
+    if data.get("has_requirements") and data["has_requirements"]:
         for kind, name in data["has_requirements"].items():
             requirement_not_met = tuple((kind, name))
             if kind == "item":
@@ -69,13 +69,14 @@ def check_requirements(data, keyword, conversation, npc):
                 from itemRegistry import registry
                 if specification == "in_inv":
                     from env_data import locRegistry
-                    named_in_inv = list(i for i in registry.by_location.get(locRegistry.inv_place) if i.name == name)
+                    named_in_inv = list(i for i in registry.by_location[locRegistry.inv_place] if registry.by_location.get(locRegistry.inv_place) and i.name == name)
                     if named_in_inv:
                         requirement_not_met = False
                 elif specification == "encountered":
-                    named = set(i for i in registry.instances_by_name(name) if i.encountered)
-                    if named:
-                        requirement_not_met = False
+                    if registry.instances_by_name(name):
+                        named = set(i for i in registry.instances_by_name(name) if i.encountered)
+                        if named:
+                            requirement_not_met = False
 
                 #from misc_utilities import from_inventory_name
                 #item = from_inventory_name(name)
@@ -158,7 +159,13 @@ def test_response(test:str, data:dict, npc:npcInstance, conversation:conversatio
 
     if (test and test != "failed") or answering_question:
         if data.get("can_be_answered") or answering_question:
+            print("About to ask question, ln161")
             next_keyword = ask_question(npc, data)
+            if next_keyword == "trade":
+                print("going to trade (from keyword)")
+                from interactions.trade import trade_with
+                trade_with(npc)
+                next_keyword = "end_topic"
             print("next_keyword line 151 after ask_questions")
             if next_keyword and next_keyword != "end_topic":
                 next_keyword = "KEYWORD" + next_keyword
@@ -198,7 +205,6 @@ def test_response(test:str, data:dict, npc:npcInstance, conversation:conversatio
     else:
         convo_print("no test, confirming use of data")
         confirm_use_of_data(npc, data)
-        skip = True
 
     if parts_said:
         npc.conversations[conversation]["parts_said"] = parts_said
@@ -287,7 +293,9 @@ def check_data(npc:npcInstance, idx:str, conversation:conversationInstance, data
     if keyword_met == True:
         returning = "keyword_met"
     if data.get("can_be_answered"):
-        returning = "can_be_answered"
+        print("Answering question from idx loop, ln 295")
+        ask_question(npc, data)
+        returning = "end_topic"
 
     return returning, failed_checks, parts_said
 
@@ -339,6 +347,7 @@ def discuss_topic(npc:npcInstance, conversation:conversationInstance, keyword_pa
         if data.get("autoplay"):
             convo_print(f"Getting the precheck for failed requirements for {idx}. Data:\n{data}\n")
             failed_requirements = check_requirements(data, keyword_part, conversation, npc)
+            print(f"Faield reqwuirements after check_requirements: {failed_requirements}")
             if failed_requirements and failed_requirements != "no_check":
                 convo_print(f"--------------\nFailed requirements for idx {idx}: {failed_requirements}\n--------------")
                 failed_checks.add(idx)
@@ -349,7 +358,7 @@ def discuss_topic(npc:npcInstance, conversation:conversationInstance, keyword_pa
     if autoplay_failed and not failed_checks:
         failed_checks = autoplay_failed # why is this necessary. I don't get it.
     convo_print(f"failed checks in advance: {failed_checks}\nautoplay_failed: {autoplay_failed}\nlen(conversation.autoplay_parts): {len(conversation.autoplay_parts)}\n--------------")
-    if autoplay_in_said and len(autoplay_in_said) + (len(failed_checks) if failed_checks else 0) >= len(conversation.autoplay_parts) and (keyword_part if keyword_part in autoplay_in_said and len(autoplay_in_said) == 1 else not keyword_part): # < so it doesn't succeed if we said a bunch of keyword lines but not the autoplay ones as happened in testing.
+    if autoplay_in_said and len(autoplay_in_said) + (len(failed_checks) if failed_checks else 0) >= len(conversation.autoplay_parts) and (keyword_part if keyword_part and keyword_part in autoplay_in_said and len(autoplay_in_said) == 1 else not keyword_part): # < so it doesn't succeed if we said a bunch of keyword lines but not the autoplay ones as happened in testing.
     #if parts_said and len(parts_said) >= len(conversation.autoplay_parts):
         print("\n   ", affect(npc, "We've discussed this topic before. Do you want to discuss it again?"), "\n")
         test = input("... ")
@@ -378,6 +387,7 @@ def discuss_topic(npc:npcInstance, conversation:conversationInstance, keyword_pa
             parts_said.add(idx)
             continue
         convo_print(f"[conversation.by_part] [no keyword]: idx: {idx}, data: {data}\nFailed checks before check_data not keyword: ``{failed_checks}``")
+        print(f"Going to check_data ln 386 {data}")
         test_initial, failed_checks, parts_said = check_data(npc, idx, conversation, data, parts_said, is_keyword = None, failed_checks = failed_checks)
         convo_print(f"Test initial after check_data: `{test_initial}`\n")
         if test_initial and test_initial == "was_input":
@@ -385,12 +395,30 @@ def discuss_topic(npc:npcInstance, conversation:conversationInstance, keyword_pa
         if not test_initial:
             convo_print(f"NOT TEST INITIAL, getting new test input")
         #if test_initial and not test_initial == "was_input":
-            test = input("(ln 426) ... ")
+            test = input("(ln 394) ... ")
             test, failed_checks, parts_said = test_response(test, data, npc, conversation, failed_checks, parts_said)
-            if test == "end_topic":
+            if test and "trade" in test:
+                convo_print("going to trade (from keyword)")
+                from interactions.trade import trade_with
+                trade_with(npc)
+                return "end_topic"
+            convo_print(f"end of test_response lm 395: {test} / DATA: {data}")
+            if data.get("can_be_answered"):
+                convo_print(f"[[can_be_answered]]")
+                outcome = ask_question(npc, data) # all the print lines contained in the question data are printed internally
+                convo_print(f"next_keyword line 537 after ask_questions. Outcome: `{outcome}`")
+                if outcome:
+                    if outcome != "end_topic":
+                        if outcome == "trade":
+                            from interactions.trade import trade_with
+                            trade_with(npc)
+                            return "end_topic"
+                        run_keyword(npc, conversation, idx, outcome) # for running keywords from inside the idx loop
+                        return "end_topic"
+            if test and test == "end_topic":
                 convo_print(f"[no keyword] [idx {idx}] test is end_topic, returning end_topic")
                 return "end_topic" # changed from returning None
-            elif test == "inner_loop":
+            elif test and test == "inner_loop":
                 convo_print(f"[no keyword] [idx {idx}] test is inner_loop, returning inner loop")
                 return "inner_loop"
             else:
@@ -444,10 +472,14 @@ def ask_question(npc, data):
                         next_keyword = data["can_be_answered"][criteria]["send_keyword"]
                     if data["can_be_answered"][criteria].get("response"): # check this last to get keyword first is present.
                         print("\n   ", affect(npc, data["can_be_answered"][criteria]["response"]), "\n")
-                        if next_keyword:
-                            return next_keyword # sending 'outcome' here in case it had a keyword to send /and/ a response to print.
-                        else:
+                    if next_keyword: # moved in a tab so it sends with or without a response, it shouldn't be dependent on that.
+                        if next_keyword == "trade":
+                            from interactions.trade import trade_with
+                            trade_with(npc)
                             return "end_topic"
+                        return next_keyword # sending 'outcome' here in case it had a keyword to send /and/ a response to print.
+                    else:
+                        return "end_topic"
                 elif failure:
                     print("\n   ", affect(npc, failure), "\n")
                     return "end_topic"
@@ -476,9 +508,9 @@ def run_keyword(npc:npcInstance, conversation:conversationInstance, idx:str, tes
 
     if test == "trade":
         print("TEST == TRADE. Sending to trade.")
-        from trade import trade_with
+        from interactions.trade import trade_with
         trade_with(npc)
-        return "end_topic"
+        return "end_topic", "skip_printing"
 
     if not idx and conversation.keywords.get(test):
         idx = conversation.keywords[test]
@@ -508,6 +540,7 @@ def run_keyword(npc:npcInstance, conversation:conversationInstance, idx:str, tes
         print("\n   ", affect(npc, data["speech"]), "\n")
 
         if data.get("can_be_answered"):
+            print("About to ask question, ln 534")
             outcome = ask_question(npc, data) # all the print lines contained in the question data are printed internally
             convo_print(f"next_keyword line 537 after ask_questions. Outcome: `{outcome}`")
             if outcome:
@@ -583,6 +616,11 @@ def conversation_loop(npc:npcInstance):
         found = False
         if test in leave_convo:
             return test
+        if "trade" in test:
+            print("going to trade (from keyword)")
+            from interactions.trade import trade_with
+            trade_with(npc)
+            return "end_topic"
 
         for convo in new_conversations:
             if convo.keywords.get(test):

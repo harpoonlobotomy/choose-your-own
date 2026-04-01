@@ -2029,3 +2029,13 @@ Note for tomorrow: the moss/dried moss conversation doesn't trigger properly, it
 
 note: npc trade items are not yet replaced with instances, they're still just strings.
 11pm now trade items are instances on init, so that's fine. The buy/sell process is still just a scaffold, will do tomorrow.
+
+10.06am 1/4/26
+Hm.
+the 'moss dries' event doesn't render the dried moss 'encountered'.
+10.52am
+Okay now it does.
+
+Need to check that all the inventory calls will work even if inv is empty. I've not tested that yet.
+
+Oh shit. `ctrl-shift-f` lets you search within all files in the workspace. I've been wanting that so badly, goddamn.

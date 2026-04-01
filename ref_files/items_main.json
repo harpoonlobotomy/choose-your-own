@@ -1778,5 +1778,12 @@
     "item_type": ["container"],
     "print_children_as_list": true,
     "item_size": 6
+  },
+  "goat excrement": {
+    "alt_names": ["goat shit"],
+    "item_type": ["standard", "food_drink"],
+    "effect": null,
+    "is_safe": false,
+    "is_spoiled": false
   }
 }
