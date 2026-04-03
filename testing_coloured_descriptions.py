@@ -46,7 +46,7 @@ def format_descrip(d_type="area_descrip", description="", location=None, cardina
                 local_items = list(i for i in local_items if not (hasattr(i, "is_hidden") and getattr(i, "is_hidden")) and not (hasattr(i, "not_in_loc_desc") and getattr(i, "not_in_loc_desc")))
                 new_items = list(i for i in local_items if not i.encountered and isinstance(i, itemRegistry.itemInstance))
                 if new_items:
-                    print(f"Unencountered items: {new_items}")
+                    #print(f"Unencountered items: {new_items}")
                     for i in new_items:
                         i.encountered = True
                         if hasattr(i, "contents_encountered_with_container") and i.contents_encountered_with_container and i.children:

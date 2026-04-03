@@ -713,11 +713,11 @@ def start_conversation(npc:npcInstance):
             output = conversation_loop(npc)
             convo_print(f"[while_loop in start_conversation] after conversation_loop after 'inner_loop': {output}")"""
 
-    print(f"[Output not in end_topic or inner_loop, end of `start_conversation` loop: `{output}`]")
+    convo_print(f"[Output not in end_topic or inner_loop, end of `start_conversation` loop: `{output}`]")
 
-    if not output:
-        print(f"\n   {affect(npc, f'Nothing else you want to discuss? {npc.convo_end}')}\n")
-    else:
-        print(f"\n   {affect(npc, npc.convo_end)}\n")
+    #if not output:
+    #    print(f"\n   {affect(npc, f'Nothing else you want to discuss? {npc.convo_end}')}\n")
+    #else:
+    print(f"\n   {affect(npc, npc.convo_end)}\n")
 
     print(f"You step aside, leaving the conversation with {npc_colour(npc)}.\n\n")

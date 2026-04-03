@@ -26,7 +26,7 @@ class conversationInstance:
             self.by_part.setdefault(idx, data["conversation"][idx])
             if data["conversation"][idx].get("autoplay"):
                 self.autoplay_parts.add(idx)
-        print(f"REVERSE KEYWORDS: {self.reverse_keywords}")
+        #print(f"REVERSE KEYWORDS: {self.reverse_keywords}")
         self.language:str = data.get("language")
 
     def __repr__(self):
@@ -230,7 +230,6 @@ class npcRegistry:
         npc = self.by_name.get(string)
         if not npc:
             npc = self.by_altname.get(string)
-        print(f"NPC: {npc}")
 
         if not npc:
             lowernames = list(i for i in self.by_name if i.lower() == string)

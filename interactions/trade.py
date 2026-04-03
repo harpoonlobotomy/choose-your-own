@@ -10,7 +10,7 @@ loot_table = {
     "great_loot": 3,
     "special_loot": 4}
 
-def t_print(string, newline_before=False, newline_after=False, item_1=None, item_2=None):
+def t_print(string, newline_before=False, newline_after=False, item_1=None, item_2=None, item_3=None):
     """for formatting"""
     bg = "44"
     colourcode = "\033[0;32m"
@@ -30,9 +30,12 @@ def t_print(string, newline_before=False, newline_after=False, item_1=None, item
     if item_2:
         item_2 = endcode + assign_colour(item_2, no_reset=True) + colourcode
         string = string.replace("item_2", item_2)
+    if item_3:
+        item_3 = endcode + assign_colour(item_3, no_reset=True) + colourcode
+        string = string.replace("item_3", item_3)
     if "_" in string:
         import re
-        matches = re.findall("_\w*_", string)
+        matches = re.findall(r"_\w*_", string)
         #print(f"regex matches: {matches}")
         for item in matches:
             string = string.replace(item, f"{boldcode}{item.replace("_", '')}{colourcode}")
@@ -100,6 +103,7 @@ def get_sellable(npc:npcInstance, loot_table, force_all=False):
 
 def buy_item(npc, purchase_item, trade_value=None, trade_item=None):
 
+    from misc_utilities import is_plural_noun
     if trade_value:
         from set_up_game import game
         if not game.gold:
@@ -109,7 +113,7 @@ def buy_item(npc, purchase_item, trade_value=None, trade_item=None):
             t_print("You don't have enough gold to pay with.", newline_before = True, newline_after=True)
             return False
         else:
-            t_print(f"You pay the {npc.name}.", newline_before = True, newline_after=True)
+            t_print(f"You pay the item_1 item_2. The item_3 {is_plural_noun(purchase_item)} now in your inventory.", newline_before = True, newline_after=False, item_1=npc, item_2 = assign_colour(f"{trade_value} gold", colour="description"), item_3=purchase_item)
             game.gold -= trade_value
             npc.gold += trade_value
             return True
@@ -117,19 +121,54 @@ def buy_item(npc, purchase_item, trade_value=None, trade_item=None):
     elif trade_item:
         give_item_to_npc(npc, trade_item)
         take_item_from_npc(npc, purchase_item)
-        from misc_utilities import is_plural_noun
         t_print(f"You exchanged the item_1 for the item_2. The item_2 {is_plural_noun(purchase_item)} now in your inventory.", newline_before=True, newline_after=False, item_1=trade_item, item_2=purchase_item)
         print()# extra newline to emphasise state change
         return True
 
 
+def get_item_from_list(test, npc, printed_list, source):
+
+    int_test = None
+    try:
+        int_test = int(test)
+        print(f"INT_TEST: {int_test}")
+    except:
+        t_print(f"Which item do you want to sell to item_1?   [Enter the name of the item you want to trade, or hit enter to return to menu]", newline_after=True, item_1=npc)
+        test = input("... ")
+        if not test or test.lower() in ("none", "nothing"):
+            return test
+    if int_test and isinstance(int_test, int):
+        if int_test <= len(source):
+            print("About to fetch from list by index, may break because I'm exhausted")
+            item = printed_list[int_test-1]
+            if item:
+                print(f"ITEM: {item}")
+                print(f"source before: {source}")
+                if isinstance(source, set):
+                    source = list(source)
+                    print(f"source_after: {source}")
+                if len(source) == len(printed_list):
+                    print("len source == len printed_list")
+                    inst = source[int_test-1]
+                    print(f"inst from source[int_test-10]: {inst}")
+                    if inst.name in item: # because `item` has the assign_colour formatting, so direct matches don't work unless I stripped it first. NOTE: If I always alphabetise the sellable_items before printing, the order will always match. Maybe do that? Not sure.
+                        print(f"Inst.name == item: item: {item} // inst: {inst}")
+                        return inst
+                for i in source: # loop to get one by the right name in case the above fails. Though if the above fails, it will kill the route so it probably wouldn't continue to try this loop anyway. Will see.
+                    if i.name == item:
+                        return i
+            #test = input("... ")
+            #if not test or test.lower() in ("none", "nothing"):
+            #    return test
 
 def sell_item(sellable_items, npc, value = None, purchase_item = None):
     from misc_utilities import assign_colour
     test = True
 
     while test:
-        t_print(f"item_1 is willing to trade for:", newline_after=True, item_1=npc)
+        sold_item = None
+
+        t_print(f"item_1 is willing to trade for these items:", newline_before=True, newline_after=True, item_1=npc)
         print_list = list(f"{assign_colour(item=f'  - {i.name}', noun=i)}\n" for i in sellable_items)
         print(''.join(print_list))
         t_print(f"Which item do you want to sell to item_1?   [Enter the name of the item you want to trade, or hit enter to return to menu]", newline_after=True, item_1=npc)
@@ -137,9 +176,19 @@ def sell_item(sellable_items, npc, value = None, purchase_item = None):
         test = input("... ")
         if not test or test.lower() in ("none", "nothing"):
             return False
-        sold_item = list(i for i in sellable_items if i.name.lower() in test.lower())
+        if len(test) == 1:
+            sold_item = get_item_from_list(test, npc, printed_list = print_list, source = sellable_items)
+            if not sold_item or (sold_item and isinstance(sold_item, str) and sold_item in ("none", "nothing")):
+                print(f"[No sold item or is str: `{sold_item}`]")
+                return False
+            print(f"sold_item by index: {sold_item}")
+
+        #t_print("", newline_after=True)
+        if not sold_item: # to allow for the idx without having to repeat this section
+            sold_item = list(i for i in sellable_items if i.name.lower() in test.lower())
         if sold_item:
-            sold_item = sold_item[0]
+            if isinstance(sold_item, list):
+                sold_item = sold_item[0]
             if purchase_item:
                 if buy_item(npc, purchase_item, None, sold_item):
                     #print(f"Trade successful: gave {npc.name} the {sold_item.name} in exchange for the {purchase_item.name}")
@@ -156,12 +205,13 @@ def sell_item(sellable_items, npc, value = None, purchase_item = None):
                     else:
                         value = 1
                 t_print(f"item_1 will give you item_2 for this item. Do you want to make this trade?", newline_before=True, newline_after=True, item_1=npc, item_2=assign_colour(f"{value} gold", colour="description"))
-                test=input()
+                test=input("... ")
                 if test in ("y", "yes"):
                     give_item_to_npc(npc, sold_item)
                     from set_up_game import game
                     game.gold += value
-                    t_print(f"You recieve item_1 in exchange for the item_2.", item_1=assign_colour(f"{value} gold", colour="description"), item_2=sold_item, newline_after=True)
+                    t_print(f"You recieve item_1 in exchange for the item_2.", item_1=assign_colour(f"{value} gold", colour="description"), item_2=sold_item, newline_before=True, newline_after=False)
+                    print() # like selling items, add an extra newline to make it clearer something has changed.
                     return True
                 t_print("You decide to keep the item_1 for now.", item_1 = sold_item, newline_before=True)
                 return False
@@ -181,22 +231,31 @@ def trade_with(npc:npcInstance):
     t_print(f" --- Entering trade with {npc.name} ---", newline_before=True)
     end_text = f" -- Ending trade with item_1 --"
     while True:
-        t_print("Do you want to buy or sell?", newline_before=True, newline_after=True)
+        t_print("Do you want to _buy_ or _sell_?", newline_before=True, newline_after=True)
         test = input("... ")
-        if not test or test and test in ("no", "n"):
+        if not test or (test and test in ("no", "n")) or (test and test in ("y", "yes")):
             if test and test in ("no", "n"):
+                print()
                 "Ending trade."
                 break
-            t_print("Do you want to leave? Enter nothing to end trade.", newline_before=True)#, newline_after=True)
-            test = input("\n... ")
-            if not test:
-                print("Ending trade.")
-                break
+            if test and test in ("y", "yes"):
+                t_print("Do you want to _buy_ or _sell_?", newline_before=True, newline_after=True)
+                test = input("... ")
+
+            else:
+                t_print("Do you want to leave? Enter nothing to end trade.", newline_before=True)#, newline_after=True)
+                test = input("\n... ")
+                if not test or test in ("y", "yes"):
+                    print("Ending trade.")
+                    break
+                if test and test in ("n", "no"):
+                    t_print("Do you want to _buy_ or _sell_?", newline_before=True, newline_after=True)
+                    test = input("... ")
 
         if "buy" in test or test == "b":
             if not npc.trade_items:
                 t_print(f"item_1 doesn't have items to trade. Do you want to sell anything?", item_1=npc, newline_before=True, newline_after=True)
-                test = input("\n... ")
+                test = input("... ")
                 if test in ("y", "yes"):
                     test = "sell"
             else:
@@ -237,6 +296,8 @@ def trade_with(npc:npcInstance):
                                         test = input("\n... ")
                                         if test and "gold" in test.lower():
                                             if buy_item(npc, item, value):
+                                                print() # I thought I already added an extra line after purchases but I guess not?
+                                                test = None
                                                 trade_done = True
                                                 break
                                             test = None
@@ -249,7 +310,7 @@ def trade_with(npc:npcInstance):
                                                 test = None
                                                 break
                                             else:
-                                                t_print(f"Which item do you want to trade to item_1 for the item_2?", newline_before=True, newline_after=True, item_1 = npc, item_2 = item)
+                                                t_print(f"Which item do you want to trade to item_1 for the item_2?", newline_before=True, item_1 = npc, item_2 = item)
                                                 while True:
                                                     if sell_item(sellable_items, npc, purchase_item=item):
                                                         sellable_items = get_sellable(npc, loot_table)
@@ -287,13 +348,13 @@ def trade_with(npc:npcInstance):
                 while True:
                     if sell_item(sellable_items, npc):
                         sellable_items = get_sellable(npc, loot_table)
+                        trade_done = True
                         if not sellable_items:
                             t_print(f"You don't have anything else item_1 wants.", item_1=npc, newline_after=True)
                             test = None
-                            trade_done = True
                             break
+                        test = "buy"
                     else:
-                        print()
                         break
 
         if test and test not in ("sell", "buy", "s", "b", "trade"):
@@ -303,7 +364,7 @@ def trade_with(npc:npcInstance):
                     print("\n   ", affect(npc, npc.trade_end), "\n")
                 return
 
-            t_print(f"I'm not sure what you mean by `{test}`.")
+            t_print(f"I'm not sure what you mean by `{test}`.", newline_before=True)
             test = input("\n... ")
 
     t_print(end_text, item_1 = npc, newline_after=True)

@@ -561,7 +561,7 @@ class itemRegistry:
              * and finally, from itemRegistry.instances"""
         if inst.location and inst.location in self.by_location and inst in self.by_location[inst.location]:
             self.by_location[inst.location].remove(inst)
-            print(f"remove from inst.location: {inst.location}")
+            #print(f"remove from inst.location: {inst.location}")
         if inst in loc.inv_place.items:
             loc.inv_place.items.remove(inst)
 
@@ -766,7 +766,7 @@ class itemRegistry:
                             if key.name in item.requires_key:
                                 item.requires_key.remove(key.name)
                             item.requires_key.add(key)
-                    print(f"ITEM.REQUIRES_KEY at end of cleaning loop: `{item}` // `{item.requires_key}`, requires_key type: {type(item.requires_key)}")
+                    #print(f"ITEM.REQUIRES_KEY at end of cleaning loop: `{item}` // `{item.requires_key}`, requires_key type: {type(item.requires_key)}")
 
         try:
             cleaning_loop()

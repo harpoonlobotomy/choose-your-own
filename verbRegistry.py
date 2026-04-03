@@ -904,7 +904,7 @@ class Parser:
         for i, token in enumerate(tokens):
             if "location" in token.kind and len(tokens) > i+1 and "noun" in tokens[i+1].kind:
                 if tokens[i+1].canonical and token.canonical in tokens[i+1].canonical:
-                    print(f"TOKEN: {token} // tokens[i+1]: {tokens[i+1]}")
+                    #print(f"TOKEN: {token} // tokens[i+1]: {tokens[i+1]}")
                     token_to_remove = token ## removes location 'bridge' from 'look at bridge troll'
                     token_to_change = tokens[i+1]
                     break

@@ -679,8 +679,8 @@ def assign_colour(item, colour:str=None, *, nicename:bool=None, switch=False, no
         "hash": {"bg":"blue"},
         "title_white": {"colour":"white"},
         "title": {"bld":True},
-        "event_msg": {"ita":True, "bld":False, "colour": "green"},
-        "enter_door": {"ita":True, "colour": "white"}
+        "event_msg": {"ita":True, "bld":False, "colour": "yellow"},
+        "enter_door": {"ita":True, "colour": "yellow"}
     }
 
     Colours.colour_counter = Colours.colour_counter%len(cardinals)

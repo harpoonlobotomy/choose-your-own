@@ -1492,9 +1492,9 @@ def break_item(format_tuple, input_dict):
 def check_key_lock_pairing(noun_1:itemInstance, noun_2:itemInstance):
     """Checks if noun_1 is a key, and if noun_2 is a matching key."""
     logging_fn()
-    print(f"check key lock pairings for {noun_1}, {noun_2} // noun_1.item_type: {noun_1.item_type} // noun2.requires_key:")
+    #print(f"check key lock pairings for {noun_1}, {noun_2} // noun_1.item_type: {noun_1.item_type} // noun2.requires_key:")
     if hasattr(noun_2, "requires_key"):
-        print("noun_2.requires_key: ", noun_2.requires_key)
+        #print("noun_2.requires_key: ", noun_2.requires_key)
         if noun_1 in noun_2.requires_key:
             return 1
     #if in_types(noun_1, "key") and hasattr(noun_2, "requires_key") and noun_1 == noun_2.requires_key:
@@ -1522,7 +1522,7 @@ def lock_unlock(format_tuple, input_dict, do_open=False, noun=None, noun2=None):
             accessible_1, _, _ = can_interact(noun)
             accessible_2, _, _ = can_interact(noun2)
             if accessible_1 and accessible_2:
-                print(f"{noun} and {noun2} are both accessible.")
+                #print(f"{noun} and {noun2} are both accessible.")
                 success = check_key_lock_pairing(noun, noun2)
                 if success:
                     key = noun
@@ -1534,7 +1534,7 @@ def lock_unlock(format_tuple, input_dict, do_open=False, noun=None, noun2=None):
                         key = noun2
                         lock = noun
                 if key and lock:
-                    print(f"KEY: {key}, LOCK: {lock}")
+                    #print(f"KEY: {key}, LOCK: {lock}")
                     if lock.is_locked and do_open:
                             print(f"You use the {assign_colour(key)} to unlock the {assign_colour(lock)}, and open it.")
                             set_noun_attr(("is_locked", False), ("is_open", True), noun=lock)
@@ -2744,10 +2744,13 @@ def trade(format_tuple=None, input_dict=None, npc:npcInstance=None):
     else:
         print("No input_dict or npc given for def trade()")
     if noun:
-        if isinstance(noun, itemInstance):
-            print(f"The {assign_colour(noun)} doesn't seem like something you can trade with.")
+        if isinstance(noun, itemInstance) or not "can_trade"  in noun.item_type:
+            if isinstance(noun, itemInstance):
+                extra = "something"
+            else:
+                extra = "someone"
+            print(f"{assign_colour(noun, caps=True)} doesn't seem like {extra} you can trade with.")
         elif isinstance(noun, npcInstance):
-            print(f"Trading with {noun.name}")
             import interactions.trade
             interactions.trade.trade_with(noun)
             look_around()

@@ -2039,3 +2039,10 @@ Okay now it does.
 Need to check that all the inventory calls will work even if inv is empty. I've not tested that yet.
 
 Oh shit. `ctrl-shift-f` lets you search within all files in the workspace. I've been wanting that so badly, goddamn.
+
+10.22am, 2/4/26
+
+I don't know what else it needs. God my head hurts.
+
+10.56am
+Added index selection to the sell list, only limited tests so far. Need to apply to buy list too. Lets you just type the order number of the item you want to buy/sell (starting at 1) instead of typing the name.
