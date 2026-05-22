@@ -172,9 +172,12 @@ class npcInstance:
             if not hasattr(self, item) and item != "responses":
                 print(f"Item `{item}` in NPC_defs but not in npcInstance")
 
-    def encounter(self):
-        print(f"NPC {self} is encountered.")
-        self.encountered = True
+    def encounter(self, text_sent=None):
+        if not self.encountered:
+            print(f"NPC {self} has been encountered.")
+            self.encountered = True
+            if text_sent:
+                print(f"Details: [  {text_sent}  ]\n")
 
     def steal_from_npc(self, item:itemInstance):
         """ Awareness is 1-20. 20 = basically impossible to steal from, 1 == lil bit of luck should do it."""
@@ -286,7 +289,8 @@ class npcRegistry:
             npc = set((npc,))
             return npc
         else:
-            print(f"No NPC found for `{string}`")
+            from logger import logging_fn
+            logging_fn(note=f"No NPC found for `{string}`")
 
 
     def alter_speech(self, npc:npcInstance, speech_str:str, styling=True):

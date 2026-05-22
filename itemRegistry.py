@@ -135,10 +135,11 @@ class itemInstance:
     """
 
     def encounter(self, text_sent=None):
-        print(f"Item being encountered: {self}")
-        if text_sent:
-            print(f"Details: [  {text_sent}  ]\n")
-        self.encountered = True
+        if not self.encountered:
+            print(f"Item being encountered: {self}")
+            self.encountered = True
+            if text_sent:
+                print(f"Details: [  {text_sent}  ]\n")
 
     def set_hidden(self): # so the noun won't be considered for picking up etc outside of whatever un-hiddening act I come up with.
         # I don't know if I need this anymore? Probably keep it for now though...
@@ -1292,7 +1293,7 @@ class itemRegistry:
             registry.by_location.setdefault(target_location, set()).add(inst)
 
         if not do_not_discover and not inst.encountered:
-            inst.encounter()
+            inst.encounter("encountered by do_move")
 
         return update
 
@@ -1315,7 +1316,7 @@ class itemRegistry:
             updated.add(inst)
             if other != "process_as_normal":
                 if not outcome.encountered:
-                    outcome.encounter()
+                    outcome.encounter("move_item, is_cluster type")
                 #print("outcome, old_container, new_container, location, old_loc, updated: ", outcome, old_container, new_container, location, old_loc, updated)
                 #print("Not process as normal. All moves need to be done already.")
                 updated = self.clear_parent_and_old_loc(outcome, old_container, new_container, location, old_loc, updated)
@@ -1593,7 +1594,7 @@ class itemRegistry:
                                         print(f"child excluded: {child}")
                                         continue
                                 long_desc.append(assign_colour(child, nicename=True))
-                                child.encounter()
+                                child.encounter("child encountered in init_descriptions")
                                 #print(f"long_desc with child: {long_desc}")
                         description = compile_long_desc(long_desc)
                     if inst.nicenames.get("any_children"):

@@ -188,8 +188,7 @@ def look_around():
     if is_items:
         print("IS_ITEMS:")
         for item in is_items:
-            print(item, f"encountered under is_items in look_around: {item.encountered}")
-            item.encounter()
+            item.encounter("encountered under is_items in look_around")
 
 
 #            _, reason_val, _ = registry.run_check(item)
@@ -210,8 +209,8 @@ def print_input_str(input_str):
 
 def print_failure_message(input_str=None, message=None, noun=None, noun2=None, verb=None, idx_kind=None, init_dict=None, format = None, tokens=None):
     """prints a failure message using `input_str`, `noun`, `verb`, `inx_kind`, `init_dict` and `format`, depending on which elements are given. If nothing else, just prints a generic message using `input_str`."""
-    #print(f"print failure message: input_str=None, message=None, noun=None, noun2=None verb=None, idx_kind=None, init_dict=None, format = None, tokens=None {input_str, message, noun, noun2, verb, idx_kind, init_dict, format, tokens}")
-    logging_fn()
+    #print(f"print failure message: input_str={input_str}, message={message}, noun= {noun}, noun2={noun2} verb={verb}, idx_kind={idx_kind}, init_dict=[{init_dict}], format = {format}, tokens=tokens")
+    logging_fn(note=f"print failure message: input_str={input_str}, message={message}, noun= {noun}, noun2={noun2} verb={verb}, idx_kind={idx_kind}, init_dict=[{init_dict}], format = {format}, tokens=tokens")
     from verb_actions import get_verb, get_noun, get_dir_or_sem, get_nouns
 
     if input_str and input_str != "":
@@ -266,10 +265,10 @@ def print_failure_message(input_str=None, message=None, noun=None, noun2=None, v
         return
 
     def ensure_noun_inst(noun_inst, noun_str, input_str):
-        if noun_inst and isinstance(noun_inst, itemInstance) and input_str and (noun_inst.name in input_str or noun_str in input_str) and (not hasattr(noun_inst, "is_hidden") or not noun_inst.is_hidden):
+        if noun_inst and isinstance(noun_inst, itemInstance|npcInstance) and input_str and (noun_inst.name in input_str or noun_str in input_str) and (not hasattr(noun_inst, "is_hidden") or not noun_inst.is_hidden):
             output_noun = noun_inst
         else:
-            if (isinstance(noun_inst, str) and input_str and noun_inst in input_str) or (input_str and isinstance(noun_inst, itemInstance) and noun_inst.name in input_str):
+            if (isinstance(noun_inst, str) and input_str and noun_inst in input_str) or (input_str and isinstance(noun_inst, itemInstance|npcInstance) and noun_inst.name in input_str):
                 output_noun = noun_inst
             else:
                 output_noun = noun_str
@@ -279,7 +278,7 @@ def print_failure_message(input_str=None, message=None, noun=None, noun2=None, v
         first_noun = noun
 
     if first_noun and not init_dict:
-        if isinstance(first_noun, itemInstance):
+        if isinstance(first_noun, itemInstance|npcInstance):
             first_noun = first_noun.name
 
     if init_dict or (noun and noun2):
@@ -295,7 +294,7 @@ def print_failure_message(input_str=None, message=None, noun=None, noun2=None, v
 
         first_noun = ensure_noun_inst(noun_check, noun_test, input_str)
         second_noun = ensure_noun_inst(noun2_check, noun2_test, input_str)
-        #print(f"First noun {first_noun} / second noun: {second_noun}")
+    #print(f"First noun {first_noun} / second noun: {second_noun}")
     """
     if idx_kind:
         print(f"idx_kind: {idx_kind}")
@@ -346,7 +345,7 @@ def print_failure_message(input_str=None, message=None, noun=None, noun2=None, v
                     second_noun = inst
                     print(f"second_noun: {second_noun}")"""
 
-    if second_noun and isinstance(second_noun, itemInstance):
+    if second_noun and isinstance(second_noun, itemInstance|npcInstance):
         a_or_the = "the "
     else:
         a_or_the = "a "
@@ -362,7 +361,7 @@ def print_failure_message(input_str=None, message=None, noun=None, noun2=None, v
     if first_noun:# and entry["instance"] == 'assumed_noun':
         if verb == "drop":
             test = get_noun(init_dict)
-            if test and isinstance(test, itemInstance) and test.name != first_noun and format == tuple(('verb', 'noun', 'direction', 'noun')):
+            if test and isinstance(test, itemInstance|npcInstance) and test.name != first_noun and format == tuple(('verb', 'noun', 'direction', 'noun')):
                 print(f"You can't drop the {assign_colour(test)} {dir_or_sem} a {assign_colour(first_noun, colour='yellow')}; you can't see one.")
             else:
                 print(f"You can't drop a {assign_colour(first_noun, colour="yellow")}; you aren't holding one.")
@@ -379,17 +378,17 @@ def print_failure_message(input_str=None, message=None, noun=None, noun2=None, v
                 return
             print(f"There's no {assign_colour(first_noun, colour="yellow")} around here to {assign_colour(verb, colour="green")}.")
             return
-        if not isinstance(second_noun, itemInstance):
-            if isinstance(first_noun, itemInstance):
+        if not isinstance(second_noun, itemInstance|npcInstance):
+            if isinstance(first_noun, itemInstance|npcInstance):
                 a_or_the = "the "
             if dir_or_sem:
                 print(f"There's no {assign_colour(second_noun, colour="yellow")} around here to {assign_colour(verb, colour="green")} {a_or_the}{assign_colour(first_noun, colour="yellow")} {dir_or_sem}.")
             else:
                 print(f"There's no {assign_colour(second_noun, colour="yellow")} around here to {assign_colour(verb, colour="green")} {a_or_the}{assign_colour(first_noun, colour="yellow")} with.")
             return
-        if not isinstance(first_noun, itemInstance):
+        if not isinstance(first_noun, itemInstance|npcInstance):
             if dir_or_sem:
-                if verb == "put" or verb == "take":
+                if verb in ("put", "take", "steal"):
                     if second_noun and hasattr(second_noun, "is_open") and not second_noun.is_open:
                         print(f"The {assign_colour(second_noun)} is closed, you can't take anything from it right now.")
                         return
@@ -409,7 +408,7 @@ def print_failure_message(input_str=None, message=None, noun=None, noun2=None, v
             first_noun = second_noun
             second_noun = temp
 
-            print(f"There's no {assign_colour(first_noun, colour="yellow") if isinstance(first_noun, str) else assign_colour(first_noun)} around here to {assign_colour(verb, colour="green")} {a_or_the}{assign_colour(second_noun) if isinstance(second_noun, itemInstance) else assign_colour(second_noun, colour="yellow")} with.")
+            print(f"There's no {assign_colour(first_noun, colour="yellow") if isinstance(first_noun, str) else assign_colour(first_noun)} around here to {assign_colour(verb, colour="green")} {a_or_the}{assign_colour(second_noun) if isinstance(second_noun, itemInstance|npcInstance) else assign_colour(second_noun, colour="yellow")} with.")
 
         else: # catchall was missing for straightforward 'you can't verb x dir_or_sem y'. This function is s fucking mess rn.
             print(f"You can't {verb} the {assign_colour(first_noun)} {dir_or_sem} the {assign_colour(second_noun)}.")

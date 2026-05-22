@@ -192,8 +192,10 @@ def get_transition_noun(noun, format_tuple, input_dict, take_first=False, return
 
     return noun
 
-def get_correct_nouns(input_dict, verb=None, access_str=None, access_str2=None, hold_error_messages=False):
+def get_correct_nouns(input_dict, verb=None, access_str=None, access_str2=None, hold_error_messages=False) -> tuple[itemInstance|npcInstance, str, int, itemInstance|npcInstance, str, int]:
     """
+    noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason
+
     Just a function to compile the getting of noun data so each one doesn't have to do it individually.
     Takes input_dict and optionally, verb, and returns {`noun`, `noun_str`, `noun_reason`, `noun2`, `noun2_str`, `noun2_reason`}.
     Uses default settings for the verb, so not all suitable for all usecases, but the vast majority.
@@ -2009,6 +2011,53 @@ def act_on_battery_device(verb, noun, noun2):
     else:
         return None, None, None
 
+def can_take(noun, noun_str, reason_val, is_silent=False):
+    """ Returns 1, None if cannot take, or 0, itemInst if can take."""
+    logging_fn()
+    added_to_inv = False
+
+    if noun:
+        if reason_val not in (0, 3, 4, 5, 8):
+            theres_therere = is_plural_noun(noun, plural = "There're", singular="There's")
+            if not is_silent:
+                print(f"{theres_therere} no {assign_colour(noun_str, colour="yellow")} around here to take.")
+            return 1, None
+        #print(f"Reason code: {reason_val}")
+    if reason_val == 5:
+        if not is_silent:
+            print(f"The {assign_colour(noun)} {is_plural_noun(noun)} already in your inventory.")
+        return 1, None # return none so it doesn't run the pick up check again
+
+    else:
+        if hasattr(noun, "can_pick_up") and noun.can_pick_up:
+            if hasattr(noun, "contained_in"):
+                container = noun.contained_in
+            if reason_val in (3, 4) and container and (container.location == loc.current or container.location == loc.inv_place):
+                outcome = registry.move_from_container_to_inv(noun, parent=container)
+                added_to_inv = outcome
+                #print("added to inv, returning.")
+                return 0, added_to_inv
+            elif reason_val == 0:
+                outcome = registry.move_item(noun, location = loc.inv_place)
+                #print(f"OUTCOME: {outcome} / noun: {noun}")
+                if outcome in loc.inv_place.items:
+                    #print("Outcome is in inventory. (line 1480)")
+                    return 0, outcome
+                if noun in loc.inv_place.items:
+                    if not is_silent:
+                        print("noun_inst is in inventory. line 1483")
+                    added_to_inv = noun
+                    return 0, added_to_inv
+            if not is_silent:
+                print(f"{noun} failed to be processed, not reasonval 3, 4, 5. reason_val: {reason_val}")
+        else:
+            if not is_silent:
+                print(f"You can't pick up the {assign_colour(noun)}.")
+            return 1, added_to_inv
+
+    print("Failed in can_take, returning defaults.")
+    return 0, noun
+
 def take(format_tuple, input_dict):
     from eventRegistry import events
     logging_fn()
@@ -2031,45 +2080,7 @@ def take(format_tuple, input_dict):
     added_to_inv = False
     #print(f"[OUTCOME from def take: `{outcome}`]")
 
-    def can_take(noun, reason_val):
-        logging_fn()
-        added_to_inv = False
 
-        if noun:
-            if noun_reason not in (0, 3, 4, 5, 8):
-                theres_therere = is_plural_noun(noun, plural = "There're", singular="There's")
-                print(f"{theres_therere} no {assign_colour(noun_str, colour="yellow")} around here to take.")
-                return 1, None
-            #print(f"Reason code: {reason_val}")
-        if reason_val == 5:
-            print(f"The {assign_colour(noun)} {is_plural_noun(noun)} already in your inventory.")
-            return 1, None # return none so it doesn't run the pick up check again
-
-        else:
-            if hasattr(noun, "can_pick_up") and noun.can_pick_up:
-                if hasattr(noun, "contained_in"):
-                    container = noun.contained_in
-                if reason_val in (3, 4) and container and (container.location == loc.current or container.location == loc.inv_place):
-                    outcome = registry.move_from_container_to_inv(noun, parent=container)
-                    added_to_inv = outcome
-                    #print("added to inv, returning.")
-                    return 0, added_to_inv
-                elif reason_val == 0:
-                    outcome = registry.move_item(noun, location = loc.inv_place)
-                    #print(f"OUTCOME: {outcome} / noun: {noun}")
-                    if outcome in loc.inv_place.items:
-                        #print("Outcome is in inventory. (line 1480)")
-                        return 0, outcome
-                    if noun in loc.inv_place.items:
-                        print("noun_inst is in inventory. line 1483")
-                        added_to_inv = noun
-                        return 0, added_to_inv
-                print(f"{noun} failed to be processed, not reasonval 3, 4, 5. reason_val: {reason_val}")
-            else:
-                print(f"You can't pick up the {assign_colour(noun)}.")
-                return 1, added_to_inv
-        print("Failed in can_take, returning defaults.")
-        return 0, noun
 
     #a_or_the = is_plural_noun(noun, plural = "any", singular="a")
     verb = get_verb(input_dict)
@@ -2082,14 +2093,14 @@ def take(format_tuple, input_dict):
 
     if format_tuple in (("verb", "noun"), ("verb", "direction", "noun")):
 
-        cannot_take, added_to_inv = can_take(noun, noun_reason)
+        cannot_take, added_to_inv = can_take(noun, noun_str, noun_reason)
         if cannot_take and hasattr(noun, "can_consume"):
             print(f"\nDid you mean to consume the {assign_colour(noun)}? ")
             return
 
     elif dir_or_sem in ("in", "at", "from") and location:
         if location == loc.current or location == loc.current.place:
-            cannot_take, added_to_inv = can_take(noun, noun_reason)
+            cannot_take, added_to_inv = can_take(noun, noun_str, noun_reason)
 
     elif format_tuple == (("verb", "noun", "direction", "noun")): ## will later include scenery. Don't know how that's going to work yet.
         verb_str = input_dict[0]["verb"]["str_name"]
@@ -2820,6 +2831,24 @@ def steal(format_tuple, input_dict):
         else:
             print(f"{assign_colour(noun2, caps=True)} doesn't seem to have `{assign_colour(item = noun.name, noun=noun)}` to steal...")
 
+    elif noun and isinstance(noun, itemInstance) and not noun2 and not noun2_str:
+        cannot_take, taken_item =  can_take(noun, noun_str, reason)
+        if cannot_take:
+            print(f"Cannot take {noun}")
+        else:
+            print(f"You take the {assign_colour(taken_item)}.")
+            return
+    else:
+        print(f"noun: {noun}, noun2: {noun2}, noun2_str: {noun2_str}")
+
+
+    if not npc_has_obj and not item_stolen:
+        if noun:
+            print(f"There doesn't seem to be any {assign_colour(noun)} around here to steal.")
+            return
+        else:
+            print("What did you want to steal?")
+
     if item_stolen:
         from eventRegistry import events
         outcome, _ = events.is_event_trigger(noun_inst = noun, reason = "item_in_inv")
@@ -2881,11 +2910,11 @@ def router(viable_format, inst_dict, input_str=None):
         print(f'{MOVE_UP}{MOVE_UP}\n\033[1;32m[[  {" ".join(quick_list)}  ]]\033[0m\n')
 
     #print(f"Dict for output: {inst_dict}")
-
+    from verbRegistry import VerbInstance
     for data in inst_dict.values():
         for kind, entry in data.items():
             if kind == "verb":
-                verb_inst = entry["instance"]
+                verb_inst:VerbInstance = entry["instance"]
                 verb_str = entry["str_name"] ## Fpr error messages where the verb found no instance, ie the format was not found so no instance arrived at. eg 'read south'.
             if kind == "meta" and verb_inst == None:
                 verb_inst = entry["str_name"]

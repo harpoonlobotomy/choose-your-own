@@ -236,7 +236,7 @@ def trade_with(npc:npcInstance):
     if npc.trade_start:
         print("\n   ", affect(npc, npc.trade_start))
     t_print(f" --- Entering trade with {npc.name} ---", newline_before=True)
-    npc.encounter()
+    npc.encounter("Encountered in trade_with")
     end_text = f" -- Ending trade with item_1 --"
     while True:
         t_print("Do you want to _buy_ or _sell_?", newline_before=True, newline_after=True)
@@ -270,7 +270,7 @@ def trade_with(npc:npcInstance):
                 t_print("What do you want to look at?", newline_before = True, newline_after = True)
                 printlist = list(f"{assign_colour(f'  - {i if isinstance(i, str) else i.name}')}\n" for i in npc.trade_items)
                 for item in npc.trade_items:
-                    item.encounter()
+                    item.encounter("Encountered as npc.trade_items")
                 print(''.join(printlist))
 
                 while test:

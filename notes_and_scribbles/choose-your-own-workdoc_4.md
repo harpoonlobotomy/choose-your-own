@@ -2093,3 +2093,15 @@ There's no troll around here to steal a bell from.
 because it's very annoying - you steal a scroll from a troll, great. But then you try to steal something the troll doesn't have, and... it claims there's no troll.
 
 Also I'm re-encountering items. Need to check if it's already been encountered before doign it again. But anyway. Also the 'two items being encountered too early' hasn't happened again. Potentially it only happened then those items were chosen as random starting loot? Not sure. It was supposed to generate new inv items, not steal existing ones, but will have to look into it.
+
+Ah - I think in this case the print message being muddled was because it didn't recognise the troll as a valid noun, because it was only looking for itemInstances, not npcInstances. But surely it should be using the idx sent to indicate 'this one is a failure'... And/or the init_dict which contains the bridge troll instance.
+
+Ah, no, that wasn't it. Still wrong. Okay.
+
+1.10pm
+Okay, fixed now. Needed to add 'steal' to the list of verbs that go 'verb item from noun'.
+
+1.37pm
+Added to def steal(), so now if you type 'steal <obj>' and the obj is local, you will take it just like def take(). So you can steal things even if they don't need to be stolen.
+
+Do I have a can_take attr for items? Really should. Or I should move can_take to an on-intance function, so I can just immediately test any given itemInstance for take-ability.
