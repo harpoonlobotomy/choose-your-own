@@ -1465,7 +1465,7 @@ class itemRegistry:
                 return items
 
 
-    def instances_by_name(self, definition_key:str)->set:
+    def instances_by_name(self, definition_key:str)->set[itemInstance]:
         logging_fn()
 
         if not isinstance(definition_key, str):

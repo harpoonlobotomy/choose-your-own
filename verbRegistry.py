@@ -3,9 +3,7 @@
 #Note for future me: 'meta_commands' is where all meta actions are directed to. 'meta' + <noun/loc/card>' or just <meta> will trigger meta_commands.
 
 import uuid
-
 from dataclasses import dataclass
-from typing import Optional
 
 #import generate_locations
 from logger import logging_fn
@@ -31,8 +29,8 @@ def test_print(input, print_true=False):
 class Token:
     idx: int
     text: str
-    kind: str              # 'verb', 'noun', 'semantic', 'null', 'location', 'direction'
-    canonical: Optional[str] = None  # normalized form for words with alt variants
+    kind: set[str]              # 'verb', 'noun', 'semantic', 'null', 'location', 'direction'
+    canonical: str = None  # normalized form for words with alt variants
 
 
 class VerbInstance:
@@ -52,8 +50,7 @@ class VerbInstance:
             f_parts_dict = self.format_parts.setdefault(i, {})
             for idx, format_element in enumerate(format_set):
                 f_parts_dict[idx]=format_element
-        #self.format_parts = f_parts_dict
-        #print(f"Format parts (list): {self.format_parts}")
+
         self.distinction = attr.get("distinction") if attr.get("distinction") else None
         self.colour = None
 
@@ -68,18 +65,18 @@ class VerbRegistry:
 
     def __init__(self):
 
-        self.verbs = {}      # name -> VerbInstance
-        self.meta_verbs = {}
-        self.all_meta_verbs = {}
-        self.by_format = {}        # format -> set of verbs
-        self.by_alt_words = {}
+        self.verbs:dict[str:VerbInstance] = {}      # name -> VerbInstance
+        self.meta_verbs:dict[str:dict[str:list]] = {}
+        self.all_meta_verbs:str = set()
+        self.by_format:dict[str:set] = {}        # format -> set of verbs
+        self.by_alt_words:dict[str:VerbInstance] = {}
         self.list_null_words = set()
-        self.all_verbs = set() ## just a list of all verbs inc alt names
+        self.all_verbs:set[str] = set() ## just a list of all verbs inc alt names
         self.adjectives = set()
         self.semantics = set()
         self.formats = set()
         self.cardinals = set()
-        self.compound_words = {}
+        self.split_verbs = {}
         self.null_sem_combinations = list()
 
     def create_verb_instance(self, verb_key:str, attr:dict)->VerbInstance:
@@ -103,7 +100,7 @@ class VerbRegistry:
 @dataclass
 class Parser:
 
-    def quick_compounds(compound_words, idx, word, parts):
+    def quick_compounds(compound_words:dict[str:str], idx:int, word, parts) -> str:
 
         for compound_word in compound_words:
             #print(f"Compound word: {compound_word}")
@@ -125,7 +122,7 @@ class Parser:
                 #print(f"IDX: {idx}, len(parts): {len(parts)}")
                 #if parts[idx+1] in compound_word and len(compound_word.split()) == 2:
 
-    def check_compound_words(parts_dict, word, parts, idx, kinds, word_type, omit_next, local_nouns = None):
+    def check_compound_words(parts_dict:dict, word:str, parts:list, idx:int, kinds:set, word_type:str, omit_next:bool, local_nouns:list = None) -> tuple[int, str, list, str, str, bool, str]:
         logging_fn()
 
         #print(f"\nCHECK COMPOUND WORDS: {word_type}\n")
@@ -229,14 +226,15 @@ class Parser:
                         kinds.add("noun")
                     canonical = "assumed_noun"
                     return idx, word, kinds, canonical, potential_match, omit_next, perfect_match
-
         else:
             kinds.add("noun")
             canonical = "assumed_noun"
 
         return idx, word, kinds, canonical, potential_match, omit_next, perfect_match
 
-    def tokenise(self, input_str, membrane):
+    def tokenise(self, input_str:str, membrane) -> set[Token]:
+        from verb_membrane import Membrane
+        membrane:Membrane = membrane
 
         current_location, _ = get_current_loc()
 
@@ -461,7 +459,7 @@ class Parser:
             verbReg_Reciever(f"token_role_options: {token} // kinds: {kinds}")
             return list(kinds)
 
-    def get_viable_verb(token, force_location=False):
+    def get_viable_verb(token:Token, force_location:bool=False):
         #print(f"GET VIABLE VERB: {token}")
         word = token.text
         if force_location:
@@ -484,7 +482,7 @@ class Parser:
             exit()
         return viable_instance
 
-    def generate_initial_dict(tokens, sequences) -> tuple[dict, int]:
+    def generate_initial_dict(tokens:list[Token], sequences:list) -> tuple[dict, int]:
         reformed_dict = {}
 
         #if len(sequences) > 1:
@@ -525,10 +523,10 @@ class Parser:
         #print(f"reformed_dict {reformed_dict}, sequence {sequence}")
         return reformed_dict, sequence
 
-    def get_sequences_from_tokens(self, tokens) -> list:
+    def get_sequences_from_tokens(self, tokens:list[Token]) -> list:
         sequences = [[]]
-        verb_instances = []
-        meta_instances = []
+        verb_instances:list[dict[idx:VerbInstance]] = []
+        meta_instances:list[dict[idx:Token]] = []
         verb_entry = None
         strings = []
         canonical_nouns = dict()
@@ -590,7 +588,7 @@ class Parser:
                 ## So I need to fix the instances before it goes forward, because it needs to output a sequence viable with unlock, not use.
         #print(f"verb instances: {verb_instances}")
         #print(f"meta instances: {meta_instances}")
-        def run_sequences(sequences, verb_instances):
+        def run_sequences(sequences:list, verb_instances:list[dict[idx:VerbInstance]]):
             viable_sequences = []
             #for verb_entry in verb_instances:
                 #for verb in verb_entry.values():
@@ -746,7 +744,7 @@ class Parser:
             print(f"Could not find verb obj for {verb_name}")
         return None, format_key
 
-    def build_dict(confirmed_verb, tokens, initial_dict, format_key):
+    def build_dict(confirmed_verb:VerbInstance, tokens:list[Token], initial_dict:dict, format_key:list) -> tuple[dict, list[Token]]:
 
         """
         Need to change this a bit -- I need to ensure the original typed name is kept, currently it's wiped and I'm relying on the verb_instance name only, which won't work if they type a variation that has connotations. I need to be able to branch out from the primary function into more detailed actions (or just response strings).
@@ -773,7 +771,7 @@ class Parser:
                 dict_for_output[i]={item:{"instance":None, "str_name":item_name, "text": initial_dict[i][item].get("text")}}
         return dict_for_output, tokens # including tokens for any minor input detail that might matter later.
 
-    def reorder_tokens_to_sequence(tokens, sequence):
+    def reorder_tokens_to_sequence(tokens:list[Token], sequence:list[str]):
         logging_fn()
         sequences = list(())
         no_verb = no_noun = True
@@ -824,7 +822,7 @@ class Parser:
         noun1.idx = 3
 
 
-        def sort_tokens(counter, token, verb1):
+        def sort_tokens(counter:int, token:Token, verb1:VerbInstance):
             #print(f"sort_tokens({counter}, {token})")
             if token != verb1 and token.idx == counter:
                 if "direction" in token.kind:
@@ -898,10 +896,7 @@ class Parser:
             print(f"No tokens for input `{input_str}`")
             return None, None
         verbReg_Reciever(f"Tokens after tokenise: {tokens}")
-
-        from itemRegistry import itemInstance
-        from npcRegistry import npcInstance
-
+        print("gets to here")
         token_to_remove = token_to_change = None
         for i, token in enumerate(tokens):
             if "location" in token.kind and len(tokens) > i+1 and "noun" in tokens[i+1].kind:

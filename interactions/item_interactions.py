@@ -27,7 +27,6 @@ def get_npc_inventory(local_items:set[npcInstance|itemInstance]):
                         registry.move_item(item, loc.npc_inv_place, do_not_discover=True)
 
                     if item.encountered:
-                        print(f"ITem {item} is encountered")
                         local_items.add(item)
             if npc.trade_items:
                 if item.location != loc.npc_inv_place:

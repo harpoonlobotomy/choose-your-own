@@ -27,25 +27,25 @@ class cardinalInstance:
     def __init__(self, cardinal:str, loc:"placeInstance"):
         import config
         self.id = str(uuid.uuid4())
-        self.name = cardinal # "east"
+        self.name:str = cardinal # "east"
         self.place_name:str = cardinal + " " + loc.name # "east graveyard"
         self.ern_name:str = cardinal + "ern " + loc.name # "eastern graveyard"
         self.in_loc_facing_card:str = f"the {loc.name}, facing {self.name}" # "the graveyard, facing east"
-        self.place = loc
+        self.place:placeInstance = loc
         self.alt_names:list[str]|None = (loc_dict[loc.name].get("alt_names") if loc_dict[loc.name].get("alt_names") else None)
 
         if (self.place_name == config.inv_loc_str or self.place_name == config.no_place_str):
             self.items = set() # purely for my own convenience. Maybe a bad idea but going to do it anyway for now.
 
         self.description:str|None = None
-        self.colour = config.cardinal_cols.get(self.name)
+        self.colour:str = config.cardinal_cols.get(self.name)
         from npcRegistry import npcInstance
         self.NPCs:set[npcInstance] = set()
 
         self.cardinal_data:dict = loc_dict[self.place.name].get(cardinal)
         self.missing_cardinal:str = loc_dict[self.place.name].get("missing_cardinal")
         if not self.missing_cardinal:
-            self.missing_cardinal = "There's nothing over that way."
+            self.missing_cardinal:str = "There's nothing over that way."
         #setattr(self, cardinal, self.cardinal_data)
 
         self.surfaces = {}
@@ -68,7 +68,7 @@ class cardinalInstance:
                             "int_location": loc_dict[self.place.name][self.name]["items"][item].get("int_location"),
                             "ext_location": (loc_dict[self.place.name][self.name]["items"][item].get("ext_location") if loc_dict[self.place.name][self.name]["items"][item].get("ext_location") != self.name else self)}
 
-        self.visited = False # Same as .placeInstances have, not tracked in route but used for directing some descriptions etc.
+        self.visited:bool = False # Same as .placeInstances have, not tracked in route but used for directing some descriptions etc.
 
     def __repr__(self):
         return f"<cardinalInstance {self.place_name} ({self.id})>"
@@ -80,11 +80,10 @@ class placeInstance:
     Special places include locRegistry.inv_place and .no_place, which are used for inventory items and hidden/contained or otherwise secreted items' 'item.location' respectively.
     """
     def __init__(self, name:str):
-        self.id = str(uuid.uuid4())
-        self.name = name
-        self.a_name = "a " + name
-        self.the_name = "the " + name
-        self.alt_names = {}
+        self.id:str = str(uuid.uuid4())
+        self.name:str = name
+        self.a_name:str = "a " + name
+        self.the_name:str = "the " + name
         self.visited:bool = False
         self.first_weather:str = None
         self.description:str = None#loc_dict.get(name, {}).get("descrip")
@@ -92,17 +91,14 @@ class placeInstance:
         #print(f"self.description: {self.description}\n")
         self.colour:str = None ## assign like items on first
         self.cardinals: dict[str, cardinalInstance] = {}
-
-        self.transition_objs = {}
-
+        from itemRegistry import itemInstance
+        self.transition_objs:dict[itemInstance:dict[str:cardinalInstance]] = {}
+        #transition_objs[item]["int_location"] = card_inst
         for attr, value in loc_dict.get(name, {}).items():
-            if attr == "alt_names":
-                continue
-
-            else:
+            if attr != "alt_names":
                 setattr(self, attr, value)
 
-        self.placewide_surfaces = loc_dict[name].get("placewide_surfaces", None)
+        self.placewide_surfaces:dict[str:str] = loc_dict[name].get("placewide_surfaces", None)
 
         for attr in ("inside", "electricity", "nature"):
             value = loc_dict[name].get(attr)
@@ -124,9 +120,9 @@ class placeRegistry:
     def __init__(self):
 
         self.places: set[placeInstance] = set()
-        self.by_name = {}
-        self.by_alt_name = {}
-        self.route = list() # store everywhere you go for a game, in order. Could be interesting to use later.
+        self.by_name:dict[str:placeInstance] = {}
+        self.by_alt_name:dict[str:placeInstance] = {}
+        self.route:list[placeInstance] = list() # store everywhere you go for a game, in order. Could be interesting to use later.
         self.last_loc:placeInstance = None # used for history tracking, just track place, not card.
         self.cardinals: dict[placeInstance, dict[str, cardinalInstance]] = {} # locRegistry.cardinals[place_instance_obj][cardinal_direction_str]
         self.current:cardinalInstance = None # cardinal instance
@@ -145,8 +141,8 @@ class placeRegistry:
 
 
     def add_cardinals(self, locationInstance:placeInstance) -> dict:
-        """ Propagates the place.cardinals dict"""
-        cardinals_dict = dict()
+        """ Propagates the place.cardinals dict\n  placeInstance.name = {"south": southInstance, "north": northInstance, etc}"""
+        cardinals_dict:dict[str:cardinalInstance] = dict()
 
         for card in cardinals_list:
             cardinal_inst = cardinalInstance(card, locationInstance)
@@ -154,7 +150,6 @@ class placeRegistry:
 
         locationInstance.cardinals=cardinals_dict
 
-        # placeInstance.name = {"south": southInstance, "north": northInstance, etc}
         return cardinals_dict
 
     def set_current(self, loc=None, cardinal=None) -> None:
@@ -198,8 +193,8 @@ class placeRegistry:
 
         elif loc:
             if not self.current:
-                print("env_data/ No current_cardinal, defaulting to 'north'.")
                 from config import starting_facing_direction
+                #print(f"env_data/ No current_cardinal, defaulting to '{starting_facing_direction}'.")
                 current_card = starting_facing_direction
             else:
                 current_card = self.current.name
@@ -272,7 +267,7 @@ class placeRegistry:
         else:
             return None
 
-    def by_cardinal_str(self, cardinal_str:str|dict, loc=None) -> cardinalInstance:
+    def by_cardinal_str(self, cardinal_str:str|dict, loc:placeInstance|str=None) -> cardinalInstance:
         """Used to get the cardinalInstance from a string, with or without separate 'loc'. cardinal_str can be a dict (but this is not regularly used anymore) or more often, a string in the form 'graveyard east'. 'east graveyard' will also be found. If no location is found, it will take the cardinal str and apply it to the current location (eg `east` will return the cardinalInstance for '{currentPlace} east')."""
         logging_fn()
         if isinstance(cardinal_str, cardinalInstance):
@@ -379,8 +374,6 @@ def initialise_placeRegistry() -> None:
     locRegistry.set_current(starting_location_str)
     locRegistry.no_place = locRegistry.by_cardinal_str(no_place_str)
     locRegistry.inv_place = locRegistry.by_cardinal_str(inv_loc_str)
-    print(f"npc_inv_loc_str: {npc_inv_loc_str}")
-    print(f"list(i for i in locRegistry.places): {list(i for i in locRegistry.places)}")
     locRegistry.npc_inv_place = locRegistry.by_cardinal_str(npc_inv_loc_str)
 
 

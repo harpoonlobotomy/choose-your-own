@@ -71,7 +71,7 @@ effect_attrs = {
 }
 
 
-def check_if_correct_key_exists_already(item_inst, flag, val):
+def check_if_correct_key_exists_already(item_inst:itemInstance, flag:str, val:dict):
     #print(f"check_if_correct_key_exists_already. Flag: {flag} / val: {val}")
     if hasattr(item_inst, flag) and getattr(item_inst, flag):
         existing_keys = getattr(item_inst, flag)
@@ -97,6 +97,7 @@ def check_if_correct_key_exists_already(item_inst, flag, val):
         #print("Currently `check_if_correct_key_exists_already` only checks for items in events and untested for items in locations/cardinals by str. Update this fn if that need changes. Will now exit.")
         from logger import traceback_fn
         traceback_fn()
+        print("Exiting from check_if_correct_key_exists_already in eventRegistry.")
         exit()
         return False
 
@@ -104,47 +105,50 @@ def check_if_correct_key_exists_already(item_inst, flag, val):
 
 class eventInstance:
 
-    def __init__(self, name:str, attr:dict, trigger_event=None):
+    def __init__(self, name:str, attr:dict, trigger_event:bool=None):
         import uuid
-        self.name = name
-        self.id = str(uuid.uuid4())
-        self.short_id = self.id[-5:]#self.id.split("-")[-1]
+        self.name:str = name
+        self.id:str = str(uuid.uuid4())
+        self.short_id:str = self.id[-5:]#self.id.split("-")[-1]
         if attr.get("starts_current"):
             self.state:int = 1
             #print(f"Event {self.name} starts current: {self.state}")
         else:
             self.state:int = 2
 
-        self.priority = attr.get("priority", 0)
+        self.priority:int = attr.get("priority", 0)
         self.triggers:set[Trigger|timedTrigger] = set() #all triggers, delineate start/end after this point.
         self.start_triggers:set[Trigger] = set() # just to make sure these are here so other things can be more solid.
         self.end_triggers:set[Trigger|timedTrigger] = set()
         self.items:set[itemInstance] = set()
-        self.event_keys = set()
-        self.generate_on_start = set() # set of item names to generate on start, for events that have items 'appear' when they run (eg scroll has key, key 'falls out of scroll' at current loc.) Except not that example, becaues that's now an immediate event. Instead, for something like 'a gem is created, then the rest of the quest carries on'. So, rare but potentially will exist one day.
+        self.event_keys:set[str] = set()
+        self.generate_on_start:set[str] = set() # set of item names to generate on start, for events that have items 'appear' when they run (eg scroll has key, key 'falls out of scroll' at current loc.) Except not that example, becaues that's now an immediate event. Instead, for something like 'a gem is created, then the rest of the quest carries on'. So, rare but potentially will exist one day.
         self.effects_on_start = {}
 
-        self.item_name_to_inst = {} # to track 'iron key' to instance, to make sure instances are tracked through events. Note: Only works as intended if only one instance per name. If an event has multiple instances of one itemname, will need an alt route.
-        self.msgs = attr.get("messages") # what prints when the event starts/ends/on certain cues
-        self.limits_travel = False
+        self.item_name_to_inst:dict[str:itemInstance] = {} # to track 'iron key' to instance, to make sure instances are tracked through events. Note: Only works as intended if only one instance per name. If an event has multiple instances of one itemname, will need an alt route.
+        self.msgs:dict = attr.get("messages") # what prints when the event starts/ends/on certain cues
+        self.limits_travel:bool = False
         #print(f"\n{name} ATTR@ ::: {attr} \n\n")
         #print(f"STATE: {self.state}")
         self.init_items = {}
-        self.held_items = (attr["held_items"] if attr.get("held_items") else set())
-        self.hidden_items = (attr["hidden_items"] if attr.get("hidden_items") else set()) # These were dicts with item: item_loc. I can't see where/why I'm using the location though, that should be done with in item inst identification. Changing (back?) to sets.
-        self.locked_items = (attr["locked_items"] if attr.get("locked_items") else set())
+        self.held_items:set = (attr["held_items"] if attr.get("held_items") else set())
+        self.hidden_items:set = (attr["hidden_items"] if attr.get("hidden_items") else set()) # These were dicts with item: item_loc. I can't see where/why I'm using the location though, that should be done with in item inst identification. Changing (back?) to sets.
+        self.locked_items:set = (attr["locked_items"] if attr.get("locked_items") else set())
         #print(f'attr.get("hidden_items"): {attr.get("hidden_items")}')
         #print(f'self.hidden_items: {self.hidden_items}')
-        self.remove_items = set() # for short-term storage of item instances to be removed by events.
+        self.remove_items:set[itemInstance] = set() # for short-term storage of item instances to be removed by events.
         self.start_trigger_location = None
         self.end_trigger_location = None
 
         self.condition_items = set() ## for keeping items that are part of timed triggers.
 
-        self.no_item_restriction = {} # Keeping this on the event. [Item_name] = [instance]
-        self.constraint_tracking = {} # [constraint_type (eg 'days')] = int(starts at 0)} #each instance triggers its own event, so one instance per event. At least for now, so I can track failures/successes by event state, instead of managing sub-event failures/successes. # might get rid of this and just use timed_triggers below instead.
+        self.no_item_restriction:dict[str:itemInstance] = {} # Keeping this on the event. [Item_name] = [instance]
+        self.constraint_tracking:dict[str:int] = {} # [constraint_type (eg 'days')] = int(starts at 0)} #each instance triggers its own event, so one instance per event. At least for now, so I can track failures/successes by event state, instead of managing sub-event failures/successes. # might get rid of this and just use timed_triggers below instead.
         self.timed_triggers = set()
 
+        self.child_item:itemInstance = None
+
+        self.is_generated_event:bool = False
         for item in attr:
             setattr(self, item, attr[item])
 
@@ -153,7 +157,7 @@ class eventInstance:
             self.on_event = attr["on_event"] # Surely this is unnecessary, should be added by the item in attr, right?
 
         if attr.get("limit_travel"):
-            self.limits_travel = True
+            self.limits_travel:bool = True
 
         if attr.get("triggered_by_event"):
             trig_event = self.triggered_by_event
@@ -218,14 +222,14 @@ class timedTrigger:
             }
             """
 
-        self.start_trigger = False
-        self.end_trigger = True
+        self.start_trigger:bool = False
+        self.end_trigger:bool = True
         event.end_triggers.add(self)
 
-        timed_dict = trigger_dict["timed_trigger"]
-        self.time_unit = timed_dict["time_unit"]  # "days",
-        self.full_duration = timed_dict["full_duration"]  # 3,
-        self.current_duration = 0
+        timed_dict:dict = trigger_dict["timed_trigger"]
+        self.time_unit:str = timed_dict["time_unit"]  # "days",
+        self.full_duration:int = timed_dict["full_duration"]  # 3,
+        self.current_duration:int = 0
         self.convert_to_timeblocks()
 
         self.end_type = trigger_dict.get("end_type") if trigger_dict.get("end_type") else "end"
@@ -257,7 +261,7 @@ class timedTrigger:
                         self.item_inst = trigger_dict["trigger_item"]
                         setattr(self, self.required_condition[condition], trigger_dict["trigger_item"])
                     elif condition_item == "child_item":
-                        events.event_print(f"Condition_iem == child item: {condition_item} / ")
+                        events.event_print(f"Condition_item == child item: {condition_item} / ")
                         if hasattr(event, "child_item"):
                             events.event_print("Event has child!")
                             setattr(self, self.required_condition[condition], event.child_item)
@@ -316,7 +320,7 @@ class Trigger:
         self.short_id = self.id[-5:]
         self.event = event
         self.state = event.state
-        self.triggers = set() #item_broken, 'item_in_inv', etc.
+        self.triggers:set[str] = set() #item_broken, 'item_in_inv', etc.
         self.exceptions = set()
         self.end_type = trigger_dict.get("end_type")
         """
@@ -357,8 +361,8 @@ class Trigger:
                 if self.end_trigger:
                     event.end_trigger_location = self.item_inst_loc
 
-                self.item_flags_on_start = trigger_dict["item_flags_on_start"]
-                self.item_flags_on_end = trigger_dict["item_flags_on_end"]
+                self.item_flags_on_start:dict = trigger_dict["item_flags_on_start"]
+                self.item_flags_on_end:dict = trigger_dict["item_flags_on_end"]
 
                 if isinstance(self.item_inst, itemInstance):
                     setattr(self.item_inst, "event", event)
@@ -404,7 +408,7 @@ class Trigger:
 
 class eventRegistry:
 
-    def event_print(self, text):
+    def event_print(self, text:str):
         """Just so I can turn on/off detailed event prints for testing without having to do proper logging."""
         print_event_text = False#True
         if print_event_text == True:
@@ -417,7 +421,7 @@ class eventRegistry:
         self.by_name: dict[str, set[eventInstance]] = {}
         self.by_state: dict[int, set[eventInstance]] = {}
         #self.trigger_items = {}
-        self.travel_is_limited = False
+        self.travel_is_limited:str = False
         #self.triggers = set([Trigger])
         self.item_names: dict[str, itemInstance] = dict()
 
@@ -425,13 +429,13 @@ class eventRegistry:
 
         self.no_item_restriction:dict[str, eventInstance] = {} # for items that can contribute to an event by itemname, even if they aren't the original itemInstance, eg a;; magic_orb instances can participate in the 'ooh_magic_orbs' event, regardless of the initiator.
 
-        self.timed_triggers = set()
+        self.timed_triggers:set[timedTrigger] = set()
         self.condition_items = set()
 
         for state in event_states.values():
             self.by_state[state] = set()
 
-    def set_state(self, event:eventInstance, state):
+    def set_state(self, event:eventInstance, state:int):
         if isinstance(state, str):
             state = int(state)
         if hasattr(self.by_state, "state"):
@@ -444,7 +448,7 @@ class eventRegistry:
         event.state = state
         self.event_print(f"[Set event state for [{event.name}, ID:{event.short_id}]: {event.state}]")
 
-    def add_event(self, event_name, event_attr, trigger_event=None):
+    def add_event(self, event_name:str, event_attr, trigger_event=None):
 
         event = eventInstance(event_name, event_attr, trigger_event=trigger_event)
         self.events.add(event)

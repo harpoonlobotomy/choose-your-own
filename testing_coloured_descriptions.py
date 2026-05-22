@@ -261,7 +261,7 @@ def init_loc_descriptions(place:placeInstance=None, card:cardinalInstance=None):
 
     return location_description, compiled_cardinals
 
-def loc_descriptions(place:placeInstance=None, card_inst:cardinalInstance=None):
+def loc_descriptions(place:placeInstance=None, card_inst:cardinalInstance=None) -> dict[str:dict]:
     from env_data import locRegistry as loc
     if place and place == loc.current.place:
         card_inst = loc.current

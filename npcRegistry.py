@@ -89,7 +89,7 @@ class npcInstance:
 
         self.item_type:list[str] = data.get("item_type")
         self.knows_about:list[str] = data.get("knows_about")
-        self.conversations:dict[conversationInstance, str] = {}
+        self.conversations:dict[conversationInstance, dict[str:str]] = {}
 
         self.gold = data.get("gold", 5) # default 5 so npcs have money on them
         self.inventory:set[itemInstance] = set() # separate from can_trade, as not all held items are sellable and not only traders hold items.
@@ -102,11 +102,9 @@ class npcInstance:
             from itemRegistry import itemInstance, registry
             self.trade_items:set[itemInstance] = set(data["trade_items"]) if data.get("trade_items") else set()
             if self.trade_items:
-                print(f"NPC has trade items: {self.trade_items}")
                 new_items = set()
                 for item in self.trade_items:
                     inst = registry.init_single(item, apply_location=locRegistry.npc_inv_place)
-                    print(f"I should be a new instance: {inst}")
                     inst.held_by = self
                     #setattr(inst, "trade_item", self) #
                     new_items.add(inst)
@@ -118,16 +116,11 @@ class npcInstance:
 
             self.will_not_sell:list = data.get("will_not_sell")
             if self.will_not_sell:
-                print("self.will_not_sell")
-                for item in self.will_not_sell:
-                    print(f"INIT: item in will_not_sell for {self}: {item}")
+                   for item in self.will_not_sell:
                     if data["responses"].get(f"gets_{item}"):
-                        print(f'data["responses"] has gets_{item}')
                         self.special_responses[item] = data["responses"][f"gets_{item}"]
                     else:
                         print(f'no {item} in data["responses"]')
-            else:
-                print("No entries in self.will_not_sell")
 
             self.trade_start:str = data["conversation_parts"].get("trade_start", "Let's see here...")
             self.trade_end:str = data["conversation_parts"].get("trade_end", "Please come again.")

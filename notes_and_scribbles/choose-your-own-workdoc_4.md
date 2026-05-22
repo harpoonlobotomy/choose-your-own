@@ -2170,3 +2170,43 @@ It doesn't go far enough back to still have access to the list of trade items, i
 4.16pm
 trade update is nicer now. The above isn't fixed, but it now allows for item specific responses if the nPC has specific feelings on a particular item it recieves. Will update to also do the same for items they sell later.
 Also the process of selling multiple items to trade for one is working well. Items are given values, and trades can be made one the value is sufficient. There's no bargaining right now or any way to effect the value an npc buys/sells at, but still, it means you can trade multiple things for more valuable items. So that's a solid start.
+
+4.56pm
+Removed self.alt_names from placeInstances.
+removed self.transition_objsdict from placeInstances.
+
+Changed if hasattr(noun, "on_burn") and "burn" in outcome_name: in eventRegistry, was previously 'on_burned'. Elsewhere (in eventReg and itemReg), it's written as 'on_burn'.
+
+added a number of events to eventReg eventInst
+
+8.27pm
+Added a bunch of typings but didn't intend to change anything else. And yet, I have this (again):
+    Failed to run input_parser: type object 'Token' has no attribute 'kind'
+    Failed get_noun_instances: cannot access local variable 'dict_from_parser' where it is not associated with a value
+    Failed parser: cannot access local variable 'error' where it is not associated with a value
+It runs with every commmand after the initial 'wake up' text.
+
+Okay, so removed that, apparently me trying to tell it a token was token type caused it. but now I have this:
+
+ .-            -.
+[<  enter shed  >]
+ '-            -'
+
+Having made your way to the western graveyard, the door creaks slightly as you make your way inside.
+
+Failed to find the correct function to use for <verbInstance enter (c8c56788-4648-46bd-8150-6e1cee4a0212)>: 'NoneType' object is not iterable
+
+
+
+ .-          -.
+[<  take map  >]
+ '-          -'
+
+There's no map around here to take.
+
+
+
+gets to here
+Not noun_inst for gold key
+
+okay, fixed it by just undoing most of the changes to eventReg. Will go through the 'new' version and the actual current working vers shortly and figure out why it broke. But it's back to working now at least.

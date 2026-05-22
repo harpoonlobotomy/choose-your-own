@@ -43,7 +43,7 @@ affect = npc_Registry.alter_speech
 leave_convo = ["leave conversation", "end conversation", "end convo", "leave convo", "leave", "end", "nothing", "goodbye", "bye"]
 
 
-def manage_events(npc, event_data):
+def manage_events(npc, event_data:dict):
 
     from eventRegistry import events # will need updating to allow for generated/repeating events.
     if event_data.get("starts_event"):
@@ -55,7 +55,7 @@ def manage_events(npc, event_data):
             #print(f"Event found from conversation trigger: {event}")
 
 
-def check_requirements(data, keyword, conversation, npc):
+def check_requirements(data:dict, keyword:str, conversation:conversationInstance, npc:npcInstance):
     """True or "no_check" if the requirements were not met ("no check" means there were no requirements), False means requirements existed but were not met."""
     requirement_not_met = True
 
@@ -123,7 +123,7 @@ def check_requirements(data, keyword, conversation, npc):
 
         return "no_check"
 
-def confirm_use_of_data(npc, data):
+def confirm_use_of_data(npc:npcInstance, data:dict):
     convo_print(f"[in confirm_use_of_data for {npc.name}]")
     if not data:
         return
@@ -134,7 +134,7 @@ def confirm_use_of_data(npc, data):
         from npcRegistry import npc_Registry
         npc_Registry.add_conversation_to_npc(npc, topic=data["add_conversation"])
 
-def if_can_be_answered(data):
+def if_can_be_answered(data:dict):
     requirement_met = True
     failure = None
 
@@ -446,7 +446,7 @@ def discuss_topic(npc:npcInstance, conversation:conversationInstance, keyword_pa
         print()
     return "end_topic"
 
-def ask_question(npc, data):
+def ask_question(npc:npcInstance, data:dict):
 
     test = input("(ask_questions) ... ")
     convo_print("[Conversation part is a question, waiting for answer]")
@@ -455,7 +455,7 @@ def ask_question(npc, data):
         "if_no": ["n", "no"]
     }
 
-    def check_response(test) ->None|str:
+    def check_response(test:str) ->None|str:
 
         next_keyword = None
         #for criteria in responses:
@@ -491,7 +491,7 @@ def ask_question(npc, data):
             if test:
                 print("\n   ", npc_colour(npc, f'`{test}`?'), affect(npc, speech_str=f"{random.choice(npc.unsure)} We'll carry on."), "\n")
             else:
-                print("\n   ", affect(npc,random.choice(npc.acceptance)), "\n")
+                print("\n   ", affect(npc, random.choice(npc.acceptance)), "\n")
             return "end_topic"
 
         convo_print(f"End of check_response - should not get to here. next_keyword: `{next_keyword}`, test: `{test}`.")
