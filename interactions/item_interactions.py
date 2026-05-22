@@ -23,6 +23,7 @@ def get_npc_inventory(local_items:set[npcInstance|itemInstance]):
             if npc.inventory:
                 for item in npc.inventory:
                     if item.location != loc.npc_inv_place:
+                        print(f"Item is not in npc_inventory_place: {item}")
                         registry.move_item(item, loc.npc_inv_place, do_not_discover=True)
 
                     if item.encountered:

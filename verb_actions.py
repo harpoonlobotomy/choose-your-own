@@ -2011,7 +2011,7 @@ def act_on_battery_device(verb, noun, noun2):
     else:
         return None, None, None
 
-def can_take(noun, noun_str, reason_val, is_silent=False):
+def can_take(noun:itemInstance, noun_str, reason_val, is_silent=False):
     """ Returns 1, None if cannot take, or 0, itemInst if can take."""
     logging_fn()
     added_to_inv = False
@@ -2063,7 +2063,7 @@ def take(format_tuple, input_dict):
     logging_fn()
     noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict=input_dict, verb="take", access_str2="all_local", hold_error_messages=True)
     #print("noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason: ", noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason)
-    if not isinstance(noun, itemInstance):
+    if not isinstance(noun, itemInstance|npcInstance):
         print("Does it ever get here? I'd have thought it would print the failure message in parser before now.")
         if noun == None:
             if noun_reason == 9 and hasattr(get_noun(input_dict), "in_use"):
@@ -2832,6 +2832,10 @@ def steal(format_tuple, input_dict):
             print(f"{assign_colour(noun2, caps=True)} doesn't seem to have `{assign_colour(item = noun.name, noun=noun)}` to steal...")
 
     elif noun and isinstance(noun, itemInstance) and not noun2 and not noun2_str:
+        if noun.can_take():
+            print("noun.can_take says True")
+        else:
+            print("noun.can_take says no.")
         cannot_take, taken_item =  can_take(noun, noun_str, reason)
         if cannot_take:
             print(f"Cannot take {noun}")

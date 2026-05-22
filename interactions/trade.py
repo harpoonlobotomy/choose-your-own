@@ -11,7 +11,7 @@ loot_table = {
     "great_loot": 3,
     "special_loot": 4}
 
-def t_print(string, newline_before=False, newline_after=False, item_1=None, item_2=None, item_3=None):
+def t_print(string, newline_before=False, newline_after=False, item_1=None, item_2=None, item_3=None, item_list=None, add_count=False, list_is_precoloured=False):
     """for formatting"""
     bg = "44"
     colourcode = "\033[0;32m"
@@ -34,6 +34,15 @@ def t_print(string, newline_before=False, newline_after=False, item_1=None, item
     if item_3:
         item_3 = endcode + assign_colour(item_3, no_reset=True) + colourcode
         string = string.replace("item_3", item_3)
+    if item_list:
+        list_string = ""
+        for item in item_list:
+            if list_is_precoloured:
+                item_entry = endcode + item + colourcode
+            else:
+                item_entry = endcode + assign_colour(item, no_reset=True) + colourcode
+            list_string = list_string + (f"{colourcode}, " if list_string else "") + ("1x " if add_count else "") + item_entry
+        string = string.replace("item_list", list_string)
     if "_" in string:
         import re
         matches = re.findall(r"_\w*_", string)
@@ -107,6 +116,25 @@ def get_sellable(npc:npcInstance, loot_table, force_all=False):
     #print(f"Returning sellable_items: {sellable_items}")
     return sellable_items
 
+def make_print_list(trade_item):
+    """returns a precoloured list of items with counts."""
+    if not isinstance(trade_item, list):
+        print(f"trade_item {trade_item} isn't a list, it shouldn't be in make_print_list.")
+        return
+    if len(trade_item) == 1:
+        return f"a {assign_colour(trade_item[0])}"
+    named = set()
+    item_count = []
+    for item in trade_item:
+        if item.name in named:
+            continue
+        named.add(item.name)
+        count = len(list(i for i in trade_item if i.name == item.name))
+        item_count.append(assign_colour(f"x{count} {item.name}", noun=item))
+    #print(f"ITEM COUNT: {item_count}")
+    return item_count
+
+
 def buy_item(npc, purchase_item, trade_value=None, trade_item=None):
 
     from misc_utilities import is_plural_noun
@@ -125,9 +153,17 @@ def buy_item(npc, purchase_item, trade_value=None, trade_item=None):
             return True
 
     elif trade_item:
-        give_item_to_npc(npc, trade_item)
+        if isinstance(trade_item, list|set):
+            held_print = ""
+            for item in trade_item:
+                give_item_to_npc(npc, item)
+                #held_print = held_print + (", " if held_print else "") + assign_colour(f"1x {item.name}", noun=item)
+            print_list = make_print_list(trade_item)
+            t_print(f"You exchanged item_list for the item_2. The item_2 {is_plural_noun(purchase_item)} now in your inventory.", newline_before=True, newline_after=False, item_2=purchase_item, item_list=print_list, list_is_precoloured = True)
+        else:
+            give_item_to_npc(npc, trade_item)
+            t_print(f"You exchanged the item_1 for the item_2. The item_2 {is_plural_noun(purchase_item)} now in your inventory.", newline_before=True, newline_after=False, item_1=trade_item, item_2=purchase_item, add_count=True)
         take_item_from_npc(npc, purchase_item)
-        t_print(f"You exchanged the item_1 for the item_2. The item_2 {is_plural_noun(purchase_item)} now in your inventory.", newline_before=True, newline_after=False, item_1=trade_item, item_2=purchase_item)
         print()# extra newline to emphasise state change
         return True
 
@@ -167,38 +203,112 @@ def get_item_from_list(test, npc, printed_list, source):
             #if not test or test.lower() in ("none", "nothing"):
             #    return test
 
-def sell_item(sellable_items, npc, value = None, purchase_item = None):
+def get_item_to_sell(npc:npcInstance, sellable_items:list[itemInstance], held_items:list[itemInstance], value:int=None):
+    selected_item = None
+    if held_items:
+        held_print = []
+        for item in held_items:
+            held_print.append(assign_colour(f"1x {item.name} (value: {item.trade_value})", noun=item))
+            if item in sellable_items:
+                sellable_items.remove(item)
+        t_print(f"You are already trading item_list", item_list=held_print, list_is_precoloured=True, newline_after=True)
+
+    #print(f"Value: {value}")
+    if held_items:
+        t_print(f"Which item do you want to add to the trade with item_1?", newline_after=True, item_1=npc)
+    else:
+        t_print(f"item_1 is willing to trade for these items: [Enter the name of the item you want to trade, or hit enter to return to menu]", newline_before=True, newline_after=True, item_1=npc)
+    print_list = list(f"{assign_colour(item=f'  - {i.name}, value: {i.trade_value}', noun=i)}\n" for i in sellable_items)
+    print(''.join(print_list))
+    #else:
+        #t_print(f"Which item do you want to sell to item_1?   ", newline_after=True, item_1=npc)
+    #t_print("", newline_after=True)
+    test = input("... ")
+    if not test or test.lower() in ("none", "nothing"):
+        return False
+    if len(test) == 1:
+        selected_item = get_item_from_list(test, npc, printed_list = print_list, source = sellable_items)
+        if not selected_item or (selected_item and isinstance(selected_item, str) and selected_item in ("none", "nothing")):
+            print(f"[No sold item or is str: `{selected_item}`]")
+            return False
+        print(f"sold_item by index: {selected_item}")
+
+    #t_print("", newline_after=True)
+    if not selected_item: # to allow for the idx without having to repeat this section
+        selected_item = list(i for i in sellable_items if i.name.lower() in test.lower())
+    if selected_item:
+        if isinstance(selected_item, list):
+            selected_item = selected_item[0]
+    #print(f"SELECTED ITEM TO SELL: {selected_item}")
+    return selected_item
+
+def get_total_value(held_items, sold_item):
+    total_val = 0
+    if held_items:
+        for item in held_items:
+            total_val += item.trade_value
+
+    total_val += sold_item.trade_value
+    return total_val
+
+
+def sell_item(sellable_items, npc:npcInstance, value = None, purchase_item = None):
     from misc_utilities import assign_colour
     test = True
 
     while test:
+        held_items = []
         sold_item = None
+        sold_item = get_item_to_sell(npc, sellable_items, held_items, value)
 
-        t_print(f"item_1 is willing to trade for these items:", newline_before=True, newline_after=True, item_1=npc)
-        print_list = list(f"{assign_colour(item=f'  - {i.name}', noun=i)}\n" for i in sellable_items)
-        print(''.join(print_list))
-        t_print(f"Which item do you want to sell to item_1?   [Enter the name of the item you want to trade, or hit enter to return to menu]", newline_after=True, item_1=npc)
-        #t_print("", newline_after=True)
-        test = input("... ")
-        if not test or test.lower() in ("none", "nothing"):
-            return False
-        if len(test) == 1:
-            sold_item = get_item_from_list(test, npc, printed_list = print_list, source = sellable_items)
-            if not sold_item or (sold_item and isinstance(sold_item, str) and sold_item in ("none", "nothing")):
-                print(f"[No sold item or is str: `{sold_item}`]")
-                return False
-            print(f"sold_item by index: {sold_item}")
-
-        #t_print("", newline_after=True)
-        if not sold_item: # to allow for the idx without having to repeat this section
-            sold_item = list(i for i in sellable_items if i.name.lower() in test.lower())
         if sold_item:
-            if isinstance(sold_item, list):
-                sold_item = sold_item[0]
             if purchase_item:
+                if sold_item.trade_value < purchase_item.trade_value:
+                    trade_value = sold_item.trade_value
+                    while trade_value < purchase_item.trade_value:
+                        t_print(f"The item you want to trade for is worth {purchase_item.trade_value}, but the item you're offering is worth {sold_item.trade_value}. You can add another item to the trade if you still want to purchase the item_1.", item_1 = purchase_item)
+                        held_items.append(sold_item)
+                        sold_item = get_item_to_sell(npc, sellable_items, held_items, value)
+                        if not sold_item:
+                            return False
+                        total_trade_value = get_total_value(held_items, sold_item)
+                        if total_trade_value > purchase_item.trade_value:
+                            t_print("What you're offering is worth more than what item_1 is selling. Do you want to continue with the trade?", item_1=npc)
+                            test = input()
+                            if test.lower() not in ("y", "yes", "continue"):
+                                return False
+                        trade_value = total_trade_value
+                        held_items.append(sold_item)
+                    if held_items:
+                        sold_item = held_items
+
+                from interactions.conversations import npc_colour
+                if isinstance(sold_item, itemInstance):
+                    sold_item = list((sold_item))
+                responded = False
+                if npc.special_responses:
+                    #print("npc has special responses")
+                    for entry, data in npc.special_responses.items():
+                        #print(f"entry: {entry} / data: {data} / old_item: {sold_item}")
+                        match = list(i for i in sold_item if i.name in entry)
+                        if match:
+                            import random
+                            print("   ", npc_colour(npc, random.choice(npc.special_responses[entry])))
+                            responded = True
+                            break
+
+                if not responded:
+                    print("   ", npc_colour(npc, npc.approval))
+
                 if buy_item(npc, purchase_item, None, sold_item):
+                    #print("after if buy_item ln 286")
                     #print(f"Trade successful: gave {npc.name} the {sold_item.name} in exchange for the {purchase_item.name}")
-                    sellable_items.remove(sold_item)
+                    if isinstance(sold_item, list):
+                        for item in sold_item:
+                            if item in sellable_items:
+                                sellable_items.remove(item)
+                    else:
+                        sellable_items.remove(sold_item)
                     return True
                 else:
                     return False
@@ -283,7 +393,9 @@ def trade_with(npc:npcInstance):
                             t_print("Do you want to buy the item_1?", item_1=item, newline_after=True)
                             test = input("...")
                             if test in ["y", "yes", "buy", "b"]:
-                                if hasattr(item, "loot_type"):
+                                if item.trade_value and item.trade_value != 1:
+                                    value = item.trade_value
+                                elif hasattr(item, "loot_type"):
                                     value = loot_table.get(item.loot_type, 1)
                                 elif hasattr(npc, "default_trade_value"):
                                     value = npc.default_trade_value
@@ -323,6 +435,7 @@ def trade_with(npc:npcInstance):
                                                 t_print(f"Which item do you want to trade to item_1 for the item_2?", newline_before=True, item_1 = npc, item_2 = item)
                                                 while True:
                                                     if sell_item(sellable_items, npc, purchase_item=item):
+                                                        #print("after if sell_item at 420")
                                                         sellable_items = get_sellable(npc, loot_table)
                                                         if not sellable_items:
                                                             t_print(f"You don't have anything else item_1 wants.", newline_after=True, item_1=npc)

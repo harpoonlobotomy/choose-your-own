@@ -94,15 +94,19 @@ class npcInstance:
         self.gold = data.get("gold", 5) # default 5 so npcs have money on them
         self.inventory:set[itemInstance] = set() # separate from can_trade, as not all held items are sellable and not only traders hold items.
 
+        self.special_responses:dict = {} # for elements with specific replies, eg the bridge troll being sold more moss.
+
         from env_data import locRegistry, cardinalInstance
 
         if "can_trade" in self.item_type:
             from itemRegistry import itemInstance, registry
             self.trade_items:set[itemInstance] = set(data["trade_items"]) if data.get("trade_items") else set()
             if self.trade_items:
+                print(f"NPC has trade items: {self.trade_items}")
                 new_items = set()
                 for item in self.trade_items:
                     inst = registry.init_single(item, apply_location=locRegistry.npc_inv_place)
+                    print(f"I should be a new instance: {inst}")
                     inst.held_by = self
                     #setattr(inst, "trade_item", self) #
                     new_items.add(inst)
@@ -113,6 +117,17 @@ class npcInstance:
                     print(f"Not all trade_items for {self.name} were generated:\n{self.trade_items}\nvs:\nnew_items\ninvestigate this failure.\n\n")
 
             self.will_not_sell:list = data.get("will_not_sell")
+            if self.will_not_sell:
+                print("self.will_not_sell")
+                for item in self.will_not_sell:
+                    print(f"INIT: item in will_not_sell for {self}: {item}")
+                    if data["responses"].get(f"gets_{item}"):
+                        print(f'data["responses"] has gets_{item}')
+                        self.special_responses[item] = data["responses"][f"gets_{item}"]
+                    else:
+                        print(f'no {item} in data["responses"]')
+            else:
+                print("No entries in self.will_not_sell")
 
             self.trade_start:str = data["conversation_parts"].get("trade_start", "Let's see here...")
             self.trade_end:str = data["conversation_parts"].get("trade_end", "Please come again.")
@@ -173,11 +188,14 @@ class npcInstance:
                 print(f"Item `{item}` in NPC_defs but not in npcInstance")
 
     def encounter(self, text_sent=None):
+        do_print=False
         if not self.encountered:
-            print(f"NPC {self} has been encountered.")
+            if do_print:
+                print(f"NPC {self} has been encountered.")
             self.encountered = True
             if text_sent:
-                print(f"Details: [  {text_sent}  ]\n")
+                if do_print:
+                    print(f"Details: [  {text_sent}  ]\n")
 
     def steal_from_npc(self, item:itemInstance):
         """ Awareness is 1-20. 20 = basically impossible to steal from, 1 == lil bit of luck should do it."""
@@ -206,11 +224,6 @@ class npcInstance:
             print(f"ITem not stolen, but you weren't caught either. Stalemate with a roll of {val}")
         else:
             print(f"Item not stolen, and {self} noticed. Consequences...")
-
-
-
-
-
 
 
     def __repr__(self):

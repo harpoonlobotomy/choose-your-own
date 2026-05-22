@@ -33,7 +33,9 @@ def loadout():
 
     set_inventory()
     paperclip_inst = registry.get_item_from_defs("paperclip")
-    registry.move_item(paperclip_inst, location=loc.inv_place)
+    if paperclip_inst.location != loc.no_place:
+        registry.init_single(paperclip_inst.name, apply_location=loc.inv_place, discover=True)
+    #registry.move_item(paperclip_inst, location=loc.inv_place)
 
     ### Need to get list of item def entries with 'magazine'
     magazines = registry.item_def_by_attr(loot_type="magazine")
@@ -56,7 +58,10 @@ def loadout():
         for item in temp_inventory:
             if item == None:
                 continue
-            registry.move_item(item, location=loc.inv_place)
+            if item.location != loc.no_place:
+                item = registry.init_single(item.name, apply_location=loc.inv_place, discover=True)
+            else:
+                registry.move_item(item, location=loc.inv_place)
 
 def calc_emotions():
     counter = 0

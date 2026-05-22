@@ -1,5 +1,6 @@
 {
   "padlock": {
+    "trade_value": 1,
     "can_be_closed": true,
     "can_be_locked": true,
     "can_be_opened": true,
@@ -290,6 +291,7 @@
     "smash_defence": 5
   },
   "scroll": {
+    "trade_value": 2,
     "can_be_closed": true,
     "can_be_locked": true,
     "can_be_opened": true,

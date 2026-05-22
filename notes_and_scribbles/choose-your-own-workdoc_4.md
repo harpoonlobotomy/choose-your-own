@@ -2105,3 +2105,68 @@ Okay, fixed now. Needed to add 'steal' to the list of verbs that go 'verb item f
 Added to def steal(), so now if you type 'steal <obj>' and the obj is local, you will take it just like def take(). So you can steal things even if they don't need to be stolen.
 
 Do I have a can_take attr for items? Really should. Or I should move can_take to an on-intance function, so I can just immediately test any given itemInstance for take-ability.
+
+2.06pm
+Okay, I was right about the 'fish food/car keys sometimes discovered too early'.
+Item being encountered: <ItemInst [fish food jar ID:c6f10a5608a8] [loc: north inventory_place] [event:None] >
+Details: [  encountered by do_move  ] < - at game start
+
+But then, when I see the troll:
+ITem <ItemInst [fish food jar ID:c6f10a5608a8] [loc: north npc_inventory_place] [event:None] > is encountered
+
+Yup.
+for item in npc.inventory:
+    if item.location != loc.npc_inv_place:
+        print(f"Item is not in npc_inventory_place: {item}")
+        registry.move_item(item, loc.npc_inv_place, do_not_discover=True)
+
+So it's moving them from where they were, then discovering them.
+The reason they're discovered is because they were moved into the player inventory initially.
+
+OOOOH. No, I have the order wrong - the NPC has the items /first/, then the player char is stealing them on init and adding them to their own inventory. Whoops.
+
+
+Item being encountered: <ItemInst [car keys ID:a8c281e23eae] [loc: north inventory_place] [event:None] >
+Details: [  encountered via discover=True in init_single  ]
+
+Item being encountered: <ItemInst [fish food jar ID:0c3528197c9b] [loc: north inventory_place] [event:None] >
+Details: [  encountered via discover=True in init_single  ]
+
+
+Item being encountered: <ItemInst [fish food jar ID:0e807fa3a9e8] [loc: north npc_inventory_place] [event:None] >
+Details: [  Encountered as npc.trade_items  ]
+
+Item being encountered: <ItemInst [car keys ID:ccbf714b596c] [loc: north npc_inventory_place] [event:None] >
+Details: [  Encountered as npc.trade_items  ]
+
+There we go. Now npcs and the player char don't steal each other's inventory on init.
+
+Need to be able to scale the value of trade items. Currently I can set the gold value, but everything is always 1 trade item. Need to assign trade values to player-selling items. So maybe a scroll is 2 mosses.
+
+Either, items have a universal value and or particular npcs have specific item values. Or, the version I'll probably go with, both. Items have a general price, but npcs can have specific values for specific items.
+
+"trade_items": ["mummified mouse", "scroll", "car keys", "fish food jar", "goat excrement"],
+
+
+4.07pm
+Hm. The loop breaks a little here:
+
+
+ ##  Which item do you want to add to the trade with Bridge Troll?  ##
+
+  - dried moss, value: 1
+  - dried moss, value: 1
+
+... buy
+
+ ##  Do you want to buy or sell?  ##
+
+... scroll
+
+ ##  I'm not sure what you mean by `scroll`.  ##
+
+It doesn't go far enough back to still have access to the list of trade items, if you don't give an item name and also don't give "" in the 'add to trade' section.
+
+4.16pm
+trade update is nicer now. The above isn't fixed, but it now allows for item specific responses if the nPC has specific feelings on a particular item it recieves. Will update to also do the same for items they sell later.
+Also the process of selling multiple items to trade for one is working well. Items are given values, and trades can be made one the value is sufficient. There's no bargaining right now or any way to effect the value an npc buys/sells at, but still, it means you can trade multiple things for more valuable items. So that's a solid start.

@@ -89,7 +89,8 @@
         "approval": ["Eh, guess so."],
         "disapproval": ["Hah, jokin'.", "Nope."],
         "unsure": ["What?"],
-        "nothing_else": ["'s all there is.", "'s all to say."]
+        "nothing_else": ["'s all there is.", "'s all to say."],
+        "gets_dried moss": ["Eh yes! good soft, good...", "Mm, 's good squishy. Good trade."]
     }
   }
 }

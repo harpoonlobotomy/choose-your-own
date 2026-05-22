@@ -39,4 +39,6 @@ def test_main():
 if __name__ == "__main__":
 
     ## initialise everything ##
+    #import os
+    #print(f"cwd: {os.getcwd()}")
     test_main()

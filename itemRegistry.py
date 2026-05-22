@@ -134,12 +134,44 @@ class itemInstance:
     Represents a single item in the game world or player inventory.
     """
 
+    def can_take(self):
+        """ start with 'can take', and then render untrue using all reasons why potentially cannot take \n
+        Does not explain why in the way the proper can_take function does (yet) but a straightforward bool will be helpful mid-function, I think. Or I expand this one to straight up replace the other one."""
+        cannot_take = False
+        if self.is_hidden or not self.encountered:
+            print("item is hidden or not yet encountered, cannot take.")
+            cannot_take = True
+        if self.location != loc.current and self.location != loc.no_place:
+            print("Item is not in current location")
+            cannot_take = True
+
+        if self.location == loc.no_place and self.contained_in:
+            if self.contained_in.location != loc.current or not self.contained_in.is_open:
+                print("Held in a container that is not local or not open.")
+                cannot_take = True
+
+        if self.location == loc.npc_inv_place and not self.contained_in:
+            if self.held_by and self.held_by.location != loc.current:
+                print("Item is held by an NPC who is not present.")
+                cannot_take = True
+
+        if not hasattr(self, "can_pick_up") or not self.can_pick_up:
+            print(f"{self} cannot be picked up.")
+            cannot_take = True
+
+        if not cannot_take:
+            return True
+
+
     def encounter(self, text_sent=None):
+        do_print = False
         if not self.encountered:
-            print(f"Item being encountered: {self}")
+            if do_print:
+                print(f"Item being encountered: {self}")
             self.encountered = True
             if text_sent:
-                print(f"Details: [  {text_sent}  ]\n")
+                if do_print:
+                    print(f"Details: [  {text_sent}  ]\n")
 
     def set_hidden(self): # so the noun won't be considered for picking up etc outside of whatever un-hiddening act I come up with.
         # I don't know if I need this anymore? Probably keep it for now though...
@@ -357,6 +389,8 @@ class itemInstance:
         from npcRegistry import npcInstance
         self.held_by:npcInstance = None # for items being held by NPCs. Need to remember to uncheck it when removed from npc.
 
+        self.trade_value = attr.get("trade_value", 1)
+
         if attr.get("exceptions"):
             if attr["exceptions"].get("starting_location"):
                 if isinstance(attr["exceptions"]["starting_location"], cardinalInstance):
@@ -483,7 +517,7 @@ class itemRegistry:
             setattr(ext_location, "location_entered", False)
             inst.is_transition_obj = True
 
-    def init_single(self, item_name:str, item_entry:dict = None, apply_location:bool = False) -> itemInstance:
+    def init_single(self, item_name:str, item_entry:dict = None, apply_location:bool = False, discover=False) -> itemInstance:
         """Generate an ItemInstance from `item_name`. If no item_entry is provided, it will use `item_defs[item_name]`.\n\n `apply_location` if given should be a `cardinalInstance` object, or a string suitable for `by_cardinal_str`. This is use to place the new item directly in a given location."""
         #print(f"\n\n[init_single] ITEM NAME: {item_name}")
         #print(f"[init_single] ITEM ENTRY: {item_entry}\n\n")
@@ -552,6 +586,8 @@ class itemRegistry:
 
         #if inst.name == "broken glass shard":
         #    print(vars(inst))
+        if discover:
+            inst.encounter("encountered via discover=True in init_single")
         return inst
 
     def get_item_from_defs(self, item_name):
@@ -966,7 +1002,7 @@ class itemRegistry:
             target_is_location = True
 
         #actually the below isn't always bad, if we're in a location we can say 'put moss in jar' without picking it up first and then this will trigger.
-        if shard.location != loc.inv_place and shard.location != loc.no_place:
+        if shard.location != loc.inv_place and shard.location != loc.npc_inv_place and shard.location != loc.no_place:
             if not target_is_location:
                 if target.location == loc.current:
                     print("moving from compound to a container, that's okay.")
@@ -977,7 +1013,7 @@ class itemRegistry:
             print("shard has multiple instances of 1")
             return shard, "no_local_compound" # returning so it can be added to the container. No merging in containers. Not sure if I want to combine multiples inside containers or not, but for now we just treat them the same way as inventory.
         print("TARGET: {target}")
-        if target_is_location and target == loc.inv_place:
+        if target_is_location and target == loc.inv_place or target == loc.npc_inv_place:
             if hasattr(shard, "contained_in") and shard.contained_in:
                 print(f"moving {shard} from container to inv")
                 return shard, "no_local_compound"
@@ -1148,7 +1184,7 @@ class itemRegistry:
         old_loc = inst.location
         parent, was_in_container, new_container = self.get_parent_details(inst, old_container, new_container)
 
-        if inst.has_multiple_instances in (0, 1) and (not location or location == loc.inv_place or location == loc.no_place):
+        if inst.has_multiple_instances in (0, 1) and (not location or location == loc.inv_place or location == loc.npc_inv_place or location == loc.no_place):
             #print("Inst has single instance val and not a physical target location, sending  for regular processing.")
             return inst, "process_as_normal"
         #print(f"Inst {inst} is not multiple instance val of 1 and/or does not have a target location of inv_place or no_place.")
@@ -1176,7 +1212,7 @@ class itemRegistry:
 
         is_drop = True
 
-        if location == loc.inv_place:
+        if location == loc.inv_place or location == loc.npc_inv_place:
             is_drop = False
 
         if is_drop:
