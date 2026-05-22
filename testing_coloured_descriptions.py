@@ -48,10 +48,10 @@ def format_descrip(d_type="area_descrip", description="", location=None, cardina
                 if new_items:
                     #print(f"Unencountered items: {new_items}")
                     for i in new_items:
-                        i.encountered = True
+                        i.encounter("when getting item_desc in testing_coloured_descriptions")
                         if hasattr(i, "contents_encountered_with_container") and i.contents_encountered_with_container and i.children:
                             for child in i.children:
-                                child.encountered=True
+                                child.encounter("found as child when getting item_desc in testing_coloured_descriptions")
 
             multiples = None
             for item in long_dict:

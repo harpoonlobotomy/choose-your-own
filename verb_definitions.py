@@ -236,7 +236,8 @@ verb_defs_dict = {
     "time": {"alt_words": ["wait", "waste time", "spend time"], "allowed_null": None, "formats": [verb_only, verb_dir, verb_sem, verb_sem_noun, verb_sem_sem, verb_num_sem, verb_sem_num_sem, verb_noun_sem_sem, verb_noun_sem_num_sem]},
     "find": {"alt_words": ["search"], "allowed_null": None, "formats": [verb_noun, verb_noun_dir_loc, verb_loc, verb_sem_noun]},
     "talk": {"alt_words": ["speak", "converse"], "allowed_null": None, "formats": [verb_noun, verb_dir_noun, verb_sem_noun, verb_dir_noun_dir_loc, verb_sem_noun_dir_loc]},
-    "trade": {"alt_words": ["sell", "buy"], "allowed_null": None, "formats": [verb_dir_noun, verb_sem_noun, verb_dir_noun_dir_loc, verb_sem_noun_dir_loc]}
+    "trade": {"alt_words": ["sell", "buy"], "allowed_null": None, "formats": [verb_only, verb_dir_noun, verb_sem_noun, verb_dir_noun_dir_loc, verb_sem_noun_dir_loc]},
+    "steal": {"alt_words": [""], "allowed_null":None, "formats": [verb_noun_dir_noun, verb_noun, verb_noun_noun]}
     }
 
 

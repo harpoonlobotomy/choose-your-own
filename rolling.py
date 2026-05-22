@@ -3,7 +3,7 @@ from set_up_game import game
 from logger import logging_fn
 import random
 
-def roll_risk(rangemin=None, rangemax=None):
+def roll_risk(rangemin=None, rangemax=None, return_r=False):
     logging_fn()
 
     min = 1
@@ -21,6 +21,8 @@ def roll_risk(rangemin=None, rangemax=None):
     ]
 
     roll = random.randint(min, max)
+    if return_r:
+        return roll
     for r, msg, val in results:
         if r[0] <= roll <= r[1] or roll in r:
             if game.show_rolls:

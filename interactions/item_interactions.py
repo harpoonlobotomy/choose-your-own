@@ -1,5 +1,6 @@
 #item_interactions.py
 
+#if __name__ != "__main__":
 from interactions.player_movement import relocate
 from itemRegistry import itemInstance, registry
 from npcRegistry import npcInstance
@@ -12,6 +13,28 @@ import verb_actions
 def look_at(response):
     print("[LOOK_AT] in item interactions.")
     print(f"Response: {response}")
+
+
+def get_npc_inventory(local_items:set[npcInstance|itemInstance]):
+    local_npcs = list(i for i in local_items if isinstance(i, npcInstance))
+    if local_npcs:
+        for npc in local_npcs:
+            npc:npcInstance = npc
+            if npc.inventory:
+                for item in npc.inventory:
+                    if item.location != loc.npc_inv_place:
+                        registry.move_item(item, loc.npc_inv_place, do_not_discover=True)
+
+                    if item.encountered:
+                        print(f"ITem {item} is encountered")
+                        local_items.add(item)
+            if npc.trade_items:
+                if item.location != loc.npc_inv_place:
+                    registry.move_item(item, loc.npc_inv_place, do_not_discover=True)
+                for item in npc.trade_items:
+                    if item.encountered:
+                        local_items.add(item)
+    return local_items
 
 
 def show_map(noun):
@@ -41,6 +64,8 @@ def look_at_item(item_inst, entry): ## this is just using everything from regist
                 return
         else:
             if reason_val in (3, 4):
+                if item_inst.encountered:
+                    print("This item has been encountered previously. Not sure what to do about it here though.")
                 print("Inside of a container. Really, need the 'discovered' thing for this to show you the thing.")
             if reason_val == 8:
                 relocate(new_cardinal=item_inst.location)
@@ -251,7 +276,7 @@ scope_to_verb = {
     "loc_w_inv_no_containers": ["put"], # this one either. This'll take some development.
     }
 
-def build_relevant_items_set(verb=None, noun=None, access_str=None, current_loc=None) -> set: # moved this to be its own thing so I can use it elsewhere.
+def build_relevant_items_set(verb=None, noun=None, access_str=None, current_loc=None) -> tuple[set[itemInstance|npcInstance], str]: # moved this to be its own thing so I can use it elsewhere.
     """Builds a set of itemInstances based on the verb and access_str provided. Will generate the access_str from the verb if needed.\n\nDoes not pay attention to names, only the categories to allow/ignore. Most commonly used access_str strings:
     * `inv_and_inv_containers`
     * `all_local`
@@ -331,7 +356,7 @@ def build_relevant_items_set(verb=None, noun=None, access_str=None, current_loc=
             final_items.add(item)
     return final_items, access_str
 
-def find_local_item_by_name(noun:itemInstance|npcInstance=None, noun_text = None, verb=None, access_str:str=None, current_loc:cardinalInstance=None, hidden_cluster=False, priority="single") -> itemInstance|npcInstance|set:
+def find_local_item_by_name(noun:itemInstance|npcInstance=None, noun_text = None, verb=None, access_str:str=None, current_loc:cardinalInstance=None, hidden_cluster=False, priority="single") -> set[itemInstance|npcInstance]|itemInstance|npcInstance:
     """
     Builds relevant items set using verb scope derived from `access_str` or `verb`'s status in `verb_to_noun_access`. If `noun` provided, returns the relevant `ItemInstance` of that name if found. If no `noun` provided, returns the full set.
 

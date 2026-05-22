@@ -133,6 +133,7 @@ class placeRegistry:
         self.currentPlace:placeInstance = None
         self.inv_place:cardinalInstance = None
         self.no_place:cardinalInstance = None
+        self.npc_inv_place:cardinalInstance = None
 
         self.location_nouns = ["floor", "wall", "ground"]
 
@@ -374,10 +375,13 @@ def initialise_placeRegistry() -> None:
                     else:
                         print(f"Target card transition objects: {target_place.transition_objs}")
 
-    from config import starting_location_str, no_place_str, inv_loc_str
+    from config import starting_location_str, no_place_str, inv_loc_str, npc_inv_loc_str
     locRegistry.set_current(starting_location_str)
     locRegistry.no_place = locRegistry.by_cardinal_str(no_place_str)
     locRegistry.inv_place = locRegistry.by_cardinal_str(inv_loc_str)
+    print(f"npc_inv_loc_str: {npc_inv_loc_str}")
+    print(f"list(i for i in locRegistry.places): {list(i for i in locRegistry.places)}")
+    locRegistry.npc_inv_place = locRegistry.by_cardinal_str(npc_inv_loc_str)
 
 
 def get_descriptions(place:placeInstance, cardinal:cardinalInstance=None):

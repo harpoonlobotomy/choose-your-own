@@ -699,7 +699,7 @@ def start_conversation(npc:npcInstance):
     print(f"You approach the {npc_colour(npc)} to start a conversation.\n")
     if not npc.encountered:
         print(npc.introduction, "\n")
-        npc.encountered = True
+        npc.encounter()
     if npc.convo_start:
         print("  ", affect(npc, npc.convo_start), "\n")
 

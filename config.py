@@ -46,6 +46,7 @@ require_firesource = True
 key_dir = "north"
 no_place_str = f"{key_dir} no_place"
 inv_loc_str = f"{key_dir} inventory_place"
+npc_inv_loc_str = f"{key_dir} npc_inventory_place"
 
 godmode = False
 

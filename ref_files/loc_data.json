@@ -304,6 +304,20 @@
     "electricity": false,
     "nature": false
   },
+  "npc_inventory_place": {
+    "north": {
+      "item_desc": {
+        "generic": "Holding ground for all NPC inventory items: ",
+        "no_items": "Currently empty."
+      },
+      "short_desc": "An inventory for NPCs to share.",
+      "items": {}
+    },
+    "descrip": "Player Inventory [not actually a location].",
+    "inside": false,
+    "electricity": false,
+    "nature": false
+  },
   "testing grounds": {
     "north": {
         "item_desc": {"generic": "A place to test things. Nothing here by default with ", "watch battery": "a [[]]", "no_items": "nothing here now either."},

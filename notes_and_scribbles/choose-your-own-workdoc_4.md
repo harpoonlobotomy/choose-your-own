@@ -2046,3 +2046,50 @@ I don't know what else it needs. God my head hurts.
 
 10.56am
 Added index selection to the sell list, only limited tests so far. Need to apply to buy list too. Lets you just type the order number of the item you want to buy/sell (starting at 1) instead of typing the name.
+
+
+Working on this again for the first time since last update. Currently:
+4.01pm, 20/5/26
+
+Have added 'steal' as a verb, but immediate issue: It doesn't see NPC's inventories as local. Which in general is good, but if they're visible then I might ask about them directly, or, in this case, I might try to steal them. There are no theft mechanics at all so far so it''s going to be rough but allowing you to target it at least makes sense.
+
+I think before I get into the parser and start expanding allowable first nouns based on the second noun, I need to implement the 'discovered' thing properly. eg, if I've talked to the troll and I know he has car keys in his inventory, I should be allowed to target them, but not if we've not talked yet and they're not visible.
+'encountered' is the thing. That's what I've (at least partially) implemented.
+
+6.03pm
+get_correct_nouns() now pulls directly from the local_nouns set that verb_membrane() generated and used for the parsing. So, if I write 'steal scroll' and it succeeded because 'scroll' was local under those conditions, it now finds the /correct/ scroll when getting the noun in verb_actions(). Previously it would just take the first instance of that name, often meaning it would be the wrong instance, which would then fail to 'get' it. so, you would have a scroll described to you, then try to interact with it and be told it doesn't exist.
+
+Hm. The order is still wrong half the time:
+
+ .-                         -.
+[<  steal scroll from troll  >]
+ '-                         -'
+
+There's no troll around here to steal a scroll from.
+
+The scroll is right next to me, it's the scroll that's missing.
+
+8.34pm
+Fixed the scroll thing. Now it gets membrane's local items and checks for the correct instance there.
+
+Stealing works now. Very simplistic, but you can rob npcs.
+
+Have a weird issue where car keys and fish food are both encountered well before they should be. I'm guessing maybe they're moved to the NPC's inventory late and that's why? Need to check. Really need to formalise the whole 'when things are encountered', becaues currently it's messy; npcs aren't encountered when described, only when interacted with, but some items are encountered before even being described. Will work on it when the migraine's gone.
+
+12.40pm 22/5/26
+Working on the 'encountered' issue. Routing all isntances of encountered = True through iteminst.encounter() so I can track it a little better.
+
+And npcs will track through npcInstance.encounter(self)
+little dangerous having itemIntances.encounter and npcInstances.encounter but it'll do for now.
+
+Goign to work on this:
+
+ .-                       -.nt ID:222b0c74e600] [loc: north npc_inventory_place] [event:None] > is encountered
+[<  steal bell from troll  >]
+ '-                       -'
+
+There's no troll around here to steal a bell from.
+
+because it's very annoying - you steal a scroll from a troll, great. But then you try to steal something the troll doesn't have, and... it claims there's no troll.
+
+Also I'm re-encountering items. Need to check if it's already been encountered before doign it again. But anyway. Also the 'two items being encountered too early' hasn't happened again. Potentially it only happened then those items were chosen as random starting loot? Not sure. It was supposed to generate new inv items, not steal existing ones, but will have to look into it.

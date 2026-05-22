@@ -133,6 +133,13 @@ class itemInstance:
     """
     Represents a single item in the game world or player inventory.
     """
+
+    def encounter(self, text_sent=None):
+        print(f"Item being encountered: {self}")
+        if text_sent:
+            print(f"Details: [  {text_sent}  ]\n")
+        self.encountered = True
+
     def set_hidden(self): # so the noun won't be considered for picking up etc outside of whatever un-hiddening act I come up with.
         # I don't know if I need this anymore? Probably keep it for now though...
         self.held_verb_actions = self.verb_actions
@@ -346,6 +353,8 @@ class itemInstance:
         self.is_event_key = False
 
         self.encountered = False
+        from npcRegistry import npcInstance
+        self.held_by:npcInstance = None # for items being held by NPCs. Need to remember to uncheck it when removed from npc.
 
         if attr.get("exceptions"):
             if attr["exceptions"].get("starting_location"):
@@ -788,7 +797,8 @@ class itemRegistry:
         7: "other error, investigate"\n
         8: "is a location exterior"\n
         9: "item is hidden" (must be discovered somehow, not shown in general 'look around' views.)\n
-        10: "not an instance"
+        10: "not an instance"\n
+        11: "in an NPC's inventory or trade items"
         """
         logging_fn()
         from misc_utilities import is_item_in_container, accessible_dict
@@ -824,6 +834,10 @@ class itemRegistry:
             meaning = accessible_dict[reason]
             logging_fn(f"returning 5 for {inst}, is in inventory")
             return None, reason, meaning
+
+        elif inst.location == loc.npc_inv_place and inst.encountered and not container:
+            if inst.held_by and inst.held_by.location == loc.current:
+                return inst.held_by, 11, accessible_dict[11]
 
         if container:
             print(f"container: {container}")
@@ -1241,7 +1255,7 @@ class itemRegistry:
                     inst.location = loc.no_place ## We don't add items to by_location for no_place, this is purely so the location data can be printed in print lines.
         return updated
 
-    def do_move(self, inst:itemInstance, target_location:cardinalInstance, new_container:itemInstance, update:set = set()) -> set:
+    def do_move(self, inst:itemInstance, target_location:cardinalInstance, new_container:itemInstance, update:set = set(), do_not_discover=False) -> set:
         ## For compounds of val > 1, separate them first. This is just for the moving, no selection. We assume selections are good by this point.
         prev_container = inst.contained_in if hasattr(inst, "contained_in") else None
         prev_location = inst.location
@@ -1277,16 +1291,16 @@ class itemRegistry:
             inst.location = target_location
             registry.by_location.setdefault(target_location, set()).add(inst)
 
-        if not inst.encountered:
-            inst.encountered = True
+        if not do_not_discover and not inst.encountered:
+            inst.encounter()
 
         return update
 
 
-    def move_item(self, inst:itemInstance, location:cardinalInstance=None, new_container:itemInstance=None, old_container:itemInstance=None, no_print=False, simple_move = False)->itemInstance:
+    def move_item(self, inst:itemInstance, location:cardinalInstance=None, new_container:itemInstance=None, old_container:itemInstance=None, no_print=False, simple_move = False, do_not_discover=False)->itemInstance:
         """Moves an itemInstance from its current location to a new 'location'. The new location can be the player inventory, a cardinalInstance or a container object. Updates item descriptions when complete."""
         logging_fn()
-        from misc_utilities import assign_colour
+
         updated = set()
         if location and isinstance(location, str) and location == "current":
             location = loc.current
@@ -1301,7 +1315,7 @@ class itemRegistry:
             updated.add(inst)
             if other != "process_as_normal":
                 if not outcome.encountered:
-                    outcome.encountered = True
+                    outcome.encounter()
                 #print("outcome, old_container, new_container, location, old_loc, updated: ", outcome, old_container, new_container, location, old_loc, updated)
                 #print("Not process as normal. All moves need to be done already.")
                 updated = self.clear_parent_and_old_loc(outcome, old_container, new_container, location, old_loc, updated)
@@ -1365,7 +1379,7 @@ class itemRegistry:
             else:
                 inst.contained_in = None"""
         #print(f"About to hit do_move for {inst} with vals:\nlocation: {location}\nnew_container: {new_container}\n")
-        updated = self.do_move(inst, location, new_container, updated)
+        updated = self.do_move(inst, location, new_container, updated, do_not_discover=do_not_discover)
 
         for item in updated:
             self.init_descriptions(item)
@@ -1504,6 +1518,9 @@ class itemRegistry:
             if isinstance(inst, npcInstance) and not inst.encountered:
                 description = inst.descriptions.get("npc_introduction")
             else:
+                #if not inst.encountered:
+                    #inst.encountered = True # causers it to encounter things too early, before any description is/isn't printed.
+
                 for entry, val in inst.descriptions.items():
                     if val and isinstance(val, str) and "[[choose" in val:
                         from misc_utilities import choose_option
@@ -1576,6 +1593,7 @@ class itemRegistry:
                                         print(f"child excluded: {child}")
                                         continue
                                 long_desc.append(assign_colour(child, nicename=True))
+                                child.encounter()
                                 #print(f"long_desc with child: {long_desc}")
                         description = compile_long_desc(long_desc)
                     if inst.nicenames.get("any_children"):

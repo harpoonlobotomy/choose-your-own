@@ -870,12 +870,13 @@ class Parser:
         logging_fn()
         from verb_membrane import membrane
 
-        from interactions.item_interactions import find_local_item_by_name
+        from interactions.item_interactions import find_local_item_by_name, get_npc_inventory
         local_nouns = find_local_item_by_name()
         if not local_nouns:
             membrane.local_nouns = None
         else:
             clean_nouns  = {}
+            local_nouns = get_npc_inventory(local_nouns)
             for item in local_nouns: # make this a fn to reuse for all plural gets.
                 clean_nouns[item.name] = item
                 if " " in item.name:
@@ -886,6 +887,7 @@ class Parser:
                     for alt in item.alt_names: ## hadn't added alt_names in. Goddamn.
                         clean_nouns[alt] = item
 
+            membrane.local_noun_instances = local_nouns
             membrane.local_nouns = clean_nouns
 
         tokens = self.tokenise(self, input_str, membrane)

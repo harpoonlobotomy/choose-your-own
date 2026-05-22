@@ -17,7 +17,8 @@ accessible_dict = {
     7: "other error, investigate",
     8: "is a transitional item (eg a door that can be seen from both sides)",
     9: "item is hidden",# (must be discovered somehow, not shown in general 'look around' views.)
-    10: "not an instance"
+    10: "not an instance",
+    11: "in an NPC's inventory or trade items"
 }
 
 import config
@@ -187,8 +188,8 @@ def look_around():
     if is_items:
         print("IS_ITEMS:")
         for item in is_items:
-            print(item, f"encountered: {item.encountered}")
-            item.encountered = True
+            print(item, f"encountered under is_items in look_around: {item.encountered}")
+            item.encounter()
 
 
 #            _, reason_val, _ = registry.run_check(item)

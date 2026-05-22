@@ -149,8 +149,9 @@ class Membrane:
 
         from interactions.item_interactions import find_local_item_by_name
         local_items = find_local_item_by_name()
+        self.local_noun_instances = local_items
         if local_items:
-            self.local_nouns = list(local_items)
+            self.local_nouns = list(i.name for i in local_items)
         else:
             self.local_nouns = list()
         logging_fn(note = "end of get_local_nouns")
@@ -375,7 +376,7 @@ def run_membrane(input_str=None, run_tests=False):
             except Exception as e:
                 print(f"Failed get_noun_instances: {e}")
 
-            logging_fn(f"error: {error} // inst_dict: {inst_dict}")
+            logging_fn(f"[[ verb_memberane after get_noun_instances ]]  error: {error} // inst_dict: {inst_dict}")
             if error:
                 message, idx_kind = error
                 if isinstance(error, str):

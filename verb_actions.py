@@ -9,6 +9,7 @@ from itemRegistry import itemInstance, registry
 from misc_utilities import assign_colour, col_list, generate_clean_inventory, has_and_true, is_plural_noun, look_around, smart_capitalise, print_failure_message
 from npcRegistry import npcInstance
 from printing import print_yellow
+from rolling import roll_risk
 from verb_definitions import directions, semantics
 
 can_open_codes = [0,1,5,8]
@@ -211,9 +212,16 @@ def get_correct_nouns(input_dict, verb=None, access_str=None, access_str2=None, 
         verb = get_verb(input_dict).name
 
     if noun:
+        from verb_membrane import membrane
+        matched_local_nouns = list(i for i in membrane.local_nouns if i == noun.name)
+
         outcome = item_interactions.find_local_item_by_name(noun, verb=verb, access_str=access_str, current_loc=loc.current)
         if isinstance(outcome, itemInstance|npcInstance):
             noun = outcome
+        elif matched_local_nouns:
+            matched_instances = list(i for i in membrane.local_noun_instances if i.name == noun.name)
+            if matched_instances:
+                noun = matched_instances[0]
         else:
             if outcome == None and not hold_error_messages:
                 noun=noun_str
@@ -225,13 +233,18 @@ def get_correct_nouns(input_dict, verb=None, access_str=None, access_str2=None, 
 
     if noun2:
         outcome = item_interactions.find_local_item_by_name(noun2, verb=verb, access_str=access_str2, current_loc=loc.current)
+        matched_local_nouns = list(i for i in membrane.local_nouns if i == noun.name)
         if outcome and isinstance(outcome, itemInstance|npcInstance):
             noun2 = outcome
+        elif matched_local_nouns:
+            matched_instances = list(i for i in membrane.local_noun_instances if i.name == noun2.name)
+            if matched_instances:
+                noun2 = matched_instances[0]
         else:
             if outcome == None and not hold_error_messages:
                 noun2 = noun2_str
                 return None, None, None, None, None, None
-            #noun2 = None
+
     if not isinstance(noun, itemInstance|npcInstance) or (noun2 and not isinstance(noun2, itemInstance|npcInstance)):
         logging_fn(f"Going to print error from def {verb} `{input_dict}`")
         print_failure_message(noun=noun, noun2=noun2, verb=verb, init_dict=input_dict)
@@ -480,6 +493,7 @@ def get_component_parts(input_dict:dict, kind="noun", x_count=None) -> itemInsta
                     if counter == x_count:
                         return entry["instance"], entry[text]
                 else:
+                    print(f"entry: {entry}")
                     return entry["instance"], entry[text]
 
 #def get_cardinal(input_dict:dict) -> itemInstance:
@@ -2079,7 +2093,7 @@ def take(format_tuple, input_dict):
 
     elif format_tuple == (("verb", "noun", "direction", "noun")): ## will later include scenery. Don't know how that's going to work yet.
         verb_str = input_dict[0]["verb"]["str_name"]
-        if verb_str in ("take", "remove", "separate", "get"):
+        if verb_str in ("take", "remove", "separate", "get", "steal"):
 
             if noun2 and noun2_reason not in interactable_codes:
                 print(f"{theres_therere} no {assign_colour(noun2_str, colour="yellow")} around here to {verb_str} from.")
@@ -2735,8 +2749,29 @@ def talk(format_tuple, input_dict):
         else:
             print_failure_message(init_dict=input_dict)
 
+def find_local_npc():
+    logging_fn()
+    from verb_membrane import membrane
+    npcs = list(i for i in membrane.local_noun_instances if isinstance(i, npcInstance) and i.encountered)
+
+    if npcs:
+        if len(npcs) == 1:
+            return npcs[0]
+        else:
+            print("[More than one local NPC.]")
+            print(f"`You need to be more specific - who do you want to trade with?\n{npcs}\n")
+
 def trade(format_tuple=None, input_dict=None, npc:npcInstance=None):
+    logging_fn()
     """fn for trading items with npcs. Added 'npc' here in case it's called from the conversation loop and not from the parser."""
+    if len(format_tuple) == 1:
+        npc = find_local_npc()
+        if npc:
+            import interactions.trade
+            interactions.trade.trade_with(npc)
+            look_around()
+            return
+
     if input_dict:
         noun, noun_str, reason, _, _, _ = get_correct_nouns(input_dict)
     elif npc:
@@ -2757,6 +2792,40 @@ def trade(format_tuple=None, input_dict=None, npc:npcInstance=None):
             return
         else:
             print_failure_message(init_dict=input_dict)
+
+def steal(format_tuple, input_dict):
+
+    npc_has_obj = False
+    item_stolen = False
+    noun, noun_str, reason, noun2, noun2_str, reason_2 = get_correct_nouns(input_dict)
+    if format_tuple == ("verb", "noun", "direction", "noun"):
+        direction = get_dir_or_sem(input_dict)
+
+        if direction and direction == "from":
+            if noun and noun2:
+                object_noun = noun
+                owner_noun = noun2
+                if reason == 11 and noun.held_by == noun2:
+                    npc_has_obj = True ## this is probably the ideal way to do this?
+                else:
+                    print(f"Reason is not 11: {reason} and/or noun is not held by noun2: {noun.held_by}")
+                if isinstance(owner_noun, npcInstance):
+                    if owner_noun.trade_items and object_noun in owner_noun.trade_items:
+                        npc_has_obj = object_noun
+                    elif owner_noun.inventory and object_noun in owner_noun.inventory:
+                        npc_has_obj = object_noun
+
+        if npc_has_obj:
+            item_stolen = owner_noun.steal_from_npc(npc_has_obj)
+        else:
+            print(f"{assign_colour(noun2, caps=True)} doesn't seem to have `{assign_colour(item = noun.name, noun=noun)}` to steal...")
+
+    if item_stolen:
+        from eventRegistry import events
+        outcome, _ = events.is_event_trigger(noun_inst = noun, reason = "item_in_inv")
+        if not outcome: # removed a newline from the next. If it causes issues, add it elsewhere, not here.
+            print(f"The {assign_colour(noun)} {is_plural_noun(noun)} now in your inventory.")
+        return
 
 
 MOVE_UP = "\033[A"
@@ -2859,6 +2928,7 @@ def router(viable_format, inst_dict, input_str=None):
         "drop": drop,
         "set": set_action,
         "trade": trade,
+        "steal": steal,
 
         "time": wait
     }

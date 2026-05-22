@@ -1,6 +1,7 @@
 #trade.py
 
 from itemRegistry import itemInstance
+import itemRegistry
 from misc_utilities import assign_colour
 from npcRegistry import npcInstance
 
@@ -50,10 +51,12 @@ def give_item_to_npc(npc:npcInstance, trade_item:itemInstance):
 
     #print(f"give_item_to_npc: `{trade_item}`")
     registry.by_location[loc.inv_place].remove(trade_item)
-    trade_item.location = loc.no_place
+    trade_item.location = loc.npc_inv_place
     if loc.inv_place.items and trade_item in loc.inv_place.items:
         loc.inv_place.items.remove(trade_item)
     npc.inventory.add(trade_item)
+    registry.move_item(trade_item, location=loc.npc_inv_place)
+    trade_item.held_by = npc
     if not npc.will_not_sell or trade_item.name not in npc.will_not_sell:
         npc.trade_items.add(trade_item)
 
@@ -62,12 +65,15 @@ def take_item_from_npc(npc:npcInstance, purchase_item:itemInstance):
         npc.inventory.remove(purchase_item)
     else:
         print(f"ITEM NOT IN NPC.INVENTORY. THIS IS AN UPSTREAM PROBLEM, ALL SELLABLE ITEMS MUST BE IN INVENTORY. {npc} / {purchase_item} \nvars: {vars(npc)}")
-    npc.trade_items.remove(purchase_item)
-    from env_data import locRegistry as loc
-    purchase_item.location = loc.inv_place
-    loc.inv_place.items.add(purchase_item)
-    purchase_item.encountered = True
+    if purchase_item in npc.trade_items:
+        npc.trade_items.remove(purchase_item)
     from itemRegistry import registry
+    from env_data import locRegistry as loc
+    registry.move_item(purchase_item, location=loc.inv_place)
+    loc.inv_place.items.add(purchase_item)
+    purchase_item.held_by = None
+    purchase_item.encountered = True
+    #TODO: I need to get rid of the 'by_location' set adding. IT's just messy.
     registry.by_location[loc.inv_place].add(purchase_item)
 
 
@@ -79,7 +85,7 @@ def get_sellable(npc:npcInstance, loot_table, force_all=False):
     if force_all or not hasattr(npc, "trade_intake"):
         items = set(i for i in registry.by_location.get(loc.inv_place) if registry.by_location.get(loc.inv_place) and "loot_type" in i.item_type)
         if items:
-            children = set((child for child in i.children) for i in items if hasattr(i, "children") and i.children and i.is_open)
+            children = set((child for child in i.children if not child.is_hidden) for i in items if hasattr(i, "children") and i.children and i.is_open)
             sellable_items = items|children
         return sellable_items
     for category, items in npc.trade_intake.items():
@@ -226,9 +232,11 @@ def trade_with(npc:npcInstance):
     from misc_utilities import assign_colour
     from itemRegistry import registry
     from interactions.conversations import affect
+
     if npc.trade_start:
-            print("\n   ", affect(npc, npc.trade_start))
+        print("\n   ", affect(npc, npc.trade_start))
     t_print(f" --- Entering trade with {npc.name} ---", newline_before=True)
+    npc.encounter()
     end_text = f" -- Ending trade with item_1 --"
     while True:
         t_print("Do you want to _buy_ or _sell_?", newline_before=True, newline_after=True)
@@ -261,6 +269,8 @@ def trade_with(npc:npcInstance):
             else:
                 t_print("What do you want to look at?", newline_before = True, newline_after = True)
                 printlist = list(f"{assign_colour(f'  - {i if isinstance(i, str) else i.name}')}\n" for i in npc.trade_items)
+                for item in npc.trade_items:
+                    item.encounter()
                 print(''.join(printlist))
 
                 while test:

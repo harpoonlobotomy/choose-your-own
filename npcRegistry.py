@@ -1,6 +1,7 @@
 """Class(es) for NPC data. Holds interaction data, conversation history, etc. Also holds speech trait string modifications."""
 
-from env_data import cardinalInstance
+from env_data import cardinalInstance, locRegistry as loc
+
 
 filler_words = ["well", "umm", "ah", "well, uh", "I guess", "I think"]
 sample_convo_parts = {"start": "Hello.", "end": "Goodbye."}
@@ -63,6 +64,7 @@ class conversationsRegistry:
 
 
 class npcInstance:
+    from itemRegistry import itemInstance, registry
 
     def __init__(self, name:str, data:dict):
 
@@ -90,7 +92,9 @@ class npcInstance:
         self.conversations:dict[conversationInstance, str] = {}
 
         self.gold = data.get("gold", 5) # default 5 so npcs have money on them
-        self.inventory:set = set() # separate from can_trade, as not all held items are sellable and not only traders hold items.
+        self.inventory:set[itemInstance] = set() # separate from can_trade, as not all held items are sellable and not only traders hold items.
+
+        from env_data import locRegistry, cardinalInstance
 
         if "can_trade" in self.item_type:
             from itemRegistry import itemInstance, registry
@@ -98,8 +102,9 @@ class npcInstance:
             if self.trade_items:
                 new_items = set()
                 for item in self.trade_items:
-                    inst = registry.init_single(item, apply_location="north no_place")
-                    setattr(inst, "trade_item", self)
+                    inst = registry.init_single(item, apply_location=locRegistry.npc_inv_place)
+                    inst.held_by = self
+                    #setattr(inst, "trade_item", self) #
                     new_items.add(inst)
                     self.inventory.add(inst)
                 if len(new_items) == len(self.trade_items):
@@ -108,13 +113,13 @@ class npcInstance:
                     print(f"Not all trade_items for {self.name} were generated:\n{self.trade_items}\nvs:\nnew_items\ninvestigate this failure.\n\n")
 
             self.will_not_sell:list = data.get("will_not_sell")
-            self.thief_awareness:int = data.get("thief_awareness", 5)
+
             self.trade_start:str = data["conversation_parts"].get("trade_start", "Let's see here...")
             self.trade_end:str = data["conversation_parts"].get("trade_end", "Please come again.")
             self.trade_intake:dict = data.get("trade_intake") # eg 'named_only: ["dried moss"]'. Some may trade any, some may trade only a certain random pool value.
 
+        self.thief_awareness:int = data.get("thief_awareness", 5) # so non traders can theoretically be stolen from
         self.location = data.get("location")
-        from env_data import locRegistry, cardinalInstance
 
         if not self.location:
             self.location = locRegistry.no_place
@@ -166,6 +171,44 @@ class npcInstance:
         for item in data:
             if not hasattr(self, item) and item != "responses":
                 print(f"Item `{item}` in NPC_defs but not in npcInstance")
+
+    def encounter(self):
+        print(f"NPC {self} is encountered.")
+        self.encountered = True
+
+    def steal_from_npc(self, item:itemInstance):
+        """ Awareness is 1-20. 20 = basically impossible to steal from, 1 == lil bit of luck should do it."""
+        awareness = self.thief_awareness
+        if hasattr(self, "will_not_sell"):
+            will_not_sell = self.will_not_sell
+        else:
+            will_not_sell = None
+
+        if will_not_sell and item.name in will_not_sell:
+            awareness = awareness * 2 # twice as aware for cherished/special items that can't be purchased. Might change this later but i like it thematically.
+
+        """ Something about player's skill in thievery to modify the roll """
+        print(f"Base awareness to steal {item} from {self}: {awareness}")
+        """ So basically you have to roll higher than the 'awareness'. I think. Plus/minus modifiers."""
+        from rolling import roll_risk
+        val = roll_risk(return_r=True)
+        if val > awareness:
+            print(f"Item stolen successfully with a steal roll of {val}")
+            from interactions.trade import take_item_from_npc
+            take_item_from_npc(self, item)
+            """Add a suspicion val w each success, modified by char's intelligence and or cunning
+            For comments like 'y'know, every time I see you my pack feels lighter' etc. So even successful steals aren't entirely neutral."""
+
+        elif val == awareness:
+            print(f"ITem not stolen, but you weren't caught either. Stalemate with a roll of {val}")
+        else:
+            print(f"Item not stolen, and {self} noticed. Consequences...")
+
+
+
+
+
+
 
     def __repr__(self):
         return(f"<npcInstance `{self.name}`, {(f'at {self.location}') if hasattr(self, "location") else ''}")
