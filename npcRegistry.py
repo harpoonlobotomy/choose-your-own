@@ -1,7 +1,7 @@
 """Class(es) for NPC data. Holds interaction data, conversation history, etc. Also holds speech trait string modifications."""
 
 from env_data import cardinalInstance, locRegistry as loc
-
+import uuid
 
 filler_words = ["well", "umm", "ah", "well, uh", "I guess", "I think"]
 sample_convo_parts = {"start": "Hello.", "end": "Goodbye."}
@@ -69,6 +69,7 @@ class npcInstance:
     def __init__(self, name:str, data:dict):
 
         self.name = name
+        self.id = str(uuid.uuid4())  # unique per instance
         self.is_hidden = False
         self.print_name = data.get("print_name") if data.get("print_name") else name
         self.text_styling = data.get("text_styling")

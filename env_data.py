@@ -69,6 +69,7 @@ class cardinalInstance:
                             "ext_location": (loc_dict[self.place.name][self.name]["items"][item].get("ext_location") if loc_dict[self.place.name][self.name]["items"][item].get("ext_location") != self.name else self)}
 
         self.visited:bool = False # Same as .placeInstances have, not tracked in route but used for directing some descriptions etc.
+        self.items:set = set() # adding here because having membrane access itemreg breaks things.
 
     def __repr__(self):
         return f"<cardinalInstance {self.place_name} ({self.id})>"

@@ -78,7 +78,7 @@ def check_if_correct_key_exists_already(item_inst:itemInstance, flag:str, val:di
         #print(f"Existing key(s): {existing_keys}")
 
         for key in existing_keys:
-            #print("key in existing keys")
+            print(f"key in existing keys: {key} // val: {val}")
             if val.get(key.name) and isinstance(val[key.name], dict):
                 #print(f"val[key.name]: {val[key.name]}")
                 for a, b in val[key.name].items():

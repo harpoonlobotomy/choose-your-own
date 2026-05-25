@@ -305,7 +305,8 @@ def build_relevant_items_set(verb=None, noun=None, access_str=None, current_loc=
     if access_str in no_inventory:
         inv_items = None
     else:
-        inv_items = loc.inv_place.items
+        if loc.inv_place and loc.inv_place.items:
+            inv_items = loc.inv_place.items
     if inv_items and access_str not in no_containers:
         children = recurse_items_from_list(inv_items)
         if children and access_str not in in_inv_children:
