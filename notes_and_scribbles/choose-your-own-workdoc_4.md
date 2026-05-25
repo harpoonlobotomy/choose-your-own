@@ -2210,3 +2210,11 @@ gets to here
 Not noun_inst for gold key
 
 okay, fixed it by just undoing most of the changes to eventReg. Will go through the 'new' version and the actual current working vers shortly and figure out why it broke. But it's back to working now at least.
+
+9.39am 25/5/26
+talked w lex, should add dnd type player stats.
+Will need to implement saving ASAP because redoing player stats each time is bullshit.
+
+9.55am
+Make a little self contained one-shot adventure with this system.
+

@@ -342,6 +342,19 @@ class itemInstance:
             if not self.loot_type and "starting_loot" in self.item_type:
                 self.loot_type = "starting_loot"
 
+    def save_start_state(self):
+        self.start_state = {}
+        for attr in self.__dict__:
+            if isinstance(self.__dict__[attr], set):
+                self.start_state[attr] = list(self.__dict__[attr])
+            elif isinstance(self.__dict__[attr], cardinalInstance|placeInstance):
+                self.start_state[attr] = self.__dict__[attr].name
+            elif isinstance(self.__dict__[attr], )
+
+            print(attr)
+            print(self.__dict__[attr])
+        print(f"self.__dict__:\n {self.__dict__}")
+        exit()
 
 
     def __init__(self, definition_key:str, attr:dict):
@@ -413,7 +426,7 @@ class itemInstance:
                     #print(f"ATTR MISSING FROM SELF for {self.name}: {attribute}")
                     #print(f"self.item_type: {self.item_type}")
 
-
+        self.save_start_state()
 
     def __repr__(self):
         #print("self.colour: ", self.colour)
