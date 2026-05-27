@@ -336,7 +336,7 @@ def initialise_placeRegistry() -> None:
             cardinal = place.cardinals[card]
 
             if hasattr(cardinal, "transition_objs") and cardinal.transition_objs:
-                for item in cardinal.transition_objs:
+                for item in cardinal.transition_objs: # item is str at this point.
                     #item_data = loc_dict[name][card]["items"].get(item)
                     int_location = ext_location = None
                     if cardinal.place.transition_objs.get(item):

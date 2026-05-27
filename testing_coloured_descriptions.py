@@ -154,6 +154,7 @@ def format_descrip(d_type="area_descrip", description="", location=None, cardina
                             added.add(loc_item.name)
 
                         else:#if not long_dict.get(loc_item.name):
+                            print(f"loc_item: {loc_item}, nicename: {loc_item.nicename}")
                             long_desc.append(assign_colour(loc_item, nicename=True))
 
     return long_desc

@@ -215,12 +215,13 @@ def get_correct_nouns(input_dict, verb=None, access_str=None, access_str2=None, 
 
     if noun:
         from verb_membrane import membrane
-        matched_local_nouns = list(i for i in membrane.local_nouns if i == noun.name)
+        if membrane.local_nouns:
+            matched_local_nouns = list(i for i in membrane.local_nouns if i == noun.name)
 
         outcome = item_interactions.find_local_item_by_name(noun, verb=verb, access_str=access_str, current_loc=loc.current)
         if isinstance(outcome, itemInstance|npcInstance):
             noun = outcome
-        elif matched_local_nouns:
+        elif membrane.local_nouns:#matched_local_nouns:
             matched_instances = list(i for i in membrane.local_noun_instances if i.name == noun.name)
             if matched_instances:
                 noun = matched_instances[0]
@@ -894,7 +895,7 @@ def go(format_tuple, input_dict, no_noun=None): ## move to a location/cardinal/i
     noun=None
 
     verb_entry, noun_entry, direction_entry, cardinal_entry, location_entry, semantic_entry = get_entries_from_dict(input_dict)
-
+    print("Got base bits")
     if (len(format_tuple) == 2 and (noun_entry or location_entry)) or (len(format_tuple) == 3 and (direction_entry and direction_entry["text"] in to_words)):
         #print(f"def go len2 or len3. Format tuple: {format_tuple}, dict: {input_dict}")
         noun = noun_entry["instance"] if noun_entry else None
@@ -924,24 +925,26 @@ def go(format_tuple, input_dict, no_noun=None): ## move to a location/cardinal/i
                 return
 
     if (direction_entry and direction_entry["str_name"] in to_words and len(format_tuple) < 5) or (not direction_entry and len(format_tuple) < 4) or (direction_entry and not cardinal_entry and not location_entry):
+        print("At this section")
         if location_entry and not cardinal_entry:
             location = location_entry["instance"]
+
             if location and location == loc.current.place:
-                #print("location instance == loc.current.place")
+                print("location instance == loc.current.place")
                 if input_dict[0].get("verb") and input_dict[0]["verb"]["str_name"] == "leave":
                     if enter(format_tuple, input_dict, noun=(noun if noun else None)):
                         return
 
                     print("You can't leave without a new destination in mind. Where do you want to go?")
                     return
-
+            print("here now")
             if location and hasattr(location, "transition_objs") and location not in ({}, None) and location.transition_objs and not no_noun:
                 #print(f"hasattr location_entry[instance], transition_objs: {location.transition_objs}")
                 for obj in location.transition_objs:
                     #print(f"OBJ: {obj}")
                     if obj.int_location.place in (loc.current, location):
                         return enter(format_tuple, input_dict, noun=obj)
-
+            print("about to relocate")
             relocate(new_location=location)
             return
 
@@ -970,6 +973,7 @@ def go(format_tuple, input_dict, no_noun=None): ## move to a location/cardinal/i
                 return
 
         elif location_entry and cardinal_entry:
+            print(f'going to relocate w loc and card: {location_entry["instance"]}, {cardinal_entry["instance"]}')
             relocate(new_location=location_entry["instance"], new_cardinal = cardinal_entry["instance"])
             return
         print("End of if location_entry and not cardinal_entry: elif chain")
@@ -1509,7 +1513,7 @@ def check_key_lock_pairing(noun_1:itemInstance, noun_2:itemInstance):
     """Checks if noun_1 is a key, and if noun_2 is a matching key."""
     logging_fn()
     #print(f"check key lock pairings for {noun_1}, {noun_2} // noun_1.item_type: {noun_1.item_type} // noun2.requires_key:")
-    if hasattr(noun_2, "requires_key"):
+    if hasattr(noun_2, "requires_key") and noun_2.requires_key:
         #print("noun_2.requires_key: ", noun_2.requires_key)
         if noun_1 in noun_2.requires_key:
             return 1
@@ -1526,6 +1530,7 @@ def lock_unlock(format_tuple, input_dict, do_open=False, noun=None, noun2=None):
     verb = get_verb(input_dict, get_str=True)
     if not noun or not noun2:
         noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict, verb="use")
+
     #print("lock_unlock: noun, noun_str, noun2, noun2_str: ", noun, noun_str, noun2, noun2_str)
 
     if len(format_tuple) == 2:
@@ -1539,18 +1544,22 @@ def lock_unlock(format_tuple, input_dict, do_open=False, noun=None, noun2=None):
             accessible_2, _, _ = can_interact(noun2)
             if accessible_1 and accessible_2:
                 #print(f"{noun} and {noun2} are both accessible.")
+                print("checking key_lock_pairing")
                 success = check_key_lock_pairing(noun, noun2)
                 if success:
                     key = noun
                     lock = noun2
 
                 else:
+                    print("checking key_lock_pairing again")
                     success = check_key_lock_pairing(noun2, noun)
                     if success:
                         key = noun2
                         lock = noun
+                    else:
+                        print("Not success")
                 if key and lock:
-                    #print(f"KEY: {key}, LOCK: {lock}")
+                    print(f"KEY: {key}, LOCK: {lock}")
                     if lock.is_locked and do_open:
                             print(f"You use the {assign_colour(key)} to unlock the {assign_colour(lock)}, and open it.")
                             set_noun_attr(("is_locked", False), ("is_open", True), noun=lock)
@@ -2062,7 +2071,7 @@ def take(format_tuple, input_dict):
     from eventRegistry import events
     logging_fn()
     noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason = get_correct_nouns(input_dict=input_dict, verb="take", access_str2="all_local", hold_error_messages=True)
-    #print("noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason: ", noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason)
+    print("noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason: ", noun, noun_str, noun_reason, noun2, noun2_str, noun2_reason)
     if not isinstance(noun, itemInstance|npcInstance):
         print("Does it ever get here? I'd have thought it would print the failure message in parser before now.")
         if noun == None:
@@ -2094,6 +2103,7 @@ def take(format_tuple, input_dict):
     if format_tuple in (("verb", "noun"), ("verb", "direction", "noun")):
 
         cannot_take, added_to_inv = can_take(noun, noun_str, noun_reason)
+        print(f"cannot take: {cannot_take}, added to inv: {added_to_inv}")
         if cannot_take and hasattr(noun, "can_consume"):
             print(f"\nDid you mean to consume the {assign_colour(noun)}? ")
             return

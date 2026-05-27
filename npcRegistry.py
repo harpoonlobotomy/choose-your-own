@@ -69,7 +69,7 @@ class npcInstance:
     def __init__(self, name:str, data:dict):
 
         self.name = name
-        self.id = str(uuid.uuid4())  # unique per instance
+        self.id = "npc_" + str(uuid.uuid4())  # unique per instance
         self.is_hidden = False
         self.print_name = data.get("print_name") if data.get("print_name") else name
         self.text_styling = data.get("text_styling")

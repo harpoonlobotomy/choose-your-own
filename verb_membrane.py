@@ -14,7 +14,6 @@ from verbRegistry import VerbInstance
 
 MOVE_UP = "\033[A"
 
-
 def get_noun_instances(dict_from_parser, viable_formats):
 
     error = None
@@ -140,12 +139,13 @@ class Membrane:
 
         ## check to see if they ever diverge:
         inventory = registry.get_item_by_location(locRegistry.inv_place)
-        alt_inventory = locRegistry.inv_place.items
+        if inventory:
+            alt_inventory = locRegistry.inv_place.items
 
-        if inventory and alt_inventory:
-            if len(inventory) != len(alt_inventory):
-                print(f"\nitems in inv_place and inv_place.items are not equal\nitems at inv_place:\n{inventory}\n\ninv_place.items(): \n{alt_inventory}\n")
-                exit()
+            if inventory and alt_inventory:
+                if len(inventory) != len(alt_inventory):
+                    print(f"\nitems in inv_place and inv_place.items are not equal\nitems at inv_place:\n{inventory}\n\ninv_place.items(): \n{alt_inventory}\n Exiting from verb_membrane")
+                    exit()
 
         from interactions.item_interactions import find_local_item_by_name
         local_items = find_local_item_by_name()
@@ -311,7 +311,9 @@ class UserEncoder(json.JSONEncoder):
             return list(o)
         return super().default(o)
 
-#from notes_and_scribbles.test_commands import input_command_list
+
+
+
 from archived.test_commands import input_command_list # moved so it doesn't try to update every commit.
 
 input_outcome_dict = {}
@@ -458,5 +460,7 @@ def run_membrane(input_str=None, run_tests=False):
         print()
         test = loop(input_str)
         if test == "exit":
+            from save_and_restore import save_game
+            save_game()
             print_blue(f"{MOVE_UP}Exiting now.\n")#Loop test at end == exit, returning `exit`.")
             return "exit"

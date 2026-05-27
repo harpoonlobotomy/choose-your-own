@@ -378,20 +378,21 @@ class itemInstance:
 
     def __init__(self, definition_key:str, attr:dict, set_id=False):
         #print(f"\n\n@@@@@@@@@@@@@@@@@ITEM {definition_key} in INIT ITEMINANCE@@@@@@@@@@@@@@@\n\n")
-        print(f"definition_key: {definition_key}, attr: {attr}")
+        #print(f"definition_key: {definition_key}, attr: {attr}")
         if set_id:
             if not isinstance(set_id, str):
                 set_id = str(set_id)
             self.id = set_id
         else:
-            self.id = str(uuid.uuid4())  # unique per instance
+            self.id = "item_" + str(uuid.uuid4())  # unique per instance
         self.short_id = self.id.split("-")[-1]
         self.material_type:str = attr.get("material_type", "generic")
         self.on_break:str = attr.get("on_break", None)
-
+        self.is_hidden=False
         self.name:str = definition_key
         self.print_name = self.name
         self.colour:str = None
+        self.location:cardinalInstance = None
          #     INITIAL FLAG MANAGEMENT
         #print(f"VARS before attributes are assigned: {vars(self)}")
         self.verb_actions:set[str] = set()
@@ -400,50 +401,54 @@ class itemInstance:
                 self.verb_actions.add(attribute)
 
 
+
+        self.item_type = self.clean_item_types(attr["item_type"])
+        self.set_itemtype_attrs(attr)
+
+        self.nicenames:dict[str, str] = attr.get("nicenames", dict({"generic": self.name}))
+
+        self.nicename:str = self.nicenames.get("generic")
+        if not self.nicename:
+            for entry in self.nicenames:
+                self.nicename = self.nicenames[entry]
+                break # entirely arbirary. Need to rejig the description-selection function to do nicenames too.
+        if not self.nicename:
+            print(f"Item {self} doesn't have a nicename.")
+
+        self.descriptions:dict[str, str] = attr.get("descriptions")
+
+        self.description:str = attr.get("description") # will be initd shortly, depending on item conditions. Use default if found for simple objects with no alt names.
+        #print(f"Name: {self.name} // self.description in init: {self.description}")
+        self.starting_location:dict = attr.get("starting_location") # currently is str
+
+        self.location:cardinalInstance = loc.no_place
+        from eventRegistry import eventInstance
+        self.event:eventInstance = None
+        self.is_event_key = False
+
+        self.encountered = False
+        from npcRegistry import npcInstance
+        self.held_by:npcInstance = None # for items being held by NPCs. Need to remember to uncheck it when removed from npc.
+
+        self.trade_value = attr.get("trade_value", 1)
+
+        if attr.get("exceptions"):
+            if attr["exceptions"].get("starting_location"):
+                if isinstance(attr["exceptions"]["starting_location"], cardinalInstance):
+                    self.location = attr["exceptions"]["starting_location"]
+                    self.starting_location = attr["exceptions"]["starting_location"]
+
+        if attr.get("alt_names"):
+            self.alt_names = set(i for i in attr.get("alt_names"))
+        else:
+            self.alt_names = None
+
+    ### Set all the standards, then apply the inst specifics from save file on top. Probably more reliable, even if it's double handling.
         if set_id:
             for attr, val in attr.items():
                 setattr(self, attr, val)
             if isinstance(self.location, str):
                 self.location = loc.by_cardinal_str(self.location)
-        else:
-            self.item_type = self.clean_item_types(attr["item_type"])
-            self.set_itemtype_attrs(attr)
-
-            self.nicenames:dict[str, str] = attr.get("nicenames", dict({"generic": self.name}))
-
-            self.nicename:str = self.nicenames.get("generic")
-            if not self.nicename:
-                for entry in self.nicenames:
-                    self.nicename = self.nicenames[entry]
-                    break # entirely arbirary. Need to rejig the description-selection function to do nicenames too.
-
-            self.descriptions:dict[str, str] = attr.get("descriptions")
-
-            self.description:str = attr.get("description") # will be initd shortly, depending on item conditions. Use default if found for simple objects with no alt names.
-            #print(f"Name: {self.name} // self.description in init: {self.description}")
-            self.starting_location:dict = attr.get("starting_location") # currently is str
-
-            self.location:cardinalInstance = loc.no_place
-            from eventRegistry import eventInstance
-            self.event:eventInstance = None
-            self.is_event_key = False
-
-            self.encountered = False
-            from npcRegistry import npcInstance
-            self.held_by:npcInstance = None # for items being held by NPCs. Need to remember to uncheck it when removed from npc.
-
-            self.trade_value = attr.get("trade_value", 1)
-
-            if attr.get("exceptions"):
-                if attr["exceptions"].get("starting_location"):
-                    if isinstance(attr["exceptions"]["starting_location"], cardinalInstance):
-                        self.location = attr["exceptions"]["starting_location"]
-                        self.starting_location = attr["exceptions"]["starting_location"]
-
-            if attr.get("alt_names"):
-                self.alt_names = set(i for i in attr.get("alt_names"))
-            else:
-                self.alt_names = None
 
         if hasattr(self, "is_hidden") and self.is_hidden:
             self.set_hidden()
@@ -575,12 +580,15 @@ class itemRegistry:
                 print(f"No item entry provided for `{item_name}` and no entry found in registry.item_defs. Cannot build without knowing what it is. Exiting from itemReg")
                 exit()
         inst = itemInstance(item_name, item_entry, set_id=set_id)
+        if not item_entry and item_entry.get("encountered"):
+            print("item not encountered in item entry")
+            inst.encountered = False
         all_items_generated.add(inst)
         self.instances.add(inst)
 
         self.item_defs[item_name] = item_entry
 
-        print(f"inst: {inst}")
+        #print(f"[ INIT_SINGLE ]  inst: {inst}")
         if not self.by_name.get(inst.name):
             self.by_name[inst.name] = set()
         self.by_name[inst.name].add(inst)
@@ -804,7 +812,7 @@ class itemRegistry:
 
             for item_id in itemlist:
                 item = self.by_id.get(item_id)
-                print(f"[ clean_relationships ]: item: {item}")
+                print(f"[ clean_relationships ]: item: `{item}`")
 
                 if not item:
                     exit(f"Failed to get instance by id in cleaning_loop for instance ({item_id}).")
@@ -813,22 +821,49 @@ class itemRegistry:
                 if hasattr(item, "requires_key") and item.requires_key and not isinstance(getattr(item, "requires_key"), bool):
                     print(f"item {item} requires key at start: {item.requires_key}")
                     for key in item.requires_key:
+                        print(f"key in item.requires_key: `{key}`")
                         if isinstance(key, list) and len(key) == 1:
                             key = key[0]
-                        print(f"key: {key}")
-                        if is_load_data and key in self.by_id: # The key will be an itemId instead of a name.
-                            print("key in self.by_id")
-                            key = self.by_id[key]
-                            print("about to add key to locks_keys.item")
-                            self.locks_keys.setdefault(item, set()).add(key)
-                            print("locks_keys.setdefault added item and key")
-                            self.locks_keys.setdefault(key, set()).add(item)
-                            print(f"about to add [{key}] to key_found set: {type(key_found)}")
-                            key_found.add(key)#maybe_key
-                            print("after add key to key_found")
-                            setattr(key, "unlocks", self.locks_keys[key])
-                            print("Just before the continue")
-                            continue
+
+                        if is_load_data:
+                            print("is_load_data")
+                            key = get_serialised_data(key)
+                            print(f"key after serialised_data: {key}")
+                            if isinstance(key, itemInstance):
+                                self.locks_keys.setdefault(item, set()).add(key)
+                                self.locks_keys.setdefault(key, set()).add(item)
+                                key_found.add(key)#maybe_key
+                                setattr(key, "unlocks", self.locks_keys[key])
+                                continue
+
+                            if not key_found:
+                                if key in self.by_id: # The key will be an itemId instead of a name.
+                                    print("key in self.by_id")
+                                    key = self.by_id[key]
+                                    print("about to add key to locks_keys.item")
+                                    self.locks_keys.setdefault(item, set()).add(key)
+                                    print("locks_keys.setdefault added item and key")
+                                    self.locks_keys.setdefault(key, set()).add(item)
+                                    print(f"about to add [{key}] to key_found set: {type(key_found)}")
+                                    key_found.add(key)#maybe_key
+                                    print("after add key to key_found")
+                                    setattr(key, "unlocks", self.locks_keys[key])
+                                    print("Just before the continue")
+                                    continue
+                                else:
+                                    print(f"is_load_data and key is not by_id: {key}")
+                                    if key in self.by_name:
+                                        if len(self.by_name[key]) == 1:
+                                            key = self.by_name[key]
+                                            self.locks_keys.setdefault(item, set()).add(key)
+                                            self.locks_keys.setdefault(key, set()).add(item)
+                                            setattr(key, "unlocks", self.locks_keys[key])
+                                            key_found.add(key)
+                                            print("Key found by being the only named instance")
+                                    else:
+                                        print("Key {key} still not found.")
+
+
                         print("after that bit")
                         print("Going tocheck name")
                         potential_keys = (i for i in registry.keys if i.name == key)
@@ -876,28 +911,38 @@ class itemRegistry:
                             if target_obj:
                                 key_found.add(target_obj)
                                 #item.requires_key.add(target_obj) # added this, should make it more bilateral.
-                                self.locks_keys.setdefault(maybe_key, set()).add(item)
-                                setattr(maybe_key, "unlocks", self.locks_keys[maybe_key])
+                                self.locks_keys.setdefault(target_obj, set()).add(item)
                                 setattr(target_obj, "unlocks", item)
                             else:
                                 exit(f"Failed to find key for {item}'s {item.requires_key}.")
 
                     if key_found:
                         for key in key_found:
-                            if item.requires_key and isinstance(item.requires_key, list) and len(item.requires_key) == 1:
-                                item.requires_key = item.requires_key[0]
+                            if item.requires_key:
+                                if isinstance(item.requires_key, list) and len(item.requires_key) == 1 and isinstance(item.requires_key[0], list):
+                                    item.requires_key = set(item.requires_key[0])
+                                if isinstance(item.requires_key, str):
+                                    item.requires_key = set((item.requires_key,))
+
                             print(f"key in key_found: {key}")
                             if isinstance(key, str):
                                 print(f"KEY IS STRING: {key}")
                             else:
-                                if key.name in item.requires_key:
-                                    item.requires_key.remove(key.name)
-                                if key.id in item.requires_key:
-                                    item.requires_key.remove(key.id)
+                                if not is_load_data:
+                                    if isinstance(item.requires_key, list):
+                                        item.requires_key = set(item.requires_key)
+                                    if key.name in item.requires_key:
+                                        item.requires_key.remove(key.name)
+                                    if key.id in item.requires_key:
+                                        item.requires_key.remove(key.id)
+                                else:
+                                    print(f"starting required keys: {item.requires_key}")
+                                    print("but because is loading data, wiping.")
+                                    item.requires_key = set()
 
-                            print(f"item requires_key: {item.requires_key}, type: {type(item.requires_key)}")
-                            item.requires_key.append(key)
-                            print("key added to item.requires_key")
+                            print(f"item requires_key: `{item.requires_key}`, type: {type(item.requires_key)}")
+                            item.requires_key.add(key)
+                            print(f"key added to item.requires_key: {item.requires_key}")
                     #print(f"ITEM.REQUIRES_KEY at end of cleaning loop: `{item}` // `{item.requires_key}`, requires_key type: {type(item.requires_key)}")
 
         try:
@@ -932,7 +977,7 @@ class itemRegistry:
         if not inst or not isinstance(inst, itemInstance|npcInstance):
             logging_fn(f"returning 10 for {inst}")
             return None, 10, accessible_dict[10]
-
+        print(f"in run_check for {inst}")
         if inst.is_hidden == True:
             if hasattr(inst, "has_multiple_instances") and inst.has_multiple_instances == 0:
                 pass
@@ -1004,7 +1049,7 @@ class itemRegistry:
 
                     else:
                         reason = 6
-
+        print(f"end of run_check for {inst}")
         meaning = accessible_dict[reason]
         logging_fn(f"returning {reason} for {inst} because {meaning}")
         return confirmed_container, reason, meaning
@@ -1931,7 +1976,7 @@ def use_generated_items(input_=None):
     return gen_items
 
 
-def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal:cardinalInstance|str=None, partial_dict:dict=None, in_container=None)->str|itemInstance:
+def new_item_from_str(item_name:str, input_str:str=None, loc_cardinal:cardinalInstance|str=None, partial_dict:dict=None, in_container:itemInstance=None)->str|itemInstance:
     """Generates an item def entry from item_name and, if given, input_str an a partial dict. Input_str should be a list of item_type categories to be assigned to the item. If loc_cardinal is None, items will be generated in a default location.\n\n`init_single` will be run with this new item def."""
 
     if partial_dict:
@@ -2114,8 +2159,7 @@ def init_loc_items(place=None, cardinal=None):
     loc_dict = locRegistry.loc_data
     loc_items_dict = {}
 
-
-    def get_cardinal_items(place, cardinal):
+    def get_cardinal_items(place, cardinal=None):
         name_to_inst_tmp = {}
 
         def from_single_cardinal(place, cardinal, name_to_inst_tmp):
@@ -2170,7 +2214,8 @@ def init_loc_items(place=None, cardinal=None):
 
                         item_data = generator.item_defs.get(item)
                         item_data["starting_location"] = card_inst
-                        apply_loc_data_to_item(item, item_data, loc_data["items"])
+                        #apply_loc_data_to_item(item, item_data, loc_data["items"]) < - this one is different to the other implementation. Idk which is right, this or the line beblow this.
+                        apply_loc_data_to_item(item, item_data, loc_data["items"].get(item))
                         # turning this off, because I already do that in item_dict_gen. I shouldn't be doing it again, surely.
 
             if loc_dict[place.lower()].get(cardinal):
@@ -2186,11 +2231,12 @@ def init_loc_items(place=None, cardinal=None):
             name_to_inst_tmp = from_single_cardinal(place, cardinal, name_to_inst_tmp)
 
     if config.parse_test:
-        get_cardinal_items(north_everything.place, north_everything)
+        test_place = loc.by_cardinal_str(config.test_start)
+        get_cardinal_items(test_place.place, test_place)
 
         for item in registry.instances:
-            if hasattr(item, "location") and item.location != None and item.location != north_everything:
-                registry.move_item(item, north_everything)
+            if hasattr(item, "location") and item.location != None and item.location != test_place:
+                registry.move_item(item, test_place)
 
     if not config.parse_test:
         if place == None:
@@ -2232,8 +2278,40 @@ def switch_ids_to_instances():
                     inst = registry.by_id[val]
                     setattr(item, attr, inst)
 
+def get_serialised_data(value):
+    if not isinstance(value, str):
+        print(f"Value is not a string: `{value}`. What do do with it? Returning for now.")
+        return value
+    prefixes = ("str_", "item_", "npc_", "conversation_", "event_", "cardinal_")
+    """ Better than splitting all these individually, I should just tell it which fields require which datatype. But this feels more... reliable, at this stage, in case deep things change later. Will keep it for now."""
+    if not any(i for i in prefixes if i in value):
+        print(f"No prefix in value: {value}")
+    elif value.startswith("str_"):
+        value = value.replace("str_", "")
+    elif value.startswith("item_"):
+        print(f"value starts with item: {value}")
+        if registry.by_id and value in registry.by_id:
+            value = registry.by_id[value]
+        else:
+            print(f"Item {value} not found\n")
+    #elif value.startswith("npc_"):
+    #    value = value.replace("npc_", "")
+    elif value.startswith("conversation_"):
+        value = value.replace("conversation_", "")
+    #elif value.startswith("event_"):
+    #    value = value.replace("event_", "")
+    #elif value.startswith("cardinal_"):
+    #    value = value.replace("cardinal_", "")
+    elif isinstance(value, list):
+        value = set(value)
 
-def load_itemRegistry():
+
+    else:
+        print(f"Value found no matches: `{value}`")
+    return value
+
+
+def load_itemRegistry(item_data):
 
     """Initialises itemRegistry from save file data."""
     print("Running load_itemRegistry")
@@ -2242,23 +2320,23 @@ def load_itemRegistry():
 
     registry.item_defs = init_item_dict()
 
-    import json
-    #from config import save_file
-    with open(save_file) as f:
-        save_data = json.load(f)
-
-    for id_number, data in save_data["items"].items():
+    for id_number, data in item_data.items():
         print(f"DATA: {data}")
         name = data["name"]
-        base_entry = registry.item_defs[name]
+        name = get_serialised_data(name)
+        print(f"NAME after: {name}")
+        from copy import deepcopy
+        base_entry = deepcopy(registry.item_defs[name])
         for attr, val in data.items():
+            val = get_serialised_data(val)
             base_entry[attr] = val ## this will add IDs as just strings.
 
         registry.item_defs[name] = base_entry
         #registry.new_item_from_str(item_name=name, loc_cardinal=data["location"], partial_dict=base_entry)
 
-        registry.init_single(item_name=name, item_entry=base_entry, discover=base_entry["encountered"] if  base_entry.get("encountered") else False, set_id=id_number)
+        inst = registry.init_single(item_name=name, item_entry=base_entry, discover=base_entry["encountered"] if  base_entry.get("encountered") else False, set_id=id_number)
         print(f"Init'd item `{name}`")
+        registry.init_descriptions(inst)
     #init_loc_items() # shouldn't run this at all as all items are in the above.
 
     plural_word_dict = {}

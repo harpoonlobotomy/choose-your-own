@@ -12,10 +12,71 @@ Have to decide on autosave. Autosave y/n, and/or player decision saved in config
 from env_data import cardinalInstance
 from eventRegistry import Trigger, eventInstance, timedTrigger
 from itemRegistry import itemInstance
-from npcRegistry import npcInstance
+from npcRegistry import conversationInstance, npcInstance
 
+
+class temp_load_data:
+
+    load_data = {"items": {}}
+
+temp_data = temp_load_data()
 
 save_file = "savegame.json"
+
+def get_serialised_value(value, item=None, attr=None):
+    """ Returns 0|1, value - if [0|1] == 0, value is default, do not save."""
+
+    if value or (not value and not item) or (item and (hasattr(item, attr) and not getattr(item, attr))):
+
+        if item and (value == item.start_dict[attr] and attr not in ("location", "name")):
+            return 0, None # 0 == do not save, None = value
+
+        if isinstance(value, str):
+            value = value
+        elif isinstance(value, bool|None):
+            value = value
+        elif isinstance(value, itemInstance):
+            value = value.id
+        elif isinstance(value, npcInstance):
+            value = value.id
+        elif isinstance(value, eventInstance):
+            value = value.id
+        elif isinstance(value, cardinalInstance):
+            value = value.place_name
+        elif isinstance(value, conversationInstance):
+            value = "conversation_" + value.topic_label
+
+        elif isinstance(value, set|list):
+            if len(value) < 1:
+                if isinstance(value, set):
+                    value = list() # if len(0) set, just return new list.
+            else:
+                if isinstance(list(value)[0], itemInstance):
+                    #value_list = [list(i.id for i in value)]
+                    value = list(i.id for i in value)
+                if isinstance(list(value)[0], npcInstance):
+                    #value_list = [list(i.id for i in value)]
+                    value = list(i.id for i in value)
+                if isinstance(value, set):
+                    value = list(value)
+                if isinstance(value[0], list) and len(value) == 1:
+                    print(f"value = value [0], recursing `{value}`")
+                    _, value = get_serialised_value(value, attr)
+                    print(f"done with recursing, new value == `{value}`")
+                #else:
+                    #print(f"value is a set|list, but not of items: {value}")
+
+        if isinstance(value, dict):
+            cleaned_dict = {}
+            for k, v in value.items():
+                _, v = get_serialised_value(v, attr=k)
+                cleaned_dict[k] = v
+            value = cleaned_dict
+        return 1, value
+    if not item and not value:
+        return 1, value
+    #print(f"Returning 0, value for `{attr}`: `{value}`, no match in elif tree for item {item}.")
+    return 0, value
 
 def save_game():
     """
@@ -82,42 +143,13 @@ def save_game():
                 trade_value
                 alt_names
     """
-            for attr in ("name", "starting_location", "location", "requires_key", "held_by", "is_locked", "is_open", "colour", "event", "encountered", "contained_in"):
+            for attr in ("name", "starting_location", "location", "requires_key", "held_by", "is_locked", "is_open", "colour", "event", "encountered", "contained_in", "is_hidden"):
+                """"
+     REMEMBER: Need to get the cluster count from cluster objs too"""
+
                 value = getattr(item, attr) if hasattr(item, attr) else None
-                if value or (hasattr(item, attr) and not getattr(item, attr)):
-
-                    if value == item.start_dict[attr] and attr not in ("location", "name"):
-                        continue#print(f"Attr {attr} matches at save")
-
-                    if isinstance(value, itemInstance|npcInstance):
-                        #id = value.id
-                        value = value.id
-                    elif isinstance(value, eventInstance):
-                        #id = value.id
-                        value = value.id
-                    elif isinstance(value, cardinalInstance):
-                        #cardinal_name = value.place_name
-                        value = value.place_name
-                    elif isinstance(value, bool):
-                        #boolean = value
-                        value = value
-                    elif isinstance(value, str):
-                        #boolean = value
-                        value = value
-                    elif isinstance(value, set|list):
-                        if isinstance(list(value)[0], itemInstance|npcInstance):
-                            #value_list = [list(i.id for i in value)]
-                            value = list(i.id for i in value)
-                            print("values now ids")
-                        if isinstance(value[0], list) and len(value) = 1:
-                            print("value = value [0]")
-                            value = value[0]
-                        else:
-                            print(f"value is a set|list, but not of items: {value}")
-
-                    else:
-                        print(f"Attr {attr} does not match at save")
-
+                is_not_default, value = get_serialised_value(value, item, attr)
+                if is_not_default:
                     save_dict["items"][item.id][attr] = value
 
         return save_dict
@@ -340,18 +372,78 @@ Exiting now.ue is type: <class 'dict'>
         """
         #print(f"EVENT ELEMENTS: {event_elements}")
 
-    #def get_npc_data(save_dict):
-        #for npc in npc_Registry.npcs:
+    def get_npc_data(save_dict):
+
+        save_dict["npcs"] = {}
+        npc_to_save = ("name", "is_hidden", "can_die", "is_dead", "gold", "inventory", "trade_items", "thief_awareness", "location", "encountered") # "conversations",  "keywords",
+        #new_elements = set()
+        for npc in npc_Registry.npcs:
+            save_dict["npcs"][npc.id] = {}
+            for element, data in npc.__dict__.items():
+                if element in npc_to_save:
+                    is_value, value = get_serialised_value(data, attr=element)
+                    #print(f"is_value: {is_value} / value for {element}: {value}")
+                    save_dict["npcs"][element] = value
+
+                #if new_elements and element not in new_elements:
+                #    print(f"{element}: {data}")
+                #    new_elements.add(element)
+                #if not new_elements:
+                #    new_elements.add(element)
+        #print(f"Number of unique npc variables: {len(new_elements)}") ## = 48. /48/, jeesus.
+        #print(f"NPC dict: {npc.__dict__}")
+        return save_dict
+
+    def get_game_data(save_dict):
+        from set_up_game import game
+        save_dict["gamedata"] = {}
+        for element, data in game.__dict__.items():
+            if element.startswith("__"):
+                continue
+            _, value = get_serialised_value(value=data, attr=element)
+            save_dict["gamedata"][element] = value
+        return save_dict
 
 
     save_dict = get_item_data(save_dict)
     save_dict = get_event_data(save_dict)
+    save_dict = get_npc_data(save_dict)
+    save_dict = get_game_data(save_dict)
+    #from pprint import pprint
+    #pprint(f"SAVE DICT: {save_dict}")
 
     with open(save_file, mode="w+") as f:
         import json
         json.dump(save_dict, f, indent=2)
 
+
+
+def get_serialised_data(value):
+    if not isinstance(value, str):
+        print(f"Value is not a string: `{value}`. What do do with it? Returning for now.")
+        return value
+    prefixes = ("item_", "npc_", "conversation_", "event_")
+    """ Better than splitting all these individually, I should just tell it which fields require which datatype. But this feels more... reliable, at this stage, in case deep things change later. Will keep it for now."""
+    if any(i for i in prefixes in value):
+        print(f"Prefix in value: {value}")
+    if value.startswith("item_"):
+        print("value starts with item_")
+        from itemRegistry import registry
+        if registry.by_id and value in registry.by_id:
+            value = registry.by_id[value]
+        else:
+            temp_data["items"][value]
+            print(f"Item {value} added to temp_data")
+    if value.startswith("npc_"):
+        value = value.split("npc_")[1]
+    if value.startswith("conversation_"):
+        value = value.split("conversation_")[1]
+    if value.startswith("event_"):
+        value = value.split("event_")[1]
+    return value
+
 def load_game():
+    """ Loads items, events, npcs and gamedata."""
 
     with open(save_file, mode="r") as f:
         import json
@@ -359,13 +451,23 @@ def load_game():
 
     item_data = save_data["items"]
     event_data = save_data["events"]
+    npc_data = save_data["npcs"]
+    game_data = save_data["gamedata"]
     ## Now this should be every established item + event. Which is fucking stupid but the best I have for now. Without getting all of them there's no reliable way to check if they're default or not, so it's just everything. (I can check if an equvalent exist, but what if I picked up thing_a and put in in place_a, removing thing_b from that place. If thing_b and thing_a share default metadata, I can't track that they've swapped by just 'is location start location'. So, will take all items id, name and location, then rebuild specific instances from there.)
 
-    from item_dict_gen import generator
+    from itemRegistry import load_itemRegistry, registry
+    load_itemRegistry(item_data)
+
+    import eventRegistry
+    eventRegistry.load_eventRegistry(event_data)
+# this is too scattered. I need to be precise - for each event, generate it, without adding items. Then, go throuigh the item and add events by id number. Should be straightforward...
+
+    eventRegistry.add_items_to_events()
+    """from item_dict_gen import generator
     from itemRegistry import registry
     from copy import deepcopy
     for id, data in item_data.items():
-        name = data["name"]
+        name = data["name"].replace("str_", "")
         item_dict = deepcopy(generator.item_defs[name])
 
         for attr, val in data.items():
@@ -374,10 +476,5 @@ def load_game():
             else:
                 item_dict[attr] = val
 
-            #if attr == "item_type":
-            #    if "container" in data[attr] and not "electronics" in data[attr]:
-
-            #if inst.print_children_as_list:
-
-        new_item = registry.init_single(name, item_entry=item_dict, apply_location=data["location"], discover=(data["encountered"] if data.get("encountered") else False))
+        new_item = registry.init_single(name, item_entry=item_dict, apply_location=data["location"], discover=(data["encountered"] if data.get("encountered") else False), set_id=id)"""
 

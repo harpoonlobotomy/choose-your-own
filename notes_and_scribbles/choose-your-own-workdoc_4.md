@@ -2303,3 +2303,16 @@ Hm.
 
 Well - currently I'm not rebuilding Events from the savefile, so I'm not sure if it'll match up if I add that. Will try.
 Also need to init npcs from the savefile too. Not even saving those yet.
+
+Also I don't know if the items are regenning properly either.
+Need to set up load-logging, where it logs the item/NPC/event IDs on startup, and (if loaded) compares the loaded IDs to the last new-load IDs.
+Going to make a new workdoc for the save system. I'm a little out of my depth on this one.
+
+Have make one. General note though:
+
+You realise the moss you picked up a few days ago has dried out. Damn. Or, maybe you wanted some dried moss...?
+You realise the moss you picked up a few days ago has dried out. Damn. Or, maybe you wanted some dried moss...?
+
+When multiple generated events end at the same time like this, I'd rather a custom message that tells you the event ended in both cases, rather than it printing entirely twice like this. For later, but I'd like to.
+
+I make a whole dict of locks><keys, but never use it. I really should. The keys/locks are too spread out.

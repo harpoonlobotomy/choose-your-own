@@ -20,7 +20,7 @@ def get_npc_inventory(local_items:set[npcInstance|itemInstance]):
     if local_npcs:
         for npc in local_npcs:
             npc:npcInstance = npc
-            if npc.inventory:
+            if hasattr(npc, "inventory") and npc.inventory:
                 for item in npc.inventory:
                     if item.location != loc.npc_inv_place:
                         print(f"Item is not in npc_inventory_place: {item}")
@@ -28,7 +28,7 @@ def get_npc_inventory(local_items:set[npcInstance|itemInstance]):
 
                     if item.encountered:
                         local_items.add(item)
-            if npc.trade_items:
+            if hasattr(npc, "trade_items") and npc.trade_items:
                 if item.location != loc.npc_inv_place:
                     registry.move_item(item, loc.npc_inv_place, do_not_discover=True)
                 for item in npc.trade_items:

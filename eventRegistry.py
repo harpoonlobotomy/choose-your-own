@@ -31,8 +31,8 @@ event_state_by_int = {
 
 def load_json() -> dict:
     import json
-    with open(config.event_data, 'r') as loc_data_file:
-        event_dict = json.load(loc_data_file)
+    with open(config.event_data, 'r') as event_data_file:
+        event_dict = json.load(event_data_file)
     return event_dict
 
 event_dict = load_json()
@@ -78,6 +78,8 @@ def check_if_correct_key_exists_already(item_inst:itemInstance, flag:str, val:di
         #print(f"Existing key(s): {existing_keys}")
 
         for key in existing_keys:
+            if not isinstance(key, itemInstance):
+                print(f"Key {key} is not an itemInstance.")
             print(f"key in existing keys: {key} // val: {val}")
             if val.get(key.name) and isinstance(val[key.name], dict):
                 #print(f"val[key.name]: {val[key.name]}")
@@ -88,6 +90,11 @@ def check_if_correct_key_exists_already(item_inst:itemInstance, flag:str, val:di
                                 if key.event and key.event.name == point:
                                     #print(f"Existing key instance is in the named event: {key.event} // {key}")
                                     return True
+                                else:
+                                    if not key.event and point:
+                                        key.event = point
+                                        return True
+                                    print(f"item not in event: `{point}` / key.event: {key.event}")
                             elif criteria == "item_in_location":
                                 if key.location.name == point or key.location.place_name == point:
                                     return True
@@ -105,10 +112,14 @@ def check_if_correct_key_exists_already(item_inst:itemInstance, flag:str, val:di
 
 class eventInstance:
 
-    def __init__(self, name:str, attr:dict, trigger_event:bool=None):
+    def __init__(self, name:str, attr:dict, trigger_event:bool=None, set_id=False):
         import uuid
         self.name:str = name
-        self.id:str = str(uuid.uuid4())
+        if set_id:
+            self.id:str = set_id
+        else:
+            self.id:str = "event_" + str(uuid.uuid4())
+
         self.short_id:str = self.id[-5:]#self.id.split("-")[-1]
         if attr.get("starts_current"):
             self.state:int = 1
@@ -448,9 +459,9 @@ class eventRegistry:
         event.state = state
         self.event_print(f"[Set event state for [{event.name}, ID:{event.short_id}]: {event.state}]")
 
-    def add_event(self, event_name:str, event_attr, trigger_event=None):
+    def add_event(self, event_name:str, event_attr, trigger_event=None, set_id=False):
 
-        event = eventInstance(event_name, event_attr, trigger_event=trigger_event)
+        event = eventInstance(event_name, event_attr, trigger_event=trigger_event, set_id=set_id)
         self.events.add(event)
         self.by_id[event.id] = event
         if not self.by_name.get(event.name):
@@ -493,12 +504,18 @@ class eventRegistry:
     def get_all_item_instances(self, event:eventInstance, event_entry, noun=None, trigger_event=None):
         # trigger_event == the event that prompted the generation of this event if there is one.
         self.event_print("start of get_all_item_instances")
+
+        if not hasattr(event, "item_names") and not noun:
+            print("event.item_names doesn't exist, assuming no instances to be gotten.")
+            return
         from itemRegistry import registry
         event.item_name_to_inst = {}
 
         if not hasattr(event, "item_name_to_loc"):
             self.event_print(f"No item_name_to_loc dict for {event}\n")
 
+        if noun and not hasattr(event, "item_names") or not event.item_names:
+            event.item_names = set()
         if noun and noun.name not in event.item_names:
             event.item_names.add(noun.name)
             self.event_print(f"Event.item_names: {event.item_names}")
@@ -544,7 +561,7 @@ class eventRegistry:
 
         missing = list(i for i in event.item_names if i not in event.item_name_to_inst if i != "trigger_item")
         if missing:
-            print(f"MISSING: {missing}")
+            print(f"MISSING: {missing} // event.item_names: {event.item_names}")
             if event.state != 1:
                 for item in missing:
                     event.generate_on_start.add(item)
@@ -774,7 +791,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
                     event_name = event.name
             elif isinstance(event, str):
                 event_name = event
-                event = self.event_by_name(str)
+                event = self.event_by_name(event_name)
                 if not event:
                     print(f"No event by the name {event_name}")
                     exit()
@@ -786,6 +803,13 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
         if not event and event_name and isinstance(event_name, eventInstance):
             event = event_name
             event_name = event.name
+
+        event.event_keys = set(event.event_keys) if event.event_keys else set()
+        event.triggers = set(event.triggers) if event.triggers else set()
+        event.timed_triggers = set(event.timed_triggers) if event.timed_triggers else set()
+        event.start_triggers = set(event.start_triggers) if event.start_triggers else set()
+        event.end_triggers = set(event.end_triggers) if event.end_triggers else set()
+        event.items = set(event.items) if event.items else set()
 
         for trigger in ("start_trigger", "end_trigger", "immediate_action"):
 
@@ -968,21 +992,32 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
 
             for item in event.items:
                 self.event_print(f"ITEM IN EVENT ITEMS: {item}")
-                if isinstance(item, itemInstance):
-                    if hasattr(event, "child_item") and event.child_item:
-                        if item == event.child_item:
-                            continue
-                    events.item_names[item.name] = item
-                    setattr(item, "event", event) # TODO: Doing this way too often, need to find the single choke point they all pass through no matter where they're added from.
-                    if hasattr(event, "event_keys") and item in event.event_keys:
-                        item.is_event_key = True
-                else:
-                    print(f"This item does not have an instance: {item} (in event {event.name})")
+                if not isinstance(item, itemInstance):
+                    from itemRegistry import registry
+                    if registry.by_id.get(item):
+                        item = registry.by_id[item]
+                        if not isinstance(item, itemInstance):
+                            print(f"Fetching from by_id didn't work for item {item}")
+                            print(f"This item does not have an instance: {item} (in event {event.name})")
+
+                if hasattr(event, "child_item") and event.child_item:
+                    if item == event.child_item:
+                        print("item is event.child_item")
+                        continue
+                events.item_names[item.name] = item
+                setattr(item, "event", event) # TODO: Doing this way too often, need to find the single choke point they all pass through no matter where they're added from.
+                if hasattr(event, "event_keys") and item in event.event_keys:
+                    item.is_event_key = True
 
         if isinstance(event, str):
             event_options = self.event_by_name(event)
-            #for event in event_options:
-            get_items_inner(event_options)
+            if event_options:
+                for event in event_options:
+                    get_items_inner(event_options)
+            else:
+                event = self.event_by_id(event)
+                get_items_inner(event)
+
             return
 
         get_items_inner(event)
@@ -1011,6 +1046,7 @@ So I just need to change {material_type}: {on_break: broken_name} to "already_br
             instance = self.by_name.get(event_name)
 
             if instance:
+                return instance
                 if isinstance(instance, eventInstance):
                     return instance
                 if isinstance(instance, set|list|tuple):
@@ -1930,7 +1966,7 @@ class eventRegistrar:
         self.start_trigger_is_attr: dict[eventIntake, list[str]] = dict()
 
 
-    def add_to_intake(self, event_name, attr):# -> tuple[eventIntake, Any]:
+    def add_to_intake(self, event_name, attr:dict):# -> tuple[eventIntake, Any]:
 
         event = eventIntake(event_name, attr)
 
@@ -1976,6 +2012,76 @@ def register_generated_event(event_name, noun, trigger_event=None):
     add_items_to_events(event_inst, noun, prev_event=trigger_event)
     events.event_print("add items to events")
     return event_inst
+
+def combine_dicts(event_name, incoming_data):
+    from copy import deepcopy
+    event_base_defs = deepcopy(event_dict.get(event_name))
+    if not event_base_defs:
+        print(f"No event base defs: name `{event_name}` not found in Registrar")
+        return
+    for k, v in incoming_data.items():
+        event_base_defs[k] = v
+
+    return event_base_defs
+
+
+def load_eventRegistry(event_data:dict):
+
+    print("Initialising event registry...")
+    for event_name in event_dict:
+        registrar.add_to_intake(event_name, event_dict[event_name])
+    """
+    So at this point - it has the item  names for all triggers/effects, but no instances.
+    """
+    loaded_events = {}
+    for id, data in event_data.items():
+        name = data["name"]
+        loaded_events[id] = data = combine_dicts(name, data)
+        for k, v in data.items():
+            if isinstance(v, list):
+                v = set(v)
+                data[k] = v
+        event_inst, event_entry = events.add_event(name, data, set_id=id)
+        print(f"Event inst: {event_inst}")
+        events.get_all_item_instances(event_inst, event_entry)
+        print(f"End of get_all_item_instances for {name}")
+
+    from itemRegistry import registry
+    items = (i for i in registry.instances if hasattr(i, "event") and getattr(i, "event"))
+    for item in items:
+        print(f"item has event: {item.event}")
+        if isinstance(item.event, str):
+            if events.by_id.get(item.event):
+                if isinstance(events.by_id[item.event], eventInstance):
+                    print(f"Event found: {item.event}")
+                    events.get_all_item_instances(events.by_id[item.event], loaded_events[item.event], noun=item)
+                    item.event = event_inst
+                    continue
+
+                    #if not events.by_name.get(item.event.name):
+                    #    print("event name not in events.by_name")
+                    #if not events.by_id.get(item.event.id):
+                    #    print("event id not in events.by_id")
+            else:
+                print(f"Have an id number but no event. for item {item}")
+        if events.by_name.get(item.event):
+            print("Event exists by this name.")
+            if len(events.by_name[item.event]) == 1:
+                print("Only one event by this name. Assigning.")
+                item.event = events.by_name[item.event]
+            else:
+                print(f"More than one event by this name:\n{events.by_name[item.event]}")
+        else:
+            print(f"No event by the name {item.event}")
+            event_inst, event_entry = events.add_event(item.event, event_dict[item.event])
+            events.get_all_item_instances(event_inst, event_entry, noun=item)
+            item.event = event_inst
+
+    #for event in registrar.events:
+    #    if not getattr(event, "is_generated_event"):
+    #        print(f"Event to be init'd: {event}")
+    #        event_inst, event_entry = events.add_event(event.name, vars(event))
+    #        events.get_all_item_instances(event_inst, event_entry)
 
 
 def initialise_eventRegistry():

@@ -5,8 +5,8 @@
     "alt_names": [
       "pastor", "father"
     ],
-    "can_die": "True",
-    "can_speak": "True",
+    "can_die": true,
+    "can_speak": true,
     "descriptions": {
       "generic": "the Father of [[this]] church",
       "npc_introduction": "He is a tall, broad-shouldered man with dark hair and charcoal robes. His presence makes you a little uncomfortable, but you can't put a finger on why.\nHe stands near the podium at the head of the aisle of the church, seemingly deep in thought."
@@ -32,7 +32,7 @@
     "slice_defence": "5",
     "smash_attack": "5",
     "smash_defence": "5",
-    "speaks_common": "True",
+    "speaks_common": true,
     "speech_traits": [
       "ellipses"
     ],
@@ -48,8 +48,8 @@
     "colour":"green",
     "text_styling": ["green"],
     "alt_names": [],
-    "can_die": "True",
-    "can_speak": "True",
+    "can_die": true,
+    "can_speak": true,
     "descriptions": {
       "generic": "a bridge troll, green of skin and weathered, wearing a satchel over its shoulder and a loincloth protecting its dignity",
       "npc_introduction": "Stooped over and seemingly staring at a dandelion growing from the ground, you see a bridge troll. A patched leather satchel hangs loose over one shoulder, its weathered bare skin showing everywhere except for where it was covered by a thin, worn loincloth."
@@ -79,7 +79,7 @@
     "slice_defence": "5",
     "smash_attack": "5",
     "smash_defence": "5",
-    "speaks_common": "True",
+    "speaks_common": true,
     "speech_traits": [
       "no_pronouns",
       "hic"
